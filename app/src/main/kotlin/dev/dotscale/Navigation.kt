@@ -11,6 +11,12 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import dev.dotscale.ble.BleScaleConnection
 import dev.dotscale.sim.SimulatedScaleConnection
+import dev.dotscale.ui.history.BrewDetailScreen
+import dev.dotscale.ui.history.BrewDetailViewModel
+import dev.dotscale.ui.history.BrewEditScreen
+import dev.dotscale.ui.history.BrewEditViewModel
+import dev.dotscale.ui.history.HistoryScreen
+import dev.dotscale.ui.history.HistoryViewModel
 import dev.dotscale.ui.scale.ScaleScreen
 import dev.dotscale.ui.scale.ScaleViewModel
 import dev.dotscale.ui.scan.ScanScreen
@@ -35,6 +41,7 @@ fun MainNavigation() {
           onDeviceSelected = { address, name -> backStack.add(Scale(address, name)) },
           onSimulatedSelected = { backStack.add(Scale(address = null, name = simulatedName)) },
           onOpenSettings = { backStack.add(Settings) },
+          onOpenHistory = { backStack.add(History) },
         )
       }
       entry<Scale> { key ->
@@ -52,10 +59,35 @@ fun MainNavigation() {
           title = key.name,
           onBack = { backStack.removeLastOrNull() },
           onOpenSettings = { backStack.add(Settings) },
+          onOpenHistory = { backStack.add(History) },
+          onAddDetails = { id -> backStack.add(BrewEdit(id)) },
         )
       }
       entry<Settings> {
         SettingsScreen((appContext as DotScaleApp).brewSettings, onBack = { backStack.removeLastOrNull() })
+      }
+      entry<History> {
+        val repository = (appContext as DotScaleApp).brewRepository
+        HistoryScreen(
+          viewModel { HistoryViewModel(repository) },
+          onBack = { backStack.removeLastOrNull() },
+          onOpenBrew = { id -> backStack.add(BrewDetail(id)) },
+        )
+      }
+      entry<BrewDetail> { key ->
+        val repository = (appContext as DotScaleApp).brewRepository
+        BrewDetailScreen(
+          viewModel { BrewDetailViewModel(repository, key.id) },
+          onBack = { backStack.removeLastOrNull() },
+          onEdit = { id -> backStack.add(BrewEdit(id)) },
+        )
+      }
+      entry<BrewEdit> { key ->
+        val repository = (appContext as DotScaleApp).brewRepository
+        BrewEditScreen(
+          viewModel { BrewEditViewModel(repository, key.id) },
+          onBack = { backStack.removeLastOrNull() },
+        )
       }
     },
   )

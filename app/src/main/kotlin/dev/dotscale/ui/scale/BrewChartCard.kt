@@ -77,7 +77,7 @@ fun BrewChartCard(brew: BrewState, unit: WeightUnit, onFinish: () -> Unit, modif
 }
 
 @Composable
-private fun Chart(samples: List<BrewSample>, unit: WeightUnit, stability: String) {
+internal fun Chart(samples: List<BrewSample>, unit: WeightUnit, stability: String) {
   val last = samples.lastOrNull { it.valid }
   val description = stringResource(
     R.string.brew_chart_description,
@@ -122,7 +122,7 @@ internal fun levelText(level: StabilityLevel, score: Int): String =
   stringResource(R.string.brew_level_value, levelLabel(level), score)
 
 @Composable
-private fun summaryStability(summary: BrewSummary): String {
+internal fun summaryStability(summary: BrewSummary): String {
   val score = summary.stabilityScore
   val level = summary.stabilityLevel
   return if (score != null && level != null) levelText(level, score) else stringResource(R.string.brew_summary_stability_none)

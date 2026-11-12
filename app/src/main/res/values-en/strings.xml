@@ -113,4 +113,57 @@
     <string name="settings_auto_finish_title">Auto finish</string>
     <string name="settings_auto_finish_value">%1$d s</string>
     <string name="settings_auto_finish_hint">Seconds without pouring after which the brew is considered finished. Raise it if you do long blooms: the bloom pause should not end the brew.</string>
+
+    <!-- History -->
+    <string name="history_title">History</string>
+    <string name="history_open">Open history</string>
+    <string name="history_filter_coffee">Coffee</string>
+    <string name="history_filter_method">Method</string>
+    <string name="history_filter_all">All</string>
+    <string name="history_progress_title">Stability progress</string>
+    <string name="history_progress_empty">Make at least two real brews with a score to see your progress</string>
+    <plurals name="history_progress_description">
+        <item quantity="one">Stability progress: %1$d brew, average %2$d, latest %3$d.</item>
+        <item quantity="other">Stability progress: %1$d brews, average %2$d, latest %3$d.</item>
+    </plurals>
+    <string name="history_empty">No brews yet</string>
+    <string name="history_empty_filtered">No brews match the filter</string>
+    <string name="history_row_no_score">No score</string>
+    <string name="history_row_simulated">Simulated</string>
+    <string name="history_row_stats">%1$s · %2$s</string>
+    <string name="history_deleted">Brew deleted</string>
+    <string name="history_undo">Undo</string>
+
+    <!-- Brew detail -->
+    <string name="brew_detail_edit">Edit</string>
+    <string name="brew_detail_delete">Delete</string>
+    <string name="brew_detail_details">Details</string>
+    <string name="brew_detail_coffee">Coffee</string>
+    <string name="brew_detail_method">Method</string>
+    <string name="brew_detail_grind">Grind</string>
+    <string name="brew_detail_temp">Temperature</string>
+    <string name="brew_detail_temp_value">%1$s °C</string>
+    <string name="brew_detail_notes">Notes</string>
+    <string name="brew_detail_curve_error">This brew\'s curve could not be read</string>
+    <string name="brew_detail_old_metric">Score calculated with an earlier version of the metric</string>
+    <string name="brew_method_other">Other</string>
+
+    <!-- Brew edit -->
+    <string name="brew_summary_add_details">Add details</string>
+    <string name="brew_edit_title">Brew details</string>
+    <string name="brew_edit_name">Name</string>
+    <string name="brew_edit_coffee">Coffee</string>
+    <string name="brew_edit_method">Method</string>
+    <string name="brew_edit_method_none">No method</string>
+    <string name="brew_edit_method_other">Method name</string>
+    <string name="brew_edit_grind">Grind</string>
+    <string name="brew_edit_grind_hint">e.g. 21 clicks</string>
+    <string name="brew_edit_temp">Temperature (°C)</string>
+    <string name="brew_edit_temp_error">Enter a value from 0 to 100 with at most one decimal</string>
+    <string name="brew_edit_notes">Notes</string>
+    <string name="brew_edit_save">Save</string>
+    <string name="brew_edit_discard_title">Discard changes?</string>
+    <string name="brew_edit_discard_text">Changes you haven\'t saved will be lost.</string>
+    <string name="brew_edit_discard">Discard</string>
+    <string name="brew_edit_keep">Keep editing</string>
 </resources>

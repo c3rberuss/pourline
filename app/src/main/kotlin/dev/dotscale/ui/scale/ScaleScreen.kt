@@ -66,7 +66,14 @@ import java.util.Locale
 private const val LOW_BATTERY_PERCENT = 20
 
 @Composable
-fun ScaleScreen(viewModel: ScaleViewModel, title: String, onBack: () -> Unit, onOpenSettings: () -> Unit) {
+fun ScaleScreen(
+  viewModel: ScaleViewModel,
+  title: String,
+  onBack: () -> Unit,
+  onOpenSettings: () -> Unit,
+  onOpenHistory: () -> Unit,
+  onAddDetails: (Long) -> Unit,
+) {
   val ui by viewModel.ui.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
 
@@ -90,17 +97,13 @@ fun ScaleScreen(viewModel: ScaleViewModel, title: String, onBack: () -> Unit, on
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
-      AntTopBar(
+      ScaleTopBar(
         title = ui.deviceName ?: title,
         subtitle = info,
-        navigationIcon = {
-          AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
-        },
-        actions = {
-          ui.batteryPercent?.let { BatteryTag(it) }
-          AntIconButton(AntIcons.Settings, contentDescription = stringResource(R.string.settings_open), onClick = onOpenSettings)
-          ThemeModeButton()
-        },
+        batteryPercent = ui.batteryPercent,
+        onBack = onBack,
+        onOpenHistory = onOpenHistory,
+        onOpenSettings = onOpenSettings,
       )
     },
     snackbarHost = { AntMessageHost(snackbar) },
@@ -124,12 +127,39 @@ fun ScaleScreen(viewModel: ScaleViewModel, title: String, onBack: () -> Unit, on
         onReset = viewModel::resetTimer,
       )
       BrewChartCard(ui.brew, ui.unit, onFinish = viewModel::finishBrew)
-      (ui.brew.phase as? BrewPhase.Finished)?.let { BrewSummaryCard(it.summary, ui.unit) }
+      (ui.brew.phase as? BrewPhase.Finished)?.let {
+        BrewSummaryCard(it.summary, ui.unit, savedBrew = ui.savedBrew, onAddDetails = onAddDetails)
+      }
       DoseCard(ui, enabled, onCapture = viewModel::captureDose, onClear = viewModel::clearDose)
       UnitCard(ui.unit, enabled, onToggle = viewModel::toggleUnit)
       if (ui.isSimulated) SimulationCard(onAdd = viewModel::simulateAdd, onPour = viewModel::simulatePour)
     }
   }
+}
+
+/** Barra superior de Scale: el título se recorta con elipsis y las acciones siguen visibles. */
+@Composable
+internal fun ScaleTopBar(
+  title: String,
+  subtitle: String?,
+  batteryPercent: Int?,
+  onBack: () -> Unit,
+  onOpenHistory: () -> Unit,
+  onOpenSettings: () -> Unit,
+) {
+  AntTopBar(
+    title = title,
+    subtitle = subtitle,
+    navigationIcon = {
+      AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
+    },
+    actions = {
+      batteryPercent?.let { BatteryTag(it) }
+      AntIconButton(AntIcons.History, contentDescription = stringResource(R.string.history_open), onClick = onOpenHistory)
+      AntIconButton(AntIcons.Settings, contentDescription = stringResource(R.string.settings_open), onClick = onOpenSettings)
+      ThemeModeButton()
+    },
+  )
 }
 
 @Composable

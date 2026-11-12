@@ -41,7 +41,7 @@ class BrewChartTest {
     )
     rule.setContent {
       DotScaleTheme(darkTheme = false) {
-        ScaleScreen(viewModel, title = "Test", onBack = {}, onOpenSettings = {})
+        ScaleScreen(viewModel, title = "Test", onBack = {}, onOpenSettings = {}, onOpenHistory = {}, onAddDetails = {})
       }
     }
   }
