@@ -6,27 +6,24 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,7 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,6 +42,25 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.dotscale.R
 import dev.dotscale.ble.ScaleScanner
 import dev.dotscale.ble.ScannedDevice
+import dev.dotscale.settings.ThemeModeButton
+import dev.dotscale.ui.components.AntAlert
+import dev.dotscale.ui.components.AntBadge
+import dev.dotscale.ui.components.AntBadgeStatus
+import dev.dotscale.ui.components.AntButton
+import dev.dotscale.ui.components.AntButtonType
+import dev.dotscale.ui.components.AntCard
+import dev.dotscale.ui.components.AntDivider
+import dev.dotscale.ui.components.AntEmpty
+import dev.dotscale.ui.components.AntIcons
+import dev.dotscale.ui.components.AntListItem
+import dev.dotscale.ui.components.AntStatus
+import dev.dotscale.ui.components.AntSwitch
+import dev.dotscale.ui.components.AntSwitchSize
+import dev.dotscale.ui.components.AntText
+import dev.dotscale.ui.components.AntTextType
+import dev.dotscale.ui.components.AntTopBar
+import dev.dotscale.ui.theme.AntSize
+import dev.dotscale.ui.theme.AntTheme
 
 private val BLUETOOTH_PERMISSIONS: Array<String> =
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -56,7 +72,6 @@ private val BLUETOOTH_PERMISSIONS: Array<String> =
 private fun Context.hasBluetoothPermissions(): Boolean =
   BLUETOOTH_PERMISSIONS.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanScreen(
   onDeviceSelected: (address: String, name: String) -> Unit,
@@ -78,67 +93,115 @@ fun ScanScreen(
   }
 
   Scaffold(
+    containerColor = AntTheme.colors.bgLayout,
     topBar = {
-      TopAppBar(
-        title = { Text(stringResource(R.string.scan_title)) },
-        actions = {
-          if (hasPermissions) {
-            TextButton(onClick = { if (ui.scanning) viewModel.stop() else viewModel.start() }) {
-              Text(stringResource(if (ui.scanning) R.string.scan_stop else R.string.scan_start))
-            }
-          }
-        },
-      )
+      AntTopBar(title = stringResource(R.string.scan_title), actions = { ThemeModeButton() })
     },
   ) { padding ->
-    Column(Modifier.fillMaxSize().padding(padding)) {
-      if (ui.scanning) LinearProgressIndicator(Modifier.fillMaxWidth())
-
+    Column(
+      Modifier.fillMaxSize().padding(padding).padding(AntTheme.spacing.base),
+      verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
+    ) {
       when {
-        !hasPermissions -> Message(stringResource(R.string.scan_permissions_needed)) {
-          Button(onClick = { permissionLauncher.launch(BLUETOOTH_PERMISSIONS) }) {
-            Text(stringResource(R.string.scan_grant_permissions))
-          }
+        !hasPermissions -> {
+          AntAlert(
+            message = stringResource(R.string.scan_permissions_title),
+            description = stringResource(R.string.scan_permissions_needed),
+            type = AntStatus.Warning,
+            action = {
+              AntButton(
+                text = stringResource(R.string.scan_grant_permissions),
+                onClick = { permissionLauncher.launch(BLUETOOTH_PERMISSIONS) },
+                type = AntButtonType.Primary,
+              )
+            },
+          )
+          Spacer(Modifier.weight(1f))
         }
-        !viewModel.isBluetoothEnabled -> Message(stringResource(R.string.scan_bluetooth_off)) {
-          OutlinedButton(onClick = viewModel::start) { Text(stringResource(R.string.scan_start)) }
+        !viewModel.isBluetoothEnabled -> {
+          AntAlert(
+            message = stringResource(R.string.scan_bluetooth_off_title),
+            description = stringResource(R.string.scan_bluetooth_off),
+            type = AntStatus.Warning,
+            action = { AntButton(text = stringResource(R.string.scan_start), onClick = viewModel::start) },
+          )
+          Spacer(Modifier.weight(1f))
         }
-        else -> {
-          Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-          ) {
-            Text(stringResource(R.string.scan_show_all), Modifier.weight(1f))
-            Switch(checked = ui.showAll, onCheckedChange = viewModel::setShowAll)
-          }
-          ui.error?.let {
-            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp))
-          }
-          LazyColumn(Modifier.weight(1f)) {
-            items(ui.devices, key = { it.address }) { device ->
-              val unknown = stringResource(R.string.scan_unknown_device)
-              DeviceRow(device, unknown) { onDeviceSelected(device.address, device.name ?: unknown) }
-              HorizontalDivider()
-            }
-            if (ui.devices.isEmpty()) {
-              item {
-                Text(
-                  stringResource(R.string.scan_empty),
-                  modifier = Modifier.fillMaxWidth().padding(32.dp),
-                  textAlign = TextAlign.Center,
-                  style = MaterialTheme.typography.bodyMedium,
-                )
-              }
-            }
-          }
-        }
+        else -> DevicesCard(
+          ui = ui,
+          onToggleScan = { if (ui.scanning) viewModel.stop() else viewModel.start() },
+          onShowAllChange = viewModel::setShowAll,
+          onDeviceSelected = onDeviceSelected,
+          modifier = Modifier.weight(1f),
+        )
       }
 
-      OutlinedButton(
+      AntButton(
+        text = stringResource(R.string.scan_simulated),
         onClick = onSimulatedSelected,
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+        type = AntButtonType.Dashed,
+        size = AntSize.Large,
+        icon = AntIcons.Play,
+      )
+    }
+  }
+}
+
+@Composable
+private fun DevicesCard(
+  ui: ScanUiState,
+  onToggleScan: () -> Unit,
+  onShowAllChange: (Boolean) -> Unit,
+  onDeviceSelected: (address: String, name: String) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val spacing = AntTheme.spacing
+  AntCard(
+    modifier = modifier.fillMaxWidth(),
+    title = stringResource(R.string.scan_devices),
+    extra = {
+      AntButton(
+        text = stringResource(if (ui.scanning) R.string.scan_stop else R.string.scan_start),
+        onClick = onToggleScan,
+        type = AntButtonType.Link,
+        size = AntSize.Small,
+        icon = if (ui.scanning) null else AntIcons.Reload,
+      )
+    },
+    contentPadding = PaddingValues(0.dp),
+    verticalArrangement = Arrangement.Top,
+  ) {
+    Row(
+      Modifier.fillMaxWidth().padding(start = spacing.base, end = spacing.xs),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      AntBadge(
+        status = if (ui.scanning) AntBadgeStatus.Processing else AntBadgeStatus.Default,
+        text = stringResource(if (ui.scanning) R.string.scan_scanning else R.string.scan_idle),
+        modifier = Modifier.weight(1f),
+      )
+      Row(
+        Modifier
+          .heightIn(min = 48.dp)
+          .toggleable(value = ui.showAll, role = Role.Switch, onValueChange = onShowAllChange)
+          .padding(horizontal = spacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
       ) {
-        Text(stringResource(R.string.scan_simulated))
+        AntText(stringResource(R.string.scan_show_all), type = AntTextType.Secondary)
+        AntSwitch(checked = ui.showAll, onCheckedChange = null, size = AntSwitchSize.Small)
+      }
+    }
+    ui.error?.let { AntAlert(message = it, type = AntStatus.Error, banner = true) }
+    AntDivider()
+    LazyColumn(Modifier.weight(1f)) {
+      items(ui.devices, key = { it.address }) { device ->
+        val unknown = stringResource(R.string.scan_unknown_device)
+        DeviceRow(device, unknown) { onDeviceSelected(device.address, device.name ?: unknown) }
+      }
+      if (ui.devices.isEmpty()) {
+        item { AntEmpty(description = stringResource(R.string.scan_empty)) }
       }
     }
   }
@@ -146,24 +209,25 @@ fun ScanScreen(
 
 @Composable
 private fun DeviceRow(device: ScannedDevice, unknownName: String, onClick: () -> Unit) {
-  ListItem(
-    modifier = Modifier.clickable(onClick = onClick),
-    headlineContent = { Text(device.name ?: unknownName) },
-    supportingContent = {
-      Text(listOfNotNull(device.model?.displayName, device.address).joinToString(" · "))
+  val colors = AntTheme.colors
+  AntListItem(
+    title = device.name ?: unknownName,
+    description = listOfNotNull(device.model?.displayName, device.address).joinToString(" · "),
+    avatar = {
+      Box(
+        Modifier.size(40.dp).background(colors.primary.bg, CircleShape),
+        contentAlignment = Alignment.Center,
+      ) {
+        Icon(AntIcons.Bluetooth, contentDescription = null, modifier = Modifier.size(20.dp), tint = colors.primary.base)
+      }
     },
-    trailingContent = { Text(stringResource(R.string.scan_rssi, device.rssi)) },
+    extra = {
+      AntText(
+        stringResource(R.string.scan_rssi, device.rssi),
+        type = AntTextType.Secondary,
+        style = AntTheme.typography.textSM,
+      )
+    },
+    onClick = onClick,
   )
-}
-
-@Composable
-private fun Message(text: String, action: @Composable () -> Unit) {
-  Column(
-    Modifier.fillMaxWidth().padding(32.dp),
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.spacedBy(16.dp),
-  ) {
-    Text(text, textAlign = TextAlign.Center)
-    action()
-  }
 }

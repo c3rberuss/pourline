@@ -5,7 +5,12 @@
     <string name="scan_title">Buscar báscula</string>
     <string name="scan_start">Buscar</string>
     <string name="scan_stop">Detener</string>
-    <string name="scan_show_all">Mostrar todos los dispositivos</string>
+    <string name="scan_show_all">Mostrar todos</string>
+    <string name="scan_devices">Dispositivos cercanos</string>
+    <string name="scan_scanning">Buscando…</string>
+    <string name="scan_idle">Búsqueda detenida</string>
+    <string name="scan_permissions_title">Permiso de Bluetooth</string>
+    <string name="scan_bluetooth_off_title">Bluetooth apagado</string>
     <string name="scan_empty">Enciende la báscula y acércala al teléfono.</string>
     <string name="scan_simulated">Probar con báscula simulada</string>
     <string name="scan_permissions_needed">Se necesita permiso de Bluetooth para buscar la báscula.</string>
@@ -17,6 +22,8 @@
     <!-- Báscula -->
     <string name="scale_back">Volver</string>
     <string name="scale_battery">Batería %1$d%%</string>
+    <string name="scale_battery_short">%1$d%%</string>
+    <string name="scale_weight">Peso</string>
     <string name="scale_flow">Flujo</string>
     <string name="scale_time">Tiempo</string>
     <string name="scale_flow_value">%1$s/s</string>
@@ -25,11 +32,14 @@
     <string name="scale_start">Iniciar</string>
     <string name="scale_pause">Pausar</string>
     <string name="scale_reset">Reiniciar</string>
-    <string name="scale_unit">Cambiar a %1$s</string>
+    <string name="scale_unit_label">Unidad</string>
     <string name="scale_capture_dose">Fijar dosis</string>
     <string name="scale_clear_dose">Quitar dosis</string>
-    <string name="scale_dose">Dosis %1$s</string>
-    <string name="scale_ratio">Ratio 1:%1$.1f</string>
+    <string name="scale_dose_title">Dosis y ratio</string>
+    <string name="scale_dose">Dosis</string>
+    <string name="scale_ratio">Ratio</string>
+    <string name="scale_ratio_value">1:%1$.1f</string>
+    <string name="scale_ratio_empty">—</string>
     <string name="scale_dose_hint">Pon el café en la báscula y pulsa «Fijar dosis»: se guarda el peso y se hace tara para empezar a verter.</string>
     <string name="scale_retry">Reintentar</string>
     <string name="scale_simulation">Simulación</string>
@@ -44,4 +54,15 @@
     <string name="conn_configuring">Configurando…</string>
     <string name="conn_handshake">Leyendo datos de la báscula…</string>
     <string name="conn_failed">No se pudo conectar: %1$s</string>
+
+    <!-- Apariencia -->
+    <string name="theme_title">Apariencia</string>
+    <string name="theme_change">Cambiar apariencia</string>
+    <string name="theme_system">Sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+    <string name="theme_hint">«Sistema» sigue el modo claro u oscuro del teléfono.</string>
+
+    <!-- Comunes -->
+    <string name="action_close">Cerrar</string>
 </resources>

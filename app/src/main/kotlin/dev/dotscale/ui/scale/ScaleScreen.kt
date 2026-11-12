@@ -2,31 +2,16 @@ package dev.dotscale.ui.scale
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,163 +32,296 @@ import dev.dotscale.protocol.TimerStatus
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.scale.ConnectionState
 import dev.dotscale.scale.ConnectionStep
+import dev.dotscale.settings.ThemeModeButton
+import dev.dotscale.ui.components.AntAlert
+import dev.dotscale.ui.components.AntBadge
+import dev.dotscale.ui.components.AntBadgeStatus
+import dev.dotscale.ui.components.AntButton
+import dev.dotscale.ui.components.AntButtonShape
+import dev.dotscale.ui.components.AntButtonType
+import dev.dotscale.ui.components.AntCard
+import dev.dotscale.ui.components.AntCardSize
+import dev.dotscale.ui.components.AntDivider
+import dev.dotscale.ui.components.AntIconButton
+import dev.dotscale.ui.components.AntIcons
+import dev.dotscale.ui.components.AntLoadingIcon
+import dev.dotscale.ui.components.AntMessageHost
+import dev.dotscale.ui.components.AntSegmented
+import dev.dotscale.ui.components.AntSegmentedOption
+import dev.dotscale.ui.components.AntStatistic
+import dev.dotscale.ui.components.AntStatus
+import dev.dotscale.ui.components.AntTag
+import dev.dotscale.ui.components.AntTagColor
+import dev.dotscale.ui.components.AntText
+import dev.dotscale.ui.components.AntTextType
+import dev.dotscale.ui.components.AntTopBar
+import dev.dotscale.ui.components.AntVerticalDivider
+import dev.dotscale.ui.components.showAntMessage
+import dev.dotscale.ui.theme.AntSize
+import dev.dotscale.ui.theme.AntTheme
 import java.util.Locale
 import kotlin.math.abs
 
-@OptIn(ExperimentalMaterial3Api::class)
+private const val LOW_BATTERY_PERCENT = 20
+
 @Composable
 fun ScaleScreen(viewModel: ScaleViewModel, title: String, onBack: () -> Unit) {
   val ui by viewModel.ui.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
 
-  LaunchedEffect(viewModel) { viewModel.errors.collect { snackbar.showSnackbar(it) } }
+  LaunchedEffect(viewModel) { viewModel.errors.collect { snackbar.showAntMessage(it, AntStatus.Error) } }
   KeepScreenOn()
 
+  val model = ui.model
+  val firmware = ui.firmware
+  val info = if (model != null && firmware != null) stringResource(R.string.scale_info, model.displayName, firmware) else null
+
   Scaffold(
+    containerColor = AntTheme.colors.bgLayout,
     topBar = {
-      TopAppBar(
-        title = { Text(ui.deviceName ?: title) },
+      AntTopBar(
+        title = ui.deviceName ?: title,
+        subtitle = info,
         navigationIcon = {
-          IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.scale_back))
-          }
+          AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
         },
         actions = {
-          ui.batteryPercent?.let {
-            Text(stringResource(R.string.scale_battery, it), Modifier.padding(end = 16.dp))
-          }
+          ui.batteryPercent?.let { BatteryTag(it) }
+          ThemeModeButton()
         },
       )
     },
-    snackbarHost = { SnackbarHost(snackbar) },
+    snackbarHost = { AntMessageHost(snackbar) },
   ) { padding ->
+    val enabled = ui.connection == ConnectionState.Ready
     Column(
-      Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.spacedBy(16.dp),
+      Modifier
+        .fillMaxSize()
+        .padding(padding)
+        .verticalScroll(rememberScrollState())
+        .padding(AntTheme.spacing.base),
+      verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
     ) {
       ConnectionBanner(ui.connection, onRetry = viewModel::connect)
-
-      WeightDisplay(ui)
-
-      Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-        Metric(stringResource(R.string.scale_flow), stringResource(R.string.scale_flow_value, formatAmount(ui.flowRate, ui.unit)))
-        Metric(stringResource(R.string.scale_time), formatTime(ui.seconds))
-      }
-
-      val enabled = ui.connection == ConnectionState.Ready
-      Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = viewModel::tare, enabled = enabled, modifier = Modifier.weight(1f)) {
-          Text(stringResource(R.string.scale_tare))
-        }
-        FilledTonalButton(onClick = viewModel::toggleTimer, enabled = enabled, modifier = Modifier.weight(1f)) {
-          Text(stringResource(if (ui.timer == TimerStatus.RUNNING) R.string.scale_pause else R.string.scale_start))
-        }
-        OutlinedButton(onClick = viewModel::resetTimer, enabled = enabled, modifier = Modifier.weight(1f)) {
-          Text(stringResource(R.string.scale_reset))
-        }
-      }
-
+      WeightCard(ui)
+      BrewControls(
+        running = ui.timer == TimerStatus.RUNNING,
+        enabled = enabled,
+        onTare = viewModel::tare,
+        onToggleTimer = viewModel::toggleTimer,
+        onReset = viewModel::resetTimer,
+      )
       DoseCard(ui, enabled, onCapture = viewModel::captureDose, onClear = viewModel::clearDose)
-
-      val otherUnit = if (ui.unit == WeightUnit.GRAMS) WeightUnit.OUNCES else WeightUnit.GRAMS
-      OutlinedButton(onClick = viewModel::toggleUnit, enabled = enabled) {
-        Text(stringResource(R.string.scale_unit, otherUnit.symbol))
-      }
-
-      ui.brewStage?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-      if (ui.model != null && ui.firmware != null) {
-        Text(
-          stringResource(R.string.scale_info, ui.model!!.displayName, ui.firmware!!),
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-      }
-
-      if (ui.isSimulated) SimulationControls(onAdd = viewModel::simulateAdd)
+      UnitCard(ui.unit, enabled, onToggle = viewModel::toggleUnit)
+      if (ui.isSimulated) SimulationCard(onAdd = viewModel::simulateAdd)
     }
   }
 }
 
 @Composable
-private fun WeightDisplay(ui: ScaleUiState) {
-  Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    Text(
-      text = formatAmount(ui.weight, ui.unit),
-      fontSize = 64.sp,
-      fontWeight = FontWeight.Light,
+private fun BatteryTag(percent: Int) {
+  val description = stringResource(R.string.scale_battery, percent)
+  AntTag(
+    text = stringResource(R.string.scale_battery_short, percent),
+    modifier = Modifier
+      .padding(end = AntTheme.spacing.xxs)
+      .clearAndSetSemantics { contentDescription = description },
+    color = if (percent <= LOW_BATTERY_PERCENT) AntTagColor.Error else AntTagColor.Default,
+    icon = AntIcons.Battery,
+  )
+}
+
+@Composable
+private fun WeightCard(ui: ScaleUiState) {
+  val colors = AntTheme.colors
+  AntCard(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+    AntStatistic(
+      value = formatNumber(ui.weight, ui.unit),
+      title = stringResource(R.string.scale_weight),
+      suffix = ui.unit.symbol,
+      valueStyle = AntTheme.typography.heading1.copy(fontSize = 64.sp, lineHeight = 72.sp, fontWeight = FontWeight.Light),
+      valueColor = if (ui.outOfRange) colors.error.text else colors.text,
+      affixStyle = AntTheme.typography.textXL,
+      horizontalAlignment = Alignment.CenterHorizontally,
     )
-    if (ui.outOfRange) {
-      Text(stringResource(R.string.scale_out_of_range), color = MaterialTheme.colorScheme.error)
+    val stage = ui.brewStage
+    if (ui.outOfRange || stage != null) {
+      Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+        if (ui.outOfRange) AntTag(stringResource(R.string.scale_out_of_range), color = AntTagColor.Error)
+        stage?.let { AntTag(it, color = AntTagColor.Primary) }
+      }
+    }
+    AntDivider()
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+      AntStatistic(
+        value = formatNumber(ui.flowRate, ui.unit),
+        title = stringResource(R.string.scale_flow),
+        suffix = stringResource(R.string.scale_flow_value, ui.unit.symbol),
+        modifier = Modifier.weight(1f),
+        horizontalAlignment = Alignment.CenterHorizontally,
+      )
+      AntVerticalDivider(height = 40.dp)
+      AntStatistic(
+        value = formatTime(ui.seconds),
+        title = stringResource(R.string.scale_time),
+        modifier = Modifier.weight(1f),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        titleExtra = if (ui.timer == TimerStatus.RUNNING) {
+          { AntBadge(AntBadgeStatus.Processing) }
+        } else {
+          null
+        },
+      )
     }
   }
 }
 
 @Composable
-private fun Metric(label: String, value: String) {
-  Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    Text(value, style = MaterialTheme.typography.headlineSmall)
+private fun BrewControls(
+  running: Boolean,
+  enabled: Boolean,
+  onTare: () -> Unit,
+  onToggleTimer: () -> Unit,
+  onReset: () -> Unit,
+) {
+  Row(
+    Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    AntButton(
+      text = stringResource(R.string.scale_tare),
+      onClick = onTare,
+      modifier = Modifier.weight(1f),
+      type = AntButtonType.Primary,
+      size = AntSize.Large,
+      enabled = enabled,
+    )
+    AntButton(
+      text = stringResource(if (running) R.string.scale_pause else R.string.scale_start),
+      onClick = onToggleTimer,
+      modifier = Modifier.weight(1f),
+      size = AntSize.Large,
+      enabled = enabled,
+      icon = if (running) AntIcons.Pause else AntIcons.Play,
+    )
+    AntIconButton(
+      icon = AntIcons.RotateLeft,
+      contentDescription = stringResource(R.string.scale_reset),
+      onClick = onReset,
+      type = AntButtonType.Default,
+      size = AntSize.Large,
+      shape = AntButtonShape.Default,
+      enabled = enabled,
+    )
   }
 }
 
 @Composable
 private fun DoseCard(ui: ScaleUiState, enabled: Boolean, onCapture: () -> Unit, onClear: () -> Unit) {
-  Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors()) {
-    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-      val dose = ui.dose
-      if (dose == null) {
-        Text(stringResource(R.string.scale_dose_hint), style = MaterialTheme.typography.bodyMedium)
-        Button(onClick = onCapture, enabled = enabled && ui.weight > 0) {
-          Text(stringResource(R.string.scale_capture_dose))
-        }
-      } else {
-        val doseText = formatAmount(dose, ui.unit)
-        Text(stringResource(R.string.scale_dose, doseText), style = MaterialTheme.typography.titleMedium)
-        ui.ratio?.let { Text(stringResource(R.string.scale_ratio, it), style = MaterialTheme.typography.headlineMedium) }
-        OutlinedButton(onClick = onClear) { Text(stringResource(R.string.scale_clear_dose)) }
+  val dose = ui.dose
+  AntCard(
+    modifier = Modifier.fillMaxWidth(),
+    title = stringResource(R.string.scale_dose_title),
+    extra = if (dose != null) {
+      {
+        AntButton(
+          text = stringResource(R.string.scale_clear_dose),
+          onClick = onClear,
+          type = AntButtonType.Link,
+          size = AntSize.Small,
+          danger = true,
+        )
       }
+    } else {
+      null
+    },
+  ) {
+    if (dose == null) {
+      AntText(stringResource(R.string.scale_dose_hint), type = AntTextType.Secondary)
+      AntButton(
+        text = stringResource(R.string.scale_capture_dose),
+        onClick = onCapture,
+        modifier = Modifier.fillMaxWidth(),
+        type = AntButtonType.Primary,
+        enabled = enabled && ui.weight > 0,
+        icon = AntIcons.Plus,
+      )
+    } else {
+      Row(Modifier.fillMaxWidth()) {
+        AntStatistic(
+          value = formatNumber(dose, ui.unit),
+          title = stringResource(R.string.scale_dose),
+          suffix = ui.unit.symbol,
+          modifier = Modifier.weight(1f),
+        )
+        AntStatistic(
+          value = ui.ratio?.let { stringResource(R.string.scale_ratio_value, it) } ?: stringResource(R.string.scale_ratio_empty),
+          title = stringResource(R.string.scale_ratio),
+          modifier = Modifier.weight(1f),
+          valueColor = AntTheme.colors.primary.base,
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun UnitCard(unit: WeightUnit, enabled: Boolean, onToggle: () -> Unit) {
+  AntCard(
+    Modifier.fillMaxWidth(),
+    contentPadding = PaddingValues(horizontal = AntTheme.spacing.base, vertical = AntTheme.spacing.xxs),
+  ) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+      AntText(stringResource(R.string.scale_unit_label), Modifier.weight(1f))
+      AntSegmented(
+        options = WeightUnit.entries.map { AntSegmentedOption(it, it.symbol) },
+        selected = unit,
+        onSelect = { if (it != unit) onToggle() },
+        modifier = Modifier.width(160.dp),
+        enabled = enabled,
+      )
     }
   }
 }
 
 @Composable
 private fun ConnectionBanner(state: ConnectionState, onRetry: () -> Unit) {
-  val text = when (state) {
-    ConnectionState.Ready -> return
-    ConnectionState.Disconnected -> stringResource(R.string.conn_disconnected)
-    is ConnectionState.Failed -> stringResource(R.string.conn_failed, state.reason)
-    is ConnectionState.Connecting -> stringResource(
-      when (state.step) {
+  val retry: @Composable () -> Unit = {
+    AntButton(text = stringResource(R.string.scale_retry), onClick = onRetry, size = AntSize.Small, icon = AntIcons.Reload)
+  }
+  when (state) {
+    ConnectionState.Ready -> Unit
+    ConnectionState.Disconnected ->
+      AntAlert(message = stringResource(R.string.conn_disconnected), type = AntStatus.Warning, action = retry)
+    is ConnectionState.Failed ->
+      AntAlert(message = stringResource(R.string.conn_failed, state.reason), type = AntStatus.Error, action = retry)
+    is ConnectionState.Connecting -> {
+      val step = when (state.step) {
         ConnectionStep.CONNECTING -> R.string.conn_connecting
         ConnectionStep.DISCOVERING -> R.string.conn_discovering
         ConnectionStep.BONDING -> R.string.conn_bonding
         ConnectionStep.CONFIGURING -> R.string.conn_configuring
         ConnectionStep.HANDSHAKE -> R.string.conn_handshake
-      },
-    )
-  }
-  Card(
-    Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-  ) {
-    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-      Text(text, Modifier.weight(1f))
-      if (state is ConnectionState.Failed || state == ConnectionState.Disconnected) {
-        OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.scale_retry)) }
       }
+      val infoColor = AntTheme.colors.info.base
+      AntAlert(message = stringResource(step), type = AntStatus.Info, icon = { AntLoadingIcon(color = infoColor) })
     }
   }
 }
 
 @Composable
-private fun SimulationControls(onAdd: (Double) -> Unit) {
-  Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    Spacer(Modifier.height(8.dp))
-    Text(stringResource(R.string.scale_simulation), style = MaterialTheme.typography.labelLarge)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun SimulationCard(onAdd: (Double) -> Unit) {
+  AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.scale_simulation), size = AntCardSize.Small) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
       listOf(15, 100, 300).forEach { grams ->
-        AssistChip(onClick = { onAdd(grams.toDouble()) }, label = { Text(stringResource(R.string.scale_sim_add, grams)) })
+        AntButton(
+          text = stringResource(R.string.scale_sim_add, grams),
+          onClick = { onAdd(grams.toDouble()) },
+          modifier = Modifier.weight(1f),
+          type = AntButtonType.Dashed,
+          size = AntSize.Small,
+        )
       }
     }
   }
@@ -217,10 +337,10 @@ private fun KeepScreenOn() {
 }
 
 /** Gramos con 1 decimal y onzas con 2 (resolución de la báscula). Evita mostrar "-0,0". */
-private fun formatAmount(value: Double, unit: WeightUnit): String {
+private fun formatNumber(value: Double, unit: WeightUnit): String {
   val decimals = if (unit == WeightUnit.OUNCES) 2 else 1
   val shown = if (abs(value) < 0.5 / unit.divisor) 0.0 else value
-  return String.format(Locale.getDefault(), "%.${decimals}f %s", shown, unit.symbol)
+  return String.format(Locale.getDefault(), "%.${decimals}f", shown)
 }
 
 private fun formatTime(seconds: Int): String = String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60)
