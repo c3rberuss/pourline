@@ -42,6 +42,8 @@
     <string name="scale_ratio_value">1:%1$.1f</string>
     <string name="scale_ratio_empty">—</string>
     <string name="scale_dose_hint">Put the coffee on the scale and tap “Set dose”: the weight is saved and the scale is tared so you can start pouring.</string>
+    <string name="scale_error_command">Could not send the command</string>
+    <string name="scale_error_save">Could not save the brew</string>
     <string name="scale_retry">Retry</string>
     <string name="scale_simulation">Simulation</string>
     <string name="scale_sim_add">+%1$d g</string>

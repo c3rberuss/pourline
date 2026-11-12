@@ -1,18 +1,30 @@
 package dev.dotscale.ui.scale
 
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.lifecycle.viewmodel.initializer
 import dev.dotscale.brew.BrewPhase
 import dev.dotscale.brew.FinishReason
+import dev.dotscale.brew.FinishedBrew
+import dev.dotscale.history.BrewContext
+import dev.dotscale.history.BrewSaver
 import dev.dotscale.protocol.Frame
 import dev.dotscale.protocol.ScaleCommands
 import dev.dotscale.protocol.ScaleMessage
+import dev.dotscale.protocol.ScaleModel
 import dev.dotscale.protocol.TimerStatus
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.scale.ConnectionState
 import dev.dotscale.scale.ScaleConnection
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestCoroutineScheduler
@@ -21,6 +33,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -33,27 +46,60 @@ class ScaleViewModelBrewTest {
     override val messages = MutableSharedFlow<ScaleMessage>(extraBufferCapacity = 64)
     val sent = mutableListOf<Frame>()
 
+    /** Tramas cuyo envío falla (después de registrarse en [sent]). */
+    val failing = mutableSetOf<Frame>()
+
     override suspend fun connect() {
       state.value = ConnectionState.Ready
     }
 
     override suspend fun send(frame: Frame) {
       sent += frame
+      if (frame in failing) throw IllegalStateException("fallo simulado")
     }
 
     override fun disconnect() = Unit
   }
 
+  private class SavedCall(val brew: FinishedBrew, val context: BrewContext)
+
+  /** Registra las llamadas; puede suspender con [gate] o fallar con [failure]. */
+  private class FakeSaver : BrewSaver {
+    val calls = mutableListOf<SavedCall>()
+    var gate: CompletableDeferred<Unit>? = null
+    var failure: Exception? = null
+    var nextId = 1L
+
+    override suspend fun save(finished: FinishedBrew, context: BrewContext): Long {
+      calls += SavedCall(finished, context)
+      gate?.await()
+      failure?.let { throw it }
+      return nextId++
+    }
+  }
+
   private val connection = FakeConnection()
+  private val saver = FakeSaver()
   private val scheduler = TestCoroutineScheduler()
   private val autoFinish = MutableStateFlow(60)
+  private val store = ViewModelStore()
+  private val errors = mutableListOf<ScaleError>()
   private var now = 1_000L
   private lateinit var viewModel: ScaleViewModel
+  private lateinit var applicationScope: CoroutineScope
 
   @Before
   fun setUp() {
-    Dispatchers.setMain(UnconfinedTestDispatcher(scheduler))
-    viewModel = ScaleViewModel(connection, autoFinish, clock = { now })
+    val dispatcher = UnconfinedTestDispatcher(scheduler)
+    Dispatchers.setMain(dispatcher)
+    applicationScope = CoroutineScope(SupervisorJob() + dispatcher)
+    val factory = viewModelFactory {
+      initializer {
+        ScaleViewModel(connection, autoFinish, saver, applicationScope, clock = { now }, wallClock = { WALL_BASE + now })
+      }
+    }
+    viewModel = ViewModelProvider.create(store, factory)[ScaleViewModel::class]
+    applicationScope.launch { viewModel.errors.collect { errors += it } }
   }
 
   /** Pasa el tiempo sin notificaciones: avanza el reloj y el tick de 1 s del ViewModel. */
@@ -65,7 +111,9 @@ class ScaleViewModelBrewTest {
 
   @After
   fun tearDown() {
-    viewModel.viewModelScope.cancel() // el tick de 1 s no termina solo
+    store.clear() // cierra `viewModelScope`; el tick de 1 s no termina solo
+    viewModel.viewModelScope.cancel()
+    applicationScope.cancel()
     Dispatchers.resetMain()
   }
 
@@ -152,5 +200,139 @@ class ScaleViewModelBrewTest {
     advanceSeconds(1)
     val phase = viewModel.ui.value.brew.phase as BrewPhase.Finished
     assertEquals(FinishReason.INACTIVITY, phase.summary.reason)
+  }
+
+  // --- Guardado (SPEC-002) ---
+
+  private fun activePour() {
+    repeat(5) { weight(0.0) }
+    repeat(30) { weight(4.0) }
+  }
+
+  @Test
+  fun `a finished brew is saved once with the right context and wall clock start`() {
+    connection.messages.tryEmit(ScaleMessage.Model(ScaleModel.DOT, "TES017"))
+    activePour()
+    viewModel.finishBrew()
+
+    val call = saver.calls.single()
+    assertEquals(FinishReason.MANUAL, call.brew.summary.reason)
+    assertEquals(WeightUnit.GRAMS, call.context.unit)
+    assertEquals(ScaleModel.DOT, call.context.scaleModel)
+    assertEquals(false, call.context.simulated)
+    assertEquals(WALL_BASE + call.brew.t0MonoMs, call.context.startedAtEpochMs)
+  }
+
+  @Test
+  fun `saved brew goes through Saving and Saved`() {
+    saver.gate = CompletableDeferred()
+    activePour()
+    assertNull(viewModel.ui.value.savedBrew)
+    viewModel.finishBrew()
+    assertEquals(SavedBrew.Saving, viewModel.ui.value.savedBrew)
+
+    saver.gate!!.complete(Unit)
+    assertEquals(SavedBrew.Saved(1L), viewModel.ui.value.savedBrew)
+  }
+
+  @Test
+  fun `a failed save reaches errors and leaves Failed`() {
+    saver.failure = IllegalStateException("disco lleno")
+    activePour()
+    viewModel.finishBrew()
+
+    assertEquals(SavedBrew.Failed, viewModel.ui.value.savedBrew)
+    assertEquals(listOf<ScaleError>(ScaleError.SaveFailed), errors)
+    assertTrue(viewModel.ui.value.brew.phase is BrewPhase.Finished) // el resumen sigue en pantalla
+  }
+
+  @Test
+  fun `clearing the view model with an active session saves it as manual`() {
+    activePour()
+    store.clear()
+
+    val call = saver.calls.single()
+    assertEquals(FinishReason.MANUAL, call.brew.summary.reason)
+  }
+
+  @Test
+  fun `clearing the view model after the session finished does not save again`() {
+    activePour()
+    viewModel.finishBrew()
+    store.clear()
+    assertEquals(1, saver.calls.size)
+  }
+
+  @Test
+  fun `clearing the view model without a session saves nothing`() {
+    store.clear()
+    assertTrue(saver.calls.isEmpty())
+  }
+
+  @Test
+  fun `the save is not cancelled when the view model is cleared`() {
+    saver.gate = CompletableDeferred()
+    activePour()
+    store.clear()
+    saver.gate!!.complete(Unit)
+    assertEquals(1, saver.calls.size)
+    assertEquals(2L, saver.nextId) // `save` llegó hasta el final
+  }
+
+  @Test
+  fun `a new session during a slow save leaves savedBrew null when the old save ends`() {
+    saver.gate = CompletableDeferred()
+    activePour()
+    viewModel.finishBrew()
+    assertEquals(SavedBrew.Saving, viewModel.ui.value.savedBrew)
+
+    connection.messages.tryEmit(ScaleMessage.Tared(success = true))
+    repeat(5) { weight(0.0) }
+    repeat(30) { weight(4.0) }
+    assertTrue(viewModel.ui.value.brew.phase is BrewPhase.Active)
+    assertNull(viewModel.ui.value.savedBrew)
+
+    saver.gate!!.complete(Unit)
+    assertNull(viewModel.ui.value.savedBrew)
+    assertEquals(1, saver.calls.size) // el guardado anterior se completó
+  }
+
+  // --- Temporizador (SPEC-002 §3.5) ---
+
+  @Test
+  fun `finishing sends pause timer and the tare that rearms sends reset timer`() {
+    activePour()
+    connection.messages.tryEmit(ScaleMessage.Timer(TimerStatus.RUNNING))
+    connection.sent.clear()
+    viewModel.finishBrew()
+    assertEquals(listOf(ScaleCommands.pauseTimer()), connection.sent)
+
+    connection.messages.tryEmit(ScaleMessage.Timer(TimerStatus.PAUSED))
+    connection.sent.clear()
+    connection.messages.tryEmit(ScaleMessage.Tared(success = true))
+    assertEquals(listOf(ScaleCommands.resetTimer()), connection.sent)
+  }
+
+  @Test
+  fun `a pour with the timer paused sends reset timer and then start timer`() {
+    connection.messages.tryEmit(ScaleMessage.Timer(TimerStatus.PAUSED))
+    activePour()
+
+    assertEquals(listOf(ScaleCommands.resetTimer(), ScaleCommands.startTimer()), connection.sent)
+    assertTrue(viewModel.ui.value.brew.phase is BrewPhase.Active)
+  }
+
+  @Test
+  fun `a failed reset timer does not stop start timer and the error reaches errors`() {
+    connection.failing += ScaleCommands.resetTimer()
+    connection.messages.tryEmit(ScaleMessage.Timer(TimerStatus.PAUSED))
+    activePour()
+
+    assertEquals(listOf(ScaleCommands.resetTimer(), ScaleCommands.startTimer()), connection.sent)
+    assertEquals(listOf<ScaleError>(ScaleError.Command("fallo simulado")), errors)
+  }
+
+  private companion object {
+    const val WALL_BASE = 1_700_000_000_000L
   }
 }

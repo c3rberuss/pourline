@@ -10,6 +10,10 @@ import dev.dotscale.protocol.TimerStatus
  * ViewModel la llama siempre desde el hilo principal.
  *
  * Internamente todo va en gramos y g/s, sea cual sea la unidad de la báscula.
+ *
+ * Cada método de evento devuelve los [BrewEffect] que el ViewModel debe ejecutar, en orden.
+ * La sesión recuerda el último `TimerStatus` recibido (de [onTimer] y del parámetro `timer` de
+ * [onWeight]) para decidir si hace falta enviar `startTimer`, `pauseTimer` o `resetTimer`.
  */
 class BrewSession(private val config: BrewConfig = BrewConfig()) {
 
@@ -44,7 +48,7 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
   private var openPour: OpenPour? = null
   private var lastAboveMs = 0L
   private var lastValidWaterG: Double? = null
-  private var startTimerSent = false
+  private var ignoreTimerReset = false
   private val window = ArrayDeque<WindowPoint>()
   private var currentStability: Int? = null
   private var currentLevel: StabilityLevel? = null
@@ -52,12 +56,25 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
   private var snapshot: List<BrewSample> = emptyList()
   private var dirty = false
 
+  /** Último estado del temporizador de la báscula. Empieza en `RESET`, como `ScaleUiState`. */
+  private var lastTimer = TimerStatus.RESET
+
+  /** Efectos generados durante el evento en curso; cada método público los devuelve y los vacía. */
+  private val pending = ArrayList<BrewEffect>()
+
+  private fun drain(): List<BrewEffect> {
+    if (pending.isEmpty()) return emptyList()
+    val effects = pending.toList()
+    pending.clear()
+    return effects
+  }
+
   /** Devuelve los efectos que el ViewModel debe ejecutar. */
   fun onWeight(message: ScaleMessage.Weight, nowMs: Long, timer: TimerStatus): List<BrewEffect> {
     val weightG = toGrams(message.weight, message.unit)
     val flowGps = toGrams(message.flowRate, message.unit)
     val valid = !message.outOfRange && weightG >= -config.negativeWeightToleranceG
-    var effects: List<BrewEffect> = emptyList()
+    lastTimer = timer
 
     if (kind == Kind.ACTIVE) {
       val tMs = nowMs - t0
@@ -68,7 +85,7 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
       }
     } else if (updateRun(nowMs, weightG, flowGps, valid)) {
       if (kind == Kind.ARMED || rearmed) {
-        effects = startSession(timer)
+        startSession()
       } else if (!pourIgnored) {
         pourIgnored = true
         run.clear()
@@ -79,24 +96,28 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
     if (valid) lastValidWeightG = weightG
     lastRawWeightG = weightG
     publish()
-    return effects
+    return drain()
   }
 
-  fun onTimer(status: TimerStatus, nowMs: Long) {
+  fun onTimer(status: TimerStatus, nowMs: Long): List<BrewEffect> {
+    lastTimer = status
     when (kind) {
       Kind.ACTIVE -> when (status) {
         TimerStatus.PAUSED -> finishWith(FinishReason.TIMER_PAUSED, nowMs - t0)
-        TimerStatus.RESET -> finishWith(FinishReason.TIMER_RESET, nowMs - t0)
-        else -> Unit
+        // El `resetTimer` que enviamos al empezar desde PAUSED responde con un RESET que no es del usuario.
+        TimerStatus.RESET -> if (ignoreTimerReset) ignoreTimerReset = false else finishWith(FinishReason.TIMER_RESET, nowMs - t0)
+        TimerStatus.RUNNING -> ignoreTimerReset = false
+        TimerStatus.UNKNOWN -> Unit
       }
       Kind.FINISHED -> if (status == TimerStatus.RESET) rearm()
       Kind.ARMED -> Unit
     }
     publish()
+    return drain()
   }
 
   @Suppress("UNUSED_PARAMETER")
-  fun onTared(nowMs: Long) {
+  fun onTared(nowMs: Long): List<BrewEffect> {
     when (kind) {
       Kind.ARMED -> {
         run.clear()
@@ -107,24 +128,28 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
       Kind.FINISHED -> {
         rearm()
         lastValidWeightG = null
+        // La tara rearma: el reloj de la báscula vuelve a 0:00 (idempotente si ya estaba en RESET).
+        if (lastTimer != TimerStatus.RESET) pending += BrewEffect.ResetTimer
       }
     }
     lastRawWeightG = 0.0
     publish()
+    return drain()
   }
 
-  fun onDisconnected(nowMs: Long) {
+  fun onDisconnected(nowMs: Long): List<BrewEffect> {
     when (kind) {
       Kind.ARMED -> run.clear()
       Kind.ACTIVE -> finishWith(FinishReason.DISCONNECTED, samples.lastOrNull()?.tMs ?: (nowMs - t0))
       Kind.FINISHED -> Unit
     }
     publish()
+    return drain()
   }
 
   /** Evalúa el cierre de vertidos, la inactividad y la duración máxima. */
-  fun onTick(nowMs: Long, autoFinishMs: Long) {
-    if (kind != Kind.ACTIVE) return
+  fun onTick(nowMs: Long, autoFinishMs: Long): List<BrewEffect> {
+    if (kind != Kind.ACTIVE) return emptyList()
     val tMs = nowMs - t0
     closePourIfGap(tMs)
     val inactivityAt = lastAboveMs + autoFinishMs
@@ -137,13 +162,15 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
       }
     }
     publish()
+    return drain()
   }
 
   /** Botón "Terminar". */
-  fun finish(nowMs: Long) {
-    if (kind != Kind.ACTIVE) return
+  fun finish(nowMs: Long): List<BrewEffect> {
+    if (kind != Kind.ACTIVE) return emptyList()
     finishWith(FinishReason.MANUAL, nowMs - t0)
     publish()
+    return drain()
   }
 
   /** Dosis en gramos para el ratio final. Se aplica al terminar; no modifica un resumen ya calculado. */
@@ -164,7 +191,7 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
     return run.isNotEmpty() && run.last().nowMs - run.first().nowMs >= config.pourConfirmMs
   }
 
-  private fun startSession(timer: TimerStatus): List<BrewEffect> {
+  private fun startSession() {
     t0 = run.first().nowMs
     baselineG = runPreValidG ?: run.first().weightG
     samples = ArrayList()
@@ -177,7 +204,7 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
     summary = null
     rearmed = false
     pourIgnored = false
-    startTimerSent = false
+    ignoreTimerReset = false
     kind = Kind.ACTIVE
 
     val confirmation = run.toList()
@@ -185,9 +212,17 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
     confirmation.forEach { appendSample(it.nowMs - t0, it.weightG, it.flowGps, valid = true) }
 
     dirty = true
-    if (timer == TimerStatus.RUNNING) return emptyList()
-    startTimerSent = true
-    return listOf(BrewEffect.StartTimer)
+    when (lastTimer) {
+      TimerStatus.RESET, TimerStatus.UNKNOWN -> pending += BrewEffect.StartTimer
+      // El reloj conserva el valor de un uso anterior: se reinicia para que empiece desde 0:00.
+      TimerStatus.PAUSED -> {
+        ignoreTimerReset = true
+        pending += BrewEffect.ResetTimer
+        pending += BrewEffect.StartTimer
+      }
+      // Podría ser la DOT arrancándolo sola (SPEC-001 §6.3).
+      TimerStatus.RUNNING -> Unit
+    }
   }
 
   private fun rearm() {
@@ -260,6 +295,10 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
     run.clear()
     snapshot = samples.toList()
     dirty = true
+
+    val pausesTimer = reason == FinishReason.INACTIVITY || reason == FinishReason.MANUAL || reason == FinishReason.MAX_DURATION
+    if (pausesTimer && lastTimer == TimerStatus.RUNNING) pending += BrewEffect.PauseTimer
+    pending += BrewEffect.Finished(FinishedBrew(t0, snapshot, checkNotNull(summary), doseG))
   }
 
   // --- Publicación (D13) ---

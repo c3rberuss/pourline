@@ -70,7 +70,17 @@ fun ScaleScreen(viewModel: ScaleViewModel, title: String, onBack: () -> Unit, on
   val ui by viewModel.ui.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
 
-  LaunchedEffect(viewModel) { viewModel.errors.collect { snackbar.showAntMessage(it, AntStatus.Error) } }
+  val commandError = stringResource(R.string.scale_error_command)
+  val saveError = stringResource(R.string.scale_error_save)
+  LaunchedEffect(viewModel) {
+    viewModel.errors.collect { error ->
+      val text = when (error) {
+        is ScaleError.Command -> error.detail ?: commandError
+        ScaleError.SaveFailed -> saveError
+      }
+      snackbar.showAntMessage(text, AntStatus.Error)
+    }
+  }
   KeepScreenOn()
 
   val model = ui.model

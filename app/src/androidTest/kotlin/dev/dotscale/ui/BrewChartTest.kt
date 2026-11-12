@@ -14,6 +14,9 @@ import dev.dotscale.sim.SimulatedScaleConnection
 import dev.dotscale.ui.scale.ScaleScreen
 import dev.dotscale.ui.scale.ScaleViewModel
 import dev.dotscale.ui.theme.DotScaleTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.After
 import org.junit.Before
@@ -30,7 +33,12 @@ class BrewChartTest {
 
   @Before
   fun setUp() {
-    val viewModel = ScaleViewModel(connection, MutableStateFlow(60))
+    val viewModel = ScaleViewModel(
+      connection,
+      MutableStateFlow(60),
+      saver = { _, _ -> 1L },
+      applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    )
     rule.setContent {
       DotScaleTheme(darkTheme = false) {
         ScaleScreen(viewModel, title = "Test", onBack = {}, onOpenSettings = {})

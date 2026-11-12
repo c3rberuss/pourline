@@ -29,4 +29,14 @@ data class BrewConfig(
     score >= levelIrregularMin -> StabilityLevel.IRREGULAR
     else -> StabilityLevel.TURBULENT
   }
+
+  companion object {
+    /**
+     * Versión de la métrica con la que se calculan y se guardan los resúmenes. Hay que incrementarla
+     * cuando cambie cualquier constante que afecte a la estabilidad o al resumen (umbrales, ventana,
+     * `cvZeroScore`, niveles...), para que el historial pueda saber con qué versión se puntuó cada
+     * preparación.
+     */
+    const val METRIC_VERSION = 1
+  }
 }

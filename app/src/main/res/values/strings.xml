@@ -41,6 +41,8 @@
     <string name="scale_ratio_value">1:%1$.1f</string>
     <string name="scale_ratio_empty">—</string>
     <string name="scale_dose_hint">Pon el café en la báscula y pulsa «Fijar dosis»: se guarda el peso y se hace tara para empezar a verter.</string>
+    <string name="scale_error_command">No se pudo enviar la orden a la báscula</string>
+    <string name="scale_error_save">No se pudo guardar la preparación</string>
     <string name="scale_retry">Reintentar</string>
     <string name="scale_simulation">Simulación</string>
     <string name="scale_sim_add">+%1$d g</string>

@@ -38,11 +38,13 @@ fun MainNavigation() {
         )
       }
       entry<Scale> { key ->
-        val autoFinish = (appContext as DotScaleApp).brewSettings.autoFinishSeconds
+        val app = appContext as DotScaleApp
         val viewModel = viewModel {
           ScaleViewModel(
             key.address?.let { BleScaleConnection(appContext, it) } ?: SimulatedScaleConnection(),
-            autoFinish,
+            app.brewSettings.autoFinishSeconds,
+            app.brewRepository,
+            app.applicationScope,
           )
         }
         ScaleScreen(
