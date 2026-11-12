@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado y revisado, pendiente de implementación. Plan: [`plan-historial.md`](plan-historial.md) |
+| Estado | Implementado (F0–F6). Plan: [`plan-historial.md`](plan-historial.md) |
 | Fecha | 2026-11-12 |
 | Deriva de | [SPEC-001 Gráfica de vertido](spec-grafica-vertido.md) (Anexo y punto P1 de su [plan](plan-grafica-vertido.md)) |
 | Módulos afectados | `:app` (nuevo paquete `dev.dotscale.history`, nuevo `ui/history`, `brew`, `ui/scale`, `ui/components`, navegación) |
@@ -448,6 +448,33 @@ HistoryScreen ◀── Flow<List<BrewListItem>> ── BrewDao (se actualiza so
 - No se añaden permisos. Los datos (café, notas) son del usuario, no son sensibles y no salen del
   dispositivo salvo por la copia de Android.
 
+### 3.9 Decisiones de implementación
+
+Tomadas en el [plan](plan-historial.md) y durante la implementación.
+
+| ID | Tema | Decisión | Motivo |
+|---|---|---|---|
+| D1 | Versiones (cierra §6.1) | Room **2.8.5** (`room-runtime`, `room-compiler` y plugin `androidx.room`) y KSP **2.3.12** (plugin `com.google.devtools.ksp`). No se añade `room-ktx`. | `room-ktx` se fusionó en `room-runtime` en 2.7.0 y hoy es un artefacto vacío. KSP 2.3.1 añadió soporte para el Kotlin integrado de AGP 9, y la 2.3.10 corrigió la resolución de la clase `R` en ese modo. KSP 2.3.x ya no está atado a la versión de Kotlin. Room 2.8 exige minSdk 23 y la app usa 26. |
+| D2 | Dependencia del ViewModel | `ScaleViewModel` recibe `fun interface BrewSaver { suspend fun save(finished: FinishedBrew, context: BrewContext): Long }`, que implementa `BrewRepository`. | Permite probarlo en la JVM con un falso. Room necesita Android, y no hay Robolectric ni mockk. |
+| D3 | Byte de estabilidad del códec | Bits 0-6: `stability` de 0 a 100, o 127 (`0x7F`) para `null`. Bit 7: `valid`. | El spec decía 255 para `null`, que choca con el bit alto de `valid`. |
+| D4 | Deltas del códec | Se cuantizan los valores absolutos (`q = round(v × 100)`) y se guarda `q[i] − q[i−1]`. Todas las deltas, incluida la de `tMs`, van en zigzag + varint. En los vertidos, `startMs` y `endMs` van en varint y `waterG × 100` en zigzag. | La cuantización absoluta no acumula error, así que se cumple el ≤ 0,005. El zigzag elimina el fallo de un Δ negativo a cambio de un bit. |
+| D5 | Minicurva | 48 tramos iguales de `[0, totalTimeMs]`. Las muestras posteriores (el margen del recorte D4 de SPEC-001) caen en el último tramo. Un tramo sin muestras válidas repite el valor anterior (0 al principio). Con `totalWaterG ≤ 0`, todo vale 0. | El agua es acumulada: repetir el valor evita caídas falsas en la línea. |
+| D6 | Curva ilegible | `BrewRecord` gana `curveError: Boolean`. El repositorio captura `BrewCurveFormatException` (y `DataFormatException`) y devuelve muestras y vertidos vacíos. | Es lo que necesita el `AntAlert` del detalle (§3.4 del spec). |
+| D7 | Detalle reactivo | Se añade `fun observe(id: Long): Flow<BrewRecord?>` al repositorio. Observa la fila y decodifica la curva una sola vez por id. `get(id)` se mantiene para la edición. | Al volver de la edición, el detalle debe mostrar los datos nuevos. Si la fila desaparece (borrada aquí o en otro sitio), el flujo emite `null` y la pantalla vuelve atrás. Es un único camino para el borrado y el caso límite "fila borrada con el detalle abierto". |
+| D8 | Escrituras que no se cancelan | `updateDetails`, `delete` y `restore` corren en `withContext(Dispatchers.IO + NonCancellable)`. `clearPendingUndo(expected)` solo vacía el valor si sigue siendo el mismo (compare-and-set). | Salir de la pantalla no puede cortar una escritura. Además, un aviso que expira no debe borrar el deshacer de un borrado posterior. |
+| D9 | Café sin duplicados | `canonicalCoffee(input, existing)` es una función pura: recorta y, si hay una grafía igual con `lowercase()`, devuelve esa. `existing` excluye la propia preparación (`id != :id`). Todo ocurre en una `@Transaction` del DAO. | Si no se excluyera, no se podría corregir "etiopía" a "Etiopía" en la única preparación que lo usa. |
+| D10 | `savedBrew` tardío | El ViewModel guarda un token de generación (`AtomicLong`) que se incrementa en cada `Finished` y al empezar una sesión. El resultado del guardado solo actualiza `savedBrew` si el token coincide. `publish()` pone `savedBrew = null` cuando la fase pasa a `Active`. | Así se implementa la fila "Nueva sesión iniciada mientras se guarda la anterior" (§4 del spec) sin depender del hilo. |
+| D11 | Efectos de `BrewSession` | `lastTimer` empieza en `RESET`, el mismo valor por defecto que `ScaleUiState`. Orden: `[ResetTimer, StartTimer]` al iniciar desde `PAUSED` y `[PauseTimer, Finished]` al terminar. Una tara en `Finished` emite `ResetTimer` siempre que `lastTimer != RESET`, aunque la sesión ya estuviera rearmada. | Es idempotente en la báscula y la regla queda simple. |
+| D12 | Errores localizados | `errors` pasa a `Channel<ScaleError>`, con `ScaleError.Command(detail: String?)` y `ScaleError.SaveFailed`. `ScaleScreen` los convierte en textos `R.string`. | El spec pide todos los textos en es/en. Hoy el ViewModel no tiene `Context` y usa literales en español. |
+| D13 | Componentes extra | Nuevo `AntModal` (diálogo de confirmación sobre `Dialog`, con estilo Ant) para "¿Descartar los cambios?". `AntInput` gana `minLines` y usa `heightIn(min = controlHeight)` cuando `singleLine = false`. `AntSelect` y `AntAutoComplete` se basan en `ExposedDropdownMenuBox` de M3 con colores y radios Ant. | §3.1 no los listaba, pero sin ellos no hay diálogo ni campo de notas. `ExposedDropdownMenuBox` ya resuelve el foco, el teclado y la accesibilidad del desplegable. |
+| D14 | Filtro | El filtro lo guarda `HistoryScreen` con `rememberSaveable` (un `Saver` propio) y lo pasa a `HistoryViewModel.setFilter`, que usa `flatMapLatest`. `coffees` y `methods` empiezan en `null` (cargando). | Si empezaran en `emptyList()`, la regla "el filtro vuelve a Todos" borraría el filtro guardado antes de la primera emisión. |
+| D15 | Textos de método y fecha | Los nombres fijos de los métodos se definen en Kotlin (`BrewMethod.displayName`). Solo "Otro"/"Other" va en `strings.xml` (`brew_method_other`). La fecha usa `DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)` con el idioma actual y la zona del sistema. | Evita textos `translatable="false"`. `java.time` está disponible desde minSdk 26. |
+| D16 | Orden de fases | El códec va antes que la base de datos, al revés que en el §8 del spec. | `BrewRepository.save` depende de `BrewCurveCodec`, `BrewPreview` y `FinishedBrew`. |
+| D17 | Aislamiento de los tests | Los tests instrumentados usan Room en memoria. Los que lanzan `MainActivity` no crean preparaciones. El E2E sí usa el `history.db` real. | El `history.db` del emulador no se ensucia con datos de los tests. |
+| D18 | Reinicio al empezar desde `PAUSED` | `BrewSession` ignora el primer `Timer(RESET)` que llega mientras está `Active` tras emitir su propio `ResetTimer` (flag `ignoreTimerReset`, se limpia con `RUNNING`). | Sin esto, la respuesta de la báscula al `resetTimer` terminaría la sesión recién iniciada con `TIMER_RESET`. |
+| D19 | Tests JVM | `testOptions.unitTests.isReturnDefaultValues = true`. | El `ScaleViewModel` llama a `android.util.Log`, que lanza en la JVM. |
+| D20 | Verificación en el emulador | `am kill` no mata un proceso en primer plano: el E2E usó `am force-stop`. `BackHandler` dentro de Navigation 3 sí tiene prioridad sobre `NavDisplay` (R2 descartado). | Comprobado con `input keyevent BACK` en el emulador. |
+
 ## 4. Casos Límite y Manejo de Errores
 
 | Escenario | Comportamiento esperado |
@@ -483,57 +510,57 @@ HistoryScreen ◀── Flow<List<BrewListItem>> ── BrewDao (se actualiza so
 ## 5. Criterios de Aceptación (Definition of Done)
 
 **Funcionales** (verificables con la báscula simulada):
-- [ ] Toda sesión terminada aparece en el historial sin pulsar nada, con su curva y su resumen.
-- [ ] Salir de Scale con una sesión activa la guarda como `MANUAL`.
-- [ ] Tras `adb shell am kill dev.dotscale` y volver a abrir la app, las preparaciones siguen en el
+- [x] Toda sesión terminada aparece en el historial sin pulsar nada, con su curva y su resumen.
+- [x] Salir de Scale con una sesión activa la guarda como `MANUAL`.
+- [x] Tras `adb shell am kill dev.dotscale` y volver a abrir la app, las preparaciones siguen en el
       historial.
-- [ ] Desde Scan, una preparación se abre en dos toques (icono de historial y fila).
-- [ ] "Añadir detalles" en el resumen abre la edición de esa preparación, y los datos guardados
+- [x] Desde Scan, una preparación se abre en dos toques (icono de historial y fila).
+- [x] "Añadir detalles" en el resumen abre la edición de esa preparación, y los datos guardados
       aparecen en el detalle y en la fila.
-- [ ] El filtro por café y por método reduce la lista y la gráfica de progreso.
-- [ ] La gráfica de progreso excluye las preparaciones simuladas y las que no tienen puntuación, y
+- [x] El filtro por café y por método reduce la lista y la gráfica de progreso.
+- [x] La gráfica de progreso excluye las preparaciones simuladas y las que no tienen puntuación, y
       se oculta con menos de 2 puntos.
-- [ ] El detalle muestra la gráfica y el resumen en la unidad guardada.
-- [ ] Borrar y pulsar "Deshacer" restaura la preparación con el mismo id, curva incluida.
-- [ ] Salir de la edición con cambios pide confirmación; sin cambios, no.
-- [ ] Al terminar por inactividad, de forma manual o por duración máxima, se envía `pauseTimer` una
+- [x] El detalle muestra la gráfica y el resumen en la unidad guardada.
+- [x] Borrar y pulsar "Deshacer" restaura la preparación con el mismo id, curva incluida.
+- [x] Salir de la edición con cambios pide confirmación; sin cambios, no.
+- [x] Al terminar por inactividad, de forma manual o por duración máxima, se envía `pauseTimer` una
       vez. Al rearmar con tara se envía `resetTimer` una vez, y el siguiente vertido envía
       `startTimer`.
-- [ ] Un vertido con el temporizador en `PAUSED` envía `resetTimer` y después `startTimer`, y el
+- [x] Un vertido con el temporizador en `PAUSED` envía `resetTimer` y después `startTimer`, y el
       reloj empieza desde 0:00.
-- [ ] Todos los textos nuevos existen en `values/` y `values-en/`.
+- [x] Todos los textos nuevos existen en `values/` y `values-en/`.
 
 **Rendimiento** (en un emulador con API 36 o superior y 500 preparaciones de 4 min cargadas por el
 test). Cada tiempo se mide desde que se abre la pantalla hasta que existe el primer nodo con
 `testTag` (`history_row` o `brew_chart`). Se hace una apertura previa de calentamiento que no
 cuenta, y el resultado es la mediana de 5 aperturas:
-- [ ] La lista muestra la primera fila en menos de 1 s desde que se abre el historial.
-- [ ] El detalle muestra la gráfica en menos de 500 ms desde que se pulsa la fila.
-- [ ] `history.db` (con `-wal` y `-shm`) ocupa menos de 10 MB.
+- [x] La lista muestra la primera fila en menos de 1 s desde que se abre el historial.
+- [x] El detalle muestra la gráfica en menos de 500 ms desde que se pulsa la fila.
+- [x] `history.db` (con `-wal` y `-shm`) ocupa menos de 10 MB.
 
 **Pruebas JVM** (`app/src/test/kotlin/dev/dotscale/`):
-- [ ] `BrewCurveCodecTest`:
+- [x] `BrewCurveCodecTest`:
   - Ida y vuelta con muestras válidas e inválidas, `stability` nula y no nula, y vertidos.
   - Error de 0,005 o menos en `waterG` y `flowGps`.
   - Ida y vuelta de una sesión en onzas convertida a gramos.
   - Rechazo controlado de un BLOB corrupto o de versión desconocida.
-- [ ] `BrewPreviewTest`: 48 valores, máximo por tramo y normalización a 0-255.
-- [ ] `BrewSessionTest` (ampliado):
+- [x] `BrewPreviewTest`: 48 valores, máximo por tramo y normalización a 0-255.
+- [x] `BrewSessionTest` (ampliado):
   - `Finished` se emite una sola vez por sesión, con cada uno de los seis motivos.
   - `PauseTimer`, `ResetTimer` y `StartTimer` según la tabla de §3.5, incluido que no se emiten
     cuando el estado ya es el pedido, y el orden `ResetTimer`, `StartTimer` al iniciar desde
     `PAUSED`.
-- [ ] `ScaleViewModelBrewTest` (ampliado):
+- [x] `ScaleViewModelBrewTest` (ampliado):
   - Un vertido simulado terminado llama a `save` una vez con el `BrewContext` correcto.
   - `onCleared()` con una sesión activa guarda como `MANUAL`.
   - `savedBrew` pasa por `Saving` y `Saved`.
   - Un fallo de `save` llega a `errors`.
   - Al iniciar desde `PAUSED`, la conexión falsa recibe `resetTimer` y después `startTimer`. Si
     `resetTimer` falla, `startTimer` se envía igualmente y el error llega a `errors`.
-- [ ] Lógica de la serie de progreso y del filtro, si queda fuera del DAO.
+- [x] Lógica de la serie de progreso y del filtro, si queda fuera del DAO.
 
 **Pruebas instrumentadas** (`app/src/androidTest/kotlin/dev/dotscale/`):
-- [ ] `BrewDaoTest` con Room en memoria:
+- [x] `BrewDaoTest` con Room en memoria:
   - Insertar y leer.
   - `list` sin la curva, más reciente primero.
   - Filtro por café y por método.
@@ -541,7 +568,7 @@ cuenta, y el resultado es la mediana de 5 aperturas:
   - `coffees()` sin duplicados.
   - `updateDetails`, incluido que "etiopía" se guarda como "Etiopía" si esta ya existe.
   - `delete` con cascada a `brew_curves`, `pendingUndo` relleno y `restore` con el mismo id.
-- [ ] Tests de Compose:
+- [x] Tests de Compose:
   - `HistoryScreenTest`: estado vacío, filas, filtro y vuelta a "Todos" al desaparecer el valor
     filtrado.
   - `BrewDetailScreenTest`: gráfica, resumen y borrar con deshacer.
@@ -550,10 +577,10 @@ cuenta, y el resultado es la mediana de 5 aperturas:
     báscula de 40 caracteres, recorta el título con elipsis, y la batería, el historial, los
     ajustes y el tema siguen visibles y pulsables. No se hace por E2E porque el nombre de la
     báscula simulada es fijo ("DOT simulada").
-- [ ] `HistoryPerformanceTest`: los tres objetivos de rendimiento.
+- [x] `HistoryPerformanceTest`: los tres objetivos de rendimiento.
 
 **E2E por adb** en el emulador con la báscula simulada, sin ARTEMIS:
-- [ ] Recorrido, con "Fin automático" en 30 s para que cada vertido simulado no tarde unos
+- [x] Recorrido, con "Fin automático" en 30 s para que cada vertido simulado no tarde unos
       2,5 min:
   1. Simular un vertido estable y esperar el fin.
   2. "Añadir detalles" y guardar.
@@ -562,15 +589,15 @@ cuenta, y el resultado es la mediana de 5 aperturas:
   5. Abrir el detalle.
   6. `am kill` y volver a abrir.
   7. Borrar y deshacer.
-- [ ] Las interacciones verificadas se plasman en los tests instrumentados.
-- [ ] `./gradlew :app:testDebugUnitTest`, los tests instrumentados y `./gradlew :app:lintDebug` pasan
+- [x] Las interacciones verificadas se plasman en los tests instrumentados.
+- [x] `./gradlew :app:testDebugUnitTest`, los tests instrumentados y `./gradlew :app:lintDebug` pasan
       sin avisos nuevos.
 
 ## 6. Preguntas abiertas
 
 1. **Versión de Room y KSP.** Hay que confirmar en el plan qué versiones son compatibles con AGP
    9.0.1 (Kotlin integrado) y Kotlin 2.3.20, y cómo se aplica el plugin de KSP en ese escenario.
-   *Resuelto en D1 del [plan](plan-historial.md): Room 2.8.5 sin `room-ktx` y KSP 2.3.12.*
+   *Resuelto en D1 (§3.9): Room 2.8.5 sin `room-ktx` y KSP 2.3.12.*
 2. **Heredadas de SPEC-001 §6.** La calibración con la DOT física cambiará las constantes. Al
    hacerlo, hay que incrementar `BrewConfig.METRIC_VERSION` y decidir en otro spec si se recalculan
    las preparaciones guardadas.

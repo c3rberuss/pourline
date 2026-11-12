@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-historial.md`](spec-historial.md) (SPEC-002) |
-| Estado | Aprobado, pendiente de implementación (F0–F6) |
+| Estado | Completado (F0–F6). Rendimiento medido: lista 183 ms, detalle 149 ms, `history-perf.db` 3,5 MB |
 | Fecha | 2026-11-12 |
 | Rama | `feat/brew-history`, creada desde `docs-specs-derived-from` (`383d5a2`). `develop` aún no tiene SPEC-001 |
 | Módulos | `:app` (`:protocol` no cambia) |
