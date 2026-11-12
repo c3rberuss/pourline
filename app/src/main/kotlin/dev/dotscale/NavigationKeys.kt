@@ -7,3 +7,5 @@ import kotlinx.serialization.Serializable
 
 /** @property address MAC de la báscula, o `null` para la simulada. */
 @Serializable data class Scale(val address: String?, val name: String) : NavKey
+
+@Serializable data object Settings : NavKey

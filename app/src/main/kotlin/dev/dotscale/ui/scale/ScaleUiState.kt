@@ -1,5 +1,6 @@
 package dev.dotscale.ui.scale
 
+import dev.dotscale.brew.BrewState
 import dev.dotscale.protocol.ScaleMessage
 import dev.dotscale.protocol.ScaleModel
 import dev.dotscale.protocol.TimerStatus
@@ -22,6 +23,8 @@ data class ScaleUiState(
   /** Dosis de café fijada por el usuario, en la unidad actual. Funcionalidad propia de esta app. */
   val dose: Double? = null,
   val isSimulated: Boolean = false,
+  /** Sesión de preparación (gráfica de vertido). La rellena el ViewModel; `reduce` no la toca. */
+  val brew: BrewState = BrewState.Initial,
 ) {
   /** Ratio agua:café (p. ej. 15.0 → 1:15). */
   val ratio: Double? get() = dose?.takeIf { it > 0 && weight > 0 }?.let { weight / it }
