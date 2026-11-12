@@ -1,0 +1,47 @@
+<resources>
+    <string name="app_name">Dot Scale</string>
+
+    <!-- Escaneo -->
+    <string name="scan_title">Buscar báscula</string>
+    <string name="scan_start">Buscar</string>
+    <string name="scan_stop">Detener</string>
+    <string name="scan_show_all">Mostrar todos los dispositivos</string>
+    <string name="scan_empty">Enciende la báscula y acércala al teléfono.</string>
+    <string name="scan_simulated">Probar con báscula simulada</string>
+    <string name="scan_permissions_needed">Se necesita permiso de Bluetooth para buscar la báscula.</string>
+    <string name="scan_grant_permissions">Conceder permisos</string>
+    <string name="scan_bluetooth_off">El Bluetooth está apagado. Actívalo para buscar la báscula.</string>
+    <string name="scan_unknown_device">Dispositivo sin nombre</string>
+    <string name="scan_rssi">%1$d dBm</string>
+
+    <!-- Báscula -->
+    <string name="scale_back">Volver</string>
+    <string name="scale_battery">Batería %1$d%%</string>
+    <string name="scale_flow">Flujo</string>
+    <string name="scale_time">Tiempo</string>
+    <string name="scale_flow_value">%1$s/s</string>
+    <string name="scale_out_of_range">Fuera de rango</string>
+    <string name="scale_tare">Tara</string>
+    <string name="scale_start">Iniciar</string>
+    <string name="scale_pause">Pausar</string>
+    <string name="scale_reset">Reiniciar</string>
+    <string name="scale_unit">Cambiar a %1$s</string>
+    <string name="scale_capture_dose">Fijar dosis</string>
+    <string name="scale_clear_dose">Quitar dosis</string>
+    <string name="scale_dose">Dosis %1$s</string>
+    <string name="scale_ratio">Ratio 1:%1$.1f</string>
+    <string name="scale_dose_hint">Pon el café en la báscula y pulsa «Fijar dosis»: se guarda el peso y se hace tara para empezar a verter.</string>
+    <string name="scale_retry">Reintentar</string>
+    <string name="scale_simulation">Simulación</string>
+    <string name="scale_sim_add">+%1$d g</string>
+    <string name="scale_info">%1$s · firmware %2$s</string>
+
+    <!-- Estado de conexión -->
+    <string name="conn_disconnected">Desconectada</string>
+    <string name="conn_connecting">Conectando…</string>
+    <string name="conn_discovering">Descubriendo servicios…</string>
+    <string name="conn_bonding">Emparejando… acepta la solicitud si aparece.</string>
+    <string name="conn_configuring">Configurando…</string>
+    <string name="conn_handshake">Leyendo datos de la báscula…</string>
+    <string name="conn_failed">No se pudo conectar: %1$s</string>
+</resources>
