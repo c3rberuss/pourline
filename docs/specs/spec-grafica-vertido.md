@@ -6,7 +6,7 @@
 | Fecha | 2026-11-12 |
 | Plan | [`plan-grafica-vertido.md`](plan-grafica-vertido.md) |
 | Módulos afectados | `:app` (nuevo paquete `dev.dotscale.brew`, `ui/scale`, `settings`, `sim`) |
-| Specs relacionados | SPEC-002 Historial, SPEC-003 Curva objetivo, SPEC-004 Compartir imagen (pendientes) |
+| Specs relacionados | [SPEC-002 Historial](spec-historial.md), SPEC-003 Curva objetivo, SPEC-004 Compartir imagen (pendientes) |
 
 ## 1. Resumen y Contexto
 
@@ -421,7 +421,7 @@ identificadores coinciden con los del plan.
 | Sin dosis fijada | `finalRatio = null`; el resumen no muestra ratio |
 | Sesión de 15 min | Fin automático `MAX_DURATION` |
 | Rotación de pantalla | La sesión sobrevive (vive en `ScaleViewModel`) |
-| Salir de Scale o muerte del proceso | La sesión se pierde. Es aceptable: SPEC-001 no persiste datos |
+| Salir de Scale o muerte del proceso | La sesión se pierde. Es aceptable: SPEC-001 no persiste datos. *SPEC-002 cambia esto: al salir de Scale la sesión se termina y se guarda; solo se pierde una sesión activa si muere el proceso.* |
 | Volumen de datos | Unas 9000 muestras como máximo (15 min a 10 Hz); el dibujo usa reducción de muestreo |
 | Permisos y datos sensibles | No se añaden permisos ni se guardan datos personales |
 
@@ -547,6 +547,9 @@ Se registran aquí para no tener que volver a entrevistar:
   - Campos estructurados: café u origen, molienda, temperatura del agua y método.
   - Notas de cata en texto libre.
   - Requiere añadir persistencia (Room).
+  - *Especificado en [`spec-historial.md`](spec-historial.md), que además cierra el punto P1 del
+    plan (temporizador al terminar).*
 - **SPEC-003 Curva objetivo:** la referencia puede salir del historial o de recetas editables
-  (vertidos por etapas en gramos y tiempo).
+  (vertidos por etapas en gramos y tiempo). *Desde SPEC-002 también incluye comparar o superponer
+  las curvas de dos preparaciones guardadas.*
 - **SPEC-004 Compartir:** exportar la gráfica como imagen.
