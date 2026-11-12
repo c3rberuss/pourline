@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado y revisado, pendiente de plan e implementación |
+| Estado | Aprobado y revisado, pendiente de implementación. Plan: [`plan-historial.md`](plan-historial.md) |
 | Fecha | 2026-11-12 |
 | Deriva de | [SPEC-001 Gráfica de vertido](spec-grafica-vertido.md) (Anexo y punto P1 de su [plan](plan-grafica-vertido.md)) |
 | Módulos afectados | `:app` (nuevo paquete `dev.dotscale.history`, nuevo `ui/history`, `brew`, `ui/scale`, `ui/components`, navegación) |
@@ -570,6 +570,7 @@ cuenta, y el resultado es la mediana de 5 aperturas:
 
 1. **Versión de Room y KSP.** Hay que confirmar en el plan qué versiones son compatibles con AGP
    9.0.1 (Kotlin integrado) y Kotlin 2.3.20, y cómo se aplica el plugin de KSP en ese escenario.
+   *Resuelto en D1 del [plan](plan-historial.md): Room 2.8.5 sin `room-ktx` y KSP 2.3.12.*
 2. **Heredadas de SPEC-001 §6.** La calibración con la DOT física cambiará las constantes. Al
    hacerlo, hay que incrementar `BrewConfig.METRIC_VERSION` y decidir en otro spec si se recalculan
    las preparaciones guardadas.
