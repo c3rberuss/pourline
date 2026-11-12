@@ -24,6 +24,10 @@ object AntIcons {
   val RotateLeft: ImageVector by lazy {
     strokeIcon("RotateLeft", "M3 12A9 9 0 1 0 12 3C9.48 3 7.07 4 5.26 5.74L3 8", "M3 3V8H8")
   }
+  /** Reloj con flecha antihoraria. */
+  val History: ImageVector by lazy {
+    strokeIcon("History", "M3 12A9 9 0 1 0 12 3C9.48 3 7.07 4 5.26 5.74L3 8", "M3 3V8H8", "M12 7V12L15 14")
+  }
   val Play: ImageVector by lazy { strokeIcon("Play", "M6 3L20 12L6 21Z") }
   val Pause: ImageVector by lazy {
     strokeIcon(
