@@ -165,13 +165,13 @@ private fun buttonStyle(c: AntColors, type: AntButtonType, danger: Boolean, enab
   }
   return when (type) {
     AntButtonType.Primary -> {
-      val bg = if (pressed) accent.active else accent.base
+      val bg = if (pressed) accent.solidActive else accent.solid
       ButtonStyle(bg, c.textLightSolid, bg)
     }
     AntButtonType.Default, AntButtonType.Dashed -> {
       val fg = when {
         pressed -> accent.active
-        danger -> accent.base
+        danger -> accent.text
         else -> c.text
       }
       val border = when {
@@ -185,10 +185,10 @@ private fun buttonStyle(c: AntColors, type: AntButtonType, danger: Boolean, enab
       val fg = when {
         !danger -> c.text
         pressed -> accent.active
-        else -> accent.base
+        else -> accent.text
       }
       ButtonStyle(if (pressed) c.fillSecondary else Color.Transparent, fg, Color.Transparent)
     }
-    AntButtonType.Link -> ButtonStyle(Color.Transparent, if (pressed) accent.active else accent.base, Color.Transparent)
+    AntButtonType.Link -> ButtonStyle(Color.Transparent, if (pressed) accent.active else accent.text, Color.Transparent)
   }
 }

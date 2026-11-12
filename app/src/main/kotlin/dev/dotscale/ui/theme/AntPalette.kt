@@ -1,6 +1,8 @@
 package dev.dotscale.ui.theme
 
+import kotlin.math.abs
 import kotlin.math.floor
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 /**
@@ -37,6 +39,33 @@ internal object AntPalette {
     }
     if (!dark) return light
     return DARK_COLOR_MAP.map { (index, amount) -> mix(background, light[index], amount / 100.0) }
+  }
+
+  /** Ratio de contraste WCAG 2.x entre dos colores opacos. */
+  fun contrast(a: Int, b: Int): Double {
+    val la = luminance(a)
+    val lb = luminance(b)
+    return (maxOf(la, lb) + 0.05) / (minOf(la, lb) + 0.05)
+  }
+
+  /**
+   * Índice del tono más cercano al base (6.º) que alcanza [minContrast] frente a todos los [backgrounds].
+   * Si ninguno lo alcanza devuelve el de mayor contraste.
+   */
+  fun nearestAccessible(tones: List<Int>, backgrounds: List<Int>, minContrast: Double = 4.5): Int {
+    fun worst(i: Int) = backgrounds.minOf { contrast(tones[i], it) }
+    return tones.indices.sortedBy { abs(it - BASE_INDEX) }.firstOrNull { worst(it) >= minContrast }
+      ?: tones.indices.maxBy(::worst)
+  }
+
+  private const val BASE_INDEX = 5
+
+  private fun luminance(argb: Int): Double {
+    fun linear(shift: Int): Double {
+      val c = channel(argb, shift) / 255.0
+      return if (c <= 0.03928) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)
+    }
+    return 0.2126 * linear(16) + 0.7152 * linear(8) + 0.0722 * linear(0)
   }
 
   private class Hsv(val h: Double, val s: Double, val v: Double) {

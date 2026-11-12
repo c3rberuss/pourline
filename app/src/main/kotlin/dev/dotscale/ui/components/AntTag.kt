@@ -96,8 +96,8 @@ fun AntCheckableTag(
   val bg by animateColorAsState(
     when {
       !enabled && checked -> colors.fill
-      checked && pressed -> colors.primary.active
-      checked -> colors.primary.base
+      checked && pressed -> colors.primary.solidActive
+      checked -> colors.primary.solid
       pressed -> colors.fillSecondary
       else -> Color.Transparent
     },

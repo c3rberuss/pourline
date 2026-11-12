@@ -83,7 +83,7 @@ private fun AntColors.toMaterialColorScheme(): ColorScheme {
   fun Color.solid(over: Color = bgContainer) = compositeOver(over)
   val base = if (isDark) darkColorScheme() else lightColorScheme()
   return base.copy(
-    primary = primary.base,
+    primary = primary.solid,
     onPrimary = textLightSolid,
     primaryContainer = primary.bg,
     onPrimaryContainer = primary.text,
@@ -105,7 +105,7 @@ private fun AntColors.toMaterialColorScheme(): ColorScheme {
     surfaceTint = primary.base,
     inverseSurface = bgSpotlight.solid(),
     inverseOnSurface = textLightSolid,
-    error = error.base,
+    error = error.solid,
     onError = textLightSolid,
     errorContainer = error.bg,
     onErrorContainer = error.text,

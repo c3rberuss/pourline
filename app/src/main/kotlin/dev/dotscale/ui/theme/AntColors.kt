@@ -29,10 +29,14 @@ data class AntColorRole(
   val base: Color,
   val active: Color,
   /**
-   * Texto con el color del rol (tags, textos de estado). antd usa el tono 6; aquí se usa el 8 para que
-   * cumpla contraste WCAG AA (≥ 4.5:1) también en amarillo y verde.
+   * Texto con el color del rol (links, tags, textos de estado): el tono más cercano a [base] que cumple
+   * WCAG AA (≥ 4.5:1) sobre [bg] y sobre `colorBgContainer`. antd usa [base] directamente.
    */
   val text: Color,
+  /** Relleno para texto blanco (botón primario, tag marcado): el tono más cercano a [base] con ≥ 4.5:1. */
+  val solid: Color,
+  /** Estado pulsado de [solid]: el siguiente tono con más contraste. */
+  val solidActive: Color,
 )
 
 /** Map tokens de color de Ant Design v5 (algoritmos `defaultAlgorithm` y `darkAlgorithm`). */
@@ -69,11 +73,11 @@ data class AntColors(
 
 fun antLightColors(seeds: AntSeedColors = AntSeedColors()): AntColors = AntColors(
   isDark = false,
-  primary = seeds.primary.toRole(dark = false),
-  success = seeds.success.toRole(dark = false),
-  warning = seeds.warning.toRole(dark = false),
-  error = seeds.error.toRole(dark = false),
-  info = seeds.info.toRole(dark = false),
+  primary = seeds.primary.toRole(dark = false, container = LIGHT_CONTAINER),
+  success = seeds.success.toRole(dark = false, container = LIGHT_CONTAINER),
+  warning = seeds.warning.toRole(dark = false, container = LIGHT_CONTAINER),
+  error = seeds.error.toRole(dark = false, container = LIGHT_CONTAINER),
+  info = seeds.info.toRole(dark = false, container = LIGHT_CONTAINER),
   text = Color.Black.copy(alpha = 0.88f),
   textSecondary = Color.Black.copy(alpha = 0.65f),
   textTertiary = Color.Black.copy(alpha = 0.45f),
@@ -87,7 +91,7 @@ fun antLightColors(seeds: AntSeedColors = AntSeedColors()): AntColors = AntColor
   fillTertiary = Color.Black.copy(alpha = 0.04f),
   fillQuaternary = Color.Black.copy(alpha = 0.02f),
   bgLayout = Color(0xFFF5F5F5),
-  bgContainer = Color.White,
+  bgContainer = Color(LIGHT_CONTAINER),
   bgElevated = Color.White,
   bgSpotlight = Color.Black.copy(alpha = 0.85f),
   bgMask = Color.Black.copy(alpha = 0.45f),
@@ -95,11 +99,11 @@ fun antLightColors(seeds: AntSeedColors = AntSeedColors()): AntColors = AntColor
 
 fun antDarkColors(seeds: AntSeedColors = AntSeedColors()): AntColors = AntColors(
   isDark = true,
-  primary = seeds.primary.toRole(dark = true),
-  success = seeds.success.toRole(dark = true),
-  warning = seeds.warning.toRole(dark = true),
-  error = seeds.error.toRole(dark = true),
-  info = seeds.info.toRole(dark = true),
+  primary = seeds.primary.toRole(dark = true, container = DARK_CONTAINER),
+  success = seeds.success.toRole(dark = true, container = DARK_CONTAINER),
+  warning = seeds.warning.toRole(dark = true, container = DARK_CONTAINER),
+  error = seeds.error.toRole(dark = true, container = DARK_CONTAINER),
+  info = seeds.info.toRole(dark = true, container = DARK_CONTAINER),
   text = Color.White.copy(alpha = 0.85f),
   textSecondary = Color.White.copy(alpha = 0.65f),
   textTertiary = Color.White.copy(alpha = 0.45f),
@@ -113,14 +117,23 @@ fun antDarkColors(seeds: AntSeedColors = AntSeedColors()): AntColors = AntColors
   fillTertiary = Color.White.copy(alpha = 0.08f),
   fillQuaternary = Color.White.copy(alpha = 0.04f),
   bgLayout = Color.Black,
-  bgContainer = Color(0xFF141414),
+  bgContainer = Color(DARK_CONTAINER),
   bgElevated = Color(0xFF1F1F1F),
   bgSpotlight = Color(0xFF424242),
   bgMask = Color.Black.copy(alpha = 0.45f),
 )
 
-private fun Color.toRole(dark: Boolean): AntColorRole {
-  val p = AntPalette.generate(toArgb(), dark).map(::Color)
+private const val LIGHT_CONTAINER = 0xFFFFFFFF.toInt()
+private const val DARK_CONTAINER = 0xFF141414.toInt()
+private const val WHITE = 0xFFFFFFFF.toInt()
+
+private fun Color.toRole(dark: Boolean, container: Int): AntColorRole {
+  val tones = AntPalette.generate(toArgb(), dark)
+  val p = tones.map(::Color)
+  val solidIndex = AntPalette.nearestAccessible(tones, listOf(WHITE))
+  val activeIndex = listOf(solidIndex - 1, solidIndex + 1)
+    .filter { it in tones.indices }
+    .maxBy { AntPalette.contrast(tones[it], WHITE) }
   return AntColorRole(
     bg = p[0],
     bgHover = p[1],
@@ -129,6 +142,8 @@ private fun Color.toRole(dark: Boolean): AntColorRole {
     hover = p[4],
     base = p[5],
     active = p[6],
-    text = p[7],
+    text = p[AntPalette.nearestAccessible(tones, listOf(tones[0], container))],
+    solid = p[solidIndex],
+    solidActive = p[activeIndex],
   )
 }
