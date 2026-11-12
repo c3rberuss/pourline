@@ -3,8 +3,9 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-grafica-vertido.md`](spec-grafica-vertido.md) (SPEC-001) |
+| Estado | Completado (F0–F6). Decisiones de §2 incorporadas al spec (§3.9) |
 | Fecha | 2026-11-12 |
-| Rama propuesta | `feat/brew-chart`, creada desde `develop` |
+| Rama | `feat/brew-chart`, creada desde `develop` |
 | Módulos | `:app` (`:protocol` no cambia) |
 
 Este plan baja el §8 del spec a archivos, tareas, pruebas y comandos. Antes de las fases recoge las
@@ -37,7 +38,7 @@ conviene revisarlas antes de empezar la fase 1.
 
 ## 2. Decisiones que completan el spec
 
-Son la propuesta por defecto del plan. Si se aprueban, conviene pasarlas al spec.
+Se aprobaron y están incorporadas al spec, en el §3.9.
 
 | ID | Tema | Decisión | Motivo |
 |---|---|---|---|
@@ -80,7 +81,8 @@ F3.
 | F6 | Verificación: exploración por adb, tests instrumentados y checklist del §5 | M |
 
 Commits: uno por fase, en Conventional Commits y en inglés, solo cuando se pidan. Se proponen los
-mensajes al final de cada fase.
+mensajes al final de cada fase. *Al final se agruparon en tres: `bfead5e` (F0), `c63fc32` (F1 y
+F2) y `7e917ac` (F3 a F6).*
 
 ### F0. Preparación
 
@@ -318,8 +320,7 @@ Commit sugerido: `feat(settings): add settings screen with auto-finish preferenc
    | E2 | "Simular vertido irregular" → "Terminar" a mitad | Tramos ámbar o rojos, el indicador cambia de nivel y el resumen muestra el motivo manual |
    | E3 | Tras E2, sin tara, "Simular vertido estable" → "Tara" → simular otra vez | Aviso de `pourIgnored` con el resumen conservado, después "Lista para la siguiente preparación" y, al verter, una gráfica nueva |
 
-   Las esperas se ajustan a la latencia del modelo según `artemis.md`. El perfil estable dura unos
-   80 s más el fin automático.
+   El perfil estable dura unos 80 s más el fin automático.
 3. **Tests instrumentados** (`app/src/androidTest/kotlin/dev/dotscale/ui/`), escritos a partir de
    lo verificado en el paso 2:
    - `BrewChartTest`: `createComposeRule()` con `ScaleScreen(ScaleViewModel(SimulatedScaleConnection(), MutableStateFlow(60)), …)`
@@ -340,7 +341,8 @@ Commit sugerido: `feat(settings): add settings screen with auto-finish preferenc
    - `./gradlew :app:testDebugUnitTest`
    - `./gradlew :app:connectedDebugAndroidTest`
    - `./gradlew :app:lintDebug`, comparado con la línea base de F0.
-5. Marcar el checklist del §5 en el spec y pasar al spec las decisiones aprobadas de §2.
+5. Marcar el checklist del §5 en el spec y pasar al spec las decisiones aprobadas de §2. *Hecho:
+   §5 marcado y decisiones en el §3.9 del spec.*
 
 Commit sugerido: `test(ui): add instrumented tests for brew chart and settings`.
 

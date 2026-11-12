@@ -2,8 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado para implementación |
+| Estado | Implementado en `feat/brew-chart`; pendiente de validación con la DOT física (§6) |
 | Fecha | 2026-11-12 |
+| Plan | [`plan-grafica-vertido.md`](plan-grafica-vertido.md) |
 | Módulos afectados | `:app` (nuevo paquete `dev.dotscale.brew`, `ui/scale`, `settings`, `sim`) |
 | Specs relacionados | SPEC-002 Historial, SPEC-003 Curva objetivo, SPEC-004 Compartir imagen (pendientes) |
 
@@ -203,6 +204,8 @@ Constantes en `BrewConfig`. Son valores iniciales que se calibrarán con hardwar
 | `LEVEL_STABLE_MIN` | 75 | Puntuación mínima del nivel Estable |
 | `LEVEL_IRREGULAR_MIN` | 50 | Puntuación mínima del nivel Irregular |
 | `MAX_DURATION_MS` | 900 000 ms (15 min) | Duración máxima de una sesión |
+| `MAX_SAMPLE_GAP_MS` | 500 ms | Tope del Δt con el que pesa cada muestra en las métricas ponderadas (D6) |
+| `NEGATIVE_WEIGHT_TOLERANCE_G` | 1,0 g | Por debajo de −1,0 g una muestra es inválida (D5) |
 
 **Inicio.**
 - En `Armed` (o `Finished` rearmada), la sesión empieza cuando hay muestras válidas con flujo
@@ -264,8 +267,8 @@ Constantes en `BrewConfig`. Son valores iniciales que se calibrarán con hardwar
 - La dosis (`ScaleUiState.dose`, en la unidad actual) se pasa en gramos a `setDoseGrams`.
 
 **Muestras inválidas.**
-- Las muestras con `outOfRange = true` o peso negativo después de t0 se guardan con
-  `valid = false`.
+- Las muestras con `outOfRange = true` o peso menor que −`NEGATIVE_WEIGHT_TOLERANCE_G` después
+  de t0 se guardan con `valid = false`.
 - No cuentan para las métricas ni para la ventana de estabilidad, y se dibujan como hueco.
 
 ### 3.5 Ejes y dibujo
@@ -374,6 +377,28 @@ BLE/Sim ──ScaleMessage.Weight──▶ ScaleViewModel
                                    └─ _ui.update { copy(brew = session.state) }
 ScaleScreen ◀── StateFlow<ScaleUiState> ── BrewChartCard / BrewSummaryCard
 ```
+
+### 3.9 Decisiones de implementación
+
+Completan las reglas anteriores. Se tomaron en el plan (§2) y están implementadas. Los
+identificadores coinciden con los del plan.
+
+| ID | Tema | Decisión |
+|---|---|---|
+| D1 | Muestras bajo el umbral con un vertido abierto | Siguen dentro del vertido: no lo cierran y cuentan para el flujo medio. Llevan `stability = null` y no entran en la ventana de estabilidad, para que el hueco de cierre no marque como turbulento el final de cada vertido. |
+| D2 | Indicador con el vertido abierto | `currentStability` conserva la última puntuación del vertido abierto y pasa a `null` en la rampa del siguiente. "Sin vertido" aparece al cerrarse el vertido, con `POUR_GAP_MS` de retraso. |
+| D3 | Límites de `Pour` | `endMs` es el `tMs` de la última muestra con flujo ≥ umbral. `waterG` es el `waterG` de la última muestra válida antes del cierre (incluye la cola del hueco) menos el de la última muestra válida anterior a su inicio (0 en el primero). El cierre se evalúa en `onWeight` y en `onTick`. |
+| D4 | Recorte al terminar | Se descartan las muestras con `tMs > totalTimeMs + POUR_GAP_MS`. `totalWaterG` es el `waterG` de la última muestra válida conservada. Evita la línea plana final del fin por inactividad. |
+| D5 | Peso negativo | Una muestra es inválida si `outOfRange` o si su peso es menor que −`NEGATIVE_WEIGHT_TOLERANCE_G`, para que el ruido alrededor de 0 g tras una tara no abra huecos. |
+| D6 | Ponderación por tiempo | Cada muestra pesa el Δt respecto a la anterior, con tope `MAX_SAMPLE_GAP_MS`. Se aplica a `avgFlowGps`, `stabilityScore` y `levelShare`. |
+| D7 | Ámbito de `BrewSettings` | Una sola instancia por proceso, en `DotScaleApp : Application`, para que el cambio de ajuste llegue a la sesión en curso aunque se rote la pantalla. |
+| D8 | Textos | Todo en `values/strings.xml` y `values-en/strings.xml`, incluidos los textos que ya existían (ver §1, Alcance). |
+| D9 | Dosis | El ViewModel llama a `setDoseGrams` solo en `captureDose()` y `clearDose()`. `finalRatio` se fija al terminar, así que un cambio de unidad a mitad no pierde el ratio. |
+| D10 | Factor de onzas | `GRAMS_PER_OUNCE = 28.349523125` vive en `dev.dotscale.brew` y lo usa también el simulador. |
+| D11 | Tara | En `Armed` (o `Finished` rearmada), una tara descarta la racha de confirmación y la última muestra válida. En `Active`, `baselineG -= lastRawWeightG`. Supone que `Tared` llega antes de la primera muestra posterior a la tara (sin verificar con la DOT, §6). |
+| D12 | Simulador | `simulatePour` se ignora si ya hay un vertido simulado en curso. Perfil: bloom de 9 s a 5 g/s (~45 g), pausa de 20 s y vertido principal a 4 g/s hasta ~250 g. `IRREGULAR` multiplica el flujo objetivo por un factor U(0,35; 1,65) que cambia cada 5 ticks, con semilla fija. |
+| D13 | Publicación del estado | `BrewSession.state` es una instancia cacheada que solo se reconstruye cuando algo cambia; `samples` es una copia inmutable. |
+| D14 | Accesibilidad del indicador | El `AntTag` del nivel no es `liveRegion` (a 10 Hz saturaría TalkBack). El nivel se anuncia en el `contentDescription` del `Canvas`. |
 
 ## 4. Casos Límite y Manejo de Errores
 
