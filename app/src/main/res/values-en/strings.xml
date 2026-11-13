@@ -310,4 +310,19 @@
     <string name="compare_column_b">B</string>
     <string name="compare_column_diff">B−A</string>
     <string name="compare_none">—</string>
+
+    <!-- Components -->
+    <string name="rate_description">Rating: %1$d of %2$d</string>
+    <string name="rate_none">Not rated</string>
+    <plurals name="rate_star">
+        <item quantity="one">%1$d star</item>
+        <item quantity="other">%1$d stars</item>
+    </plurals>
+    <string name="date_picker_accept">OK</string>
+    <string name="date_picker_cancel">Cancel</string>
+    <string name="date_picker_clear">Clear date</string>
+    <string name="collapse_expanded">Expanded</string>
+    <string name="collapse_collapsed">Collapsed</string>
+    <string name="collapse_expand">Expand</string>
+    <string name="collapse_collapse">Collapse</string>
 </resources>
