@@ -469,4 +469,173 @@ class BrewSessionTest {
     assertSame(finished, scale.state)
     assertNotNull(scale.finished)
   }
+
+  // --- Fin de sesión y temporizador (SPEC-002 §3.5) ---
+
+  private fun FakeScale.activePour() {
+    simplePour(3_000)
+    assertActive(pouring = true)
+  }
+
+  @Test
+  fun `finished is emitted exactly once with each of the six reasons`() {
+    val cases: List<Pair<FinishReason, (FakeScale) -> Unit>> = listOf(
+      FinishReason.INACTIVITY to { s -> s.advance(61_000); s.tick(60_000) },
+      FinishReason.TIMER_PAUSED to { s -> s.timerEvent(TimerStatus.PAUSED) },
+      FinishReason.TIMER_RESET to { s -> s.timerEvent(TimerStatus.RESET) },
+      FinishReason.MANUAL to { s -> s.finish() },
+      FinishReason.DISCONNECTED to { s -> s.disconnect() },
+      FinishReason.MAX_DURATION to { s -> s.advance(1_000_000); s.tick(100_000_000) },
+    )
+    for ((reason, trigger) in cases) {
+      val scale = FakeScale()
+      scale.activePour()
+      trigger(scale)
+      // Eventos posteriores no vuelven a emitir `Finished`.
+      scale.finish()
+      scale.tick()
+      scale.disconnect()
+      scale.timerEvent(TimerStatus.PAUSED)
+
+      val brew = scale.finishedBrews.single()
+      assertEquals(reason.name, reason, brew.summary.reason)
+      assertEquals(reason.name, scale.finished.summary, brew.summary)
+    }
+  }
+
+  @Test
+  fun `finished carries the trimmed samples, t0 and the dose`() {
+    val scale = FakeScale(startMs = 10_000)
+    scale.session.setDoseGrams(20.0)
+    scale.idle(500)
+    scale.pour(4.0, 3_000)
+    scale.advance(30_000)
+    scale.sample(0.0)
+    val t0 = 10_000 + 500 + FakeScale.STEP_MS
+    scale.finish()
+
+    val brew = scale.finishedBrews.single()
+    assertEquals(t0, brew.t0MonoMs)
+    assertEquals(20.0, brew.doseG!!, 1e-9)
+    assertEquals(scale.state.samples, brew.samples)
+    assertTrue(brew.samples.last().tMs <= brew.summary.totalTimeMs + BrewConfig().pourGapMs)
+  }
+
+  @Test
+  fun `pause timer is sent with inactivity, manual and max duration when the timer is running`() {
+    val cases: List<(FakeScale) -> Unit> = listOf(
+      { s -> s.advance(61_000); s.tick(60_000) },
+      { s -> s.finish() },
+      { s -> s.advance(1_000_000); s.tick(100_000_000) },
+    )
+    for (trigger in cases) {
+      val scale = FakeScale()
+      scale.activePour()
+      assertEquals(TimerStatus.RUNNING, scale.timer)
+      trigger(scale)
+      assertEquals(1, scale.pauseTimerCount)
+      assertEquals(TimerStatus.PAUSED, scale.timer)
+      // PauseTimer va antes de Finished.
+      assertEquals(listOf(BrewEffect.PauseTimer), scale.effects.filter { it == BrewEffect.PauseTimer })
+      assertTrue(scale.effects.indexOf(BrewEffect.PauseTimer) < scale.effects.indexOfFirst { it is BrewEffect.Finished })
+    }
+  }
+
+  @Test
+  fun `pause timer is not sent when the timer was paused, reset or the scale disconnected`() {
+    for (trigger in listOf<(FakeScale) -> Unit>(
+      { s -> s.timerEvent(TimerStatus.PAUSED) },
+      { s -> s.timerEvent(TimerStatus.RESET) },
+      { s -> s.disconnect() },
+    )) {
+      val scale = FakeScale()
+      scale.activePour()
+      trigger(scale)
+      assertEquals(0, scale.pauseTimerCount)
+    }
+  }
+
+  @Test
+  fun `pause timer is not sent at the end when the timer is not running`() {
+    val scale = FakeScale()
+    scale.timer = TimerStatus.RUNNING
+    scale.simplePour(3_000) // la DOT lo arrancó sola: no hay StartTimer
+    scale.timerEvent(TimerStatus.PAUSED) // el usuario lo pausa y la sesión termina...
+    assertEquals(0, scale.pauseTimerCount)
+
+    val other = FakeScale()
+    other.activePour()
+    other.timer = TimerStatus.PAUSED // el último estado conocido ya no es RUNNING
+    other.sample(4.0)
+    other.finish()
+    assertEquals(0, other.pauseTimerCount)
+  }
+
+  @Test
+  fun `a tare that rearms a finished session sends reset timer once`() {
+    val scale = FakeScale()
+    scale.activePour()
+    scale.finish() // PauseTimer: el reloj queda en PAUSED
+    assertEquals(0, scale.resetTimerCount)
+
+    scale.tare()
+    assertEquals(1, scale.resetTimerCount)
+    assertEquals(TimerStatus.RESET, scale.timer)
+    assertTrue(scale.finished.rearmed)
+
+    scale.tare() // el reloj ya está en RESET: no se repite
+    assertEquals(1, scale.resetTimerCount)
+  }
+
+  @Test
+  fun `a timer reset that rearms sends nothing`() {
+    val scale = FakeScale()
+    scale.activePour()
+    scale.finish()
+    scale.clearEffects()
+    scale.timerEvent(TimerStatus.RESET)
+    assertTrue(scale.effects.isEmpty())
+    assertTrue(scale.finished.rearmed)
+  }
+
+  @Test
+  fun `the next pour after a rearming tare sends start timer`() {
+    val scale = FakeScale()
+    scale.activePour()
+    scale.finish()
+    scale.tare()
+    scale.idle(500)
+    scale.pour(4.0, 3_000)
+    assertEquals(2, scale.startTimerCount)
+    assertEquals(1, scale.resetTimerCount)
+    assertEquals(1, scale.pauseTimerCount)
+  }
+
+  @Test
+  fun `a pour with the timer paused sends reset timer and then start timer`() {
+    val scale = FakeScale()
+    scale.timer = TimerStatus.PAUSED // p. ej. el reloj quedó en 0:42 de un uso anterior
+    scale.simplePour(3_000)
+    assertEquals(listOf(BrewEffect.ResetTimer, BrewEffect.StartTimer), scale.effects)
+    // El RESET que responde la báscula al `resetTimer` no termina la sesión recién iniciada.
+    scale.assertActive(pouring = true)
+    assertEquals(TimerStatus.RUNNING, scale.timer)
+  }
+
+  @Test
+  fun `a user reset after the start still ends the session`() {
+    val scale = FakeScale()
+    scale.timer = TimerStatus.PAUSED
+    scale.simplePour(3_000)
+    scale.timerEvent(TimerStatus.RESET)
+    assertEquals(FinishReason.TIMER_RESET, scale.finished.summary.reason)
+  }
+
+  @Test
+  fun `a pour with the timer running sends no timer effects`() {
+    val scale = FakeScale()
+    scale.timer = TimerStatus.RUNNING
+    scale.activePour()
+    assertTrue(scale.effects.isEmpty())
+  }
 }

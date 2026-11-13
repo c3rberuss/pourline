@@ -2,6 +2,8 @@ plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
+  alias(libs.plugins.ksp)
+  alias(libs.plugins.androidx.room)
 }
 
 android {
@@ -33,6 +35,11 @@ android {
     shaders = false
   }
 
+  testOptions {
+    // Los tests JVM del ViewModel llaman a `Log`; los métodos de Android devuelven valores por defecto.
+    unitTests.isReturnDefaultValues = true
+  }
+
   packaging {
     resources {
       excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -42,6 +49,10 @@ android {
 
 kotlin {
   jvmToolchain(17)
+}
+
+room {
+  schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
@@ -80,6 +91,11 @@ dependencies {
   androidTestImplementation(libs.androidx.test.ext.junit)
   androidTestImplementation(libs.androidx.test.runner)
   androidTestImplementation(libs.androidx.test.espresso.core)
+  androidTestImplementation(libs.kotlinx.coroutines.test)
+
+  // Room (historial de preparaciones)
+  implementation(libs.androidx.room.runtime)
+  ksp(libs.androidx.room.compiler)
 
   // Navigation
   implementation(libs.androidx.navigation3.ui)

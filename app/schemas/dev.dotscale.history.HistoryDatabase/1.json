@@ -1,0 +1,223 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "4b7421c86ef66f3bdedd1d9cd610bb9a",
+    "entities": [
+      {
+        "tableName": "brews",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `startedAtEpochMs` INTEGER NOT NULL, `name` TEXT, `coffee` TEXT, `method` TEXT, `methodOther` TEXT, `grind` TEXT, `waterTempC` REAL, `notes` TEXT, `totalTimeMs` INTEGER NOT NULL, `totalWaterG` REAL NOT NULL, `avgFlowGps` REAL NOT NULL, `maxFlowGps` REAL NOT NULL, `stabilityScore` INTEGER, `stabilityLevel` TEXT, `shareStable` REAL NOT NULL, `shareIrregular` REAL NOT NULL, `shareTurbulent` REAL NOT NULL, `doseG` REAL, `finalRatio` REAL, `finishReason` TEXT NOT NULL, `interrupted` INTEGER NOT NULL, `unit` TEXT NOT NULL, `scaleModel` TEXT, `simulated` INTEGER NOT NULL, `metricVersion` INTEGER NOT NULL, `preview` BLOB NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAtEpochMs",
+            "columnName": "startedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "coffee",
+            "columnName": "coffee",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "method",
+            "columnName": "method",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "methodOther",
+            "columnName": "methodOther",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "grind",
+            "columnName": "grind",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "waterTempC",
+            "columnName": "waterTempC",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "totalTimeMs",
+            "columnName": "totalTimeMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalWaterG",
+            "columnName": "totalWaterG",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgFlowGps",
+            "columnName": "avgFlowGps",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxFlowGps",
+            "columnName": "maxFlowGps",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stabilityScore",
+            "columnName": "stabilityScore",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "stabilityLevel",
+            "columnName": "stabilityLevel",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "shareStable",
+            "columnName": "shareStable",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shareIrregular",
+            "columnName": "shareIrregular",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shareTurbulent",
+            "columnName": "shareTurbulent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "doseG",
+            "columnName": "doseG",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "finalRatio",
+            "columnName": "finalRatio",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "finishReason",
+            "columnName": "finishReason",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interrupted",
+            "columnName": "interrupted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scaleModel",
+            "columnName": "scaleModel",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "simulated",
+            "columnName": "simulated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metricVersion",
+            "columnName": "metricVersion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preview",
+            "columnName": "preview",
+            "affinity": "BLOB",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_brews_startedAtEpochMs",
+            "unique": false,
+            "columnNames": [
+              "startedAtEpochMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_brews_startedAtEpochMs` ON `${TABLE_NAME}` (`startedAtEpochMs`)"
+          }
+        ]
+      },
+      {
+        "tableName": "brew_curves",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`brewId` INTEGER NOT NULL, `data` BLOB NOT NULL, PRIMARY KEY(`brewId`), FOREIGN KEY(`brewId`) REFERENCES `brews`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "brewId",
+            "columnName": "brewId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "data",
+            "columnName": "data",
+            "affinity": "BLOB",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "brewId"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "brews",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "brewId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4b7421c86ef66f3bdedd1d9cd610bb9a')"
+    ]
+  }
+}

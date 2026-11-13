@@ -7,6 +7,23 @@ import dev.dotscale.protocol.TimerStatus
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.scale.ConnectionState
 
+/** Estado del guardado de la última sesión terminada. */
+sealed interface SavedBrew {
+  data object Saving : SavedBrew
+
+  data class Saved(val id: Long) : SavedBrew
+
+  data object Failed : SavedBrew
+}
+
+/** Errores que el ViewModel publica y la pantalla traduce a texto. */
+sealed interface ScaleError {
+  /** Un comando no se pudo enviar a la báscula; `detail` es el mensaje de la excepción, si lo hay. */
+  data class Command(val detail: String?) : ScaleError
+
+  data object SaveFailed : ScaleError
+}
+
 data class ScaleUiState(
   val connection: ConnectionState = ConnectionState.Disconnected,
   val weight: Double = 0.0,
@@ -25,6 +42,8 @@ data class ScaleUiState(
   val isSimulated: Boolean = false,
   /** Sesión de preparación (gráfica de vertido). La rellena el ViewModel; `reduce` no la toca. */
   val brew: BrewState = BrewState.Initial,
+  /** `null` sin sesión terminada; vuelve a `null` al empezar otra sesión. */
+  val savedBrew: SavedBrew? = null,
 ) {
   /** Ratio agua:café (p. ej. 15.0 → 1:15). */
   val ratio: Double? get() = dose?.takeIf { it > 0 && weight > 0 }?.let { weight / it }

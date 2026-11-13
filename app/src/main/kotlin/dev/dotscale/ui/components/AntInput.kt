@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -53,6 +54,8 @@ fun AntInput(
   status: AntInputStatus = AntInputStatus.Default,
   enabled: Boolean = true,
   singleLine: Boolean = true,
+  /** Líneas visibles mínimas con `singleLine = false` (como `TextArea` de antd). */
+  minLines: Int = 1,
   keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
   keyboardActions: KeyboardActions = KeyboardActions.Default,
   visualTransformation: VisualTransformation = VisualTransformation.None,
@@ -89,13 +92,15 @@ fun AntInput(
     keyboardOptions = keyboardOptions,
     keyboardActions = keyboardActions,
     singleLine = singleLine,
+    minLines = if (singleLine) 1 else minLines,
     visualTransformation = visualTransformation,
     interactionSource = interactionSource,
     cursorBrush = SolidColor(accent.base),
     decorationBox = { innerTextField ->
       Row(
         Modifier
-          .height(AntTheme.controlHeight.of(size))
+          .thenIf(singleLine) { height(AntTheme.controlHeight.of(size)) }
+          .thenIf(!singleLine) { heightIn(min = AntTheme.controlHeight.of(size)) }
           .drawBehind {
             if (ringColor.alpha > 0f) {
               val ring = FocusRing.toPx()
@@ -109,12 +114,12 @@ fun AntInput(
           }
           .background(if (enabled) colors.bgContainer else colors.bgContainerDisabled, shape)
           .antBorder(borderColor, radius)
-          .padding(horizontal = AntTheme.spacing.sm),
+          .padding(horizontal = AntTheme.spacing.sm, vertical = if (singleLine) 0.dp else AntTheme.spacing.xs),
         horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top,
       ) {
         prefix?.invoke()
-        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+        Box(Modifier.weight(1f), contentAlignment = if (singleLine) Alignment.CenterStart else Alignment.TopStart) {
           if (value.isEmpty() && placeholder != null) {
             Text(placeholder, color = colors.textPlaceholder, style = textStyle, maxLines = 1)
           }

@@ -9,3 +9,9 @@ import kotlinx.serialization.Serializable
 @Serializable data class Scale(val address: String?, val name: String) : NavKey
 
 @Serializable data object Settings : NavKey
+
+@Serializable data object History : NavKey
+
+@Serializable data class BrewDetail(val id: Long) : NavKey
+
+@Serializable data class BrewEdit(val id: Long) : NavKey

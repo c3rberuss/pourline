@@ -62,4 +62,23 @@ data class BrewState(
 sealed interface BrewEffect {
   /** El ViewModel envía `ScaleCommands.startTimer()`. */
   data object StartTimer : BrewEffect
+
+  /** El ViewModel envía `ScaleCommands.pauseTimer()`. */
+  data object PauseTimer : BrewEffect
+
+  /** El ViewModel envía `ScaleCommands.resetTimer()`. */
+  data object ResetTimer : BrewEffect
+
+  /** Se emite una sola vez por sesión, al pasar a Finished. */
+  data class Finished(val brew: FinishedBrew) : BrewEffect
 }
+
+/** Lo que el ViewModel necesita para guardar una sesión terminada. */
+data class FinishedBrew(
+  /** Reloj monotónico de t0, para calcular la hora de pared. */
+  val t0MonoMs: Long,
+  /** Muestras ya recortadas (D4 de SPEC-001). */
+  val samples: List<BrewSample>,
+  val summary: BrewSummary,
+  val doseG: Double?,
+)

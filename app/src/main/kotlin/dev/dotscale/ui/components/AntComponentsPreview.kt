@@ -122,7 +122,17 @@ private fun AntShowcase() {
       AntListItem("TIMEMORE DOT", description = "Black Mirror DOT · AA:BB:CC", extra = { AntText("-58 dBm", type = AntTextType.Secondary) }, onClick = {})
       AntListItem("Dispositivo sin nombre", description = "11:22:33", divider = false, onClick = {})
     }
+    AntInput("Primera línea\nSegunda línea", {}, Modifier.fillMaxWidth(), singleLine = false, minLines = 3)
     AntEmpty("Enciende la báscula y acércala al teléfono.")
+
+    AntDivider(text = "Select · AutoComplete · Message", orientation = AntDividerOrientation.Left)
+    val methods = listOf("V60", "Kalita Wave", "Chemex").map { AntSelectOption(it, it) }
+    var method by remember { mutableStateOf<String?>("V60") }
+    AntSelect(methods, method, { method = it }, label = "Método", Modifier.fillMaxWidth())
+    AntSelect(methods, null, {}, label = "Café", Modifier.fillMaxWidth(), placeholder = "Todos")
+    var coffee by remember { mutableStateOf("Et") }
+    AntAutoComplete(coffee, { coffee = it }, listOf("Etiopía", "Kenia"), Modifier.fillMaxWidth(), placeholder = "Café")
+    AntMessage("Preparación borrada", AntStatus.Success, action = { AntButton("Deshacer", {}, type = AntButtonType.Link, size = AntSize.Small) })
   }
 }
 

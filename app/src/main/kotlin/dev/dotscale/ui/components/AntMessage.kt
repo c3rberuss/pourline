@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
+import dev.dotscale.ui.theme.AntSize
 import dev.dotscale.ui.theme.AntTheme
 
 /** Datos de un `message` de antd que viajan por la cola de un [SnackbarHostState]. */
@@ -25,14 +26,21 @@ class AntMessageVisuals(
   override val message: String,
   val type: AntStatus = AntStatus.Info,
   override val duration: SnackbarDuration = SnackbarDuration.Short,
+  override val actionLabel: String? = null,
 ) : SnackbarVisuals {
-  override val actionLabel: String? = null
   override val withDismissAction: Boolean = false
 }
 
-/** Equivalente a `message.success/info/warning/error(...)`. */
-suspend fun SnackbarHostState.showAntMessage(message: String, type: AntStatus = AntStatus.Info): SnackbarResult =
-  showSnackbar(AntMessageVisuals(message, type))
+/**
+ * Equivalente a `message.success/info/warning/error(...)`. Con [actionLabel] muestra un botón de acción
+ * (p. ej. "Deshacer") y el resultado dice si se pulsó (`ActionPerformed`) o expiró (`Dismissed`).
+ */
+suspend fun SnackbarHostState.showAntMessage(
+  message: String,
+  type: AntStatus = AntStatus.Info,
+  actionLabel: String? = null,
+  duration: SnackbarDuration = SnackbarDuration.Short,
+): SnackbarResult = showSnackbar(AntMessageVisuals(message, type, duration, actionLabel))
 
 /** Host para `Scaffold(snackbarHost = …)` que pinta los mensajes con el estilo de antd. */
 @Composable
@@ -40,14 +48,20 @@ fun AntMessageHost(hostState: SnackbarHostState, modifier: Modifier = Modifier) 
   SnackbarHost(hostState, modifier) { data ->
     val type = (data.visuals as? AntMessageVisuals)?.type ?: AntStatus.Info
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-      AntMessage(data.visuals.message, type)
+      AntMessage(
+        data.visuals.message,
+        type,
+        action = data.visuals.actionLabel?.let { label ->
+          { AntButton(label, onClick = { data.performAction() }, type = AntButtonType.Link, size = AntSize.Small) }
+        },
+      )
     }
   }
 }
 
-/** Píldora flotante de `message`: icono de estado y texto sobre `colorBgElevated`. */
+/** Píldora flotante de `message`: icono de estado y texto sobre `colorBgElevated`, con una [action] opcional. */
 @Composable
-fun AntMessage(text: String, type: AntStatus, modifier: Modifier = Modifier) {
+fun AntMessage(text: String, type: AntStatus, modifier: Modifier = Modifier, action: (@Composable () -> Unit)? = null) {
   val colors = AntTheme.colors
   val shape = RoundedCornerShape(AntTheme.radius.lg)
   Row(
@@ -61,5 +75,6 @@ fun AntMessage(text: String, type: AntStatus, modifier: Modifier = Modifier) {
   ) {
     AntStatusIcon(type)
     Text(text, color = colors.text, style = AntTheme.typography.text)
+    action?.invoke()
   }
 }

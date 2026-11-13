@@ -78,6 +78,7 @@ fun ScanScreen(
   onDeviceSelected: (address: String, name: String) -> Unit,
   onSimulatedSelected: () -> Unit,
   onOpenSettings: () -> Unit,
+  onOpenHistory: () -> Unit,
 ) {
   val context = LocalContext.current
   val appContext = context.applicationContext
@@ -100,6 +101,7 @@ fun ScanScreen(
       AntTopBar(
         title = stringResource(R.string.scan_title),
         actions = {
+          AntIconButton(AntIcons.History, contentDescription = stringResource(R.string.history_open), onClick = onOpenHistory)
           AntIconButton(AntIcons.Settings, contentDescription = stringResource(R.string.settings_open), onClick = onOpenSettings)
           ThemeModeButton()
         },

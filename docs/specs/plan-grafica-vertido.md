@@ -64,6 +64,8 @@ Se aprobaron y están incorporadas al spec, en el §3.9.
   y el reloj de `WeightCard` no coincide con el eje X.
 - Propuesta: mantener el spec y decidir en SPEC-002. La alternativa es enviar `resetTimer` antes de
   `startTimer` al confirmar el inicio.
+- *Resuelto en [SPEC-002](spec-historial.md) §3.5: `pauseTimer` al terminar por inactividad, de forma
+  manual o por duración máxima, y `resetTimer` al rearmar con tara.*
 
 ## 3. Fases
 
@@ -377,5 +379,5 @@ Commit sugerido: `test(ui): add instrumented tests for brew chart and settings`.
 ## 6. Seguimiento fuera de este plan
 
 - Preguntas abiertas del §6 del spec, para cuando llegue la DOT física.
-- P1 (temporizador al terminar), para decidir antes de SPEC-002.
+- P1 (temporizador al terminar), para decidir antes de SPEC-002. *Resuelto en SPEC-002 §3.5.*
 - SPEC-002 necesita persistencia (Room). Este plan no deja nada guardado más allá de la preferencia.

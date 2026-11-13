@@ -15,6 +15,7 @@ import dev.dotscale.brew.StabilityLevel
 import dev.dotscale.brew.fromGrams
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.ui.components.AntAlert
+import dev.dotscale.ui.components.AntButton
 import dev.dotscale.ui.components.AntCard
 import dev.dotscale.ui.components.AntDivider
 import dev.dotscale.ui.components.AntStatistic
@@ -26,9 +27,18 @@ import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.theme.AntTheme
 import kotlin.math.roundToInt
 
-/** Resumen efímero de la preparación terminada. */
+/**
+ * Resumen de una preparación terminada. En Scale, [savedBrew] controla el botón "Añadir detalles": deshabilitado
+ * mientras guarda, habilitado al guardar y oculto si falla o no hay guardado (el detalle del historial).
+ */
 @Composable
-fun BrewSummaryCard(summary: BrewSummary, unit: WeightUnit, modifier: Modifier = Modifier) {
+fun BrewSummaryCard(
+  summary: BrewSummary,
+  unit: WeightUnit,
+  modifier: Modifier = Modifier,
+  savedBrew: SavedBrew? = null,
+  onAddDetails: (Long) -> Unit = {},
+) {
   AntCard(
     modifier.fillMaxWidth().testTag("brew_summary"),
     title = stringResource(R.string.brew_summary_title),
@@ -89,6 +99,18 @@ fun BrewSummaryCard(summary: BrewSummary, unit: WeightUnit, modifier: Modifier =
           )
         }
       }
+    }
+    when (savedBrew) {
+      SavedBrew.Saving, is SavedBrew.Saved -> {
+        AntDivider()
+        AntButton(
+          text = stringResource(R.string.brew_summary_add_details),
+          onClick = { (savedBrew as? SavedBrew.Saved)?.let { onAddDetails(it.id) } },
+          modifier = Modifier.fillMaxWidth().testTag("brew_add_details"),
+          enabled = savedBrew is SavedBrew.Saved,
+        )
+      }
+      SavedBrew.Failed, null -> Unit
     }
   }
 }

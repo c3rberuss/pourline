@@ -8,6 +8,9 @@ import kotlin.math.roundToInt
 /**
  * Báscula falsa que alimenta una [BrewSession]: genera un `ScaleMessage.Weight` cada 100 ms,
  * acumula el peso según el flujo y cuantiza como la báscula (×10 en g, ×100 en oz).
+ *
+ * También simula el temporizador: aplica los efectos `StartTimer`, `PauseTimer` y `ResetTimer` a
+ * [timer] y devuelve a la sesión la notificación `Timer` correspondiente, como haría la báscula.
  */
 class FakeScale(
   var unit: WeightUnit = WeightUnit.GRAMS,
@@ -20,12 +23,34 @@ class FakeScale(
   var timer = TimerStatus.RESET
   var grossG = 0.0
   private var tareG = 0.0
+  /** Todos los efectos que ha producido la sesión, en orden. */
   val effects = mutableListOf<BrewEffect>()
 
   val state: BrewState get() = session.state
   val phase: BrewPhase get() = session.state.phase
   val finished: BrewPhase.Finished get() = phase as BrewPhase.Finished
   val startTimerCount: Int get() = effects.count { it == BrewEffect.StartTimer }
+  val pauseTimerCount: Int get() = effects.count { it == BrewEffect.PauseTimer }
+  val resetTimerCount: Int get() = effects.count { it == BrewEffect.ResetTimer }
+  val finishedBrews: List<FinishedBrew> get() = effects.filterIsInstance<BrewEffect.Finished>().map { it.brew }
+
+  fun clearEffects() = effects.clear()
+
+  /** Registra los efectos y simula la respuesta del temporizador de la báscula. */
+  private fun apply(produced: List<BrewEffect>): List<BrewEffect> {
+    effects += produced
+    for (effect in produced) {
+      val status = when (effect) {
+        BrewEffect.StartTimer -> TimerStatus.RUNNING
+        BrewEffect.PauseTimer -> TimerStatus.PAUSED
+        BrewEffect.ResetTimer -> TimerStatus.RESET
+        is BrewEffect.Finished -> continue
+      }
+      timer = status
+      apply(session.onTimer(status, nowMs))
+    }
+    return produced
+  }
 
   /** Una notificación de peso, [STEP_MS] después de la anterior. */
   fun sample(flowGps: Double, outOfRange: Boolean = false, netOverrideG: Double? = null) {
@@ -40,9 +65,7 @@ class FakeScale(
       unit = unit,
       outOfRange = outOfRange,
     )
-    val produced = session.onWeight(message, nowMs, timer)
-    effects += produced
-    if (BrewEffect.StartTimer in produced) timer = TimerStatus.RUNNING
+    apply(session.onWeight(message, nowMs, timer))
   }
 
   fun pour(gps: Double, ms: Int) = repeat(ms / STEP_MS.toInt()) { sample(gps) }
@@ -59,19 +82,19 @@ class FakeScale(
   /** La báscula avisa `Tared` antes de la primera muestra posterior a la tara. */
   fun tare() {
     tareG = grossG
-    session.onTared(nowMs)
+    apply(session.onTared(nowMs))
   }
 
   fun timerEvent(status: TimerStatus) {
     timer = status
-    session.onTimer(status, nowMs)
+    apply(session.onTimer(status, nowMs))
   }
 
-  fun tick(autoFinishMs: Long = 60_000) = session.onTick(nowMs, autoFinishMs)
+  fun tick(autoFinishMs: Long = 60_000) = apply(session.onTick(nowMs, autoFinishMs))
 
-  fun finish() = session.finish(nowMs)
+  fun finish() = apply(session.finish(nowMs))
 
-  fun disconnect() = session.onDisconnected(nowMs)
+  fun disconnect() = apply(session.onDisconnected(nowMs))
 
   companion object {
     const val STEP_MS = 100L

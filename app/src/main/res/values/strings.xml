@@ -41,6 +41,8 @@
     <string name="scale_ratio_value">1:%1$.1f</string>
     <string name="scale_ratio_empty">—</string>
     <string name="scale_dose_hint">Pon el café en la báscula y pulsa «Fijar dosis»: se guarda el peso y se hace tara para empezar a verter.</string>
+    <string name="scale_error_command">No se pudo enviar la orden a la báscula</string>
+    <string name="scale_error_save">No se pudo guardar la preparación</string>
     <string name="scale_retry">Reintentar</string>
     <string name="scale_simulation">Simulación</string>
     <string name="scale_sim_add">+%1$d g</string>
@@ -110,4 +112,57 @@
     <string name="settings_auto_finish_title">Fin automático</string>
     <string name="settings_auto_finish_value">%1$d s</string>
     <string name="settings_auto_finish_hint">Segundos sin verter tras los que la preparación se da por terminada. Sube el valor si haces blooms largos: la pausa del bloom no debe terminar la preparación.</string>
+
+    <!-- Historial -->
+    <string name="history_title">Historial</string>
+    <string name="history_open">Abrir historial</string>
+    <string name="history_filter_coffee">Café</string>
+    <string name="history_filter_method">Método</string>
+    <string name="history_filter_all">Todos</string>
+    <string name="history_progress_title">Progreso de la estabilidad</string>
+    <string name="history_progress_empty">Haz al menos dos preparaciones reales con puntuación para ver tu progreso</string>
+    <plurals name="history_progress_description">
+        <item quantity="one">Progreso de la estabilidad: %1$d preparación, media %2$d, última %3$d.</item>
+        <item quantity="other">Progreso de la estabilidad: %1$d preparaciones, media %2$d, última %3$d.</item>
+    </plurals>
+    <string name="history_empty">Aún no hay preparaciones</string>
+    <string name="history_empty_filtered">Ninguna preparación coincide con el filtro</string>
+    <string name="history_row_no_score">Sin puntuación</string>
+    <string name="history_row_simulated">Simulada</string>
+    <string name="history_row_stats">%1$s · %2$s</string>
+    <string name="history_deleted">Preparación borrada</string>
+    <string name="history_undo">Deshacer</string>
+
+    <!-- Detalle de una preparación -->
+    <string name="brew_detail_edit">Editar</string>
+    <string name="brew_detail_delete">Borrar</string>
+    <string name="brew_detail_details">Detalles</string>
+    <string name="brew_detail_coffee">Café</string>
+    <string name="brew_detail_method">Método</string>
+    <string name="brew_detail_grind">Molienda</string>
+    <string name="brew_detail_temp">Temperatura</string>
+    <string name="brew_detail_temp_value">%1$s °C</string>
+    <string name="brew_detail_notes">Notas</string>
+    <string name="brew_detail_curve_error">No se pudo leer la curva de esta preparación</string>
+    <string name="brew_detail_old_metric">Puntuación calculada con una versión anterior de la métrica</string>
+    <string name="brew_method_other">Otro</string>
+
+    <!-- Edición de una preparación -->
+    <string name="brew_summary_add_details">Añadir detalles</string>
+    <string name="brew_edit_title">Detalles de la preparación</string>
+    <string name="brew_edit_name">Nombre</string>
+    <string name="brew_edit_coffee">Café</string>
+    <string name="brew_edit_method">Método</string>
+    <string name="brew_edit_method_none">Sin método</string>
+    <string name="brew_edit_method_other">Nombre del método</string>
+    <string name="brew_edit_grind">Molienda</string>
+    <string name="brew_edit_grind_hint">p. ej. 21 clics</string>
+    <string name="brew_edit_temp">Temperatura (°C)</string>
+    <string name="brew_edit_temp_error">Escribe un valor de 0 a 100 con un decimal como máximo</string>
+    <string name="brew_edit_notes">Notas</string>
+    <string name="brew_edit_save">Guardar</string>
+    <string name="brew_edit_discard_title">¿Descartar los cambios?</string>
+    <string name="brew_edit_discard_text">Los cambios que no hayas guardado se perderán.</string>
+    <string name="brew_edit_discard">Descartar</string>
+    <string name="brew_edit_keep">Seguir editando</string>
 </resources>

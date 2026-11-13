@@ -1,0 +1,247 @@
+package dev.dotscale.history
+
+import androidx.test.platform.app.InstrumentationRegistry
+import dev.dotscale.brew.FinishReason
+import dev.dotscale.protocol.WeightUnit
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+/** Room en memoria: el `history.db` real no se toca. */
+class BrewDaoTest {
+  private lateinit var db: HistoryDatabase
+  private lateinit var repository: BrewRepository
+  private val dao get() = db.brewDao()
+
+  @Before
+  fun setUp() {
+    db = HistoryDatabase.inMemory(InstrumentationRegistry.getInstrumentation().targetContext)
+    repository = BrewRepository(db)
+  }
+
+  @After
+  fun tearDown() = db.close()
+
+  private suspend fun save(
+    startedAt: Long = 1_700_000_000_000,
+    seed: Long = 1,
+    simulated: Boolean = false,
+    scored: Boolean = true,
+    unit: WeightUnit = WeightUnit.GRAMS,
+    totalMs: Long = 60_000,
+  ): Long = repository.save(
+    TestBrews.finished(totalMs = totalMs, seed = seed, scored = scored),
+    TestBrews.context(startedAtEpochMs = startedAt, simulated = simulated, unit = unit),
+  )
+
+  @Test
+  fun insertAndRead() = runTest {
+    val finished = TestBrews.finished(seed = 3)
+    val id = repository.save(finished, TestBrews.context(startedAtEpochMs = 42, unit = WeightUnit.OUNCES, simulated = true))
+
+    val record = repository.get(id)!!
+    assertFalse(record.curveError)
+    assertEquals(42L, record.entity.startedAtEpochMs)
+    assertEquals(WeightUnit.OUNCES, record.entity.unit)
+    assertTrue(record.entity.simulated)
+    assertEquals(BrewConfigVersion, record.entity.metricVersion)
+    assertEquals(finished.samples.size, record.samples.size)
+    assertEquals(finished.summary.pours.size, record.summary.pours.size)
+    assertEquals(finished.summary.stabilityScore, record.summary.stabilityScore)
+    assertEquals(finished.summary.levelShare, record.summary.levelShare)
+    assertEquals(finished.summary.finalRatio!!, record.summary.finalRatio!!, 1e-9)
+    assertEquals(finished.summary.reason, record.summary.reason)
+    assertEquals(48, record.entity.preview.size)
+    assertNull(repository.get(id + 100))
+  }
+
+  @Test
+  fun listIsNewestFirstAndCarriesThePreviewButNotTheCurve() = runTest {
+    val old = save(startedAt = 1_000)
+    val new = save(startedAt = 3_000)
+    val middle = save(startedAt = 2_000)
+
+    val items = repository.list(BrewFilter()).first()
+    assertEquals(listOf(new, middle, old), items.map { it.id })
+    assertEquals(48, items.first().preview.size)
+    assertTrue(items.first().preview.last() > 0.9f)
+    assertEquals(60_000L, items.first().totalTimeMs)
+  }
+
+  @Test
+  fun filterByCoffeeAndMethod() = runTest {
+    val a = save(startedAt = 1)
+    val b = save(startedAt = 2)
+    val c = save(startedAt = 3)
+    val d = save(startedAt = 4)
+    repository.updateDetails(a, BrewDetails(coffee = "Etiopía", method = BrewMethod.V60))
+    repository.updateDetails(b, BrewDetails(coffee = "Etiopía", method = BrewMethod.CHEMEX))
+    repository.updateDetails(c, BrewDetails(coffee = "Kenia", method = BrewMethod.OTHER, methodOther = "Sifón"))
+    repository.updateDetails(d, BrewDetails(coffee = "Kenia", method = BrewMethod.OTHER, methodOther = "Prensa"))
+
+    assertEquals(listOf(b, a), repository.list(BrewFilter(coffee = "Etiopía")).first().map { it.id })
+    assertEquals(listOf(a), repository.list(BrewFilter(coffee = "Etiopía", method = BrewMethod.V60)).first().map { it.id })
+    // OTHER agrupa todos los `methodOther`.
+    assertEquals(listOf(d, c), repository.list(BrewFilter(method = BrewMethod.OTHER)).first().map { it.id })
+    assertEquals(listOf(a), repository.progress(BrewFilter(method = BrewMethod.V60)).first().map { it.brewId })
+    assertTrue(repository.list(BrewFilter(coffee = "Colombia")).first().isEmpty())
+    assertEquals(
+      listOf(BrewMethod.V60, BrewMethod.CHEMEX, BrewMethod.OTHER),
+      repository.methods().first(),
+    )
+  }
+
+  @Test
+  fun progressSkipsSimulatedAndUnscoredBrewsAndIsChronological() = runTest {
+    val second = save(startedAt = 2_000)
+    val first = save(startedAt = 1_000)
+    save(startedAt = 1_500, simulated = true)
+    save(startedAt = 1_600, scored = false)
+
+    val points = repository.progress(BrewFilter()).first()
+    assertEquals(listOf(first, second), points.map { it.brewId })
+    assertTrue(points.all { it.score in 0..100 })
+    assertEquals(4, repository.list(BrewFilter()).first().size)
+  }
+
+  @Test
+  fun coffeesHaveNoDuplicatesAndAreOrderedByMostRecentUse() = runTest {
+    val a = save(startedAt = 1)
+    val b = save(startedAt = 2)
+    val c = save(startedAt = 3)
+    val d = save(startedAt = 4)
+    repository.updateDetails(a, BrewDetails(coffee = "Etiopía"))
+    repository.updateDetails(b, BrewDetails(coffee = "Kenia"))
+    repository.updateDetails(c, BrewDetails(coffee = "Etiopía"))
+    repository.updateDetails(d, BrewDetails(coffee = " "))
+
+    assertEquals(listOf("Etiopía", "Kenia"), repository.coffees().first())
+    assertNull(repository.get(d)!!.entity.coffee)
+  }
+
+  @Test
+  fun updateDetailsReusesTheExistingSpelling() = runTest {
+    val a = save(startedAt = 1)
+    val b = save(startedAt = 2)
+    repository.updateDetails(a, BrewDetails(coffee = "Etiopía"))
+    repository.updateDetails(b, BrewDetails(coffee = " etiopía ", name = " Mañana ", waterTempC = 92.5, notes = "dulce"))
+
+    val entity = repository.get(b)!!.entity
+    assertEquals("Etiopía", entity.coffee)
+    assertEquals("Mañana", entity.name)
+    assertEquals(92.5, entity.waterTempC!!, 0.0)
+    assertEquals("dulce", entity.notes)
+    assertEquals(listOf("Etiopía"), repository.coffees().first())
+  }
+
+  @Test
+  fun theSpellingOfTheOnlyBrewWithACoffeeCanBeCorrected() = runTest {
+    val a = save()
+    repository.updateDetails(a, BrewDetails(coffee = "etiopía"))
+    repository.updateDetails(a, BrewDetails(coffee = "Etiopía"))
+    assertEquals("Etiopía", repository.get(a)!!.entity.coffee)
+  }
+
+  @Test
+  fun methodOtherIsDroppedWithoutTheOtherMethod() = runTest {
+    val a = save()
+    repository.updateDetails(a, BrewDetails(method = BrewMethod.V60, methodOther = "Sifón"))
+    assertNull(repository.get(a)!!.entity.methodOther)
+  }
+
+  @Test
+  fun deleteCascadesToTheCurveAndFillsPendingUndo() = runTest {
+    val id = save()
+    val before = repository.get(id)!!
+    assertNotNull(dao.curve(id))
+
+    repository.delete(id)
+    assertNull(repository.get(id))
+    assertNull(dao.curve(id))
+    assertTrue(repository.list(BrewFilter()).first().isEmpty())
+    assertEquals(id, repository.pendingUndo.value!!.entity.id)
+    val deleted = repository.pendingUndo.value!!.entity
+    assertEquals(before.entity.copy(preview = deleted.preview), deleted) // `ByteArray` se compara por referencia
+    assertArrayEquals(before.entity.preview, deleted.preview)
+  }
+
+  @Test
+  fun restoreBringsBackTheSameIdAndCurve() = runTest {
+    val id = save()
+    val curveBefore = dao.curve(id)!!
+    val before = repository.get(id)!!
+
+    repository.delete(id)
+    repository.restore(repository.pendingUndo.value!!)
+
+    assertNull(repository.pendingUndo.value)
+    val after = repository.get(id)!!
+    assertEquals(id, after.entity.id)
+    assertEquals(before.entity.startedAtEpochMs, after.entity.startedAtEpochMs)
+    assertEquals(before.samples, after.samples)
+    assertArrayEquals(curveBefore, dao.curve(id))
+    assertEquals(listOf(id), repository.list(BrewFilter()).first().map { it.id })
+  }
+
+  @Test
+  fun aSecondDeleteReplacesPendingUndoAndClearIsCompareAndSet() = runTest {
+    val a = save(startedAt = 1)
+    val b = save(startedAt = 2)
+    repository.delete(a)
+    val first = repository.pendingUndo.value!!
+    repository.delete(b)
+    val second = repository.pendingUndo.value!!
+    assertEquals(b, second.entity.id)
+
+    repository.clearPendingUndo(first) // un aviso que expira no borra el deshacer posterior
+    assertEquals(second, repository.pendingUndo.value)
+    repository.clearPendingUndo(second)
+    assertNull(repository.pendingUndo.value)
+  }
+
+  @Test
+  fun aCorruptCurveSetsCurveErrorAndKeepsTheSummary() = runTest {
+    val finished = TestBrews.finished(totalMs = 60_000)
+    val id = repository.save(finished, TestBrews.context())
+    // Se sustituye el BLOB por basura con la versión correcta.
+    db.openHelper.writableDatabase.execSQL("UPDATE brew_curves SET data = x'0102030405' WHERE brewId = $id")
+
+    val record = repository.get(id)!!
+    assertTrue(record.curveError)
+    assertTrue(record.samples.isEmpty())
+    assertTrue(record.summary.pours.isEmpty())
+    assertEquals(finished.summary.stabilityScore, record.summary.stabilityScore)
+    assertTrue(repository.observe(id).first()!!.curveError)
+  }
+
+  @Test
+  fun observeEmitsNullWhenTheRowDisappears() = runTest {
+    val id = save()
+    assertNotNull(repository.observe(id).first())
+    repository.delete(id)
+    assertNull(repository.observe(id).first())
+  }
+
+  @Test
+  fun finishReasonAndInterruptedAreStored() = runTest {
+    val id = repository.save(
+      TestBrews.finished(reason = FinishReason.DISCONNECTED),
+      TestBrews.context(),
+    )
+    val entity = repository.get(id)!!.entity
+    assertEquals(FinishReason.DISCONNECTED, entity.finishReason)
+    assertTrue(entity.interrupted)
+  }
+
+  private companion object {
+    val BrewConfigVersion = dev.dotscale.brew.BrewConfig.METRIC_VERSION
+  }
+}

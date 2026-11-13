@@ -5,8 +5,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.dotscale.brew.BrewEffect
+import dev.dotscale.brew.BrewPhase
 import dev.dotscale.brew.BrewSession
+import dev.dotscale.brew.FinishedBrew
 import dev.dotscale.brew.toGrams
+import dev.dotscale.history.BrewContext
+import dev.dotscale.history.BrewSaver
 import dev.dotscale.protocol.Frame
 import dev.dotscale.protocol.ScaleCommands
 import dev.dotscale.protocol.ScaleMessage
@@ -17,6 +21,7 @@ import dev.dotscale.scale.ScaleConnection
 import dev.dotscale.sim.PourProfile
 import dev.dotscale.sim.SimulatedScaleConnection
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,16 +31,24 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * @param autoFinishSeconds segundos sin verter tras los que la preparación termina; se lee en cada tick,
  * así que un cambio en ajustes se aplica a la sesión en curso.
+ * @param saver guarda las sesiones terminadas.
+ * @param applicationScope ámbito donde se guarda: no se cancela al destruir el ViewModel, así que salir de
+ * Scale no corta un guardado en curso.
  * @param clock reloj monotónico en ms; se inyecta para poder probar la sesión sin reloj real.
+ * @param wallClock hora de pared en ms desde la época, para fechar las preparaciones.
  */
 class ScaleViewModel(
   private val connection: ScaleConnection,
   private val autoFinishSeconds: StateFlow<Int>,
+  private val saver: BrewSaver,
+  private val applicationScope: CoroutineScope,
   private val clock: () -> Long = SystemClock::elapsedRealtime,
+  private val wallClock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
 
   // Solo se toca desde el hilo principal (colectores y tick de `viewModelScope`).
@@ -44,8 +57,11 @@ class ScaleViewModel(
   private val _ui = MutableStateFlow(ScaleUiState(isSimulated = connection is SimulatedScaleConnection))
   val ui: StateFlow<ScaleUiState> = _ui.asStateFlow()
 
-  private val _errors = Channel<String>(Channel.BUFFERED)
+  private val _errors = Channel<ScaleError>(Channel.BUFFERED)
   val errors = _errors.receiveAsFlow()
+
+  /** Se incrementa con cada guardado y al empezar una sesión: solo el guardado vigente publica su resultado. */
+  private val saveGeneration = AtomicLong()
 
   init {
     viewModelScope.launch {
@@ -53,16 +69,22 @@ class ScaleViewModel(
       connection.state.collect { s ->
         val wasReady = previous == ConnectionState.Ready
         previous = s
-        if (wasReady && (s is ConnectionState.Disconnected || s is ConnectionState.Failed)) session.onDisconnected(clock())
-        _ui.update { it.copy(connection = s, brew = session.state) }
+        val effects = if (wasReady && (s is ConnectionState.Disconnected || s is ConnectionState.Failed)) {
+          session.onDisconnected(clock())
+        } else {
+          emptyList()
+        }
+        publish { it.copy(connection = s) }
+        handle(effects)
       }
     }
     viewModelScope.launch { connection.messages.collect(::onMessage) }
     viewModelScope.launch {
       while (isActive) {
         delay(TICK_MS)
-        session.onTick(clock(), autoFinishSeconds.value * 1_000L)
-        _ui.update { it.copy(brew = session.state) }
+        val effects = session.onTick(clock(), autoFinishSeconds.value * 1_000L)
+        publish()
+        handle(effects)
       }
     }
     connect()
@@ -72,22 +94,67 @@ class ScaleViewModel(
     val now = clock()
     val effects = when (message) {
       is ScaleMessage.Weight -> session.onWeight(message, now, _ui.value.timer)
-      is ScaleMessage.Timer -> {
-        session.onTimer(message.status, now)
-        emptyList()
-      }
-      is ScaleMessage.Tared -> {
-        if (message.success) session.onTared(now)
-        emptyList()
-      }
+      is ScaleMessage.Timer -> session.onTimer(message.status, now)
+      is ScaleMessage.Tared -> if (message.success) session.onTared(now) else emptyList()
       else -> emptyList()
     }
-    _ui.update { it.reduce(message).copy(brew = session.state) }
-    effects.forEach(::execute)
+    publish { it.reduce(message) }
+    handle(effects)
   }
 
-  private fun execute(effect: BrewEffect) = when (effect) {
-    BrewEffect.StartTimer -> send(ScaleCommands.startTimer())
+  /** Publica el estado de la sesión. Al empezar una sesión nueva, el guardado anterior deja de ser relevante. */
+  private fun publish(transform: (ScaleUiState) -> ScaleUiState = { it }) {
+    _ui.update { current ->
+      val next = transform(current).copy(brew = session.state)
+      if (next.brew.phase is BrewPhase.Active && next.savedBrew != null) {
+        saveGeneration.incrementAndGet()
+        next.copy(savedBrew = null)
+      } else {
+        next
+      }
+    }
+  }
+
+  /**
+   * Ejecuta los efectos de la sesión. Los comandos del temporizador salen en una sola corrutina y en
+   * el orden de la lista, para que `resetTimer` llegue siempre antes que `startTimer`.
+   */
+  private fun handle(effects: List<BrewEffect>) {
+    if (effects.isEmpty()) return
+    val frames = effects.mapNotNull { effect ->
+      when (effect) {
+        BrewEffect.StartTimer -> ScaleCommands.startTimer()
+        BrewEffect.PauseTimer -> ScaleCommands.pauseTimer()
+        BrewEffect.ResetTimer -> ScaleCommands.resetTimer()
+        is BrewEffect.Finished -> null
+      }
+    }
+    effects.filterIsInstance<BrewEffect.Finished>().forEach { save(it.brew) }
+    if (frames.isNotEmpty()) send(frames)
+  }
+
+  private fun save(brew: FinishedBrew) {
+    val ui = _ui.value
+    val context = BrewContext(
+      startedAtEpochMs = wallClock() - (clock() - brew.t0MonoMs),
+      unit = ui.unit,
+      scaleModel = ui.model,
+      simulated = ui.isSimulated,
+    )
+    val generation = saveGeneration.incrementAndGet()
+    _ui.update { it.copy(savedBrew = SavedBrew.Saving) }
+    applicationScope.launch {
+      val result = try {
+        SavedBrew.Saved(saver.save(brew, context))
+      } catch (e: CancellationException) {
+        throw e
+      } catch (e: Exception) {
+        Log.w(TAG, "save failed", e)
+        _errors.trySend(ScaleError.SaveFailed)
+        SavedBrew.Failed
+      }
+      _ui.update { if (saveGeneration.get() == generation) it.copy(savedBrew = result) else it }
+    }
   }
 
   fun connect() {
@@ -130,8 +197,9 @@ class ScaleViewModel(
 
   /** Botón "Terminar" de la gráfica. */
   fun finishBrew() {
-    session.finish(clock())
-    _ui.update { it.copy(brew = session.state) }
+    val effects = session.finish(clock())
+    publish()
+    handle(effects)
   }
 
   fun simulateAdd(grams: Double) {
@@ -144,19 +212,27 @@ class ScaleViewModel(
     viewModelScope.launch { sim.simulatePour(profile) }
   }
 
-  private fun send(frame: Frame) {
+  private fun send(frame: Frame) = send(listOf(frame))
+
+  /** Envía las tramas en orden. Si una falla, el error va a [errors] y se sigue con la siguiente. */
+  private fun send(frames: List<Frame>) {
     viewModelScope.launch {
-      try {
-        connection.send(frame)
-      } catch (e: CancellationException) {
-        throw e
-      } catch (e: Exception) {
-        _errors.send(e.message ?: "Error al enviar el comando")
+      for (frame in frames) {
+        try {
+          connection.send(frame)
+        } catch (e: CancellationException) {
+          throw e
+        } catch (e: Exception) {
+          _errors.send(ScaleError.Command(e.message))
+        }
       }
     }
   }
 
   override fun onCleared() {
+    // Salir de Scale con la sesión activa la termina y la guarda. Los comandos del temporizador no se
+    // envían: la conexión se cierra justo después.
+    session.finish(clock()).filterIsInstance<BrewEffect.Finished>().forEach { save(it.brew) }
     connection.disconnect()
   }
 
