@@ -68,6 +68,7 @@ class BrewChartTest {
           onBack = {},
           onOpenSettings = {},
           onOpenHistory = {},
+          onOpenCoffees = {},
           onAddDetails = {},
           onManageRecipes = { managed++ },
         )

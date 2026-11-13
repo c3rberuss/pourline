@@ -25,3 +25,10 @@ import kotlinx.serialization.Serializable
 @Serializable data class ComparePick(val aId: Long) : NavKey
 
 @Serializable data class BrewCompare(val aId: Long, val bId: Long) : NavKey
+
+@Serializable data object Coffees : NavKey
+
+@Serializable data class CoffeeDetail(val id: Long) : NavKey
+
+/** `id == null` crea un café; `fromCoffeeId` prellena una bolsa nueva a partir de otro ("Nueva bolsa"). */
+@Serializable data class CoffeeEdit(val id: Long? = null, val fromCoffeeId: Long? = null) : NavKey

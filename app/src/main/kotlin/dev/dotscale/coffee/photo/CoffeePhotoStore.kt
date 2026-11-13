@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
+import androidx.core.graphics.scale
 import dev.dotscale.coffee.PhotoFiles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -47,7 +48,7 @@ class CoffeePhotoStore(private val dir: File, private val cacheDir: File) : Phot
         write(upright, file(name), 85)
         val crop = centerSquare(upright.width, upright.height)
         val square = Bitmap.createBitmap(upright, crop.left, crop.top, crop.side, crop.side)
-        val thumb = Bitmap.createScaledBitmap(square, THUMB_SIDE, THUMB_SIDE, true)
+        val thumb = square.scale(THUMB_SIDE, THUMB_SIDE)
         write(thumb, thumbFile(name), 80)
       } catch (e: IOException) {
         delete(listOf(name))

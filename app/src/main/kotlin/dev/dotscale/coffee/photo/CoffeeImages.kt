@@ -6,6 +6,7 @@ import android.util.LruCache
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.scale
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -46,7 +47,7 @@ class CoffeeImages(
     val options = BitmapFactory.Options().apply { inSampleSize = inSampleSize(bounds.outWidth, bounds.outHeight, maxSide) }
     val bitmap = BitmapFactory.decodeFile(file.path, options) ?: return null
     val (w, h) = scaledSize(bitmap.width, bitmap.height, maxSide)
-    return if (w == bitmap.width && h == bitmap.height) bitmap else Bitmap.createScaledBitmap(bitmap, w, h, true)
+    return if (w == bitmap.width && h == bitmap.height) bitmap else bitmap.scale(w, h)
   }
 }
 

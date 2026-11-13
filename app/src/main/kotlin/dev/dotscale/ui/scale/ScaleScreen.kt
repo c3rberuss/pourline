@@ -81,6 +81,7 @@ fun ScaleScreen(
   onBack: () -> Unit,
   onOpenSettings: () -> Unit,
   onOpenHistory: () -> Unit,
+  onOpenCoffees: () -> Unit,
   onAddDetails: (Long) -> Unit,
   onManageRecipes: () -> Unit,
 ) {
@@ -118,6 +119,7 @@ fun ScaleScreen(
         batteryPercent = ui.batteryPercent,
         onBack = onBack,
         onOpenHistory = onOpenHistory,
+        onOpenCoffees = onOpenCoffees,
         onOpenSettings = onOpenSettings,
       )
     },
@@ -208,6 +210,7 @@ internal fun ScaleTopBar(
   batteryPercent: Int?,
   onBack: () -> Unit,
   onOpenHistory: () -> Unit,
+  onOpenCoffees: () -> Unit,
   onOpenSettings: () -> Unit,
 ) {
   AntTopBar(
@@ -218,6 +221,12 @@ internal fun ScaleTopBar(
     },
     actions = {
       batteryPercent?.let { BatteryTag(it) }
+      AntIconButton(
+        AntIcons.Coffee,
+        contentDescription = stringResource(R.string.coffees_open),
+        onClick = onOpenCoffees,
+        modifier = Modifier.testTag("scale_open_coffees"),
+      )
       AntIconButton(AntIcons.History, contentDescription = stringResource(R.string.history_open), onClick = onOpenHistory)
       AntIconButton(AntIcons.Settings, contentDescription = stringResource(R.string.settings_open), onClick = onOpenSettings)
       ThemeModeButton()
