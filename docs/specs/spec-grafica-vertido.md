@@ -6,7 +6,7 @@
 | Fecha | 2026-11-12 |
 | Plan | [`plan-grafica-vertido.md`](plan-grafica-vertido.md) |
 | Módulos afectados | `:app` (nuevo paquete `dev.dotscale.brew`, `ui/scale`, `settings`, `sim`) |
-| Specs relacionados | [SPEC-002 Historial](spec-historial.md), SPEC-003 Curva objetivo, SPEC-004 Compartir imagen (pendientes) |
+| Specs relacionados | [SPEC-002 Historial](spec-historial.md), [SPEC-003 Curva objetivo](spec-curva-objetivo.md), SPEC-004 Compartir imagen (pendiente) |
 
 ## 1. Resumen y Contexto
 
