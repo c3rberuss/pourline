@@ -1,5 +1,6 @@
 package dev.dotscale.ui.history
 
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
@@ -14,11 +15,15 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
+import dev.dotscale.coffee.CoffeeRepository
+import dev.dotscale.coffee.PhotoFiles
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
+import dev.dotscale.history.UsedCoffee
+import dev.dotscale.ui.coffees.formatCoffeeDate
 import dev.dotscale.ui.theme.DotScaleTheme
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -27,6 +32,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.time.LocalDate
 
 class HistoryScreenTest {
   @get:Rule
@@ -46,22 +52,33 @@ class HistoryScreenTest {
   @After
   fun tearDown() = db.close()
 
+  private val coffees get() = CoffeeRepository(db, PhotoFiles { })
+
+  private fun coffee(name: String, roastDate: LocalDate? = null): Long =
+    runBlocking { coffees.save(TestBrews.coffeeDraft(name = name).copy(roastDate = roastDate)) }
+
   private fun seed(
     startedAt: Long,
     name: String? = null,
-    coffee: String? = null,
+    coffeeId: Long? = null,
     method: BrewMethod? = null,
     simulated: Boolean = false,
     scored: Boolean = true,
+    rating: Int? = null,
   ): Long = runBlocking {
     val id = repository.save(
       TestBrews.finished(totalMs = 60_000, scored = scored),
-      TestBrews.context(startedAtEpochMs = startedAt, simulated = simulated),
+      TestBrews.context(startedAtEpochMs = startedAt, simulated = simulated, coffee = coffeeId?.let { UsedCoffee(it, "x") }),
     )
-    if (name != null || coffee != null || method != null) {
-      repository.updateDetails(id, BrewDetails(name = name, coffee = coffee, method = method))
+    if (name != null || method != null || rating != null) {
+      repository.updateDetails(id, BrewDetails(name = name, method = method, rating = rating))
     }
     id
+  }
+
+  /** Una preparación anterior al catálogo: texto de café sin vínculo. */
+  private fun seedLegacy(startedAt: Long, name: String, coffee: String): Long = seed(startedAt, name).also {
+    db.openHelper.writableDatabase.execSQL("UPDATE brews SET coffee = ? WHERE id = ?", arrayOf<Any>(coffee, it))
   }
 
   private fun show() {
@@ -135,9 +152,11 @@ class HistoryScreenTest {
 
   @Test
   fun filterByCoffee() {
-    seed(startedAt = 1_000, name = "A", coffee = "Etiopía")
-    seed(startedAt = 2_000, name = "B", coffee = "Kenia")
-    seed(startedAt = 3_000, name = "C", coffee = "Etiopía")
+    val etiopia = coffee("Etiopía")
+    val kenia = coffee("Kenia")
+    seed(startedAt = 1_000, name = "A", coffeeId = etiopia)
+    seed(startedAt = 2_000, name = "B", coffeeId = kenia)
+    seed(startedAt = 3_000, name = "C", coffeeId = etiopia)
     show()
     waitForRows(3)
 
@@ -146,6 +165,76 @@ class HistoryScreenTest {
     waitForRows(2)
     rows()[0].assertTextContains("C", substring = true)
     rule.onNodeWithTag("history_filter_coffee").assertTextContains("Etiopía")
+  }
+
+  @Test
+  fun theCoffeeOptionsAreTheCatalogCoffeesWithBrewsIncludingAnArchivedOne() {
+    val etiopia = coffee("Etiopía")
+    val archived = coffee("Colombia")
+    coffee("Sin preparaciones")
+    seed(startedAt = 1_000, name = "A", coffeeId = etiopia)
+    seed(startedAt = 2_000, name = "B", coffeeId = archived)
+    runBlocking { coffees.setArchived(archived, true) }
+    show()
+    waitForRows(2)
+
+    rule.onNodeWithTag("history_filter_coffee").performClick()
+    rule.onNode(hasText("Etiopía") and hasAnyAncestor(isPopup())).assertIsDisplayed()
+    rule.onNode(hasText("Colombia") and hasAnyAncestor(isPopup())).assertIsDisplayed()
+    rule.onAllNodes(hasText("Sin preparaciones") and hasAnyAncestor(isPopup())).assertCountEquals(0)
+    clickMenuOption("Colombia")
+    waitForRows(1)
+    rows()[0].assertTextContains("B", substring = true)
+  }
+
+  @Test
+  fun aLegacyBrewWithoutLinkOnlyAppearsWithAll() {
+    val etiopia = coffee("Etiopía")
+    seed(startedAt = 1_000, name = "Vinculada", coffeeId = etiopia)
+    seedLegacy(startedAt = 2_000, name = "Antigua", coffee = "Etiopía")
+    show()
+    waitForRows(2)
+
+    rule.onNodeWithTag("history_filter_coffee").performClick()
+    clickMenuOption("Etiopía")
+    waitForRows(1)
+    rows()[0].assertTextContains("Vinculada", substring = true)
+
+    rule.onNodeWithTag("history_filter_coffee").performClick()
+    clickMenuOption(context.getString(R.string.history_filter_all))
+    waitForRows(2)
+  }
+
+  @Test
+  fun twoBagsWithTheSameNameAreToldApartByTheirRoastDate() {
+    val october = LocalDate.of(2026, 10, 12)
+    val first = coffee("Guji", october)
+    val second = coffee("Guji", null)
+    seed(startedAt = 1_000, name = "A", coffeeId = first)
+    seed(startedAt = 2_000, name = "B", coffeeId = second)
+    show()
+    waitForRows(2)
+
+    val dated = context.getString(R.string.history_filter_coffee_roasted, "Guji", formatCoffeeDate(october))
+    val undated = context.getString(R.string.history_filter_coffee_no_date, "Guji")
+    rule.onNodeWithTag("history_filter_coffee").performClick()
+    rule.onNode(hasText(dated) and hasAnyAncestor(isPopup())).assertIsDisplayed()
+    rule.onNode(hasText(undated) and hasAnyAncestor(isPopup())).assertIsDisplayed()
+    clickMenuOption(dated)
+    waitForRows(1)
+    rows()[0].assertTextContains("A", substring = true)
+  }
+
+  @Test
+  fun theRowShowsTheRatingOnlyWhenThereIsOne() {
+    seed(startedAt = 1_000, name = "Sin valorar")
+    seed(startedAt = 2_000, name = "Valorada", rating = 4)
+    show()
+    waitForRows(2)
+
+    rule.onAllNodesWithTag("history_row_rating", useUnmergedTree = true).assertCountEquals(1)
+    rule.onNodeWithTag("history_row_rating", useUnmergedTree = true)
+      .assertContentDescriptionEquals(context.getString(R.string.rate_description, 4, 5))
   }
 
   @Test
@@ -163,8 +252,8 @@ class HistoryScreenTest {
 
   @Test
   fun aFilterWithoutResultsShowsItsOwnEmptyState() {
-    seed(startedAt = 1_000, coffee = "Etiopía", method = BrewMethod.V60)
-    seed(startedAt = 2_000, coffee = "Kenia", method = BrewMethod.CHEMEX)
+    seed(startedAt = 1_000, coffeeId = coffee("Etiopía"), method = BrewMethod.V60)
+    seed(startedAt = 2_000, coffeeId = coffee("Kenia"), method = BrewMethod.CHEMEX)
     show()
     waitForRows(2)
 
@@ -180,8 +269,8 @@ class HistoryScreenTest {
 
   @Test
   fun theFilterGoesBackToAllWhenItsValueDisappears() {
-    seed(startedAt = 1_000, name = "A", coffee = "Etiopía")
-    val kenia = seed(startedAt = 2_000, name = "B", coffee = "Kenia")
+    seed(startedAt = 1_000, name = "A", coffeeId = coffee("Etiopía"))
+    val kenia = seed(startedAt = 2_000, name = "B", coffeeId = coffee("Kenia"))
     show()
     waitForRows(2)
 

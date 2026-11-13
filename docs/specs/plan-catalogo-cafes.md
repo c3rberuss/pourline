@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-catalogo-cafes.md`](spec-catalogo-cafes.md) (SPEC-004) |
-| Estado | En implementación: F0 a F6 hechas. F4 (etiquetas reales): 13 de 15 nombres bien extraídos (objetivo 12), 0 fechas inventadas en las 13 etiquetas sin fecha; las 2 fechas escritas a mano no se leen (no cuentan). Fallos: `Pacamana` (el OCR lee mal la variedad) y `Tusell` (logo del tostador más alto que el nombre). |
+| Estado | En implementación: F0 a F7 hechas. F4 (etiquetas reales): 13 de 15 nombres bien extraídos (objetivo 12), 0 fechas inventadas en las 13 etiquetas sin fecha; las 2 fechas escritas a mano no se leen (no cuentan). Fallos: `Pacamana` (el OCR lee mal la variedad) y `Tusell` (logo del tostador más alto que el nombre). |
 | Fecha | 2026-11-13 |
 | Rama | `feat/coffee-catalog`, creada desde `develop` (`0a7a6b2`), con el commit del spec (`edbad3c`) |
 | Módulos | `:app` (`:protocol` no cambia) |

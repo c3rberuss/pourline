@@ -82,15 +82,12 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
 
   /** Más reciente primero. */
   fun list(filter: BrewFilter): Flow<List<BrewListItem>> =
-    dao.list(filter.coffee?.trim(), filter.method)
+    dao.list(filter.coffeeId, filter.method)
       .map { rows -> rows.map(::toItem) }
       .flowOn(Dispatchers.Default)
 
   /** Solo preparaciones reales con puntuación, en orden cronológico. */
-  fun progress(filter: BrewFilter): Flow<List<ProgressPoint>> = dao.progress(filter.coffee?.trim(), filter.method)
-
-  /** Valores distintos, por uso más reciente. */
-  fun coffees(): Flow<List<String>> = dao.coffees()
+  fun progress(filter: BrewFilter): Flow<List<ProgressPoint>> = dao.progress(filter.coffeeId, filter.method)
 
   /** Cafés del catálogo con preparaciones vinculadas (también archivados), para el filtro (D33). */
   fun coffeeOptions(): Flow<List<CoffeeOption>> = dao.coffeeOptions()
@@ -123,9 +120,6 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
 
   /** Número de preparaciones guardadas. */
   fun count(): Flow<Int> = dao.count()
-
-  /** Café de otras preparaciones, para las sugerencias de la edición. */
-  suspend fun coffeesExcept(id: Long): List<String> = withContext(Dispatchers.IO) { dao.coffeesExcept(id) }
 
   // Las escrituras siguientes no se cancelan: salir de la pantalla no puede cortarlas.
 
@@ -209,6 +203,7 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
     simulated = row.simulated,
     preview = BrewPreview.decode(row.preview),
     fitScore = row.fitScore,
+    rating = row.rating,
   )
 
   private fun toRecord(entity: BrewEntity, curve: Curve, target: Target) = BrewRecord(

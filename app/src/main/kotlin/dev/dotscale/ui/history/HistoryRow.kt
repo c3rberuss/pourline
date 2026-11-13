@@ -29,6 +29,7 @@ import dev.dotscale.brew.fromGrams
 import dev.dotscale.history.BrewListItem
 import dev.dotscale.ui.components.AntCard
 import dev.dotscale.ui.components.AntCardSize
+import dev.dotscale.ui.components.AntRate
 import dev.dotscale.ui.components.AntTag
 import dev.dotscale.ui.components.AntTagColor
 import dev.dotscale.ui.components.AntText
@@ -50,11 +51,15 @@ fun HistoryRow(item: BrewListItem, onClick: () -> Unit, modifier: Modifier = Mod
     Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm), verticalAlignment = Alignment.Top) {
       BrewPreviewLine(item.preview, Modifier.width(64.dp).height(40.dp))
       Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
-        AntText(
-          text = item.name ?: formatBrewDateTime(item.startedAtEpochMs),
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+          AntText(
+            text = item.name ?: formatBrewDateTime(item.startedAtEpochMs),
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+          )
+          if (item.rating != null) AntRate(item.rating, onValueChange = null, starSize = 12.dp, testTag = "history_row_rating")
+        }
         if (item.name != null) {
           AntText(formatBrewDateTime(item.startedAtEpochMs), type = AntTextType.Secondary, maxLines = 1)
         }

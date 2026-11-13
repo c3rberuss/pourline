@@ -8,7 +8,8 @@ import dev.dotscale.protocol.WeightUnit
 
 enum class BrewMethod { V60, KALITA_WAVE, CHEMEX, ORIGAMI, AEROPRESS, OTHER }
 
-data class BrewFilter(val coffee: String? = null, val method: BrewMethod? = null)
+/** [coffeeId] es el café del catálogo; las preparaciones antiguas sin vínculo solo salen con "Todos" (D33). */
+data class BrewFilter(val coffeeId: Long? = null, val method: BrewMethod? = null)
 
 /** Punto de la gráfica de progreso. */
 data class ProgressPoint(val brewId: Long, val startedAtEpochMs: Long, val score: Int)

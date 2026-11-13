@@ -2,6 +2,7 @@ package dev.dotscale.ui.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.dotscale.coffee.CoffeeOption
 import dev.dotscale.history.BrewFilter
 import dev.dotscale.history.BrewListItem
 import dev.dotscale.history.BrewMethod
@@ -34,8 +35,8 @@ class HistoryViewModel(private val repository: BrewRepository) : ViewModel() {
   val progress: StateFlow<List<ProgressPoint>?> =
     filter.flatMapLatest { repository.progress(it) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
-  val coffees: StateFlow<List<String>?> =
-    repository.coffees().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+  val coffees: StateFlow<List<CoffeeOption>?> =
+    repository.coffeeOptions().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
   val methods: StateFlow<List<BrewMethod>?> =
     repository.methods().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)

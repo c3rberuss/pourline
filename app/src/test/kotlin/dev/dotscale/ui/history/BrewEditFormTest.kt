@@ -1,5 +1,6 @@
 package dev.dotscale.ui.history
 
+import dev.dotscale.coffee.PickedCoffee
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewMethod
 import org.junit.Assert.assertEquals
@@ -44,7 +45,6 @@ class BrewEditFormTest {
   fun `toDetails normalizes and parses the temperature`() {
     val details = BrewEditForm(
       name = " Prueba ",
-      coffee = "",
       method = BrewMethod.OTHER,
       methodOther = " Sifón ",
       grind = "",
@@ -64,10 +64,54 @@ class BrewEditFormTest {
 
   @Test
   fun `from and toDetails round trip`() {
-    val details = BrewDetails("A", "Etiopía", BrewMethod.V60, null, "21", 92.0, "ok")
+    val details = BrewDetails("A", null, BrewMethod.V60, null, "21", 92.0, "ok", rating = 4)
     val form = BrewEditForm.from(details)
     assertEquals("92", form.waterTemp)
     assertEquals(details, form.toDetails())
     assertEquals("92.5", BrewEditForm.from(details.copy(waterTempC = 92.5)).waterTemp)
   }
+
+  @Test
+  fun `the rating counts as a change and travels to the details`() {
+    val initial = BrewEditForm(name = "A")
+    assertTrue(initial.copy(rating = 4).isDirty(initial))
+    assertFalse(initial.copy(rating = null).isDirty(initial))
+    assertEquals(4, initial.copy(rating = 4).toDetails().rating)
+    assertNull(initial.toDetails().rating)
+  }
+
+  @Test
+  fun `the coffee never travels in the details`() {
+    val form = BrewEditForm(coffee = CoffeeChoice.Legacy("Etiopía"))
+    assertNull(form.toDetails().coffee)
+    assertNull(BrewEditForm(coffee = CoffeeChoice.Linked(picked(1))).toDetails().coffee)
+  }
+
+  @Test
+  fun `an untouched legacy coffee is not a change and writes no link`() {
+    val legacy = CoffeeChoice.Legacy("Etiopía")
+    val initial = BrewEditForm.from(BrewDetails(), legacy)
+    assertFalse(initial.copy().isDirty(initial))
+    assertFalse(legacy.needsLinkWrite(initial.coffee))
+  }
+
+  @Test
+  fun `choosing or clearing a coffee is a change that writes the link`() {
+    val none = CoffeeChoice.None
+    val legacy = CoffeeChoice.Legacy("Etiopía")
+    val one = CoffeeChoice.Linked(picked(1))
+    val two = CoffeeChoice.Linked(picked(2))
+    assertTrue(one.needsLinkWrite(none))
+    assertTrue(one.needsLinkWrite(legacy))
+    assertTrue(two.needsLinkWrite(one))
+    assertTrue(none.needsLinkWrite(legacy))
+    assertTrue(none.needsLinkWrite(one))
+    assertFalse(none.needsLinkWrite(none))
+    assertFalse(one.needsLinkWrite(CoffeeChoice.Linked(picked(1, name = "Renombrado"))))
+    assertEquals(1L, one.linkedId)
+    assertNull(legacy.linkedId)
+    assertNull(none.linkedId)
+  }
+
+  private fun picked(id: Long, name: String = "Café $id") = PickedCoffee(id, name, roaster = null, roastDate = null)
 }

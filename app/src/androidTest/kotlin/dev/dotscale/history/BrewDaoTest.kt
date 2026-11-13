@@ -76,27 +76,49 @@ class BrewDaoTest {
     assertEquals(60_000L, items.first().totalTimeMs)
   }
 
-  @Test
-  fun filterByCoffeeAndMethod() = runTest {
-    val a = save(startedAt = 1)
-    val b = save(startedAt = 2)
-    val c = save(startedAt = 3)
-    val d = save(startedAt = 4)
-    repository.updateDetails(a, BrewDetails(coffee = "Etiopía", method = BrewMethod.V60))
-    repository.updateDetails(b, BrewDetails(coffee = "Etiopía", method = BrewMethod.CHEMEX))
-    repository.updateDetails(c, BrewDetails(coffee = "Kenia", method = BrewMethod.OTHER, methodOther = "Sifón"))
-    repository.updateDetails(d, BrewDetails(coffee = "Kenia", method = BrewMethod.OTHER, methodOther = "Prensa"))
+  private val coffees get() = dev.dotscale.coffee.CoffeeRepository(db, dev.dotscale.coffee.PhotoFiles { })
 
-    assertEquals(listOf(b, a), repository.list(BrewFilter(coffee = "Etiopía")).first().map { it.id })
-    assertEquals(listOf(a), repository.list(BrewFilter(coffee = "Etiopía", method = BrewMethod.V60)).first().map { it.id })
+  private suspend fun coffee(name: String, roastDate: java.time.LocalDate? = null): Long =
+    coffees.save(TestBrews.coffeeDraft(name = name).copy(roastDate = roastDate))
+
+  private suspend fun saveWith(coffeeId: Long?, startedAt: Long, method: BrewMethod? = null, methodOther: String? = null): Long {
+    val id = repository.save(
+      TestBrews.finished(totalMs = 60_000),
+      TestBrews.context(startedAtEpochMs = startedAt, coffee = coffeeId?.let { UsedCoffee(it, "x") }),
+    )
+    repository.updateDetails(id, BrewDetails(method = method, methodOther = methodOther))
+    return id
+  }
+
+  @Test
+  fun filterByCoffeeIdAndMethod() = runTest {
+    val etiopia = coffee("Etiopía")
+    val kenia = coffee("Kenia")
+    val a = saveWith(etiopia, startedAt = 1, method = BrewMethod.V60)
+    val b = saveWith(etiopia, startedAt = 2, method = BrewMethod.CHEMEX)
+    val c = saveWith(kenia, startedAt = 3, method = BrewMethod.OTHER, methodOther = "Sifón")
+    val d = saveWith(null, startedAt = 4, method = BrewMethod.OTHER, methodOther = "Prensa")
+
+    assertEquals(listOf(b, a), repository.list(BrewFilter(coffeeId = etiopia)).first().map { it.id })
+    assertEquals(listOf(a), repository.list(BrewFilter(coffeeId = etiopia, method = BrewMethod.V60)).first().map { it.id })
     // OTHER agrupa todos los `methodOther`.
     assertEquals(listOf(d, c), repository.list(BrewFilter(method = BrewMethod.OTHER)).first().map { it.id })
     assertEquals(listOf(a), repository.progress(BrewFilter(method = BrewMethod.V60)).first().map { it.brewId })
-    assertTrue(repository.list(BrewFilter(coffee = "Colombia")).first().isEmpty())
-    assertEquals(
-      listOf(BrewMethod.V60, BrewMethod.CHEMEX, BrewMethod.OTHER),
-      repository.methods().first(),
-    )
+    assertEquals(listOf(c), repository.list(BrewFilter(coffeeId = kenia)).first().map { it.id })
+    assertTrue(repository.list(BrewFilter(coffeeId = kenia + 100)).first().isEmpty())
+    // Una preparación sin vínculo solo sale con "Todos".
+    assertTrue(d in repository.list(BrewFilter()).first().map { it.id })
+    assertTrue(repository.list(BrewFilter(coffeeId = etiopia)).first().none { it.id == d })
+    assertEquals(listOf(BrewMethod.V60, BrewMethod.CHEMEX, BrewMethod.OTHER), repository.methods().first())
+  }
+
+  @Test
+  fun theListAndTheFilterCarryTheRating() = runTest {
+    val coffeeId = coffee("Guji")
+    val a = saveWith(coffeeId, startedAt = 1)
+    val b = saveWith(coffeeId, startedAt = 2)
+    repository.updateDetails(a, BrewDetails(rating = 4))
+    assertEquals(mapOf(a to 4, b to null), repository.list(BrewFilter(coffeeId = coffeeId)).first().associate { it.id to it.rating })
   }
 
   @Test
@@ -113,41 +135,54 @@ class BrewDaoTest {
   }
 
   @Test
-  fun coffeesHaveNoDuplicatesAndAreOrderedByMostRecentUse() = runTest {
-    val a = save(startedAt = 1)
-    val b = save(startedAt = 2)
-    val c = save(startedAt = 3)
-    val d = save(startedAt = 4)
-    repository.updateDetails(a, BrewDetails(coffee = "Etiopía"))
-    repository.updateDetails(b, BrewDetails(coffee = "Kenia"))
-    repository.updateDetails(c, BrewDetails(coffee = "Etiopía"))
-    repository.updateDetails(d, BrewDetails(coffee = " "))
+  fun coffeeOptionsListsLinkedCoffeesIncludingArchivedOnesByMostRecentBrew() = runTest {
+    val old = coffee("Etiopía")
+    val recent = coffee("Kenia")
+    val archived = coffee("Colombia")
+    val unused = coffee("Sin uso")
+    saveWith(old, startedAt = 1)
+    saveWith(archived, startedAt = 2)
+    saveWith(recent, startedAt = 3)
+    saveWith(null, startedAt = 4)
+    coffees.setArchived(archived, true)
 
-    assertEquals(listOf("Etiopía", "Kenia"), repository.coffees().first())
-    assertNull(repository.get(d)!!.entity.coffee)
+    val options = repository.coffeeOptions().first()
+    assertEquals(listOf(recent, archived, old), options.map { it.id })
+    assertEquals(listOf("Kenia", "Colombia", "Etiopía"), options.map { it.name })
+    assertFalse(unused in options.map { it.id })
   }
 
   @Test
-  fun updateDetailsReusesTheExistingSpelling() = runTest {
-    val a = save(startedAt = 1)
-    val b = save(startedAt = 2)
-    repository.updateDetails(a, BrewDetails(coffee = "Etiopía"))
-    repository.updateDetails(b, BrewDetails(coffee = " etiopía ", name = " Mañana ", waterTempC = 92.5, notes = "dulce"))
+  fun twoBagsOfTheSameCoffeeAreTwoOptionsWithTheirRoastDate() = runTest {
+    val first = coffee("Guji", java.time.LocalDate.of(2026, 10, 12))
+    val second = coffee("Guji", java.time.LocalDate.of(2026, 11, 2))
+    saveWith(first, startedAt = 1)
+    saveWith(second, startedAt = 2)
 
-    val entity = repository.get(b)!!.entity
-    assertEquals("Etiopía", entity.coffee)
+    val options = repository.coffeeOptions().first()
+    assertEquals(listOf(second, first), options.map { it.id })
+    assertEquals(listOf(java.time.LocalDate.of(2026, 11, 2), java.time.LocalDate.of(2026, 10, 12)), options.map { it.roastDate })
+  }
+
+  @Test
+  fun applyDetailsDoesNotTouchTheCoffeeNameOrTheLink() = runTest {
+    val coffeeId = coffee("Guji")
+    val linked = saveWith(coffeeId, startedAt = 1)
+    val legacy = saveWith(null, startedAt = 2)
+    db.openHelper.writableDatabase.execSQL("UPDATE brews SET coffee = 'Etiopía antigua' WHERE id = $legacy")
+
+    repository.updateDetails(linked, BrewDetails(coffee = "Otro", name = " Mañana ", waterTempC = 92.5, notes = "dulce", rating = 5))
+    repository.updateDetails(legacy, BrewDetails(coffee = "Otro", notes = "x"))
+
+    val entity = repository.get(linked)!!.entity
+    assertEquals(coffeeId, entity.coffeeId)
+    assertEquals("Guji", entity.coffee)
     assertEquals("Mañana", entity.name)
     assertEquals(92.5, entity.waterTempC!!, 0.0)
     assertEquals("dulce", entity.notes)
-    assertEquals(listOf("Etiopía"), repository.coffees().first())
-  }
-
-  @Test
-  fun theSpellingOfTheOnlyBrewWithACoffeeCanBeCorrected() = runTest {
-    val a = save()
-    repository.updateDetails(a, BrewDetails(coffee = "etiopía"))
-    repository.updateDetails(a, BrewDetails(coffee = "Etiopía"))
-    assertEquals("Etiopía", repository.get(a)!!.entity.coffee)
+    assertEquals(5, entity.rating)
+    assertEquals("Etiopía antigua", repository.get(legacy)!!.entity.coffee)
+    assertNull(repository.get(legacy)!!.entity.coffeeId)
   }
 
   @Test

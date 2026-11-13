@@ -7,27 +7,24 @@ import androidx.room.Transaction
 import dev.dotscale.coffee.CoffeeOption
 import kotlinx.coroutines.flow.Flow
 
-private const val FILTER = "(:coffee IS NULL OR coffee = :coffee) AND (:method IS NULL OR method = :method)"
+private const val FILTER = "(:coffeeId IS NULL OR coffeeId = :coffeeId) AND (:method IS NULL OR method = :method)"
 
 @Dao
 abstract class BrewDao {
 
   @Query(
     "SELECT id, startedAtEpochMs, name, coffee, totalTimeMs, totalWaterG, finalRatio, stabilityScore, " +
-      "stabilityLevel, unit, simulated, preview, fitScore FROM brews WHERE $FILTER " +
+      "stabilityLevel, unit, simulated, preview, fitScore, rating FROM brews WHERE $FILTER " +
       "ORDER BY startedAtEpochMs DESC, id DESC",
   )
-  abstract fun list(coffee: String?, method: BrewMethod?): Flow<List<BrewListRow>>
+  abstract fun list(coffeeId: Long?, method: BrewMethod?): Flow<List<BrewListRow>>
 
   @Query(
     "SELECT id AS brewId, startedAtEpochMs, stabilityScore AS score FROM brews " +
       "WHERE simulated = 0 AND stabilityScore IS NOT NULL AND $FILTER " +
       "ORDER BY startedAtEpochMs ASC, id ASC",
   )
-  abstract fun progress(coffee: String?, method: BrewMethod?): Flow<List<ProgressPoint>>
-
-  @Query("SELECT coffee FROM brews WHERE coffee IS NOT NULL GROUP BY coffee ORDER BY MAX(startedAtEpochMs) DESC")
-  abstract fun coffees(): Flow<List<String>>
+  abstract fun progress(coffeeId: Long?, method: BrewMethod?): Flow<List<ProgressPoint>>
 
   /** Cafés con al menos una preparación vinculada (también los archivados), por la preparación más reciente (D33). */
   @Query(
@@ -55,9 +52,6 @@ abstract class BrewDao {
   @Query("SELECT COUNT(*) FROM brews")
   abstract fun count(): Flow<Int>
 
-  @Query("SELECT DISTINCT coffee FROM brews WHERE coffee IS NOT NULL AND id != :id")
-  abstract suspend fun coffeesExcept(id: Long): List<String>
-
   @Insert
   protected abstract suspend fun insertBrewRow(brew: BrewEntity): Long
 
@@ -84,13 +78,12 @@ abstract class BrewDao {
   protected abstract suspend fun recomputeLastUsed(coffeeId: Long)
 
   @Query(
-    "UPDATE brews SET name = :name, coffee = :coffee, method = :method, methodOther = :methodOther, " +
+    "UPDATE brews SET name = :name, method = :method, methodOther = :methodOther, " +
       "grind = :grind, waterTempC = :waterTempC, notes = :notes, rating = :rating WHERE id = :id",
   )
   protected abstract suspend fun updateDetailsRow(
     id: Long,
     name: String?,
-    coffee: String?,
     method: BrewMethod?,
     methodOther: String?,
     grind: String?,
@@ -135,15 +128,13 @@ abstract class BrewDao {
     newId?.let { recomputeLastUsed(it) }
   }
 
-  /** Guarda los datos manuales. El café reutiliza la grafía existente (D9), sin contar la propia fila. */
+  /** Guarda los datos manuales. No toca `coffee` ni `coffeeId`: el café se cambia con [linkCoffee] (D22). */
   @Transaction
   open suspend fun applyDetails(id: Long, details: BrewDetails) {
     val normalized = details.normalized()
-    val coffee = canonicalCoffee(normalized.coffee, coffeesExcept(id))
     updateDetailsRow(
       id,
       normalized.name,
-      coffee,
       normalized.method,
       normalized.methodOther,
       normalized.grind,

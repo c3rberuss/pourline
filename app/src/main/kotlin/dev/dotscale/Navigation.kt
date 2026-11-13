@@ -166,10 +166,11 @@ fun MainNavigation() {
         )
       }
       entry<BrewDetail> { key ->
-        val repository = (appContext as DotScaleApp).brewRepository
+        val app = appContext as DotScaleApp
         BrewDetailScreen(
-          viewModel { BrewDetailViewModel(repository, key.id) },
+          viewModel { BrewDetailViewModel(app.brewRepository, app.coffeeRepository, key.id) },
           onBack = { backStack.removeLastOrNull() },
+          onOpenCoffee = { id -> backStack.add(CoffeeDetail(id)) },
           onEdit = { id -> backStack.add(BrewEdit(id)) },
           onCompare = { id -> backStack.add(ComparePick(id)) },
           onSaveAsRecipe = { id -> backStack.add(RecipeEdit(fromBrewId = id)) },
@@ -192,10 +193,12 @@ fun MainNavigation() {
         )
       }
       entry<BrewEdit> { key ->
-        val repository = (appContext as DotScaleApp).brewRepository
+        val app = appContext as DotScaleApp
         BrewEditScreen(
-          viewModel { BrewEditViewModel(repository, key.id) },
+          viewModel { BrewEditViewModel(app.brewRepository, app.coffeeRepository, key.id) },
           onBack = { backStack.removeLastOrNull() },
+          coffeePickerViewModel = viewModel { CoffeePickerViewModel(app.coffeeRepository) },
+          onNewCoffee = { backStack.add(CoffeeEdit()) },
         )
       }
     },

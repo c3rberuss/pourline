@@ -2,6 +2,7 @@ package dev.dotscale.ui.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.dotscale.coffee.CoffeeOption
 import dev.dotscale.history.BrewFilter
 import dev.dotscale.history.BrewListItem
 import dev.dotscale.history.BrewMethod
@@ -18,7 +19,7 @@ import kotlinx.coroutines.flow.stateIn
 sealed interface ComparePickA {
   data object Loading : ComparePickA
 
-  data class Loaded(val coffee: String?) : ComparePickA
+  data class Loaded(val coffeeId: Long?) : ComparePickA
 
   /** A ya no existe (borrada aquí o en otro sitio): la pantalla vuelve atrás. */
   data object Gone : ComparePickA
@@ -41,7 +42,7 @@ class ComparePickViewModel(repository: BrewRepository, private val aId: Long) : 
   }
 
   val a: StateFlow<ComparePickA> = repository.observe(aId)
-    .map { if (it == null) ComparePickA.Gone else ComparePickA.Loaded(it.entity.coffee) }
+    .map { if (it == null) ComparePickA.Gone else ComparePickA.Loaded(it.entity.coffeeId) }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ComparePickA.Loading)
 
   /** La lista filtrada, sin A. */
@@ -50,8 +51,8 @@ class ComparePickViewModel(repository: BrewRepository, private val aId: Long) : 
     .map { rows -> rows.filter { it.id != aId } }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
-  val coffees: StateFlow<List<String>?> =
-    repository.coffees().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+  val coffees: StateFlow<List<CoffeeOption>?> =
+    repository.coffeeOptions().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
   val methods: StateFlow<List<BrewMethod>?> =
     repository.methods().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)

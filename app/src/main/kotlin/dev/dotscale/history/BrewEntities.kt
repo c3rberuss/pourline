@@ -130,6 +130,7 @@ data class BrewListRow(
   val simulated: Boolean,
   val preview: ByteArray,
   val fitScore: Int?,
+  val rating: Int?,
 )
 
 /** Fila de la lista. */
@@ -149,6 +150,8 @@ data class BrewListItem(
   val preview: List<Float>,
   /** Puntuación de ajuste al objetivo; `null` sin referencia. */
   val fitScore: Int?,
+  /** Valoración de 1 a 5; `null` sin valorar. */
+  val rating: Int?,
 )
 
 /** Detalle completo: la fila, la curva decodificada y el resumen reconstruido. */

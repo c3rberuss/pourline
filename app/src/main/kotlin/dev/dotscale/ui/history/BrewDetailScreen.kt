@@ -1,31 +1,43 @@
 package dev.dotscale.ui.history
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.brew.BrewConfig
+import dev.dotscale.coffee.CoffeeEntity
+import dev.dotscale.coffee.brewDaysSinceRoast
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.history.BrewRecord
+import dev.dotscale.ui.coffees.CoffeeThumbnail
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntButton
 import dev.dotscale.ui.components.AntButtonType
 import dev.dotscale.ui.components.AntCard
+import dev.dotscale.ui.components.AntDivider
 import dev.dotscale.ui.components.AntIconButton
 import dev.dotscale.ui.components.AntIcons
+import dev.dotscale.ui.components.AntRate
 import dev.dotscale.ui.components.AntSpin
 import dev.dotscale.ui.components.AntStatus
 import dev.dotscale.ui.components.AntTag
@@ -39,6 +51,7 @@ import dev.dotscale.ui.scale.fitView
 import dev.dotscale.ui.scale.Chart
 import dev.dotscale.ui.scale.summaryStability
 import dev.dotscale.ui.theme.AntTheme
+import java.time.ZoneId
 import java.util.Locale
 
 @Composable
@@ -48,11 +61,13 @@ fun BrewDetailScreen(
   onEdit: (Long) -> Unit,
   onCompare: (Long) -> Unit,
   onSaveAsRecipe: (Long) -> Unit,
+  onOpenCoffee: (Long) -> Unit = {},
 ) {
   val state by viewModel.state.collectAsStateWithLifecycle()
   LaunchedEffect(state) { if (state is BrewDetailState.Gone) onBack() }
 
-  val record = (state as? BrewDetailState.Loaded)?.record
+  val loaded = state as? BrewDetailState.Loaded
+  val record = loaded?.record
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
@@ -64,15 +79,18 @@ fun BrewDetailScreen(
       )
     },
   ) { padding ->
-    if (record == null) {
+    if (loaded == null) {
       AntSpin(Modifier.padding(padding).padding(AntTheme.spacing.xl))
     } else {
       Column(
         Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(AntTheme.spacing.base),
         verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
       ) {
+        val record = loaded.record
         DetailContent(
           record,
+          coffee = loaded.coffee,
+          onOpenCoffee = onOpenCoffee,
           onEdit = { onEdit(record.entity.id) },
           onDelete = viewModel::delete,
           onCompare = { onCompare(record.entity.id) },
@@ -86,6 +104,8 @@ fun BrewDetailScreen(
 @Composable
 private fun DetailContent(
   record: BrewRecord,
+  coffee: CoffeeEntity?,
+  onOpenCoffee: (Long) -> Unit,
   onEdit: () -> Unit,
   onDelete: () -> Unit,
   onCompare: () -> Unit,
@@ -110,6 +130,7 @@ private fun DetailContent(
   if (entity.metricVersion != BrewConfig.METRIC_VERSION) {
     AntText(stringResource(R.string.brew_detail_old_metric), type = AntTextType.Secondary)
   }
+  TastingCard(record, coffee, onOpenCoffee)
   DetailsCard(record)
   // Dos filas: cuatro botones no caben en una de 360 dp.
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
@@ -163,13 +184,11 @@ private fun DetailsCard(record: BrewRecord) {
   val entity = record.entity
   val method = entity.method?.let { m -> if (m == BrewMethod.OTHER) entity.methodOther ?: m.label() else m.label() }
   val fields = listOfNotNull(
-    entity.coffee?.let { stringResource(R.string.brew_detail_coffee) to it },
     method?.let { stringResource(R.string.brew_detail_method) to it },
     entity.grind?.let { stringResource(R.string.brew_detail_grind) to it },
     entity.waterTempC?.let {
       stringResource(R.string.brew_detail_temp) to stringResource(R.string.brew_detail_temp_value, formatTemp(it))
     },
-    entity.notes?.let { stringResource(R.string.brew_detail_notes) to it },
   )
   if (fields.isEmpty()) return
   AntCard(Modifier.fillMaxWidth().testTag("brew_detail_details"), title = stringResource(R.string.brew_detail_details)) {
@@ -181,6 +200,59 @@ private fun DetailsCard(record: BrewRecord) {
     }
   }
 }
+
+/**
+ * "Cata": el café (pulsable si está en el catálogo), la valoración y las notas de cata. Cada parte se omite si
+ * falta y, sin ninguna, la tarjeta no se muestra.
+ */
+@Composable
+private fun TastingCard(record: BrewRecord, coffee: CoffeeEntity?, onOpenCoffee: (Long) -> Unit) {
+  val entity = record.entity
+  val coffeeName = coffee?.name ?: entity.coffee
+  if (coffeeName == null && entity.rating == null && entity.notes == null) return
+  AntCard(Modifier.fillMaxWidth().testTag("brew_detail_tasting"), title = stringResource(R.string.brew_detail_tasting)) {
+    if (coffeeName != null) TastingCoffee(entity.coffeeId, coffeeName, coffee, entity.startedAtEpochMs, onOpenCoffee)
+    if (coffeeName != null && (entity.rating != null || entity.notes != null)) AntDivider()
+    entity.rating?.let { rating ->
+      Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        AntText(stringResource(R.string.brew_detail_rating), Modifier.weight(1f), type = AntTextType.Secondary)
+        AntRate(rating, onValueChange = null, testTag = "brew_detail_rating")
+      }
+    }
+    entity.notes?.let { notes ->
+      Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
+        AntText(stringResource(R.string.brew_detail_notes), type = AntTextType.Secondary)
+        AntText(notes, Modifier.testTag("brew_detail_notes"))
+      }
+    }
+  }
+}
+
+/** La fila del café: del catálogo, con miniatura, "Tostador · día N" y chevron; antiguo, solo el texto. */
+@Composable
+private fun TastingCoffee(coffeeId: Long?, name: String, coffee: CoffeeEntity?, startedAtEpochMs: Long, onOpenCoffee: (Long) -> Unit) {
+  val linked = coffeeId != null && coffee != null
+  val days = coffee?.let { brewDaysSinceRoast(it.roastDate, startedAtEpochMs, ZoneId.systemDefault()) }
+  val subtitle = when {
+    coffeeId == null -> stringResource(R.string.brew_detail_coffee_legacy)
+    else -> listOfNotNull(coffee?.roaster, days?.let { stringResource(R.string.coffee_log_day, it) }).joinToString(" · ").ifEmpty { null }
+  }
+  val click = if (linked) Modifier.clickable(role = Role.Button) { onOpenCoffee(coffeeId) } else Modifier
+  Row(
+    Modifier.fillMaxWidth().then(click).testTag("brew_detail_coffee"),
+    horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    if (linked) CoffeeThumbnail(coffee.photo1, COFFEE_THUMB_SIZE)
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
+      AntText(name, strong = true, maxLines = 2, overflow = TextOverflow.Ellipsis)
+      subtitle?.let { AntText(it, type = AntTextType.Secondary, style = AntTheme.typography.textSM, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+    }
+    if (linked) Icon(AntIcons.Right, contentDescription = null, modifier = Modifier.size(16.dp), tint = AntTheme.colors.textTertiary)
+  }
+}
+
+private val COFFEE_THUMB_SIZE = 40.dp
 
 private fun formatTemp(celsius: Double): String =
   if (celsius % 1.0 == 0.0) celsius.toLong().toString() else String.format(Locale.getDefault(), "%.1f", celsius)
