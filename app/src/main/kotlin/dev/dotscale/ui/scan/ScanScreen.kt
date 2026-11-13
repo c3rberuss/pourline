@@ -51,6 +51,7 @@ import dev.dotscale.ui.components.AntButtonType
 import dev.dotscale.ui.components.AntCard
 import dev.dotscale.ui.components.AntDivider
 import dev.dotscale.ui.components.AntEmpty
+import dev.dotscale.ui.components.AntIconButton
 import dev.dotscale.ui.components.AntIcons
 import dev.dotscale.ui.components.AntListItem
 import dev.dotscale.ui.components.AntStatus
@@ -76,6 +77,7 @@ private fun Context.hasBluetoothPermissions(): Boolean =
 fun ScanScreen(
   onDeviceSelected: (address: String, name: String) -> Unit,
   onSimulatedSelected: () -> Unit,
+  onOpenSettings: () -> Unit,
 ) {
   val context = LocalContext.current
   val appContext = context.applicationContext
@@ -95,7 +97,13 @@ fun ScanScreen(
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
-      AntTopBar(title = stringResource(R.string.scan_title), actions = { ThemeModeButton() })
+      AntTopBar(
+        title = stringResource(R.string.scan_title),
+        actions = {
+          AntIconButton(AntIcons.Settings, contentDescription = stringResource(R.string.settings_open), onClick = onOpenSettings)
+          ThemeModeButton()
+        },
+      )
     },
   ) { padding ->
     Column(

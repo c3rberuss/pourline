@@ -28,10 +28,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
+import dev.dotscale.brew.BrewPhase
 import dev.dotscale.protocol.TimerStatus
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.scale.ConnectionState
 import dev.dotscale.scale.ConnectionStep
+import dev.dotscale.sim.PourProfile
 import dev.dotscale.settings.ThemeModeButton
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntBadge
@@ -60,12 +62,11 @@ import dev.dotscale.ui.components.showAntMessage
 import dev.dotscale.ui.theme.AntSize
 import dev.dotscale.ui.theme.AntTheme
 import java.util.Locale
-import kotlin.math.abs
 
 private const val LOW_BATTERY_PERCENT = 20
 
 @Composable
-fun ScaleScreen(viewModel: ScaleViewModel, title: String, onBack: () -> Unit) {
+fun ScaleScreen(viewModel: ScaleViewModel, title: String, onBack: () -> Unit, onOpenSettings: () -> Unit) {
   val ui by viewModel.ui.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
 
@@ -87,6 +88,7 @@ fun ScaleScreen(viewModel: ScaleViewModel, title: String, onBack: () -> Unit) {
         },
         actions = {
           ui.batteryPercent?.let { BatteryTag(it) }
+          AntIconButton(AntIcons.Settings, contentDescription = stringResource(R.string.settings_open), onClick = onOpenSettings)
           ThemeModeButton()
         },
       )
@@ -111,9 +113,11 @@ fun ScaleScreen(viewModel: ScaleViewModel, title: String, onBack: () -> Unit) {
         onToggleTimer = viewModel::toggleTimer,
         onReset = viewModel::resetTimer,
       )
+      BrewChartCard(ui.brew, ui.unit, onFinish = viewModel::finishBrew)
+      (ui.brew.phase as? BrewPhase.Finished)?.let { BrewSummaryCard(it.summary, ui.unit) }
       DoseCard(ui, enabled, onCapture = viewModel::captureDose, onClear = viewModel::clearDose)
       UnitCard(ui.unit, enabled, onToggle = viewModel::toggleUnit)
-      if (ui.isSimulated) SimulationCard(onAdd = viewModel::simulateAdd)
+      if (ui.isSimulated) SimulationCard(onAdd = viewModel::simulateAdd, onPour = viewModel::simulatePour)
     }
   }
 }
@@ -311,7 +315,7 @@ private fun ConnectionBanner(state: ConnectionState, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun SimulationCard(onAdd: (Double) -> Unit) {
+private fun SimulationCard(onAdd: (Double) -> Unit, onPour: (PourProfile) -> Unit) {
   AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.scale_simulation), size = AntCardSize.Small) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
       listOf(15, 100, 300).forEach { grams ->
@@ -324,6 +328,22 @@ private fun SimulationCard(onAdd: (Double) -> Unit) {
         )
       }
     }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+      AntButton(
+        text = stringResource(R.string.sim_pour_stable),
+        onClick = { onPour(PourProfile.STABLE) },
+        modifier = Modifier.weight(1f),
+        type = AntButtonType.Dashed,
+        size = AntSize.Small,
+      )
+      AntButton(
+        text = stringResource(R.string.sim_pour_irregular),
+        onClick = { onPour(PourProfile.IRREGULAR) },
+        modifier = Modifier.weight(1f),
+        type = AntButtonType.Dashed,
+        size = AntSize.Small,
+      )
+    }
   }
 }
 
@@ -334,13 +354,6 @@ private fun KeepScreenOn() {
     view.keepScreenOn = true
     onDispose { view.keepScreenOn = false }
   }
-}
-
-/** Gramos con 1 decimal y onzas con 2 (resolución de la báscula). Evita mostrar "-0,0". */
-private fun formatNumber(value: Double, unit: WeightUnit): String {
-  val decimals = if (unit == WeightUnit.OUNCES) 2 else 1
-  val shown = if (abs(value) < 0.5 / unit.divisor) 0.0 else value
-  return String.format(Locale.getDefault(), "%.${decimals}f", shown)
 }
 
 private fun formatTime(seconds: Int): String = String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60)

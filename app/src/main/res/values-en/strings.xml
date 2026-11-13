@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Dot Scale</string>
+
+    <!-- Scan -->
+    <string name="scan_title">Find scale</string>
+    <string name="scan_start">Scan</string>
+    <string name="scan_stop">Stop</string>
+    <string name="scan_show_all">Show all</string>
+    <string name="scan_devices">Nearby devices</string>
+    <string name="scan_scanning">Scanning…</string>
+    <string name="scan_idle">Scan stopped</string>
+    <string name="scan_permissions_title">Bluetooth permission</string>
+    <string name="scan_bluetooth_off_title">Bluetooth is off</string>
+    <string name="scan_empty">Turn the scale on and bring it close to the phone.</string>
+    <string name="scan_simulated">Try with simulated scale</string>
+    <string name="scan_permissions_needed">Bluetooth permission is needed to find the scale.</string>
+    <string name="scan_grant_permissions">Grant permissions</string>
+    <string name="scan_bluetooth_off">Bluetooth is off. Turn it on to find the scale.</string>
+    <string name="scan_unknown_device">Unnamed device</string>
+    <string name="scan_rssi">%1$d dBm</string>
+
+    <!-- Scale -->
+    <string name="scale_back">Back</string>
+    <string name="scale_battery">Battery %1$d%%</string>
+    <string name="scale_battery_short">%1$d%%</string>
+    <string name="scale_weight">Weight</string>
+    <string name="scale_flow">Flow</string>
+    <string name="scale_time">Time</string>
+    <string name="scale_flow_value">%1$s/s</string>
+    <string name="scale_out_of_range">Out of range</string>
+    <string name="scale_tare">Tare</string>
+    <string name="scale_start">Start</string>
+    <string name="scale_pause">Pause</string>
+    <string name="scale_reset">Reset</string>
+    <string name="scale_unit_label">Unit</string>
+    <string name="scale_capture_dose">Set dose</string>
+    <string name="scale_clear_dose">Clear dose</string>
+    <string name="scale_dose_title">Dose and ratio</string>
+    <string name="scale_dose">Dose</string>
+    <string name="scale_ratio">Ratio</string>
+    <string name="scale_ratio_value">1:%1$.1f</string>
+    <string name="scale_ratio_empty">—</string>
+    <string name="scale_dose_hint">Put the coffee on the scale and tap “Set dose”: the weight is saved and the scale is tared so you can start pouring.</string>
+    <string name="scale_retry">Retry</string>
+    <string name="scale_simulation">Simulation</string>
+    <string name="scale_sim_add">+%1$d g</string>
+    <string name="scale_info">%1$s · firmware %2$s</string>
+
+    <!-- Connection state -->
+    <string name="conn_disconnected">Disconnected</string>
+    <string name="conn_connecting">Connecting…</string>
+    <string name="conn_discovering">Discovering services…</string>
+    <string name="conn_bonding">Pairing… accept the request if it appears.</string>
+    <string name="conn_configuring">Configuring…</string>
+    <string name="conn_handshake">Reading scale data…</string>
+    <string name="conn_failed">Could not connect: %1$s</string>
+
+    <!-- Appearance -->
+    <string name="theme_title">Appearance</string>
+    <string name="theme_change">Change appearance</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_hint">“System” follows the light or dark mode of the phone.</string>
+
+    <!-- Common -->
+    <string name="action_close">Close</string>
+
+    <!-- Pour chart -->
+    <string name="brew_chart_title">Pour</string>
+    <string name="brew_chart_empty">Pour water to start</string>
+    <string name="brew_chart_description">Pour chart. Water: %1$s %2$s. Flow: %3$s %2$s per second. Stability: %4$s.</string>
+    <string name="brew_chart_finish">Finish</string>
+    <string name="brew_chart_ready">Ready for the next brew</string>
+    <string name="brew_chart_ignored">Tare or reset the timer to start a new brew.</string>
+    <string name="brew_level_stable">Stable</string>
+    <string name="brew_level_irregular">Irregular</string>
+    <string name="brew_level_turbulent">Turbulent</string>
+    <string name="brew_level_value">%1$s · %2$d</string>
+    <string name="brew_level_measuring">Measuring…</string>
+    <string name="brew_level_idle">Not pouring</string>
+
+    <!-- Summary -->
+    <string name="brew_summary_title">Summary</string>
+    <string name="brew_summary_total_time">Total time</string>
+    <string name="brew_summary_total_water">Total water</string>
+    <string name="brew_summary_avg_flow">Average flow</string>
+    <string name="brew_summary_max_flow">Peak flow</string>
+    <string name="brew_summary_stability">Stability</string>
+    <string name="brew_summary_stability_none">Not enough data</string>
+    <string name="brew_summary_share">%1$s %2$d%%</string>
+    <string name="brew_summary_pours">Pours</string>
+    <string name="brew_summary_pour">Pour %1$d</string>
+    <string name="brew_summary_pour_detail">%1$s · %2$s</string>
+    <string name="brew_summary_interrupted">Brew interrupted by a disconnection</string>
+    <string name="brew_reason_inactivity">Ended by inactivity</string>
+    <string name="brew_reason_timer_paused">Timer paused</string>
+    <string name="brew_reason_timer_reset">Timer reset</string>
+    <string name="brew_reason_manual">Finished manually</string>
+    <string name="brew_reason_disconnected">Scale disconnected</string>
+    <string name="brew_reason_max_duration">Maximum duration reached</string>
+
+    <!-- Simulation -->
+    <string name="sim_pour_stable">Simulate steady pour</string>
+    <string name="sim_pour_irregular">Simulate uneven pour</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_open">Open settings</string>
+    <string name="settings_auto_finish_title">Auto finish</string>
+    <string name="settings_auto_finish_value">%1$d s</string>
+    <string name="settings_auto_finish_hint">Seconds without pouring after which the brew is considered finished. Raise it if you do long blooms: the bloom pause should not end the brew.</string>
+</resources>

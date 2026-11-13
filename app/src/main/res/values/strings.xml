@@ -65,4 +65,49 @@
 
     <!-- Comunes -->
     <string name="action_close">Cerrar</string>
+
+    <!-- Gráfica de vertido -->
+    <string name="brew_chart_title">Vertido</string>
+    <string name="brew_chart_empty">Vierte agua para empezar</string>
+    <string name="brew_chart_description">Gráfica de vertido. Agua: %1$s %2$s. Flujo: %3$s %2$s por segundo. Estabilidad: %4$s.</string>
+    <string name="brew_chart_finish">Terminar</string>
+    <string name="brew_chart_ready">Lista para la siguiente preparación</string>
+    <string name="brew_chart_ignored">Haz tara o reinicia el temporizador para empezar una nueva preparación.</string>
+    <string name="brew_level_stable">Estable</string>
+    <string name="brew_level_irregular">Irregular</string>
+    <string name="brew_level_turbulent">Turbulento</string>
+    <string name="brew_level_value">%1$s · %2$d</string>
+    <string name="brew_level_measuring">Midiendo…</string>
+    <string name="brew_level_idle">Sin vertido</string>
+
+    <!-- Resumen -->
+    <string name="brew_summary_title">Resumen</string>
+    <string name="brew_summary_total_time">Tiempo total</string>
+    <string name="brew_summary_total_water">Agua total</string>
+    <string name="brew_summary_avg_flow">Flujo medio</string>
+    <string name="brew_summary_max_flow">Flujo máximo</string>
+    <string name="brew_summary_stability">Estabilidad</string>
+    <string name="brew_summary_stability_none">Sin datos suficientes</string>
+    <string name="brew_summary_share">%1$s %2$d%%</string>
+    <string name="brew_summary_pours">Vertidos</string>
+    <string name="brew_summary_pour">Vertido %1$d</string>
+    <string name="brew_summary_pour_detail">%1$s · %2$s</string>
+    <string name="brew_summary_interrupted">Preparación interrumpida por desconexión</string>
+    <string name="brew_reason_inactivity">Terminó por inactividad</string>
+    <string name="brew_reason_timer_paused">Temporizador pausado</string>
+    <string name="brew_reason_timer_reset">Temporizador reiniciado</string>
+    <string name="brew_reason_manual">Terminada manualmente</string>
+    <string name="brew_reason_disconnected">Báscula desconectada</string>
+    <string name="brew_reason_max_duration">Duración máxima alcanzada</string>
+
+    <!-- Simulación -->
+    <string name="sim_pour_stable">Simular vertido estable</string>
+    <string name="sim_pour_irregular">Simular vertido irregular</string>
+
+    <!-- Ajustes -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_open">Abrir ajustes</string>
+    <string name="settings_auto_finish_title">Fin automático</string>
+    <string name="settings_auto_finish_value">%1$d s</string>
+    <string name="settings_auto_finish_hint">Segundos sin verter tras los que la preparación se da por terminada. Sube el valor si haces blooms largos: la pausa del bloom no debe terminar la preparación.</string>
 </resources>

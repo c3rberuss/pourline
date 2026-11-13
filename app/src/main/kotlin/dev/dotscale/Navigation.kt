@@ -14,6 +14,7 @@ import dev.dotscale.sim.SimulatedScaleConnection
 import dev.dotscale.ui.scale.ScaleScreen
 import dev.dotscale.ui.scale.ScaleViewModel
 import dev.dotscale.ui.scan.ScanScreen
+import dev.dotscale.ui.settings.SettingsScreen
 
 @Composable
 fun MainNavigation() {
@@ -33,15 +34,26 @@ fun MainNavigation() {
         ScanScreen(
           onDeviceSelected = { address, name -> backStack.add(Scale(address, name)) },
           onSimulatedSelected = { backStack.add(Scale(address = null, name = simulatedName)) },
+          onOpenSettings = { backStack.add(Settings) },
         )
       }
       entry<Scale> { key ->
+        val autoFinish = (appContext as DotScaleApp).brewSettings.autoFinishSeconds
         val viewModel = viewModel {
           ScaleViewModel(
             key.address?.let { BleScaleConnection(appContext, it) } ?: SimulatedScaleConnection(),
+            autoFinish,
           )
         }
-        ScaleScreen(viewModel, title = key.name, onBack = { backStack.removeLastOrNull() })
+        ScaleScreen(
+          viewModel,
+          title = key.name,
+          onBack = { backStack.removeLastOrNull() },
+          onOpenSettings = { backStack.add(Settings) },
+        )
+      }
+      entry<Settings> {
+        SettingsScreen((appContext as DotScaleApp).brewSettings, onBack = { backStack.removeLastOrNull() })
       }
     },
   )

@@ -1,5 +1,6 @@
 package dev.dotscale.sim
 
+import dev.dotscale.brew.GRAMS_PER_OUNCE
 import dev.dotscale.protocol.BrewMode
 import dev.dotscale.protocol.Cmd
 import dev.dotscale.protocol.Frame
@@ -38,8 +39,9 @@ import kotlinx.coroutines.sync.withLock
  * Genera tramas binarias reales del protocolo y las pasa por [FrameDecoder] y
  * [ScaleMessageParser], así que la app recorre el mismo camino que con la báscula física.
  *
- * Con el temporizador en marcha simula un pour-over: bloom de 45 g, pausa y vertido
- * continuo hasta unos 250 g.
+ * El vertido ya no depende del temporizador: [simulatePour] lanza un pour-over guionizado
+ * ([SimulatedPour]) con el perfil elegido. El temporizador simulado sigue respondiendo a
+ * `startTimer`, `pauseTimer` y `resetTimer`.
  */
 class SimulatedScaleConnection : ScaleConnection {
 
@@ -57,8 +59,8 @@ class SimulatedScaleConnection : ScaleConnection {
   // Estado interno de la "báscula", en gramos.
   private var grossGrams = 0.0
   private var tareGrams = 0.0
-  private var poured = 0.0
   private var flowGps = 0.0
+  private var pour: SimulatedPour? = null
   private var unit = WeightUnit.GRAMS
   private var timer = TimerStatus.RESET
   private var tenths = 0
@@ -95,22 +97,22 @@ class SimulatedScaleConnection : ScaleConnection {
     lock.withLock { grossGrams += grams }
   }
 
+  /**
+   * Solo existe en la simulación: lanza un pour-over (bloom, pausa y vertido principal) sin
+   * depender del temporizador. Se ignora si ya hay uno en curso.
+   */
+  suspend fun simulatePour(profile: PourProfile) {
+    lock.withLock { if (pour == null) pour = SimulatedPour(profile) }
+  }
+
   private suspend fun tick() {
-    if (timer == TimerStatus.RUNNING) {
-      tenths++
-      val seconds = tenths / 10.0
-      val target = when {
-        seconds < 3 -> 0.0
-        seconds < 12 -> 5.0 // bloom
-        seconds < 30 -> 0.0
-        poured < 250 -> 4.0
-        else -> 0.0
-      }
-      flowGps += (target - flowGps) * 0.3
-      val added = (flowGps * TICK_MS / 1000).coerceAtLeast(0.0)
-      poured += added
-      grossGrams += added
+    if (timer == TimerStatus.RUNNING) tenths++
+    val next = pour?.next()
+    if (next != null) {
+      flowGps = next
+      grossGrams += (flowGps * TICK_MS / 1000).coerceAtLeast(0.0)
     } else {
+      pour = null
       flowGps *= 0.5
     }
     emitFrame(Frame(Op.NOTIFY, Cmd.WEIGHT, weightPayload()))
@@ -151,10 +153,7 @@ class SimulatedScaleConnection : ScaleConnection {
       }
       Cmd.TIMER -> {
         timer = TimerStatus.fromCode(frame.payload.first().toInt())
-        if (timer == TimerStatus.RESET) {
-          tenths = 0
-          poured = 0.0
-        }
+        if (timer == TimerStatus.RESET) tenths = 0
         emitFrame(Frame(Op.NOTIFY, Cmd.TIMER, byteArrayOf(timer.code.toByte())))
       }
       Cmd.WEIGHT_UNIT -> {
@@ -171,6 +170,5 @@ class SimulatedScaleConnection : ScaleConnection {
 
   private companion object {
     const val TICK_MS = 100L
-    const val GRAMS_PER_OUNCE = 28.3495
   }
 }
