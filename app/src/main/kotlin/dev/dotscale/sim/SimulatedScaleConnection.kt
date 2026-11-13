@@ -1,6 +1,7 @@
 package dev.dotscale.sim
 
 import dev.dotscale.brew.GRAMS_PER_OUNCE
+import dev.dotscale.brew.TargetCurve
 import dev.dotscale.protocol.BrewMode
 import dev.dotscale.protocol.Cmd
 import dev.dotscale.protocol.Frame
@@ -60,7 +61,7 @@ class SimulatedScaleConnection : ScaleConnection {
   private var grossGrams = 0.0
   private var tareGrams = 0.0
   private var flowGps = 0.0
-  private var pour: SimulatedPour? = null
+  private var pour: PourScript? = null
   private var unit = WeightUnit.GRAMS
   private var timer = TimerStatus.RESET
   private var tenths = 0
@@ -103,6 +104,14 @@ class SimulatedScaleConnection : ScaleConnection {
    */
   suspend fun simulatePour(profile: PourProfile) {
     lock.withLock { if (pour == null) pour = SimulatedPour(profile) }
+  }
+
+  /**
+   * Solo existe en la simulación: vierte siguiendo [target] (con la dosis ya aplicada) de forma fiel o
+   * desviada. Se ignora si ya hay un vertido en curso.
+   */
+  suspend fun simulatePour(target: TargetCurve, mode: FollowMode) {
+    lock.withLock { if (pour == null) pour = SimulatedTargetPour(target, mode) }
   }
 
   private suspend fun tick() {

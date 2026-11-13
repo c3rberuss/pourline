@@ -2,6 +2,11 @@ package dev.dotscale.sim
 
 import kotlin.random.Random
 
+/** Guion de un vertido simulado: cada [next] avanza un tick de 100 ms y devuelve el flujo en g/s, o `null` al terminar. */
+fun interface PourScript {
+  fun next(): Double?
+}
+
 enum class PourProfile {
   /** Flujo suave y constante. */
   STABLE,
@@ -17,14 +22,14 @@ enum class PourProfile {
  * Cada [next] avanza un tick de 100 ms y devuelve el flujo suavizado en g/s, o `null` cuando el
  * guion termina.
  */
-class SimulatedPour(private val profile: PourProfile, seed: Int = 42) {
+class SimulatedPour(private val profile: PourProfile, seed: Int = 42) : PourScript {
   private val random = Random(seed)
   private var tick = 0
   private var flow = 0.0
   private var poured = 0.0
   private var factor = 1.0
 
-  fun next(): Double? {
+  override fun next(): Double? {
     if (poured >= TOTAL_WATER_G) return null
     val target = when {
       tick < BLOOM_TICKS -> BLOOM_GPS
