@@ -4,6 +4,7 @@ import dev.dotscale.brew.BrewFit
 import dev.dotscale.brew.BrewState
 import dev.dotscale.brew.GuideState
 import dev.dotscale.brew.TargetCurve
+import dev.dotscale.coffee.PickedCoffee
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.ReferenceType
 import dev.dotscale.protocol.ScaleMessage
@@ -54,6 +55,9 @@ data class ActiveTarget(
   val prefill: BrewDetails,
 )
 
+/** La última sesión guardada: el momento de inicio y el café con el que se hizo (lo necesita la imagen del resumen). */
+data class LastBrew(val startedAtEpochMs: Long, val coffee: PickedCoffee?)
+
 /** El ajuste de la última sesión con objetivo, con la curva contra la que se midió. */
 data class SessionFit(val name: String, val curve: TargetCurve, val fit: BrewFit)
 
@@ -83,6 +87,10 @@ data class ScaleUiState(
   val guide: GuideState? = null,
   /** `null` sin sesión terminada con objetivo; vuelve a `null` al empezar otra sesión. */
   val lastFit: SessionFit? = null,
+  /** El café elegido fuera de `Active`; en `Active`, el congelado al empezar. `null` sin café. */
+  val coffee: PickedCoffee? = null,
+  /** `null` sin sesión guardada; vuelve a `null` al empezar otra sesión. */
+  val lastBrew: LastBrew? = null,
 ) {
   /** Ratio agua:café (p. ej. 15.0 → 1:15). */
   val ratio: Double? get() = dose?.takeIf { it > 0 && weight > 0 }?.let { weight / it }

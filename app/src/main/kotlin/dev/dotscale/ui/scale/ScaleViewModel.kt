@@ -15,11 +15,13 @@ import dev.dotscale.brew.TargetCurve
 import dev.dotscale.brew.TargetGuide
 import dev.dotscale.brew.brewFit
 import dev.dotscale.brew.toGrams
+import dev.dotscale.coffee.PickedCoffee
 import dev.dotscale.history.BrewContext
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewRecord
 import dev.dotscale.history.BrewSaver
 import dev.dotscale.history.ReferenceType
+import dev.dotscale.history.UsedCoffee
 import dev.dotscale.history.UsedTarget
 import dev.dotscale.protocol.Frame
 import dev.dotscale.protocol.ScaleCommands
@@ -29,6 +31,8 @@ import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.recipe.Recipe
 import dev.dotscale.scale.ConnectionState
 import dev.dotscale.scale.ScaleConnection
+import dev.dotscale.settings.CoffeeStore
+import dev.dotscale.settings.NoCoffeeStore
 import dev.dotscale.settings.ReferenceKey
 import dev.dotscale.settings.ReferenceStore
 import dev.dotscale.sim.FollowMode
@@ -62,6 +66,8 @@ import java.util.concurrent.atomic.AtomicLong
  * @param references dónde se recuerda la referencia (objetivo) activa.
  * @param targets de dónde sale la receta o la preparación elegidas como objetivo.
  * @param notifier avisa de que empieza una etapa; se libera en `onCleared`.
+ * @param coffeeStore dónde se recuerda el último café elegido.
+ * @param coffees de dónde salen el café elegido y las altas nuevas (SPEC-004).
  * @param clock reloj monotónico en ms; se inyecta para poder probar la sesión sin reloj real.
  * @param wallClock hora de pared en ms desde la época, para fechar las preparaciones.
  */
@@ -74,6 +80,8 @@ class ScaleViewModel(
   private val references: ReferenceStore,
   private val targets: TargetReferences,
   private val notifier: StageNotifier,
+  private val coffeeStore: CoffeeStore = NoCoffeeStore,
+  private val coffees: ScaleCoffees = NoScaleCoffees,
   private val clock: () -> Long = SystemClock::elapsedRealtime,
   private val wallClock: () -> Long = System::currentTimeMillis,
   private val targetConfig: TargetConfig = TargetConfig(),
@@ -108,6 +116,16 @@ class ScaleViewModel(
   private var frozenFor: Long? = null
 
   private val alerts = StageAlertTracker()
+
+  /** El café elegido para la siguiente preparación; en `Active`, la pantalla ve el congelado ([sessionCoffee]). */
+  private var selectedCoffee: PickedCoffee? = null
+
+  /** El café congelado al empezar la sesión cuyo t0 es [coffeeFrozenFor]; es el que se guarda. */
+  private var sessionCoffee: PickedCoffee? = null
+  private var coffeeFrozenFor: Long? = null
+
+  /** `true` entre "Nuevo café" y el alta que se elige sola (D23). */
+  private var awaitingNewCoffee = false
 
   init {
     viewModelScope.launch {
@@ -144,6 +162,22 @@ class ScaleViewModel(
         }
         .distinctUntilChanged()
         .collect(::onResolution)
+    }
+    viewModelScope.launch {
+      coffeeStore.lastCoffeeId
+        .flatMapLatest { id -> coffees.coffee(id) }
+        .distinctUntilChanged()
+        .collect { picked ->
+          selectedCoffee = picked
+          publish()
+        }
+    }
+    viewModelScope.launch {
+      coffees.created.collect { id ->
+        if (!awaitingNewCoffee) return@collect
+        awaitingNewCoffee = false
+        coffeeStore.setLastCoffeeId(id)
+      }
     }
     connect()
   }
@@ -182,10 +216,10 @@ class ScaleViewModel(
    */
   private fun publish(transform: (ScaleUiState) -> ScaleUiState = { it }) {
     _ui.update { current ->
-      val next = transform(current).copy(brew = session.state).withTarget(current)
-      if (next.brew.phase is BrewPhase.Active && (next.savedBrew != null || next.lastFit != null)) {
+      val next = transform(current).copy(brew = session.state).withTarget(current).withCoffee(current)
+      if (next.brew.phase is BrewPhase.Active && (next.savedBrew != null || next.lastFit != null || next.lastBrew != null)) {
         if (next.savedBrew != null) saveGeneration.incrementAndGet()
-        next.copy(savedBrew = null, lastFit = null)
+        next.copy(savedBrew = null, lastFit = null, lastBrew = null)
       } else {
         next
       }
@@ -215,6 +249,21 @@ class ScaleViewModel(
       TargetGuide.at(it.curve, phase, tMs, waterG, targetConfig)
     }
     return copy(target = target, guide = guide)
+  }
+
+  /** El café para este estado: fuera de `Active` sigue a la elección; en `Active` es el que había al empezar. */
+  private fun ScaleUiState.withCoffee(previous: ScaleUiState): ScaleUiState {
+    val t0 = brew.t0MonoMs
+    val picked = if (brew.phase is BrewPhase.Active) {
+      if (coffeeFrozenFor != t0) {
+        coffeeFrozenFor = t0
+        sessionCoffee = previous.coffee
+      }
+      sessionCoffee
+    } else {
+      selectedCoffee
+    }
+    return copy(coffee = picked)
   }
 
   private fun scaledTarget(dose: Double?, unit: WeightUnit): ActiveTarget? {
@@ -271,16 +320,25 @@ class ScaleViewModel(
     val used = frozen?.let {
       UsedTarget(it.type, it.key.id, it.name, it.curve, brewFit(brew.samples, brew.summary.totalTimeMs, it.curve, targetConfig))
     }
+    val usedCoffee = sessionCoffee?.takeIf { coffeeFrozenFor == brew.t0MonoMs }
+    val startedAt = wallClock() - (clock() - brew.t0MonoMs)
     val context = BrewContext(
-      startedAtEpochMs = wallClock() - (clock() - brew.t0MonoMs),
+      startedAtEpochMs = startedAt,
       unit = ui.unit,
       scaleModel = ui.model,
       simulated = ui.isSimulated,
       target = used,
       details = frozen?.prefill,
+      coffee = usedCoffee?.let { UsedCoffee(it.id, it.name) },
     )
     val generation = saveGeneration.incrementAndGet()
-    _ui.update { it.copy(savedBrew = SavedBrew.Saving, lastFit = used?.let { u -> SessionFit(u.name, u.curve, u.fit) }) }
+    _ui.update {
+      it.copy(
+        savedBrew = SavedBrew.Saving,
+        lastFit = used?.let { u -> SessionFit(u.name, u.curve, u.fit) },
+        lastBrew = LastBrew(startedAt, usedCoffee),
+      )
+    }
     applicationScope.launch {
       val result = try {
         SavedBrew.Saved(saver.save(brew, context))
@@ -344,6 +402,17 @@ class ScaleViewModel(
   fun selectTarget(key: ReferenceKey?) {
     if (_ui.value.brew.phase is BrewPhase.Active) return
     references.setReference(key)
+  }
+
+  /** Elige (o quita, con `null`) el café de la siguiente preparación. Se ignora con la sesión activa. */
+  fun selectCoffee(id: Long?) {
+    if (_ui.value.brew.phase is BrewPhase.Active) return
+    coffeeStore.setLastCoffeeId(id)
+  }
+
+  /** "Nuevo café": el próximo alta se elige solo al volver (D23). Con la sesión activa, queda para la siguiente. */
+  fun requestNewCoffee() {
+    awaitingNewCoffee = true
   }
 
   fun simulateAdd(grams: Double) {
@@ -433,8 +502,8 @@ class ScaleViewModel(
     }
     if (curve == null) return Resolution.Unreadable
     val entity = record.entity
+    // El café sale solo del selector de Scale (D21): copiar el texto de la referencia crearía preparaciones sin vínculo.
     val prefill = BrewDetails(
-      coffee = entity.coffee,
       method = entity.method,
       methodOther = entity.methodOther,
       grind = entity.grind,

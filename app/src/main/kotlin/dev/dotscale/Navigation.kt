@@ -16,6 +16,7 @@ import dev.dotscale.ui.coffees.CoffeeDetailScreen
 import dev.dotscale.ui.coffees.CoffeeDetailViewModel
 import dev.dotscale.ui.coffees.CoffeeEditScreen
 import dev.dotscale.ui.coffees.CoffeeEditViewModel
+import dev.dotscale.ui.coffees.CoffeePickerViewModel
 import dev.dotscale.ui.coffees.CoffeesScreen
 import dev.dotscale.ui.coffees.CoffeesViewModel
 import dev.dotscale.ui.history.BrewDetailScreen
@@ -33,6 +34,7 @@ import dev.dotscale.ui.recipes.RecipeEditViewModel
 import dev.dotscale.ui.recipes.RecipesScreen
 import dev.dotscale.ui.recipes.RecipesViewModel
 import dev.dotscale.ui.scale.AndroidStageNotifier
+import dev.dotscale.ui.scale.RepositoryScaleCoffees
 import dev.dotscale.ui.scale.RepositoryTargetReferences
 import dev.dotscale.ui.scale.ScaleScreen
 import dev.dotscale.ui.scale.ScaleViewModel
@@ -75,9 +77,12 @@ fun MainNavigation() {
             references = app.targetSettings,
             targets = RepositoryTargetReferences(app.recipeRepository, app.brewRepository),
             notifier = AndroidStageNotifier(appContext, app.targetSettings),
+            coffeeStore = app.brewSettings,
+            coffees = RepositoryScaleCoffees(app.coffeeRepository),
           )
         }
         val pickerViewModel = viewModel { TargetPickerViewModel(app.recipeRepository, app.brewRepository) }
+        val coffeePickerViewModel = viewModel { CoffeePickerViewModel(app.coffeeRepository) }
         ScaleScreen(
           viewModel,
           pickerViewModel,
@@ -88,6 +93,8 @@ fun MainNavigation() {
           onOpenCoffees = { backStack.add(Coffees) },
           onAddDetails = { id -> backStack.add(BrewEdit(id)) },
           onManageRecipes = { backStack.add(Recipes) },
+          coffeePickerViewModel = coffeePickerViewModel,
+          onNewCoffee = { backStack.add(CoffeeEdit()) },
         )
       }
       entry<Coffees> {

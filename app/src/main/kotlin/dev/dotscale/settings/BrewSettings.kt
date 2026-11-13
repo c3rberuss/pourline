@@ -13,6 +13,13 @@ interface CoffeeStore {
   fun setLastCoffeeId(id: Long?)
 }
 
+/** Sin memoria del último café: el valor por defecto de `ScaleViewModel`. */
+object NoCoffeeStore : CoffeeStore {
+  override val lastCoffeeId: StateFlow<Long?> = MutableStateFlow(null)
+
+  override fun setLastCoffeeId(id: Long?) = Unit
+}
+
 /**
  * Preferencias de la preparación, en el mismo archivo `"settings"` que [ThemeSettings].
  * Hay una sola instancia por proceso (ver `DotScaleApp`), para que el ViewModel de la pantalla

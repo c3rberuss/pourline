@@ -57,6 +57,8 @@ import dev.dotscale.ui.components.AntLoadingIcon
 import dev.dotscale.ui.components.AntMessageHost
 import dev.dotscale.ui.components.AntSegmented
 import dev.dotscale.ui.components.AntSegmentedOption
+import dev.dotscale.ui.coffees.CoffeePicker
+import dev.dotscale.ui.coffees.CoffeePickerViewModel
 import dev.dotscale.ui.components.AntStatistic
 import dev.dotscale.ui.components.AntStatus
 import dev.dotscale.ui.components.AntTag
@@ -84,10 +86,13 @@ fun ScaleScreen(
   onOpenCoffees: () -> Unit,
   onAddDetails: (Long) -> Unit,
   onManageRecipes: () -> Unit,
+  coffeePickerViewModel: CoffeePickerViewModel? = null,
+  onNewCoffee: () -> Unit = {},
 ) {
   val ui by viewModel.ui.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
   var pickerOpen by rememberSaveable { mutableStateOf(false) }
+  var coffeePickerOpen by rememberSaveable { mutableStateOf(false) }
 
   val commandError = stringResource(R.string.scale_error_command)
   val saveError = stringResource(R.string.scale_error_save)
@@ -151,6 +156,8 @@ fun ScaleScreen(
         guide = ui.guide,
         lastFit = ui.lastFit,
         onPickTarget = { pickerOpen = true },
+        coffee = ui.coffee,
+        onPickCoffee = coffeePickerViewModel?.let { { coffeePickerOpen = true } },
       )
       (ui.brew.phase as? BrewPhase.Finished)?.let { finished ->
         val summary = finished.summary
@@ -170,6 +177,22 @@ fun ScaleScreen(
         )
       }
     }
+  }
+
+  if (coffeePickerOpen && coffeePickerViewModel != null) {
+    val coffees by coffeePickerViewModel.pickable.collectAsStateWithLifecycle()
+    CoffeePicker(
+      coffees = coffees,
+      selectedId = ui.coffee?.id,
+      onSelect = viewModel::selectCoffee,
+      onClear = if (ui.coffee != null) ({ viewModel.selectCoffee(null) }) else null,
+      onNew = {
+        coffeePickerOpen = false
+        viewModel.requestNewCoffee()
+        onNewCoffee()
+      },
+      onClose = { coffeePickerOpen = false },
+    )
   }
 
   // Las listas solo se recogen con el selector abierto.
