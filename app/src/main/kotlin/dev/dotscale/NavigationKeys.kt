@@ -15,5 +15,13 @@ import kotlinx.serialization.Serializable
 @Serializable data class BrewDetail(val id: Long) : NavKey
 
 @Serializable data class BrewEdit(val id: Long) : NavKey
+
 @Serializable data object Recipes : NavKey
+
+/** `id == null` crea una receta; `fromBrewId` la prellena desde una preparación ("Guardar como receta"). */
 @Serializable data class RecipeEdit(val id: Long? = null, val fromBrewId: Long? = null) : NavKey
+
+/** Elegir la preparación B para compararla con A. Al elegir, se sustituye por [BrewCompare] en la pila. */
+@Serializable data class ComparePick(val aId: Long) : NavKey
+
+@Serializable data class BrewCompare(val aId: Long, val bId: Long) : NavKey

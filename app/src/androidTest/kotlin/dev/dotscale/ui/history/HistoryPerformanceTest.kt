@@ -78,7 +78,7 @@ class HistoryPerformanceTest {
           }
           Screen.Detail -> {
             val viewModel = remember(openId) { BrewDetailViewModel(repository, openId) }
-            BrewDetailScreen(viewModel, onBack = { screen = Screen.List }, onEdit = {})
+            BrewDetailScreen(viewModel, onBack = { screen = Screen.List }, onEdit = {}, onCompare = {}, onSaveAsRecipe = {})
           }
         }
       }

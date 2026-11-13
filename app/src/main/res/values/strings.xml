@@ -292,4 +292,21 @@
     <string name="fit_seconds">%1$s s</string>
 
     <string name="history_row_fit">Ajuste %1$d</string>
+    <string name="brew_detail_compare">Comparar con…</string>
+    <string name="brew_detail_save_recipe">Guardar como receta</string>
+    <string name="brew_detail_target_error">No se pudo leer la curva objetivo</string>
+    <string name="compare_pick_title">Comparar con…</string>
+    <string name="compare_pick_empty">No hay otras preparaciones para comparar</string>
+    <string name="compare_title">Comparación</string>
+    <string name="compare_legend_item">%1$s: %2$s</string>
+    <string name="compare_water_title">Agua</string>
+    <string name="compare_flow_title">Flujo</string>
+    <string name="compare_water_description">Agua vertida de las preparaciones A y B, en %1$s</string>
+    <string name="compare_flow_description">Flujo de las preparaciones A y B, en %1$s</string>
+    <string name="compare_curve_error">No se pudo leer la curva de la preparación %1$s</string>
+    <string name="compare_table_title">Resumen</string>
+    <string name="compare_column_a">A</string>
+    <string name="compare_column_b">B</string>
+    <string name="compare_column_diff">B−A</string>
+    <string name="compare_none">—</string>
 </resources>

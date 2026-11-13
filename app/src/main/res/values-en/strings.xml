@@ -293,4 +293,21 @@
     <string name="fit_seconds">%1$s s</string>
 
     <string name="history_row_fit">Fit %1$d</string>
+    <string name="brew_detail_compare">Compare with…</string>
+    <string name="brew_detail_save_recipe">Save as recipe</string>
+    <string name="brew_detail_target_error">Couldn\'t read the target curve</string>
+    <string name="compare_pick_title">Compare with…</string>
+    <string name="compare_pick_empty">There are no other brews to compare</string>
+    <string name="compare_title">Comparison</string>
+    <string name="compare_legend_item">%1$s: %2$s</string>
+    <string name="compare_water_title">Water</string>
+    <string name="compare_flow_title">Flow</string>
+    <string name="compare_water_description">Water poured in brews A and B, in %1$s</string>
+    <string name="compare_flow_description">Flow of brews A and B, in %1$s</string>
+    <string name="compare_curve_error">Couldn\'t read the curve of brew %1$s</string>
+    <string name="compare_table_title">Summary</string>
+    <string name="compare_column_a">A</string>
+    <string name="compare_column_b">B</string>
+    <string name="compare_column_diff">B−A</string>
+    <string name="compare_none">—</string>
 </resources>

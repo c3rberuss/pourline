@@ -13,9 +13,13 @@ import dev.dotscale.ble.BleScaleConnection
 import dev.dotscale.recipe.ResourcesRecipeTexts
 import dev.dotscale.sim.SimulatedScaleConnection
 import dev.dotscale.ui.history.BrewDetailScreen
+import dev.dotscale.ui.history.BrewCompareScreen
+import dev.dotscale.ui.history.BrewCompareViewModel
 import dev.dotscale.ui.history.BrewDetailViewModel
 import dev.dotscale.ui.history.BrewEditScreen
 import dev.dotscale.ui.history.BrewEditViewModel
+import dev.dotscale.ui.history.ComparePickScreen
+import dev.dotscale.ui.history.ComparePickViewModel
 import dev.dotscale.ui.history.HistoryScreen
 import dev.dotscale.ui.history.HistoryViewModel
 import dev.dotscale.ui.recipes.RecipeEditScreen
@@ -119,6 +123,24 @@ fun MainNavigation() {
           viewModel { BrewDetailViewModel(repository, key.id) },
           onBack = { backStack.removeLastOrNull() },
           onEdit = { id -> backStack.add(BrewEdit(id)) },
+          onCompare = { id -> backStack.add(ComparePick(id)) },
+          onSaveAsRecipe = { id -> backStack.add(RecipeEdit(fromBrewId = id)) },
+        )
+      }
+      entry<ComparePick> { key ->
+        val repository = (appContext as DotScaleApp).brewRepository
+        ComparePickScreen(
+          viewModel { ComparePickViewModel(repository, key.aId) },
+          onBack = { backStack.removeLastOrNull() },
+          // Atrás desde la comparación vuelve al detalle de A, no al selector.
+          onPick = { bId -> backStack[backStack.lastIndex] = BrewCompare(key.aId, bId) },
+        )
+      }
+      entry<BrewCompare> { key ->
+        val repository = (appContext as DotScaleApp).brewRepository
+        BrewCompareScreen(
+          viewModel { BrewCompareViewModel(repository, key.aId, key.bId) },
+          onBack = { backStack.removeLastOrNull() },
         )
       }
       entry<BrewEdit> { key ->
