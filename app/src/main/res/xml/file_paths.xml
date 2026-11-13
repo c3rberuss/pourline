@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Destino de la cámara del sistema -->
+    <cache-path name="camera" path="camera/" />
+    <!-- Imágenes para compartir (SPEC-004 §3.7) -->
+    <cache-path name="shared" path="shared/" />
+</paths>

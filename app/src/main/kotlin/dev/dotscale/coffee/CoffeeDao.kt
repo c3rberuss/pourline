@@ -43,6 +43,9 @@ abstract class CoffeeDao {
   @Query("SELECT roaster, originCountry, originRegion, varieties FROM coffees WHERE id != :excludedId")
   abstract suspend fun suggestionRows(excludedId: Long): List<SuggestionRow>
 
+  @Query("SELECT photo1 FROM coffees WHERE photo1 IS NOT NULL UNION SELECT photo2 FROM coffees WHERE photo2 IS NOT NULL")
+  abstract suspend fun photoNames(): List<String>
+
   @Query("SELECT EXISTS(SELECT 1 FROM coffees WHERE id = :id)")
   abstract suspend fun exists(id: Long): Boolean
 

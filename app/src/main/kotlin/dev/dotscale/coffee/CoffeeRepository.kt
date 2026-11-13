@@ -85,6 +85,9 @@ class CoffeeRepository(
     }
   }
 
+  /** Nombres de foto que algún café referencia: lo que no se debe barrer. */
+  suspend fun referencedPhotos(): Set<String> = withContext(Dispatchers.IO) { dao.photoNames().toSet() }
+
   /** Valores distintos de tostador, país, región y variedades. */
   fun suggestions(): Flow<CoffeeSuggestions> = dao.observeSuggestionRows().map { it.toSuggestions() }.flowOn(Dispatchers.Default)
 

@@ -101,6 +101,9 @@ dependencies {
   // resuelve 1.7.3 por lifecycle y AGP alinea androidTest con él. Solo afecta a debug, no a release.
   debugImplementation(libs.kotlinx.serialization.core)
 
+  // OCR de las etiquetas: reconocimiento de texto latino con el modelo incluido en el APK (sin red)
+  implementation(libs.mlkit.text.recognition)
+
   // Navigation
   implementation(libs.androidx.navigation3.ui)
   implementation(libs.androidx.navigation3.runtime)
