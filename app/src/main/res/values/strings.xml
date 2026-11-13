@@ -257,4 +257,39 @@
     <string name="settings_recipes_restore_confirm">Restaurar</string>
     <string name="settings_recipes_restore_cancel">Cancelar</string>
     <string name="settings_recipes_restored">Recetas predefinidas restauradas</string>
+
+    <string name="target_chip">Objetivo: %1$s</string>
+    <string name="target_chip_none">Objetivo: ninguno</string>
+    <string name="target_stage_armed">Etapa %1$s: hasta %2$s en %3$d s</string>
+    <string name="target_stage_label">%1$d/%2$d</string>
+    <string name="target_stage_label_named">%1$d/%2$d · %3$s</string>
+    <string name="target_scaled">Escalada a %1$s</string>
+    <string name="target_up_to">Hasta %1$s</string>
+    <string name="target_next_in">Siguiente en %1$d s</string>
+    <string name="target_before_first">En espera de la etapa 1/%1$d</string>
+    <string name="target_all_done">Última etapa completada</string>
+    <string name="target_description">Objetivo: %1$s en %2$s</string>
+    <string name="target_deviation_description">Desvío: %1$s</string>
+    <string name="target_deviation_none">—</string>
+    <string name="target_error_removed">El objetivo elegido ya no existe</string>
+    <string name="target_error_unreadable">No se pudo leer la curva de esa preparación</string>
+    <string name="target_picker_title">Elegir objetivo</string>
+    <string name="target_picker_recipes">Recetas</string>
+    <string name="target_picker_history">Historial</string>
+    <string name="target_picker_clear">Quitar objetivo</string>
+    <string name="target_picker_manage">Gestionar recetas</string>
+    <string name="target_picker_empty_recipes">Aún no hay recetas</string>
+    <string name="target_picker_empty_history">Aún no hay preparaciones guardadas</string>
+    <string name="target_sim_follow">Seguir objetivo</string>
+    <string name="target_sim_deviated">Seguir con desvío</string>
+    <string name="fit_title">Ajuste al objetivo</string>
+    <string name="fit_score">%1$d / 100</string>
+    <string name="fit_score_none">Sin puntuación</string>
+    <string name="fit_water">Agua %1$s (%2$s)</string>
+    <string name="fit_time">Tiempo %1$s</string>
+    <string name="fit_reference">Referencia: %1$s</string>
+    <string name="fit_percent">%1$s %%</string>
+    <string name="fit_seconds">%1$s s</string>
+
+    <string name="history_row_fit">Ajuste %1$d</string>
 </resources>

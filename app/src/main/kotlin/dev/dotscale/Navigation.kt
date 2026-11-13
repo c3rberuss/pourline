@@ -22,8 +22,11 @@ import dev.dotscale.ui.recipes.RecipeEditScreen
 import dev.dotscale.ui.recipes.RecipeEditViewModel
 import dev.dotscale.ui.recipes.RecipesScreen
 import dev.dotscale.ui.recipes.RecipesViewModel
+import dev.dotscale.ui.scale.AndroidStageNotifier
+import dev.dotscale.ui.scale.RepositoryTargetReferences
 import dev.dotscale.ui.scale.ScaleScreen
 import dev.dotscale.ui.scale.ScaleViewModel
+import dev.dotscale.ui.scale.TargetPickerViewModel
 import dev.dotscale.ui.scan.ScanScreen
 import dev.dotscale.ui.settings.SettingsScreen
 
@@ -58,15 +61,21 @@ fun MainNavigation() {
             app.brewSettings.autoFinishSeconds,
             app.brewRepository,
             app.applicationScope,
+            references = app.targetSettings,
+            targets = RepositoryTargetReferences(app.recipeRepository, app.brewRepository),
+            notifier = AndroidStageNotifier(appContext, app.targetSettings),
           )
         }
+        val pickerViewModel = viewModel { TargetPickerViewModel(app.recipeRepository, app.brewRepository) }
         ScaleScreen(
           viewModel,
+          pickerViewModel,
           title = key.name,
           onBack = { backStack.removeLastOrNull() },
           onOpenSettings = { backStack.add(Settings) },
           onOpenHistory = { backStack.add(History) },
           onAddDetails = { id -> backStack.add(BrewEdit(id)) },
+          onManageRecipes = { backStack.add(Recipes) },
         )
       }
       entry<Settings> {

@@ -7,17 +7,12 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.initializer
 import dev.dotscale.brew.BrewPhase
 import dev.dotscale.brew.FinishReason
-import dev.dotscale.brew.FinishedBrew
-import dev.dotscale.history.BrewContext
-import dev.dotscale.history.BrewSaver
-import dev.dotscale.protocol.Frame
 import dev.dotscale.protocol.ScaleCommands
 import dev.dotscale.protocol.ScaleMessage
 import dev.dotscale.protocol.ScaleModel
 import dev.dotscale.protocol.TimerStatus
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.scale.ConnectionState
-import dev.dotscale.scale.ScaleConnection
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +20,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -41,45 +35,8 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ScaleViewModelBrewTest {
 
-  private class FakeConnection : ScaleConnection {
-    override val state = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
-    override val messages = MutableSharedFlow<ScaleMessage>(extraBufferCapacity = 64)
-    val sent = mutableListOf<Frame>()
-
-    /** Tramas cuyo envío falla (después de registrarse en [sent]). */
-    val failing = mutableSetOf<Frame>()
-
-    override suspend fun connect() {
-      state.value = ConnectionState.Ready
-    }
-
-    override suspend fun send(frame: Frame) {
-      sent += frame
-      if (frame in failing) throw IllegalStateException("fallo simulado")
-    }
-
-    override fun disconnect() = Unit
-  }
-
-  private class SavedCall(val brew: FinishedBrew, val context: BrewContext)
-
-  /** Registra las llamadas; puede suspender con [gate] o fallar con [failure]. */
-  private class FakeSaver : BrewSaver {
-    val calls = mutableListOf<SavedCall>()
-    var gate: CompletableDeferred<Unit>? = null
-    var failure: Exception? = null
-    var nextId = 1L
-
-    override suspend fun save(finished: FinishedBrew, context: BrewContext): Long {
-      calls += SavedCall(finished, context)
-      gate?.await()
-      failure?.let { throw it }
-      return nextId++
-    }
-  }
-
-  private val connection = FakeConnection()
-  private val saver = FakeSaver()
+  private val connection = FakeScaleConnection()
+  private val saver = FakeBrewSaver()
   private val scheduler = TestCoroutineScheduler()
   private val autoFinish = MutableStateFlow(60)
   private val store = ViewModelStore()
@@ -95,7 +52,17 @@ class ScaleViewModelBrewTest {
     applicationScope = CoroutineScope(SupervisorJob() + dispatcher)
     val factory = viewModelFactory {
       initializer {
-        ScaleViewModel(connection, autoFinish, saver, applicationScope, clock = { now }, wallClock = { WALL_BASE + now })
+        ScaleViewModel(
+          connection,
+          autoFinish,
+          saver,
+          applicationScope,
+          FakeReferenceStore(),
+          FakeTargetReferences(),
+          FakeNotifier(),
+          clock = { now },
+          wallClock = { WALL_BASE + now },
+        )
       }
     }
     viewModel = ViewModelProvider.create(store, factory)[ScaleViewModel::class]

@@ -17,7 +17,10 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,11 +39,14 @@ import dev.dotscale.ui.scale.levelText
 import dev.dotscale.ui.scale.tagColor
 import dev.dotscale.ui.theme.AntTheme
 
+private const val DISABLED_ALPHA = 0.45f
+
 /** Fila del historial: minicurva, título, café, agua y tiempo en la unidad guardada, ratio y etiquetas. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun HistoryRow(item: BrewListItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
-  AntCard(modifier.testTag("history_row"), size = AntCardSize.Small, onClick = onClick) {
+fun HistoryRow(item: BrewListItem, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+  val state = if (enabled) Modifier else Modifier.alpha(DISABLED_ALPHA).semantics { disabled() }
+  AntCard(modifier.testTag("history_row").then(state), size = AntCardSize.Small, onClick = if (enabled) onClick else null) {
     Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm), verticalAlignment = Alignment.Top) {
       BrewPreviewLine(item.preview, Modifier.width(64.dp).height(40.dp))
       Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
@@ -71,6 +77,7 @@ fun HistoryRow(item: BrewListItem, onClick: () -> Unit, modifier: Modifier = Mod
           } else {
             AntTag(stringResource(R.string.history_row_no_score))
           }
+          item.fitScore?.let { AntTag(stringResource(R.string.history_row_fit, it), Modifier.testTag("history_row_fit")) }
           if (item.simulated) AntTag(stringResource(R.string.history_row_simulated), color = AntTagColor.Primary)
         }
       }

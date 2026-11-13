@@ -8,25 +8,45 @@ import dev.dotscale.brew.BrewEffect
 import dev.dotscale.brew.BrewPhase
 import dev.dotscale.brew.BrewSession
 import dev.dotscale.brew.FinishedBrew
+import dev.dotscale.brew.StageAlertTracker
+import dev.dotscale.brew.StageNotifier
+import dev.dotscale.brew.TargetConfig
+import dev.dotscale.brew.TargetCurve
+import dev.dotscale.brew.TargetGuide
+import dev.dotscale.brew.brewFit
 import dev.dotscale.brew.toGrams
 import dev.dotscale.history.BrewContext
+import dev.dotscale.history.BrewDetails
+import dev.dotscale.history.BrewRecord
 import dev.dotscale.history.BrewSaver
+import dev.dotscale.history.ReferenceType
+import dev.dotscale.history.UsedTarget
 import dev.dotscale.protocol.Frame
 import dev.dotscale.protocol.ScaleCommands
 import dev.dotscale.protocol.ScaleMessage
 import dev.dotscale.protocol.TimerStatus
 import dev.dotscale.protocol.WeightUnit
+import dev.dotscale.recipe.Recipe
 import dev.dotscale.scale.ConnectionState
 import dev.dotscale.scale.ScaleConnection
+import dev.dotscale.settings.ReferenceKey
+import dev.dotscale.settings.ReferenceStore
+import dev.dotscale.sim.FollowMode
 import dev.dotscale.sim.PourProfile
 import dev.dotscale.sim.SimulatedScaleConnection
+import dev.dotscale.ui.history.formatBrewDateTime
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -39,16 +59,24 @@ import java.util.concurrent.atomic.AtomicLong
  * @param saver guarda las sesiones terminadas.
  * @param applicationScope ámbito donde se guarda: no se cancela al destruir el ViewModel, así que salir de
  * Scale no corta un guardado en curso.
+ * @param references dónde se recuerda la referencia (objetivo) activa.
+ * @param targets de dónde sale la receta o la preparación elegidas como objetivo.
+ * @param notifier avisa de que empieza una etapa; se libera en `onCleared`.
  * @param clock reloj monotónico en ms; se inyecta para poder probar la sesión sin reloj real.
  * @param wallClock hora de pared en ms desde la época, para fechar las preparaciones.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class ScaleViewModel(
   private val connection: ScaleConnection,
   private val autoFinishSeconds: StateFlow<Int>,
   private val saver: BrewSaver,
   private val applicationScope: CoroutineScope,
+  private val references: ReferenceStore,
+  private val targets: TargetReferences,
+  private val notifier: StageNotifier,
   private val clock: () -> Long = SystemClock::elapsedRealtime,
   private val wallClock: () -> Long = System::currentTimeMillis,
+  private val targetConfig: TargetConfig = TargetConfig(),
 ) : ViewModel() {
 
   // Solo se toca desde el hilo principal (colectores y tick de `viewModelScope`).
@@ -62,6 +90,24 @@ class ScaleViewModel(
 
   /** Se incrementa con cada guardado y al empezar una sesión: solo el guardado vigente publica su resultado. */
   private val saveGeneration = AtomicLong()
+
+  /** La referencia resuelta, sin escalar. `null` sin referencia. */
+  private var base: TargetBase? = null
+
+  // Memoria del objetivo escalado: la misma instancia mientras no cambien la base ni la dosis.
+  private var memoBase: TargetBase? = null
+  private var memoDoseG: Double? = null
+  private var memoTarget: ActiveTarget? = null
+
+  /** Cuántas veces se ha construido el objetivo escalado. Lo lee el test de rendimiento. */
+  internal var targetBuilds = 0
+    private set
+
+  /** El objetivo congelado al empezar la sesión cuyo t0 es [frozenFor]; el ajuste se calcula con él. */
+  private var sessionTarget: ActiveTarget? = null
+  private var frozenFor: Long? = null
+
+  private val alerts = StageAlertTracker()
 
   init {
     viewModelScope.launch {
@@ -87,11 +133,25 @@ class ScaleViewModel(
         handle(effects)
       }
     }
+    viewModelScope.launch {
+      references.reference
+        .flatMapLatest { key ->
+          when (key) {
+            null -> flowOf(Resolution.None)
+            is ReferenceKey.Recipe -> targets.recipe(key.id).map { recipe -> resolveRecipe(key, recipe) }
+            is ReferenceKey.Brew -> targets.brew(key.id).map { record -> resolveBrew(key, record) }
+          }
+        }
+        .distinctUntilChanged()
+        .collect(::onResolution)
+    }
     connect()
   }
 
   private fun onMessage(message: ScaleMessage) {
     val now = clock()
+    // Cambiar de unidad borra la dosis de la pantalla (ver `reduce`) y también la de la sesión.
+    if (message is ScaleMessage.UnitChanged && message.unit != _ui.value.unit) session.setDoseGrams(null)
     val effects = when (message) {
       is ScaleMessage.Weight -> session.onWeight(message, now, _ui.value.timer)
       is ScaleMessage.Timer -> session.onTimer(message.status, now)
@@ -102,17 +162,88 @@ class ScaleViewModel(
     handle(effects)
   }
 
-  /** Publica el estado de la sesión. Al empezar una sesión nueva, el guardado anterior deja de ser relevante. */
+  private fun onResolution(resolution: Resolution) {
+    when (resolution) {
+      Resolution.None -> base = null
+      is Resolution.Resolved -> base = resolution.base
+      Resolution.Removed, Resolution.Unreadable -> {
+        base = null
+        references.setReference(null)
+        _errors.trySend(if (resolution == Resolution.Removed) ScaleError.TargetRemoved else ScaleError.TargetUnreadable)
+      }
+    }
+    publish()
+  }
+
+  /**
+   * Publica el estado de la sesión. Al empezar una sesión nueva, el guardado anterior y el último ajuste
+   * dejan de ser relevantes. Los avisos de etapa salen después de actualizar el estado, nunca dentro del
+   * bloque de `update`, que puede reintentarse.
+   */
   private fun publish(transform: (ScaleUiState) -> ScaleUiState = { it }) {
     _ui.update { current ->
-      val next = transform(current).copy(brew = session.state)
-      if (next.brew.phase is BrewPhase.Active && next.savedBrew != null) {
-        saveGeneration.incrementAndGet()
-        next.copy(savedBrew = null)
+      val next = transform(current).copy(brew = session.state).withTarget(current)
+      if (next.brew.phase is BrewPhase.Active && (next.savedBrew != null || next.lastFit != null)) {
+        if (next.savedBrew != null) saveGeneration.incrementAndGet()
+        next.copy(savedBrew = null, lastFit = null)
       } else {
         next
       }
     }
+    alertStage()
+  }
+
+  /**
+   * El objetivo y la guía para este estado. Fuera de `Active` el objetivo sigue a la referencia y a la dosis;
+   * en `Active` es el que había al empezar. La guía usa un reloj fijo: `tMs = clock() − t0`.
+   */
+  private fun ScaleUiState.withTarget(previous: ScaleUiState): ScaleUiState {
+    val phase = brew.phase
+    val t0 = brew.t0MonoMs
+    val target = if (phase is BrewPhase.Active) {
+      if (frozenFor != t0) {
+        frozenFor = t0
+        sessionTarget = previous.target
+      }
+      sessionTarget
+    } else {
+      scaledTarget(dose, unit)
+    }
+    val guide = target?.let {
+      val tMs = if (phase is BrewPhase.Active && t0 != null) clock() - t0 else null
+      val waterG = brew.samples.lastOrNull()?.takeIf { s -> s.valid }?.waterG
+      TargetGuide.at(it.curve, phase, tMs, waterG, targetConfig)
+    }
+    return copy(target = target, guide = guide)
+  }
+
+  private fun scaledTarget(dose: Double?, unit: WeightUnit): ActiveTarget? {
+    val base = base ?: return null
+    val doseG = dose?.let { toGrams(it, unit) }
+    if (memoBase === base && memoDoseG == doseG) return memoTarget
+    val nominal = base.nominalDoseG
+    val factor = if (doseG != null && doseG > 0 && nominal != null && nominal > 0) doseG / nominal else 1.0
+    targetBuilds++
+    val target = ActiveTarget(
+      key = base.key,
+      type = base.type,
+      name = base.name,
+      curve = if (factor == 1.0) base.curve else base.curve.scaled(factor),
+      factor = factor,
+      scaledDoseG = doseG.takeIf { factor != 1.0 },
+      prefill = base.prefill,
+    )
+    memoBase = base
+    memoDoseG = doseG
+    memoTarget = target
+    return target
+  }
+
+  private fun alertStage() {
+    val state = _ui.value
+    val t0 = state.brew.t0MonoMs.takeIf { state.brew.phase is BrewPhase.Active }
+    val stage = alerts.update(t0, state.target?.curve, t0?.let { clock() - it })
+    if (stage != null) notifier.stageStarted(stage)
   }
 
   /**
@@ -135,14 +266,21 @@ class ScaleViewModel(
 
   private fun save(brew: FinishedBrew) {
     val ui = _ui.value
+    // El objetivo congelado de esta sesión, no el que `ui.target` ya sigue desde `Finished`.
+    val frozen = sessionTarget?.takeIf { frozenFor == brew.t0MonoMs }
+    val used = frozen?.let {
+      UsedTarget(it.type, it.key.id, it.name, it.curve, brewFit(brew.samples, brew.summary.totalTimeMs, it.curve, targetConfig))
+    }
     val context = BrewContext(
       startedAtEpochMs = wallClock() - (clock() - brew.t0MonoMs),
       unit = ui.unit,
       scaleModel = ui.model,
       simulated = ui.isSimulated,
+      target = used,
+      details = frozen?.prefill,
     )
     val generation = saveGeneration.incrementAndGet()
-    _ui.update { it.copy(savedBrew = SavedBrew.Saving) }
+    _ui.update { it.copy(savedBrew = SavedBrew.Saving, lastFit = used?.let { u -> SessionFit(u.name, u.curve, u.fit) }) }
     applicationScope.launch {
       val result = try {
         SavedBrew.Saved(saver.save(brew, context))
@@ -186,13 +324,13 @@ class ScaleViewModel(
     val current = _ui.value.weight
     if (current <= 0) return
     session.setDoseGrams(toGrams(current, _ui.value.unit))
-    _ui.update { it.copy(dose = current) }
+    publish { it.copy(dose = current) }
     tare()
   }
 
   fun clearDose() {
     session.setDoseGrams(null)
-    _ui.update { it.copy(dose = null) }
+    publish { it.copy(dose = null) }
   }
 
   /** Botón "Terminar" de la gráfica. */
@@ -200,6 +338,12 @@ class ScaleViewModel(
     val effects = session.finish(clock())
     publish()
     handle(effects)
+  }
+
+  /** Elige (o quita, con `null`) el objetivo de la siguiente preparación. Se ignora con la sesión activa. */
+  fun selectTarget(key: ReferenceKey?) {
+    if (_ui.value.brew.phase is BrewPhase.Active) return
+    references.setReference(key)
   }
 
   fun simulateAdd(grams: Double) {
@@ -210,6 +354,13 @@ class ScaleViewModel(
   fun simulatePour(profile: PourProfile) {
     val sim = connection as? SimulatedScaleConnection ?: return
     viewModelScope.launch { sim.simulatePour(profile) }
+  }
+
+  /** Vierte siguiendo el objetivo actual (ya escalado a la dosis). Sin objetivo no hace nada. */
+  fun simulateTargetPour(mode: FollowMode) {
+    val sim = connection as? SimulatedScaleConnection ?: return
+    val curve = _ui.value.target?.curve ?: return
+    viewModelScope.launch { sim.simulatePour(curve, mode) }
   }
 
   private fun send(frame: Frame) = send(listOf(frame))
@@ -234,6 +385,63 @@ class ScaleViewModel(
     // envían: la conexión se cierra justo después.
     session.finish(clock()).filterIsInstance<BrewEffect.Finished>().forEach { save(it.brew) }
     connection.disconnect()
+    notifier.release()
+  }
+
+  /** La referencia resuelta, antes de escalarla por la dosis. */
+  private data class TargetBase(
+    val key: ReferenceKey,
+    val type: ReferenceType,
+    val name: String,
+    val curve: TargetCurve,
+    /** Dosis con la que se hizo la curva; `null` en una preparación sin dosis. */
+    val nominalDoseG: Double?,
+    val prefill: BrewDetails,
+  )
+
+  private sealed interface Resolution {
+    data object None : Resolution
+
+    data class Resolved(val base: TargetBase) : Resolution
+
+    /** El origen se borró. */
+    data object Removed : Resolution
+
+    /** La preparación existe pero su curva no se puede leer o no tiene muestras válidas. */
+    data object Unreadable : Resolution
+  }
+
+  private fun resolveRecipe(key: ReferenceKey.Recipe, recipe: Recipe?): Resolution {
+    if (recipe == null) return Resolution.Removed
+    val prefill = BrewDetails(
+      method = recipe.method,
+      methodOther = recipe.methodOther,
+      grind = recipe.grind,
+      waterTempC = recipe.waterTempC,
+    )
+    return Resolution.Resolved(
+      TargetBase(key, ReferenceType.RECIPE, recipe.name, TargetCurve.fromRecipe(recipe), recipe.doseG, prefill),
+    )
+  }
+
+  private fun resolveBrew(key: ReferenceKey.Brew, record: BrewRecord?): Resolution {
+    if (record == null) return Resolution.Removed
+    val curve = if (record.curveError) {
+      null
+    } else {
+      TargetCurve.fromBrew(record.samples, record.summary.pours, record.summary.totalTimeMs)
+    }
+    if (curve == null) return Resolution.Unreadable
+    val entity = record.entity
+    val prefill = BrewDetails(
+      coffee = entity.coffee,
+      method = entity.method,
+      methodOther = entity.methodOther,
+      grind = entity.grind,
+      waterTempC = entity.waterTempC,
+    )
+    val name = entity.name ?: formatBrewDateTime(entity.startedAtEpochMs)
+    return Resolution.Resolved(TargetBase(key, ReferenceType.BREW, name, curve, entity.doseG, prefill))
   }
 
   private companion object {
@@ -241,3 +449,9 @@ class ScaleViewModel(
     const val TICK_MS = 1_000L
   }
 }
+
+private val ReferenceKey.id: Long
+  get() = when (this) {
+    is ReferenceKey.Recipe -> id
+    is ReferenceKey.Brew -> id
+  }

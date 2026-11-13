@@ -16,14 +16,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,6 +39,7 @@ import dev.dotscale.protocol.TimerStatus
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.scale.ConnectionState
 import dev.dotscale.scale.ConnectionStep
+import dev.dotscale.sim.FollowMode
 import dev.dotscale.sim.PourProfile
 import dev.dotscale.settings.ThemeModeButton
 import dev.dotscale.ui.components.AntAlert
@@ -64,26 +71,34 @@ import dev.dotscale.ui.theme.AntTheme
 import java.util.Locale
 
 private const val LOW_BATTERY_PERCENT = 20
+private const val LINE_HEIGHT_RATIO = 1.125f
 
 @Composable
 fun ScaleScreen(
   viewModel: ScaleViewModel,
+  pickerViewModel: TargetPickerViewModel,
   title: String,
   onBack: () -> Unit,
   onOpenSettings: () -> Unit,
   onOpenHistory: () -> Unit,
   onAddDetails: (Long) -> Unit,
+  onManageRecipes: () -> Unit,
 ) {
   val ui by viewModel.ui.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
+  var pickerOpen by rememberSaveable { mutableStateOf(false) }
 
   val commandError = stringResource(R.string.scale_error_command)
   val saveError = stringResource(R.string.scale_error_save)
+  val removedError = stringResource(R.string.target_error_removed)
+  val unreadableError = stringResource(R.string.target_error_unreadable)
   LaunchedEffect(viewModel) {
     viewModel.errors.collect { error ->
       val text = when (error) {
         is ScaleError.Command -> error.detail ?: commandError
         ScaleError.SaveFailed -> saveError
+        ScaleError.TargetRemoved -> removedError
+        ScaleError.TargetUnreadable -> unreadableError
       }
       snackbar.showAntMessage(text, AntStatus.Error)
     }
@@ -126,16 +141,64 @@ fun ScaleScreen(
         onToggleTimer = viewModel::toggleTimer,
         onReset = viewModel::resetTimer,
       )
-      BrewChartCard(ui.brew, ui.unit, onFinish = viewModel::finishBrew)
-      (ui.brew.phase as? BrewPhase.Finished)?.let {
-        BrewSummaryCard(it.summary, ui.unit, savedBrew = ui.savedBrew, onAddDetails = onAddDetails)
+      BrewChartCard(
+        ui.brew,
+        ui.unit,
+        onFinish = viewModel::finishBrew,
+        target = ui.target,
+        guide = ui.guide,
+        lastFit = ui.lastFit,
+        onPickTarget = { pickerOpen = true },
+      )
+      (ui.brew.phase as? BrewPhase.Finished)?.let { finished ->
+        val summary = finished.summary
+        val fit = ui.lastFit?.let {
+          fitView(it.fit.score, it.name, it.fit.targetWaterG, it.fit.targetEndMs, summary.totalWaterG, summary.totalTimeMs)
+        }
+        BrewSummaryCard(summary, ui.unit, savedBrew = ui.savedBrew, fit = fit, onAddDetails = onAddDetails)
       }
       DoseCard(ui, enabled, onCapture = viewModel::captureDose, onClear = viewModel::clearDose)
       UnitCard(ui.unit, enabled, onToggle = viewModel::toggleUnit)
-      if (ui.isSimulated) SimulationCard(onAdd = viewModel::simulateAdd, onPour = viewModel::simulatePour)
+      if (ui.isSimulated) {
+        SimulationCard(
+          hasTarget = ui.target != null,
+          onAdd = viewModel::simulateAdd,
+          onPour = viewModel::simulatePour,
+          onFollow = viewModel::simulateTargetPour,
+        )
+      }
     }
   }
+
+  // Las listas solo se recogen con el selector abierto.
+  if (pickerOpen) {
+    val recipes by pickerViewModel.recipes.collectAsStateWithLifecycle()
+    val brews by pickerViewModel.brews.collectAsStateWithLifecycle()
+    TargetPicker(
+      recipes = recipes,
+      brews = brews,
+      active = ui.target?.key,
+      onSelect = {
+        viewModel.selectTarget(it)
+        pickerOpen = false
+      },
+      onClear = {
+        viewModel.selectTarget(null)
+        pickerOpen = false
+      },
+      onManageRecipes = {
+        pickerOpen = false
+        onManageRecipes()
+      },
+      onClose = { pickerOpen = false },
+    )
+  }
 }
+
+/** El estilo del peso de Scale (`heading1`, `Light`) con tamaño variable: 64 sp en el peso y 40 sp en la guía. */
+@Composable
+internal fun scaleFigureStyle(size: TextUnit): TextStyle =
+  AntTheme.typography.heading1.copy(fontSize = size, lineHeight = size * LINE_HEIGHT_RATIO, fontWeight = FontWeight.Light)
 
 /** Barra superior de Scale: el título se recorta con elipsis y las acciones siguen visibles. */
 @Composable
@@ -183,7 +246,7 @@ private fun WeightCard(ui: ScaleUiState) {
       value = formatNumber(ui.weight, ui.unit),
       title = stringResource(R.string.scale_weight),
       suffix = ui.unit.symbol,
-      valueStyle = AntTheme.typography.heading1.copy(fontSize = 64.sp, lineHeight = 72.sp, fontWeight = FontWeight.Light),
+      valueStyle = scaleFigureStyle(64.sp),
       valueColor = if (ui.outOfRange) colors.error.text else colors.text,
       affixStyle = AntTheme.typography.textXL,
       horizontalAlignment = Alignment.CenterHorizontally,
@@ -355,7 +418,12 @@ private fun ConnectionBanner(state: ConnectionState, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun SimulationCard(onAdd: (Double) -> Unit, onPour: (PourProfile) -> Unit) {
+private fun SimulationCard(
+  hasTarget: Boolean,
+  onAdd: (Double) -> Unit,
+  onPour: (PourProfile) -> Unit,
+  onFollow: (FollowMode) -> Unit,
+) {
   AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.scale_simulation), size = AntCardSize.Small) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
       listOf(15, 100, 300).forEach { grams ->
@@ -382,6 +450,24 @@ private fun SimulationCard(onAdd: (Double) -> Unit, onPour: (PourProfile) -> Uni
         modifier = Modifier.weight(1f),
         type = AntButtonType.Dashed,
         size = AntSize.Small,
+      )
+    }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+      AntButton(
+        text = stringResource(R.string.target_sim_follow),
+        onClick = { onFollow(FollowMode.FAITHFUL) },
+        modifier = Modifier.weight(1f).testTag("sim_follow_target"),
+        type = AntButtonType.Dashed,
+        size = AntSize.Small,
+        enabled = hasTarget,
+      )
+      AntButton(
+        text = stringResource(R.string.target_sim_deviated),
+        onClick = { onFollow(FollowMode.DEVIATED) },
+        modifier = Modifier.weight(1f).testTag("sim_follow_deviated"),
+        type = AntButtonType.Dashed,
+        size = AntSize.Small,
+        enabled = hasTarget,
       )
     }
   }

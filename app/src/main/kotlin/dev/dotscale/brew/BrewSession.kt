@@ -312,6 +312,6 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
       Kind.FINISHED -> BrewPhase.Finished(checkNotNull(summary), rearmed, pourIgnored)
     }
     if (kind == Kind.ACTIVE) snapshot = samples.toList()
-    state = BrewState(phase, snapshot, currentStability, currentLevel)
+    state = BrewState(phase, snapshot, currentStability, currentLevel, t0MonoMs = if (kind == Kind.ARMED) null else t0)
   }
 }
