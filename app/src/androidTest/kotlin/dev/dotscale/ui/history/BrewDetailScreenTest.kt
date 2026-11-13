@@ -1,6 +1,8 @@
 package dev.dotscale.ui.history
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -33,6 +35,8 @@ class BrewDetailScreenTest {
   private lateinit var repository: BrewRepository
   private var backCount = 0
   private var edited: Long? = null
+  private var compared: Long? = null
+  private var savedAsRecipe: Long? = null
 
   @Before
   fun setUp() {
@@ -47,7 +51,13 @@ class BrewDetailScreenTest {
     val viewModel = BrewDetailViewModel(repository, id)
     rule.setContent {
       DotScaleTheme(darkTheme = false) {
-        BrewDetailScreen(viewModel, onBack = { backCount++ }, onEdit = { edited = it })
+        BrewDetailScreen(
+          viewModel,
+          onBack = { backCount++ },
+          onEdit = { edited = it },
+          onCompare = { compared = it },
+          onSaveAsRecipe = { savedAsRecipe = it },
+        )
       }
     }
   }
@@ -116,5 +126,71 @@ class BrewDetailScreenTest {
   fun aMissingBrewGoesBack() {
     show(404)
     rule.waitUntil(5_000) { backCount > 0 }
+  }
+
+  // --- Objetivo (SPEC-003) ---
+
+  private fun seedWithTarget(): Long = runBlocking {
+    repository.save(TestBrews.finished(totalMs = 60_000), TestBrews.context(target = TestBrews.usedTarget(score = 86)))
+  }
+
+  private fun waitForDetail() = rule.waitUntil(5_000) { rule.onAllNodesWithTag("brew_summary").fetchSemanticsNodes().isNotEmpty() }
+
+  private fun exists(tag: String) = rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+
+  @Test
+  fun aBrewWithATargetShowsItsCurveAndTheFitCard() {
+    show(seedWithTarget())
+    waitForDetail()
+
+    rule.onNodeWithTag("brew_detail_fit").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithTag("fit_score").assertIsDisplayed()
+    rule.onNodeWithTag("fit_reference").assertIsDisplayed()
+    assertEquals(false, exists("brew_detail_target_error"))
+    // La gráfica lleva el objetivo en su descripción.
+    val targetPrefix = context.getString(R.string.target_description, "", "").substringBefore(":")
+    rule.onNode(androidx.compose.ui.test.hasContentDescription(targetPrefix, substring = true)).assertExists()
+  }
+
+  @Test
+  fun aBrewWithoutATargetHasNoFitCard() {
+    show(seed())
+    waitForDetail()
+    assertEquals(false, exists("brew_detail_fit"))
+  }
+
+  @Test
+  fun aCorruptTargetShowsTheFitWithoutTheCurveAndAnAlert() {
+    val id = seedWithTarget()
+    db.openHelper.writableDatabase.execSQL("UPDATE brew_targets SET data = ? WHERE brewId = ?", arrayOf<Any>(byteArrayOf(1, 2, 3), id))
+    show(id)
+    waitForDetail()
+
+    rule.onNodeWithTag("brew_detail_target_error").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithTag("brew_detail_fit").performScrollTo().assertIsDisplayed()
+    assertEquals(true, exists("brew_chart")) // la curva real se dibuja igual
+  }
+
+  @Test
+  fun compareAndSaveAsRecipeOpenTheirScreens() {
+    val id = seed()
+    show(id)
+    waitForDetail()
+
+    rule.onNodeWithTag("brew_detail_compare").performScrollTo().performClick()
+    assertEquals(id, compared)
+    rule.onNodeWithTag("brew_detail_save_recipe").performScrollTo().performClick()
+    assertEquals(id, savedAsRecipe)
+  }
+
+  @Test
+  fun saveAsRecipeIsDisabledWithAnUnreadableCurve() {
+    val id = seed()
+    db.openHelper.writableDatabase.execSQL("UPDATE brew_curves SET data = x'0102030405' WHERE brewId = $id")
+    show(id)
+    rule.waitUntil(5_000) { exists("brew_detail_save_recipe") }
+
+    rule.onNodeWithTag("brew_detail_save_recipe").performScrollTo().assertIsNotEnabled()
+    rule.onNodeWithTag("brew_detail_compare").assertIsEnabled()
   }
 }

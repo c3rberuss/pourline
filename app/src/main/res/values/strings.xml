@@ -165,4 +165,148 @@
     <string name="brew_edit_discard_text">Los cambios que no hayas guardado se perderán.</string>
     <string name="brew_edit_discard">Descartar</string>
     <string name="brew_edit_keep">Seguir editando</string>
+
+    <!-- Recetas -->
+    <string name="recipe_builtin_v60_classic">V60 clásica</string>
+    <string name="recipe_builtin_four_six">Método 4:6</string>
+    <string-array name="recipe_builtin_v60_classic_stages">
+        <item>Bloom</item>
+        <item>2.º vertido</item>
+        <item>3.er vertido</item>
+    </string-array>
+    <string-array name="recipe_builtin_four_six_stages">
+        <item>1.er vertido</item>
+        <item>2.º vertido</item>
+        <item>3.er vertido</item>
+        <item>4.º vertido</item>
+        <item>5.º vertido</item>
+    </string-array>
+    <string name="recipe_copy_name">%1$s (copia)</string>
+    <string name="recipe_from_brew_name">%1$s (receta)</string>
+
+    <!-- Recetas: lista -->
+    <string name="recipe_title">Recetas</string>
+    <string name="recipe_open">Abrir recetas</string>
+    <string name="recipe_add">Crear receta</string>
+    <string name="recipe_empty">Aún no hay recetas</string>
+    <string name="recipe_deleted">Receta borrada</string>
+    <string name="recipe_undo">Deshacer</string>
+    <string name="recipe_builtin_tag">Predefinida</string>
+    <string name="recipe_active_tag">Activa</string>
+    <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s</string>
+    <plurals name="recipe_stage_count">
+        <item quantity="one">%1$d etapa</item>
+        <item quantity="other">%1$d etapas</item>
+    </plurals>
+
+    <!-- Recetas: editor -->
+    <string name="recipe_edit_title_new">Nueva receta</string>
+    <string name="recipe_edit_title">Editar receta</string>
+    <string name="recipe_edit_name">Nombre</string>
+    <string name="recipe_edit_method">Método</string>
+    <string name="recipe_edit_method_none">Sin método</string>
+    <string name="recipe_edit_method_other">¿Cuál?</string>
+    <string name="recipe_edit_grind">Molienda</string>
+    <string name="recipe_edit_grind_hint">Media, 21 clics…</string>
+    <string name="recipe_edit_temp">Temperatura del agua (°C)</string>
+    <string name="recipe_edit_notes">Notas (instrucciones)</string>
+    <string name="recipe_edit_dose">Dosis (g)</string>
+    <string name="recipe_edit_stages">Etapas</string>
+    <string name="recipe_edit_stage_name">Etapa %1$d (nombre opcional)</string>
+    <string name="recipe_edit_stage_start">Inicio (m:ss)</string>
+    <string name="recipe_edit_stage_water">Hasta (g)</string>
+    <string name="recipe_edit_stage_duration">Vertido (s)</string>
+    <string name="recipe_edit_stage_remove">Quitar etapa %1$d</string>
+    <string name="recipe_edit_add_stage">Añadir etapa</string>
+    <string name="recipe_edit_totals">Agua total %1$s g · Ratio 1:%2$s</string>
+    <string name="recipe_edit_totals_water">Agua total %1$s g</string>
+    <string name="recipe_edit_preview">Vista previa de la curva</string>
+    <string name="recipe_edit_save">Guardar</string>
+    <string name="recipe_edit_duplicate">Duplicar</string>
+    <string name="recipe_edit_delete">Borrar</string>
+    <string name="recipe_edit_adjusted_title">Se ajustó la preparación para convertirla en receta</string>
+    <plurals name="recipe_edit_adjusted_merged">
+        <item quantity="one">Se fusionó %1$d par de vertidos para quedar en 10 etapas.</item>
+        <item quantity="other">Se fusionaron %1$d pares de vertidos para quedar en 10 etapas.</item>
+    </plurals>
+    <string name="recipe_edit_adjusted_clamped">Los vertidos de más de 120 s se recortaron a 120 s.</string>
+    <string name="recipe_edit_adjusted_dose">La dosis de la preparación no está entre 5 y 60 g: escríbela para poder guardar.</string>
+    <string name="recipe_edit_discard_title">¿Descartar los cambios?</string>
+    <string name="recipe_edit_discard_text">Los cambios que no hayas guardado se perderán.</string>
+    <string name="recipe_edit_discard">Descartar</string>
+    <string name="recipe_edit_keep">Seguir editando</string>
+    <string name="recipe_error_name">Escribe un nombre</string>
+    <string name="recipe_error_dose">Entre 5 y 60 g, con un decimal como máximo</string>
+    <string name="recipe_error_temp">Entre 0 y 100 °C, con un decimal como máximo</string>
+    <string name="recipe_error_start">Escribe m:ss (1:30) o segundos (90)</string>
+    <string name="recipe_error_start_overlaps">Empieza antes de que termine la etapa anterior</string>
+    <string name="recipe_error_start_late">La última etapa debe empezar antes de 10:00</string>
+    <string name="recipe_error_water">Entre 0 y 1000 g, con un decimal como máximo</string>
+    <string name="recipe_error_water_order">Debe ser mayor que la etapa anterior</string>
+    <string name="recipe_error_duration">Entre 1 y 120 s</string>
+    <string name="recipe_error_stage_count">Entre 1 y 10 etapas</string>
+
+    <!-- Ajustes: guía de etapas y recetas -->
+    <string name="settings_stage_title">Guía de etapas</string>
+    <string name="settings_stage_vibration">Vibrar al empezar cada etapa</string>
+    <string name="settings_stage_sound">Sonido al empezar cada etapa</string>
+    <string name="settings_recipes_title">Recetas</string>
+    <string name="settings_recipes_restore">Restaurar recetas predefinidas</string>
+    <string name="settings_recipes_restore_title">¿Restaurar las recetas predefinidas?</string>
+    <string name="settings_recipes_restore_text">Las recetas predefinidas vuelven a sus valores de fábrica y se crean de nuevo las que borraste. Tus recetas no cambian.</string>
+    <string name="settings_recipes_restore_confirm">Restaurar</string>
+    <string name="settings_recipes_restore_cancel">Cancelar</string>
+    <string name="settings_recipes_restored">Recetas predefinidas restauradas</string>
+
+    <string name="target_chip">Objetivo: %1$s</string>
+    <string name="target_chip_none">Objetivo: ninguno</string>
+    <string name="target_stage_armed">Etapa %1$s: hasta %2$s en %3$d s</string>
+    <string name="target_stage_label">%1$d/%2$d</string>
+    <string name="target_stage_label_named">%1$d/%2$d · %3$s</string>
+    <string name="target_scaled">Escalada a %1$s</string>
+    <string name="target_up_to">Hasta %1$s</string>
+    <string name="target_next_in">Siguiente en %1$d s</string>
+    <string name="target_before_first">En espera de la etapa 1/%1$d</string>
+    <string name="target_all_done">Última etapa completada</string>
+    <string name="target_description">Objetivo: %1$s en %2$s</string>
+    <string name="target_deviation_description">Desvío: %1$s</string>
+    <string name="target_deviation_none">—</string>
+    <string name="target_error_removed">El objetivo elegido ya no existe</string>
+    <string name="target_error_unreadable">No se pudo leer la curva de esa preparación</string>
+    <string name="target_picker_title">Elegir objetivo</string>
+    <string name="target_picker_recipes">Recetas</string>
+    <string name="target_picker_history">Historial</string>
+    <string name="target_picker_clear">Quitar objetivo</string>
+    <string name="target_picker_manage">Gestionar recetas</string>
+    <string name="target_picker_empty_recipes">Aún no hay recetas</string>
+    <string name="target_picker_empty_history">Aún no hay preparaciones guardadas</string>
+    <string name="target_sim_follow">Seguir objetivo</string>
+    <string name="target_sim_deviated">Seguir con desvío</string>
+    <string name="fit_title">Ajuste al objetivo</string>
+    <string name="fit_score">%1$d / 100</string>
+    <string name="fit_score_none">Sin puntuación</string>
+    <string name="fit_water">Agua %1$s (%2$s)</string>
+    <string name="fit_time">Tiempo %1$s</string>
+    <string name="fit_reference">Referencia: %1$s</string>
+    <string name="fit_percent">%1$s %%</string>
+    <string name="fit_seconds">%1$s s</string>
+
+    <string name="history_row_fit">Ajuste %1$d</string>
+    <string name="brew_detail_compare">Comparar con…</string>
+    <string name="brew_detail_save_recipe">Guardar como receta</string>
+    <string name="brew_detail_target_error">No se pudo leer la curva objetivo</string>
+    <string name="compare_pick_title">Comparar con…</string>
+    <string name="compare_pick_empty">No hay otras preparaciones para comparar</string>
+    <string name="compare_title">Comparación</string>
+    <string name="compare_legend_item">%1$s: %2$s</string>
+    <string name="compare_water_title">Agua</string>
+    <string name="compare_flow_title">Flujo</string>
+    <string name="compare_water_description">Agua vertida de las preparaciones A y B, en %1$s</string>
+    <string name="compare_flow_description">Flujo de las preparaciones A y B, en %1$s</string>
+    <string name="compare_curve_error">No se pudo leer la curva de la preparación %1$s</string>
+    <string name="compare_table_title">Resumen</string>
+    <string name="compare_column_a">A</string>
+    <string name="compare_column_b">B</string>
+    <string name="compare_column_diff">B−A</string>
+    <string name="compare_none">—</string>
 </resources>

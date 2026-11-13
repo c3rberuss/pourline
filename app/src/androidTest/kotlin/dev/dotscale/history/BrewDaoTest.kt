@@ -241,6 +241,118 @@ class BrewDaoTest {
     assertTrue(entity.interrupted)
   }
 
+  @Test
+  fun aBrewWithAReferenceStoresTheColumnsAndTheTargetCurve() = runTest {
+    val target = TestBrews.usedTarget(name = "V60 clásica", score = 86, factor = 16.4 / 15)
+    val details = BrewDetails(method = BrewMethod.V60, grind = "Media", waterTempC = 93.0, coffee = "Etiopía")
+    val id = repository.save(TestBrews.finished(), TestBrews.context(target = target, details = details))
+
+    val record = repository.get(id)!!
+    val entity = record.entity
+    assertEquals(ReferenceType.RECIPE, entity.referenceType)
+    assertEquals(1L, entity.referenceId)
+    assertEquals("V60 clásica", entity.referenceName)
+    assertEquals(86, entity.fitScore)
+    assertEquals(target.curve.finalWaterG, entity.targetWaterG!!, 1e-9)
+    assertEquals(target.curve.endMs, entity.targetEndMs)
+    // Datos prellenados desde la referencia.
+    assertEquals(BrewMethod.V60, entity.method)
+    assertEquals("Media", entity.grind)
+    assertEquals(93.0, entity.waterTempC!!, 0.0)
+    assertEquals("Etiopía", entity.coffee)
+    assertNull(entity.name)
+    assertNull(entity.notes)
+    // La curva guardada es la escalada, con error de 0,005 g como máximo.
+    val stored = record.target!!
+    assertFalse(record.targetError)
+    assertEquals(target.curve.stages.size, stored.stages.size)
+    assertEquals(target.curve.finalWaterG, stored.finalWaterG, 0.005)
+    assertEquals(target.curve.waterAt(55_000), stored.waterAt(55_000), 0.005)
+    assertEquals(86, repository.observe(id).first()!!.entity.fitScore)
+  }
+
+  @Test
+  fun aBrewWithoutAReferenceHasNullColumnsAndNoTarget() = runTest {
+    val id = save()
+    val record = repository.get(id)!!
+    assertNull(record.entity.referenceType)
+    assertNull(record.entity.referenceId)
+    assertNull(record.entity.referenceName)
+    assertNull(record.entity.targetWaterG)
+    assertNull(record.entity.targetEndMs)
+    assertNull(record.entity.fitScore)
+    assertNull(record.target)
+    assertFalse(record.targetError)
+    assertNull(dao.target(id))
+  }
+
+  @Test
+  fun aFitScoreThatCouldNotBeComputedStaysNullButKeepsTheReference() = runTest {
+    val id = repository.save(TestBrews.finished(), TestBrews.context(target = TestBrews.usedTarget(score = null)))
+    val entity = repository.get(id)!!.entity
+    assertNull(entity.fitScore)
+    assertEquals(ReferenceType.RECIPE, entity.referenceType)
+  }
+
+  @Test
+  fun theListCarriesTheFitScore() = runTest {
+    val withTarget = repository.save(TestBrews.finished(), TestBrews.context(startedAtEpochMs = 2, target = TestBrews.usedTarget(score = 73)))
+    val without = save(startedAt = 1)
+    val items = repository.list(BrewFilter()).first()
+    assertEquals(73, items.single { it.id == withTarget }.fitScore)
+    assertNull(items.single { it.id == without }.fitScore)
+  }
+
+  @Test
+  fun deletingABrewCascadesToTheTargetAndRestoreBringsItBack() = runTest {
+    val id = repository.save(TestBrews.finished(), TestBrews.context(target = TestBrews.usedTarget()))
+    assertNotNull(dao.target(id))
+
+    repository.delete(id)
+    assertNull(dao.target(id))
+    val deleted = repository.pendingUndo.value!!
+    assertNotNull(deleted.target)
+    assertEquals(id, deleted.target!!.brewId)
+
+    repository.restore(deleted)
+    assertNotNull(dao.target(id))
+    val record = repository.get(id)!!
+    assertNotNull(record.target)
+    assertEquals(86, record.entity.fitScore)
+  }
+
+  @Test
+  fun deletingABrewWithoutATargetLeavesNoTargetToRestore() = runTest {
+    val id = save()
+    repository.delete(id)
+    assertNull(repository.pendingUndo.value!!.target)
+    repository.restore(repository.pendingUndo.value!!)
+    assertNull(dao.target(id))
+  }
+
+  @Test
+  fun aCorruptTargetBlobSetsTargetErrorAndKeepsTheRealCurve() = runTest {
+    val finished = TestBrews.finished()
+    val id = repository.save(finished, TestBrews.context(target = TestBrews.usedTarget()))
+    db.openHelper.writableDatabase.execSQL("UPDATE brew_targets SET data = ? WHERE brewId = ?", arrayOf<Any>(byteArrayOf(1, 2, 3), id))
+
+    val record = repository.get(id)!!
+    assertTrue(record.targetError)
+    assertNull(record.target)
+    assertFalse(record.curveError)
+    assertEquals(finished.samples.size, record.samples.size)
+    assertEquals(86, record.entity.fitScore)
+    assertTrue(repository.observe(id).first()!!.targetError)
+  }
+
+  @Test
+  fun countFollowsTheNumberOfBrews() = runTest {
+    assertEquals(0, repository.count().first())
+    save()
+    save(startedAt = 2)
+    assertEquals(2, repository.count().first())
+  }
+
   private companion object {
     val BrewConfigVersion = dev.dotscale.brew.BrewConfig.METRIC_VERSION
   }

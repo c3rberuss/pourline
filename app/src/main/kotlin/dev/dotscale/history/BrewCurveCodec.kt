@@ -3,9 +3,6 @@ package dev.dotscale.history
 import dev.dotscale.brew.BrewSample
 import dev.dotscale.brew.Pour
 import java.io.ByteArrayOutputStream
-import java.util.zip.DataFormatException
-import java.util.zip.Deflater
-import java.util.zip.Inflater
 
 /** El BLOB de la curva está corrupto, truncado o tiene una versión de formato desconocida. */
 class BrewCurveFormatException(message: String, cause: Throwable? = null) : Exception(message, cause)
@@ -27,7 +24,6 @@ object BrewCurveCodec {
   private const val SCALE = 100.0
   private const val MIN_SAMPLE_BYTES = 4
   private const val MIN_POUR_BYTES = 3
-  private const val MAX_BODY_BYTES = 64 * 1024 * 1024
 
   fun encode(samples: List<BrewSample>, pours: List<Pour>): ByteArray {
     val body = ByteArrayOutputStream(samples.size * 6 + 16)
@@ -54,26 +50,15 @@ object BrewCurveCodec {
       writeSigned(body, quantize(pour.waterG))
     }
 
-    val out = ByteArrayOutputStream(body.size() / 2 + 16)
-    out.write(VERSION)
-    val deflater = Deflater(Deflater.BEST_COMPRESSION)
-    try {
-      deflater.setInput(body.toByteArray())
-      deflater.finish()
-      val buffer = ByteArray(4096)
-      while (!deflater.finished()) out.write(buffer, 0, deflater.deflate(buffer))
-    } finally {
-      deflater.end()
-    }
-    return out.toByteArray()
+    return deflateBody(VERSION, body.toByteArray())
   }
 
   /** @throws BrewCurveFormatException si el BLOB no se puede leer. */
   fun decode(bytes: ByteArray): Pair<List<BrewSample>, List<Pour>> {
     if (bytes.isEmpty()) throw BrewCurveFormatException("Empty curve")
     if (bytes[0].toInt() != VERSION) throw BrewCurveFormatException("Unknown curve format version ${bytes[0]}")
-    val body = inflate(bytes)
-    val reader = Reader(body)
+    val body = inflateBody(bytes, FAIL)
+    val reader = CodecReader(body, FAIL)
     try {
       val sampleCount = reader.count(MIN_SAMPLE_BYTES)
       val samples = ArrayList<BrewSample>(sampleCount)
@@ -91,7 +76,7 @@ object BrewCurveCodec {
           waterG = water / SCALE,
           flowGps = flow / SCALE,
           stability = if (stability == STABILITY_NULL) null else stability.takeIf { it <= 100 }
-            ?: throw BrewCurveFormatException("Invalid stability $stability"),
+            ?: throw FAIL("Invalid stability $stability", null),
           valid = flags and VALID_BIT != 0,
         )
       }
@@ -102,76 +87,14 @@ object BrewCurveCodec {
         val end = reader.varint()
         pours += Pour(i + 1, start, end, reader.signed() / SCALE)
       }
-      if (!reader.atEnd) throw BrewCurveFormatException("Trailing bytes")
+      if (!reader.atEnd) throw FAIL("Trailing bytes", null)
       return samples to pours
     } catch (e: IndexOutOfBoundsException) {
       throw BrewCurveFormatException("Truncated curve", e)
     }
   }
 
+  private val FAIL: CodecFailure = { message, cause -> BrewCurveFormatException(message, cause) }
+
   private fun quantize(value: Double): Long = if (value.isFinite()) Math.round(value * SCALE) else 0L
-
-  private fun inflate(bytes: ByteArray): ByteArray {
-    val inflater = Inflater()
-    try {
-      inflater.setInput(bytes, 1, bytes.size - 1)
-      val out = ByteArrayOutputStream(bytes.size * 4)
-      val buffer = ByteArray(4096)
-      while (!inflater.finished()) {
-        val n = inflater.inflate(buffer)
-        if (n == 0 && (inflater.needsInput() || inflater.needsDictionary())) {
-          throw BrewCurveFormatException("Truncated curve")
-        }
-        out.write(buffer, 0, n)
-        if (out.size() > MAX_BODY_BYTES) throw BrewCurveFormatException("Curve too large")
-      }
-      return out.toByteArray()
-    } catch (e: DataFormatException) {
-      throw BrewCurveFormatException("Corrupt curve", e)
-    } finally {
-      inflater.end()
-    }
-  }
-
-  private fun writeVarint(out: ByteArrayOutputStream, value: Long) {
-    var v = value
-    while (v and 0x7FL.inv() != 0L) {
-      out.write(((v and 0x7F) or 0x80).toInt())
-      v = v ushr 7
-    }
-    out.write(v.toInt())
-  }
-
-  private fun writeSigned(out: ByteArrayOutputStream, value: Long) = writeVarint(out, (value shl 1) xor (value shr 63))
-
-  private class Reader(private val data: ByteArray) {
-    private var pos = 0
-    val atEnd: Boolean get() = pos == data.size
-
-    fun byte(): Int = data[pos++].toInt() and 0xFF
-
-    fun varint(): Long {
-      var result = 0L
-      var shift = 0
-      while (true) {
-        if (shift > 63) throw BrewCurveFormatException("Varint too long")
-        val b = byte()
-        result = result or ((b and 0x7F).toLong() shl shift)
-        if (b and 0x80 == 0) return result
-        shift += 7
-      }
-    }
-
-    fun signed(): Long {
-      val raw = varint()
-      return (raw ushr 1) xor -(raw and 1)
-    }
-
-    /** Un recuento que no puede ser mayor que los bytes que quedan entre `minBytes`. */
-    fun count(minBytes: Int): Int {
-      val n = varint()
-      if (n < 0 || n > (data.size - pos) / minBytes) throw BrewCurveFormatException("Invalid count $n")
-      return n.toInt()
-    }
-  }
 }

@@ -10,15 +10,27 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import dev.dotscale.ble.BleScaleConnection
+import dev.dotscale.recipe.ResourcesRecipeTexts
 import dev.dotscale.sim.SimulatedScaleConnection
 import dev.dotscale.ui.history.BrewDetailScreen
+import dev.dotscale.ui.history.BrewCompareScreen
+import dev.dotscale.ui.history.BrewCompareViewModel
 import dev.dotscale.ui.history.BrewDetailViewModel
 import dev.dotscale.ui.history.BrewEditScreen
 import dev.dotscale.ui.history.BrewEditViewModel
+import dev.dotscale.ui.history.ComparePickScreen
+import dev.dotscale.ui.history.ComparePickViewModel
 import dev.dotscale.ui.history.HistoryScreen
 import dev.dotscale.ui.history.HistoryViewModel
+import dev.dotscale.ui.recipes.RecipeEditScreen
+import dev.dotscale.ui.recipes.RecipeEditViewModel
+import dev.dotscale.ui.recipes.RecipesScreen
+import dev.dotscale.ui.recipes.RecipesViewModel
+import dev.dotscale.ui.scale.AndroidStageNotifier
+import dev.dotscale.ui.scale.RepositoryTargetReferences
 import dev.dotscale.ui.scale.ScaleScreen
 import dev.dotscale.ui.scale.ScaleViewModel
+import dev.dotscale.ui.scale.TargetPickerViewModel
 import dev.dotscale.ui.scan.ScanScreen
 import dev.dotscale.ui.settings.SettingsScreen
 
@@ -42,6 +54,7 @@ fun MainNavigation() {
           onSimulatedSelected = { backStack.add(Scale(address = null, name = simulatedName)) },
           onOpenSettings = { backStack.add(Settings) },
           onOpenHistory = { backStack.add(History) },
+          onOpenRecipes = { backStack.add(Recipes) },
         )
       }
       entry<Scale> { key ->
@@ -52,19 +65,49 @@ fun MainNavigation() {
             app.brewSettings.autoFinishSeconds,
             app.brewRepository,
             app.applicationScope,
+            references = app.targetSettings,
+            targets = RepositoryTargetReferences(app.recipeRepository, app.brewRepository),
+            notifier = AndroidStageNotifier(appContext, app.targetSettings),
           )
         }
+        val pickerViewModel = viewModel { TargetPickerViewModel(app.recipeRepository, app.brewRepository) }
         ScaleScreen(
           viewModel,
+          pickerViewModel,
           title = key.name,
           onBack = { backStack.removeLastOrNull() },
           onOpenSettings = { backStack.add(Settings) },
           onOpenHistory = { backStack.add(History) },
           onAddDetails = { id -> backStack.add(BrewEdit(id)) },
+          onManageRecipes = { backStack.add(Recipes) },
         )
       }
       entry<Settings> {
-        SettingsScreen((appContext as DotScaleApp).brewSettings, onBack = { backStack.removeLastOrNull() })
+        val app = appContext as DotScaleApp
+        SettingsScreen(
+          app.brewSettings,
+          app.targetSettings,
+          onRestoreRecipes = { app.recipeRepository.restoreBuiltIns() },
+          onBack = { backStack.removeLastOrNull() },
+        )
+      }
+      entry<Recipes> {
+        val repository = (appContext as DotScaleApp).recipeRepository
+        RecipesScreen(
+          viewModel { RecipesViewModel(repository) },
+          onBack = { backStack.removeLastOrNull() },
+          onOpenRecipe = { id -> backStack.add(RecipeEdit(id = id)) },
+          onCreateRecipe = { backStack.add(RecipeEdit()) },
+        )
+      }
+      entry<RecipeEdit> { key ->
+        val app = appContext as DotScaleApp
+        RecipeEditScreen(
+          viewModel { RecipeEditViewModel(app.recipeRepository, app.brewRepository, ResourcesRecipeTexts(appContext), key.id, key.fromBrewId) },
+          onBack = { backStack.removeLastOrNull() },
+          // Duplicar abre la copia en lugar de la original: atrás vuelve a la lista.
+          onDuplicated = { copyId -> backStack[backStack.lastIndex] = RecipeEdit(id = copyId) },
+        )
       }
       entry<History> {
         val repository = (appContext as DotScaleApp).brewRepository
@@ -80,6 +123,24 @@ fun MainNavigation() {
           viewModel { BrewDetailViewModel(repository, key.id) },
           onBack = { backStack.removeLastOrNull() },
           onEdit = { id -> backStack.add(BrewEdit(id)) },
+          onCompare = { id -> backStack.add(ComparePick(id)) },
+          onSaveAsRecipe = { id -> backStack.add(RecipeEdit(fromBrewId = id)) },
+        )
+      }
+      entry<ComparePick> { key ->
+        val repository = (appContext as DotScaleApp).brewRepository
+        ComparePickScreen(
+          viewModel { ComparePickViewModel(repository, key.aId) },
+          onBack = { backStack.removeLastOrNull() },
+          // Atrás desde la comparación vuelve al detalle de A, no al selector.
+          onPick = { bId -> backStack[backStack.lastIndex] = BrewCompare(key.aId, bId) },
+        )
+      }
+      entry<BrewCompare> { key ->
+        val repository = (appContext as DotScaleApp).brewRepository
+        BrewCompareScreen(
+          viewModel { BrewCompareViewModel(repository, key.aId, key.bId) },
+          onBack = { backStack.removeLastOrNull() },
         )
       }
       entry<BrewEdit> { key ->

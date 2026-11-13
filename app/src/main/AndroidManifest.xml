@@ -24,6 +24,9 @@
         tools:targetApi="s" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
+    <!-- Vibración al empezar cada etapa de la guía (permiso normal, sin diálogo) -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <application
         android:name=".DotScaleApp"
         android:allowBackup="true"

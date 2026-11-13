@@ -34,13 +34,21 @@ import dev.dotscale.ui.components.AntText
 import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.components.AntTopBar
 import dev.dotscale.ui.scale.BrewSummaryCard
+import dev.dotscale.ui.scale.FitBlock
+import dev.dotscale.ui.scale.fitView
 import dev.dotscale.ui.scale.Chart
 import dev.dotscale.ui.scale.summaryStability
 import dev.dotscale.ui.theme.AntTheme
 import java.util.Locale
 
 @Composable
-fun BrewDetailScreen(viewModel: BrewDetailViewModel, onBack: () -> Unit, onEdit: (Long) -> Unit) {
+fun BrewDetailScreen(
+  viewModel: BrewDetailViewModel,
+  onBack: () -> Unit,
+  onEdit: (Long) -> Unit,
+  onCompare: (Long) -> Unit,
+  onSaveAsRecipe: (Long) -> Unit,
+) {
   val state by viewModel.state.collectAsStateWithLifecycle()
   LaunchedEffect(state) { if (state is BrewDetailState.Gone) onBack() }
 
@@ -63,14 +71,26 @@ fun BrewDetailScreen(viewModel: BrewDetailViewModel, onBack: () -> Unit, onEdit:
         Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(AntTheme.spacing.base),
         verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
       ) {
-        DetailContent(record, onEdit = { onEdit(record.entity.id) }, onDelete = viewModel::delete)
+        DetailContent(
+          record,
+          onEdit = { onEdit(record.entity.id) },
+          onDelete = viewModel::delete,
+          onCompare = { onCompare(record.entity.id) },
+          onSaveAsRecipe = { onSaveAsRecipe(record.entity.id) },
+        )
       }
     }
   }
 }
 
 @Composable
-private fun DetailContent(record: BrewRecord, onEdit: () -> Unit, onDelete: () -> Unit) {
+private fun DetailContent(
+  record: BrewRecord,
+  onEdit: () -> Unit,
+  onDelete: () -> Unit,
+  onCompare: () -> Unit,
+  onSaveAsRecipe: () -> Unit,
+) {
   val entity = record.entity
   if (entity.simulated) {
     Row { AntTag(stringResource(R.string.history_row_simulated), color = AntTagColor.Primary) }
@@ -79,14 +99,19 @@ private fun DetailContent(record: BrewRecord, onEdit: () -> Unit, onDelete: () -
     AntAlert(message = stringResource(R.string.brew_detail_curve_error), type = AntStatus.Error)
   } else {
     AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.brew_chart_title)) {
-      Chart(record.samples, entity.unit, summaryStability(record.summary))
+      Chart(record.samples, entity.unit, summaryStability(record.summary), record.target)
     }
   }
   BrewSummaryCard(record.summary, entity.unit)
+  if (record.targetError) {
+    AntAlert(message = stringResource(R.string.brew_detail_target_error), type = AntStatus.Warning, modifier = Modifier.testTag("brew_detail_target_error"))
+  }
+  FitCard(record)
   if (entity.metricVersion != BrewConfig.METRIC_VERSION) {
     AntText(stringResource(R.string.brew_detail_old_metric), type = AntTextType.Secondary)
   }
   DetailsCard(record)
+  // Dos filas: cuatro botones no caben en una de 360 dp.
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
     AntButton(
       text = stringResource(R.string.brew_detail_edit),
@@ -101,6 +126,35 @@ private fun DetailContent(record: BrewRecord, onEdit: () -> Unit, onDelete: () -
       danger = true,
     )
   }
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+    AntButton(
+      text = stringResource(R.string.brew_detail_compare),
+      onClick = onCompare,
+      modifier = Modifier.weight(1f).testTag("brew_detail_compare"),
+    )
+    AntButton(
+      text = stringResource(R.string.brew_detail_save_recipe),
+      onClick = onSaveAsRecipe,
+      modifier = Modifier.weight(1f).testTag("brew_detail_save_recipe"),
+      enabled = !record.curveError,
+    )
+  }
+}
+
+/** "Ajuste al objetivo" con las columnas guardadas, así que es el mismo que mostró el resumen al terminar. */
+@Composable
+private fun FitCard(record: BrewRecord) {
+  val entity = record.entity
+  if (entity.fitScore == null && entity.referenceType == null) return
+  val fit = fitView(
+    score = entity.fitScore,
+    referenceName = entity.referenceName,
+    targetWaterG = entity.targetWaterG ?: return,
+    targetEndMs = entity.targetEndMs ?: return,
+    totalWaterG = entity.totalWaterG,
+    totalTimeMs = entity.totalTimeMs,
+  ) ?: return
+  AntCard(Modifier.fillMaxWidth().testTag("brew_detail_fit")) { FitBlock(fit, entity.unit) }
 }
 
 /** Los campos manuales; los vacíos se omiten y, si no hay ninguno, la tarjeta no se muestra. */

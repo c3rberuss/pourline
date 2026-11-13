@@ -27,27 +27,17 @@ import androidx.compose.ui.unit.dp
 import dev.dotscale.brew.BrewSample
 import dev.dotscale.brew.ChartAxis
 import dev.dotscale.brew.ChartPoint
+import dev.dotscale.brew.TargetCurve
 import dev.dotscale.brew.downsample
 import dev.dotscale.brew.fromGrams
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.ui.theme.AntTheme
 import kotlin.math.ceil
 
-private val ChartHeight = 200.dp
-private val GutterWidth = 40.dp
-private val TopPadding = 30.dp
-private val BottomPadding = 22.dp
-private val LabelGap = 4.dp
-private val LineWidth = 2.dp
-private const val HORIZONTAL_DIVISIONS = 4
-private const val TIME_TICK_BASE_MS = 30_000L
-private const val MAX_TIME_TICKS = 4
-
-private data class ChartScale(val xTopMs: Long, val waterTop: Double, val flowTop: Double)
-
-private fun chartScale(samples: List<BrewSample>, unit: WeightUnit): ChartScale {
-  var maxT = 0L
-  var maxWater = 0.0
+/** Topes con las muestras y, si hay, el agua máxima y el `endMs` del objetivo. */
+private fun chartScale(samples: List<BrewSample>, unit: WeightUnit, target: TargetCurve?): ChartScale {
+  var maxT = target?.endMs ?: 0L
+  var maxWater = target?.let { t -> fromGrams(t.points.maxOf { it.waterG }, unit) } ?: 0.0
   var maxFlow = 0.0
   for (s in samples) {
     if (s.tMs > maxT) maxT = s.tMs
@@ -62,6 +52,9 @@ private fun chartScale(samples: List<BrewSample>, unit: WeightUnit): ChartScale 
  * Gráfica en vivo de doble eje: agua (izquierda, con relleno) y flujo (derecha, coloreado por nivel
  * de estabilidad). Los topes salen de [ChartAxis] y las series se reducen con [downsample] según el
  * ancho disponible.
+ *
+ * Con [target] (en gramos) dibuja además la curva objetivo, discontinua, sobre el eje del agua, y los
+ * topes incluyen su agua máxima y su `endMs`. Con [samples] vacío solo se ve el objetivo.
  */
 @Composable
 fun BrewChart(
@@ -71,6 +64,7 @@ fun BrewChart(
   flowUnitLabel: String,
   description: String,
   modifier: Modifier = Modifier,
+  target: TargetCurve? = null,
 ) {
   val colors = brewChartColors(AntTheme.colors)
   val labelStyle = AntTheme.typography.textSM.copy(color = colors.axisLabel)
@@ -79,12 +73,20 @@ fun BrewChart(
   var widthPx by remember { mutableIntStateOf(0) }
   val plotWidthPx = (widthPx - 2 * with(density) { GutterWidth.roundToPx() }).coerceAtLeast(0)
 
-  val scale = remember(samples, unit) { chartScale(samples, unit) }
+  val scale = remember(samples, unit, target) { chartScale(samples, unit, target) }
   val water = remember(samples, unit, plotWidthPx, scale.xTopMs) {
     downsample(samples, plotWidthPx, scale.xTopMs) { fromGrams(it.waterG, unit).coerceAtLeast(0.0) }
   }
   val flow = remember(samples, unit, plotWidthPx, scale.xTopMs) {
     downsample(samples, plotWidthPx, scale.xTopMs) { fromGrams(it.flowGps, unit).coerceAtLeast(0.0) }
+  }
+
+  // La curva objetivo reducida se recalcula solo si cambia el objetivo, la unidad o el ancho: nunca por muestra.
+  val targetLine = remember(target, unit, plotWidthPx, scale.xTopMs) {
+    target?.let { curve ->
+      val asSamples = curve.points.map { BrewSample(it.tMs, it.waterG, 0.0, null, valid = true) }
+      downsample(asSamples, plotWidthPx, scale.xTopMs) { fromGrams(it.waterG, unit).coerceAtLeast(0.0) }
+    }.orEmpty()
   }
 
   Canvas(
@@ -102,68 +104,10 @@ fun BrewChart(
       bottom = size.height - BottomPadding.toPx(),
     )
     drawGridAndLabels(plot, scale, colors, measurer, labelStyle, waterUnitLabel, flowUnitLabel)
+    drawTarget(plot, scale, targetLine, colors.target)
     drawWater(plot, scale, water, colors)
     drawFlow(plot, scale, flow, colors)
   }
-}
-
-private class PlotArea(val left: Float, val right: Float, val top: Float, val bottom: Float) {
-  val width get() = right - left
-  val height get() = bottom - top
-
-  fun x(tMs: Long, xTopMs: Long) = left + width * (tMs.toFloat() / xTopMs).coerceIn(0f, 1f)
-
-  fun y(value: Double, top: Double) = bottom - height * (value / top).toFloat().coerceIn(0f, 1f)
-}
-
-private fun DrawScope.drawGridAndLabels(
-  plot: PlotArea,
-  scale: ChartScale,
-  colors: BrewChartColors,
-  measurer: TextMeasurer,
-  style: androidx.compose.ui.text.TextStyle,
-  waterUnitLabel: String,
-  flowUnitLabel: String,
-) {
-  val gap = LabelGap.toPx()
-  for (i in 0..HORIZONTAL_DIVISIONS) {
-    val fraction = i.toFloat() / HORIZONTAL_DIVISIONS
-    val y = plot.bottom - plot.height * fraction
-    drawLine(colors.grid, Offset(plot.left, y), Offset(plot.right, y), strokeWidth = 1.dp.toPx())
-
-    val left = measurer.measure(formatAxisValue(scale.waterTop * fraction), style)
-    drawText(left, topLeft = Offset(plot.left - gap - left.size.width, y - left.size.height / 2f))
-    val right = measurer.measure(formatAxisValue(scale.flowTop * fraction), style)
-    drawText(right, topLeft = Offset(plot.right + gap, y - right.size.height / 2f))
-  }
-
-  val waterTitle = measurer.measure(waterUnitLabel, style.copy(color = colors.water))
-  drawText(waterTitle, topLeft = Offset(plot.left - gap - waterTitle.size.width, 0f))
-  val flowTitle = measurer.measure(flowUnitLabel, style)
-  drawText(flowTitle, topLeft = Offset(plot.right + gap, 0f))
-
-  val stepMs = TIME_TICK_BASE_MS * ceil(scale.xTopMs.toDouble() / TIME_TICK_BASE_MS / MAX_TIME_TICKS).toLong()
-  var t = 0L
-  while (t <= scale.xTopMs) {
-    val label = measurer.measure(formatDuration(t), style)
-    val x = (plot.x(t, scale.xTopMs) - label.size.width / 2f).coerceIn(0f, size.width - label.size.width)
-    drawText(label, topLeft = Offset(x, plot.bottom + gap))
-    t += stepMs
-  }
-}
-
-private fun List<ChartPoint>.segments(): List<List<ChartPoint>> {
-  val out = ArrayList<List<ChartPoint>>()
-  var current = ArrayList<ChartPoint>()
-  for (p in this) {
-    if (p.breakBefore && current.isNotEmpty()) {
-      out.add(current)
-      current = ArrayList()
-    }
-    current.add(p)
-  }
-  if (current.isNotEmpty()) out.add(current)
-  return out
 }
 
 private fun DrawScope.drawWater(plot: PlotArea, scale: ChartScale, points: List<ChartPoint>, colors: BrewChartColors) {

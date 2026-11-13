@@ -29,7 +29,8 @@ import kotlin.math.roundToInt
 
 /**
  * Resumen de una preparación terminada. En Scale, [savedBrew] controla el botón "Añadir detalles": deshabilitado
- * mientras guarda, habilitado al guardar y oculto si falla o no hay guardado (el detalle del historial).
+ * mientras guarda, habilitado al guardar y oculto si falla o no hay guardado (el detalle del historial). Con [fit]
+ * añade el bloque "Ajuste al objetivo".
  */
 @Composable
 fun BrewSummaryCard(
@@ -37,6 +38,7 @@ fun BrewSummaryCard(
   unit: WeightUnit,
   modifier: Modifier = Modifier,
   savedBrew: SavedBrew? = null,
+  fit: FitView? = null,
   onAddDetails: (Long) -> Unit = {},
 ) {
   AntCard(
@@ -99,6 +101,10 @@ fun BrewSummaryCard(
           )
         }
       }
+    }
+    if (fit != null) {
+      AntDivider()
+      FitBlock(fit, unit)
     }
     when (savedBrew) {
       SavedBrew.Saving, is SavedBrew.Saved -> {

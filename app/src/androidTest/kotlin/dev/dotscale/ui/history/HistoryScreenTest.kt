@@ -111,6 +111,20 @@ class HistoryScreenTest {
   }
 
   @Test
+  fun theFitTagAppearsOnlyOnBrewsMadeWithAReference() {
+    runBlocking {
+      repository.save(TestBrews.finished(totalMs = 60_000), TestBrews.context(startedAtEpochMs = 1_000, target = TestBrews.usedTarget(score = 86)))
+      repository.save(TestBrews.finished(totalMs = 60_000), TestBrews.context(startedAtEpochMs = 2_000))
+    }
+    show()
+    waitForRows(2)
+
+    // La más reciente (2_000) no lleva referencia; la antigua sí.
+    rule.onAllNodesWithTag("history_row_fit", useUnmergedTree = true).assertCountEquals(1)
+    rows()[1].assertTextContains(context.getString(R.string.history_row_fit, 86), substring = true)
+  }
+
+  @Test
   fun clickingARowOpensItsDetail() {
     val id = seed(startedAt = 1_000, name = "Una")
     show()

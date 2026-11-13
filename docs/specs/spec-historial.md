@@ -6,7 +6,7 @@
 | Fecha | 2026-11-12 |
 | Deriva de | [SPEC-001 Gráfica de vertido](spec-grafica-vertido.md) (Anexo y punto P1 de su [plan](plan-grafica-vertido.md)) |
 | Módulos afectados | `:app` (nuevo paquete `dev.dotscale.history`, nuevo `ui/history`, `brew`, `ui/scale`, `ui/components`, navegación) |
-| Specs relacionados | SPEC-003 Curva objetivo, SPEC-004 Compartir imagen (pendientes) |
+| Specs relacionados | [SPEC-003 Curva objetivo](spec-curva-objetivo.md), SPEC-004 Compartir imagen (pendiente) |
 
 ## 1. Resumen y Contexto
 

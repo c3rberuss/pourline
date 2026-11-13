@@ -53,6 +53,8 @@ data class BrewState(
   val samples: List<BrewSample>,
   val currentStability: Int?,
   val currentLevel: StabilityLevel?,
+  /** Reloj monotónico de t0; no es nulo en `Active` ni en `Finished`. Con él el ViewModel calcula `tMs`. */
+  val t0MonoMs: Long? = null,
 ) {
   companion object {
     val Initial = BrewState(BrewPhase.Armed, emptyList(), currentStability = null, currentLevel = null)

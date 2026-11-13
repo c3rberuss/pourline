@@ -6,6 +6,7 @@ import dev.dotscale.brew.BrewSummary
 import dev.dotscale.brew.FinishedBrew
 import dev.dotscale.brew.Pour
 import dev.dotscale.brew.StabilityLevel
+import dev.dotscale.brew.TargetCurve
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
@@ -27,15 +28,28 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
   /** Último borrado que se puede deshacer. Vive aquí porque el detalle y la lista tienen ViewModels distintos. */
   val pendingUndo: StateFlow<DeletedBrew?> = _pendingUndo.asStateFlow()
 
-  /** Guarda una preparación terminada y devuelve su id. Escribe `brews` y `brew_curves` en una transacción. */
+  /** Guarda una preparación terminada y devuelve su id. Escribe `brews`, `brew_curves` y, con referencia, `brew_targets` en una transacción. */
   override suspend fun save(finished: FinishedBrew, context: BrewContext): Long {
     val summary = finished.summary
-    val (curve, preview) = withContext(Dispatchers.Default) {
-      BrewCurveCodec.encode(finished.samples, summary.pours) to
-        BrewPreview.compute(finished.samples, summary.totalTimeMs, summary.totalWaterG)
+    val target = context.target
+    val details = context.details?.normalized()
+    val (curve, preview, targetData) = withContext(Dispatchers.Default) {
+      Triple(
+        BrewCurveCodec.encode(finished.samples, summary.pours),
+        BrewPreview.compute(finished.samples, summary.totalTimeMs, summary.totalWaterG),
+        target?.let { TargetCurveCodec.encode(it.curve) },
+      )
     }
     val entity = BrewEntity(
       startedAtEpochMs = context.startedAtEpochMs,
+      // Prellenado desde la referencia. El café ya es una grafía existente, así que no pasa por `canonicalCoffee`.
+      name = details?.name,
+      coffee = details?.coffee,
+      method = details?.method,
+      methodOther = details?.methodOther,
+      grind = details?.grind,
+      waterTempC = details?.waterTempC,
+      notes = details?.notes,
       totalTimeMs = summary.totalTimeMs,
       totalWaterG = summary.totalWaterG,
       avgFlowGps = summary.avgFlowGps,
@@ -54,8 +68,14 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
       simulated = context.simulated,
       metricVersion = BrewConfig.METRIC_VERSION,
       preview = preview,
+      referenceType = target?.type,
+      referenceId = target?.id,
+      referenceName = target?.name,
+      targetWaterG = target?.fit?.targetWaterG,
+      targetEndMs = target?.fit?.targetEndMs,
+      fitScore = target?.fit?.score,
     )
-    return withContext(Dispatchers.IO) { dao.insertBrew(entity, curve) }
+    return withContext(Dispatchers.IO) { dao.insertBrew(entity, curve, targetData) }
   }
 
   /** Más reciente primero. */
@@ -75,7 +95,8 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
 
   suspend fun get(id: Long): BrewRecord? = withContext(Dispatchers.IO) {
     val entity = dao.brew(id) ?: return@withContext null
-    toRecord(entity, loadCurve(id))
+    val loaded = load(id)
+    toRecord(entity, loaded.curve, loaded.target)
   }
 
   /**
@@ -83,17 +104,20 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
    * aunque la fila cambie (p. ej. al editar los datos manuales).
    */
   fun observe(id: Long): Flow<BrewRecord?> = flow {
-    var curve: Curve? = null
+    var curve: Loaded? = null
     dao.observeBrew(id).collect { entity ->
       if (entity == null) {
         curve = null
         emit(null)
       } else {
-        val loaded = curve ?: loadCurve(id).also { curve = it }
-        emit(toRecord(entity, loaded))
+        val loaded = curve ?: load(id).also { curve = it }
+        emit(toRecord(entity, loaded.curve, loaded.target))
       }
     }
   }.flowOn(Dispatchers.IO)
+
+  /** Número de preparaciones guardadas. */
+  fun count(): Flow<Int> = dao.count()
 
   /** Café de otras preparaciones, para las sugerencias de la edición. */
   suspend fun coffeesExcept(id: Long): List<String> = withContext(Dispatchers.IO) { dao.coffeesExcept(id) }
@@ -126,6 +150,26 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
 
   private class Curve(val samples: List<BrewSample>, val pours: List<Pour>, val error: Boolean)
 
+  /** La copia de la curva objetivo: `curve == null` y `error == false` si la preparación no tiene referencia. */
+  private class Target(val curve: TargetCurve?, val error: Boolean)
+
+  private class Loaded(val curve: Curve, val target: Target)
+
+  private suspend fun load(id: Long): Loaded = Loaded(loadCurve(id), loadTarget(id))
+
+  private suspend fun loadTarget(id: Long): Target {
+    val bytes = dao.target(id) ?: return Target(null, error = false)
+    return withContext(Dispatchers.Default) {
+      try {
+        Target(TargetCurveCodec.decode(bytes), error = false)
+      } catch (_: TargetCurveFormatException) {
+        Target(null, error = true)
+      } catch (_: DataFormatException) {
+        Target(null, error = true)
+      }
+    }
+  }
+
   private suspend fun loadCurve(id: Long): Curve {
     val bytes = dao.curve(id)
     if (bytes == null || bytes.isEmpty()) return Curve(emptyList(), emptyList(), error = true)
@@ -154,9 +198,10 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
     unit = row.unit,
     simulated = row.simulated,
     preview = BrewPreview.decode(row.preview),
+    fitScore = row.fitScore,
   )
 
-  private fun toRecord(entity: BrewEntity, curve: Curve) = BrewRecord(
+  private fun toRecord(entity: BrewEntity, curve: Curve, target: Target) = BrewRecord(
     entity = entity,
     samples = curve.samples,
     summary = BrewSummary(
@@ -177,5 +222,7 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
       interrupted = entity.interrupted,
     ),
     curveError = curve.error,
+    target = target.curve,
+    targetError = target.error,
   )
 }

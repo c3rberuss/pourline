@@ -1,11 +1,17 @@
 package dev.dotscale.ui.scale
 
+import dev.dotscale.brew.BrewFit
 import dev.dotscale.brew.BrewState
+import dev.dotscale.brew.GuideState
+import dev.dotscale.brew.TargetCurve
+import dev.dotscale.history.BrewDetails
+import dev.dotscale.history.ReferenceType
 import dev.dotscale.protocol.ScaleMessage
 import dev.dotscale.protocol.ScaleModel
 import dev.dotscale.protocol.TimerStatus
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.scale.ConnectionState
+import dev.dotscale.settings.ReferenceKey
 
 /** Estado del guardado de la última sesión terminada. */
 sealed interface SavedBrew {
@@ -22,7 +28,34 @@ sealed interface ScaleError {
   data class Command(val detail: String?) : ScaleError
 
   data object SaveFailed : ScaleError
+
+  /** La referencia elegida se borró: ya no hay objetivo. */
+  data object TargetRemoved : ScaleError
+
+  /** La preparación elegida como referencia no tiene una curva legible: ya no hay objetivo. */
+  data object TargetUnreadable : ScaleError
 }
+
+/**
+ * El objetivo de la sesión: la curva ya escalada a la dosis (en gramos) y lo que prellena los datos de la
+ * preparación. Es la misma instancia mientras no cambien la referencia ni la dosis.
+ */
+data class ActiveTarget(
+  val key: ReferenceKey,
+  val type: ReferenceType,
+  /** Nombre mostrado al elegir la referencia. */
+  val name: String,
+  val curve: TargetCurve,
+  /** `dosis capturada / dosis nominal`, o 1 si falta alguna. */
+  val factor: Double,
+  /** La dosis capturada, en gramos, con la que se escaló; `null` si el factor no sale de una dosis. */
+  val scaledDoseG: Double?,
+  /** Datos manuales que se copian de la referencia al guardar (sin nombre ni notas). */
+  val prefill: BrewDetails,
+)
+
+/** El ajuste de la última sesión con objetivo, con la curva contra la que se midió. */
+data class SessionFit(val name: String, val curve: TargetCurve, val fit: BrewFit)
 
 data class ScaleUiState(
   val connection: ConnectionState = ConnectionState.Disconnected,
@@ -44,6 +77,12 @@ data class ScaleUiState(
   val brew: BrewState = BrewState.Initial,
   /** `null` sin sesión terminada; vuelve a `null` al empezar otra sesión. */
   val savedBrew: SavedBrew? = null,
+  /** El objetivo en `Armed` y `Finished`; en `Active`, el congelado al empezar. */
+  val target: ActiveTarget? = null,
+  /** La guía de la etapa; `null` sin objetivo. La rellena el ViewModel. */
+  val guide: GuideState? = null,
+  /** `null` sin sesión terminada con objetivo; vuelve a `null` al empezar otra sesión. */
+  val lastFit: SessionFit? = null,
 ) {
   /** Ratio agua:café (p. ej. 15.0 → 1:15). */
   val ratio: Double? get() = dose?.takeIf { it > 0 && weight > 0 }?.let { weight / it }
