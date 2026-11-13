@@ -6,6 +6,9 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
+import dev.dotscale.coffee.CoffeeConverters
+import dev.dotscale.coffee.CoffeeDao
+import dev.dotscale.coffee.CoffeeEntity
 import dev.dotscale.recipe.BuiltInRecipeSeeder
 import dev.dotscale.recipe.RecipeDao
 import dev.dotscale.recipe.RecipeEntity
@@ -18,6 +21,7 @@ import dev.dotscale.recipe.ResourcesRecipeTexts
  * `Migration` con su test: no se usa `fallbackToDestructiveMigration`.
  *
  * Versión 2 (SPEC-003): seis columnas nuevas en `brews`, `brew_targets`, `recipes` y `recipe_stages`.
+ * Versión 3 (SPEC-004): la tabla `coffees` y las columnas `coffeeId` y `rating` en `brews`.
  */
 @Database(
   entities = [
@@ -26,15 +30,18 @@ import dev.dotscale.recipe.ResourcesRecipeTexts
     BrewTargetEntity::class,
     RecipeEntity::class,
     RecipeStageEntity::class,
+    CoffeeEntity::class,
   ],
-  version = 2,
+  version = 3,
   exportSchema = true,
 )
-@TypeConverters(HistoryConverters::class)
+@TypeConverters(HistoryConverters::class, CoffeeConverters::class)
 abstract class HistoryDatabase : RoomDatabase() {
   abstract fun brewDao(): BrewDao
 
   abstract fun recipeDao(): RecipeDao
+
+  abstract fun coffeeDao(): CoffeeDao
 
   companion object {
     const val FILE_NAME = "history.db"
@@ -46,7 +53,7 @@ abstract class HistoryDatabase : RoomDatabase() {
       texts: RecipeTexts = ResourcesRecipeTexts(context),
     ): HistoryDatabase =
       Room.databaseBuilder(context.applicationContext, HistoryDatabase::class.java, fileName)
-        .addMigrations(migration1To2(texts))
+        .addMigrations(migration1To2(texts), MIGRATION_2_3)
         .addCallback(seedOnCreate(texts))
         .build()
 
@@ -56,7 +63,7 @@ abstract class HistoryDatabase : RoomDatabase() {
         .addCallback(seedOnCreate(texts))
         .build()
 
-    /** Una instalación nueva se crea en la versión 2 con las recetas predefinidas. */
+    /** Una instalación nueva se crea en la última versión con las recetas predefinidas. */
     private fun seedOnCreate(texts: RecipeTexts, clock: () -> Long = System::currentTimeMillis) =
       object : Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {

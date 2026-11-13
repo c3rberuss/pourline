@@ -151,6 +151,29 @@ class BrewDaoTest {
   }
 
   @Test
+  fun insertBrewLinksTheCoffeeAndLinkCoffeeWithNullClearsTheNameToo() = runTest {
+    val coffeeId = db.coffeeDao().let { _ ->
+      dev.dotscale.coffee.CoffeeRepository(db, dev.dotscale.coffee.PhotoFiles { }).save(TestBrews.coffeeDraft(name = "Guji"))
+    }
+    val id = repository.save(TestBrews.finished(totalMs = 60_000), TestBrews.context(coffee = UsedCoffee(coffeeId, "otro")))
+    assertEquals(coffeeId, dao.brew(id)!!.coffeeId)
+    assertEquals("Guji", dao.brew(id)!!.coffee)
+
+    repository.setCoffee(id, null)
+    assertNull(dao.brew(id)!!.coffeeId)
+    assertNull(dao.brew(id)!!.coffee)
+  }
+
+  @Test
+  fun applyDetailsWritesTheRatingAndKeepsItBetween1And5() = runTest {
+    val id = save()
+    repository.updateDetails(id, BrewDetails(rating = 5))
+    assertEquals(5, dao.brew(id)!!.rating)
+    repository.updateDetails(id, BrewDetails(rating = 0))
+    assertNull(dao.brew(id)!!.rating)
+  }
+
+  @Test
   fun methodOtherIsDroppedWithoutTheOtherMethod() = runTest {
     val a = save()
     repository.updateDetails(a, BrewDetails(method = BrewMethod.V60, methodOther = "Sifón"))

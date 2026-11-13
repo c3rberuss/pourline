@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import dev.dotscale.coffee.CoffeeEntity
 import dev.dotscale.brew.BrewSample
 import dev.dotscale.brew.BrewSummary
 import dev.dotscale.brew.FinishReason
@@ -18,7 +19,18 @@ import dev.dotscale.protocol.WeightUnit
  *
  * `equals` compara [preview] por referencia (es un `ByteArray`): para comparar contenido, usa [BrewListItem].
  */
-@Entity(tableName = "brews", indices = [Index("startedAtEpochMs")])
+@Entity(
+  tableName = "brews",
+  foreignKeys = [
+    ForeignKey(
+      entity = CoffeeEntity::class,
+      parentColumns = ["id"],
+      childColumns = ["coffeeId"],
+      onDelete = ForeignKey.SET_NULL,
+    ),
+  ],
+  indices = [Index("startedAtEpochMs"), Index("coffeeId")],
+)
 data class BrewEntity(
   @PrimaryKey(autoGenerate = true) val id: Long = 0,
   val startedAtEpochMs: Long,
@@ -62,6 +74,11 @@ data class BrewEntity(
   val targetEndMs: Long? = null,
   /** `BrewFit.score`. */
   val fitScore: Int? = null,
+  // Catálogo de cafés (SPEC-004). `coffee` pasa a ser la copia del nombre del café vinculado.
+  /** El café del catálogo; `null` sin vínculo, o si el café se borró (`SET NULL`: la preparación conserva el nombre). */
+  val coffeeId: Long? = null,
+  /** Valoración de 1 a 5; `null` sin valorar. */
+  val rating: Int? = null,
 )
 
 /** Muestras y vertidos codificados con [BrewCurveCodec]. 1:1 con [BrewEntity]. */

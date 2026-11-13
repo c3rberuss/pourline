@@ -42,3 +42,29 @@ fun migration1To2(texts: RecipeTexts, clock: () -> Long = System::currentTimeMil
       BuiltInRecipeSeeder.seed(db, texts, clock())
     }
   }
+
+/**
+ * Migración 2 → 3 (SPEC-004, D16): la tabla `coffees` y dos columnas en `brews`. Los `CREATE TABLE` y los
+ * índices se copian de `app/schemas/.../3.json`. No se reconstruye `brews`: borrarla dispararía el `CASCADE`
+ * hacia `brew_curves` y `brew_targets`. SQLite admite `REFERENCES` en `ADD COLUMN` con valor por defecto `NULL`.
+ * Los textos de café que ya hay en las preparaciones no se tocan y quedan sin vínculo.
+ */
+val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+  override fun migrate(db: SupportSQLiteDatabase) {
+    db.execSQL(
+      "CREATE TABLE IF NOT EXISTS `coffees` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, " +
+        "`roaster` TEXT, `originCountry` TEXT, `originRegion` TEXT, `farm` TEXT, `varieties` TEXT NOT NULL, " +
+        "`process` TEXT, `processOther` TEXT, `altitudeMinM` INTEGER, `altitudeMaxM` INTEGER, `roastLevel` TEXT, " +
+        "`roastDate` INTEGER, `roasterNotes` TEXT, `bagWeightG` REAL, `price` REAL, `openedDate` INTEGER, " +
+        "`photo1` TEXT, `photo2` TEXT, `archived` INTEGER NOT NULL, `createdAtEpochMs` INTEGER NOT NULL, " +
+        "`lastUsedAtEpochMs` INTEGER)",
+    )
+    db.execSQL("CREATE INDEX IF NOT EXISTS `index_coffees_name` ON `coffees` (`name`)")
+    db.execSQL("CREATE INDEX IF NOT EXISTS `index_coffees_archived` ON `coffees` (`archived`)")
+    db.execSQL(
+      "ALTER TABLE `brews` ADD COLUMN `coffeeId` INTEGER REFERENCES `coffees`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL",
+    )
+    db.execSQL("ALTER TABLE `brews` ADD COLUMN `rating` INTEGER")
+    db.execSQL("CREATE INDEX IF NOT EXISTS `index_brews_coffeeId` ON `brews` (`coffeeId`)")
+  }
+}

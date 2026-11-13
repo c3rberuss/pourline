@@ -1,6 +1,8 @@
 package dev.dotscale
 
 import android.app.Application
+import dev.dotscale.coffee.CoffeeRepository
+import dev.dotscale.coffee.PhotoFiles
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.recipe.RecipeRepository
@@ -24,6 +26,8 @@ class DotScaleApp : Application() {
   val historyDatabase by lazy { HistoryDatabase.create(this) }
 
   val brewRepository by lazy { BrewRepository(historyDatabase) }
+
+  val coffeeRepository by lazy { CoffeeRepository(historyDatabase, PhotoFiles { }) }
 
   val recipeRepository by lazy { RecipeRepository(historyDatabase, ResourcesRecipeTexts(this)) }
 }

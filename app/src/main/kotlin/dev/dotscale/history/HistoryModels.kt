@@ -28,6 +28,9 @@ data class UsedTarget(
   val fit: BrewFit,
 )
 
+/** El café del catálogo con el que se hace una preparación: el id y el nombre que tenía al elegirlo. */
+data class UsedCoffee(val id: Long, val name: String)
+
 /** Lo que aporta el ViewModel y la sesión no conoce. */
 data class BrewContext(
   val startedAtEpochMs: Long,
@@ -38,6 +41,8 @@ data class BrewContext(
   val target: UsedTarget? = null,
   /** Datos manuales prellenados desde la referencia (sin nombre ni notas); `null` sin referencia. */
   val details: BrewDetails? = null,
+  /** El café elegido en Scale, congelado al empezar; `null` sin café (SPEC-004). */
+  val coffee: UsedCoffee? = null,
 )
 
 /** Datos manuales de una preparación. */
@@ -48,7 +53,10 @@ data class BrewDetails(
   val methodOther: String? = null,
   val grind: String? = null,
   val waterTempC: Double? = null,
+  /** Las notas de cata. */
   val notes: String? = null,
+  /** Valoración de 1 a 5; fuera de rango se guarda como `null`. */
+  val rating: Int? = null,
 ) {
   /** Recorta los textos, convierte los vacíos en `null` y conserva `methodOther` solo con `OTHER`. */
   fun normalized(): BrewDetails = BrewDetails(
@@ -59,6 +67,7 @@ data class BrewDetails(
     grind = grind.cleaned(),
     waterTempC = waterTempC,
     notes = notes.cleaned(),
+    rating = rating?.takeIf { it in 1..5 },
   )
 }
 

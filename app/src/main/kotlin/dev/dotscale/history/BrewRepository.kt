@@ -7,6 +7,7 @@ import dev.dotscale.brew.FinishedBrew
 import dev.dotscale.brew.Pour
 import dev.dotscale.brew.StabilityLevel
 import dev.dotscale.brew.TargetCurve
+import dev.dotscale.coffee.CoffeeOption
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
@@ -50,6 +51,7 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
       grind = details?.grind,
       waterTempC = details?.waterTempC,
       notes = details?.notes,
+      rating = details?.rating,
       totalTimeMs = summary.totalTimeMs,
       totalWaterG = summary.totalWaterG,
       avgFlowGps = summary.avgFlowGps,
@@ -75,7 +77,7 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
       targetEndMs = target?.fit?.targetEndMs,
       fitScore = target?.fit?.score,
     )
-    return withContext(Dispatchers.IO) { dao.insertBrew(entity, curve, targetData) }
+    return withContext(Dispatchers.IO) { dao.insertBrew(entity, curve, targetData, context.coffee) }
   }
 
   /** Más reciente primero. */
@@ -89,6 +91,9 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
 
   /** Valores distintos, por uso más reciente. */
   fun coffees(): Flow<List<String>> = dao.coffees()
+
+  /** Cafés del catálogo con preparaciones vinculadas (también archivados), para el filtro (D33). */
+  fun coffeeOptions(): Flow<List<CoffeeOption>> = dao.coffeeOptions()
 
   /** Métodos presentes, en el orden del enum. */
   fun methods(): Flow<List<BrewMethod>> = dao.methods().map { present -> BrewMethod.entries.filter { it in present } }
@@ -126,6 +131,11 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
 
   suspend fun updateDetails(id: Long, details: BrewDetails) {
     withContext(Dispatchers.IO + NonCancellable) { dao.applyDetails(id, details) }
+  }
+
+  /** Vincula la preparación a un café, o la desvincula con `null` (quita también el nombre). Actualiza `lastUsedAtEpochMs`. */
+  suspend fun setCoffee(brewId: Long, coffeeId: Long?) {
+    withContext(Dispatchers.IO + NonCancellable) { dao.linkCoffee(brewId, coffeeId) }
   }
 
   /** Borra la preparación y deja la fila y la curva en [pendingUndo]. */
