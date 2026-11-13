@@ -6,7 +6,7 @@
 | Fecha | 2026-11-12 |
 | Deriva de | [SPEC-001 Gráfica de vertido](spec-grafica-vertido.md) (Anexo) y [SPEC-002 Historial](spec-historial.md) (alcance Out) |
 | Módulos afectados | `:app` (nuevo paquete `dev.dotscale.recipe`, nuevo `ui/recipes`, `brew`, `history`, `settings`, `sim`, `ui/scale`, `ui/history`, `ui/settings`, `ui/components`, navegación) |
-| Specs relacionados | SPEC-004 Compartir imagen (pendiente) |
+| Specs relacionados | [SPEC-004 Catálogo de cafés y compartir imagen](spec-catalogo-cafes.md) |
 
 ## 1. Resumen y Contexto
 
@@ -69,7 +69,7 @@
   - **Textos:** en español e inglés.
 - **Alcance (Out):**
   - Guía adaptativa, en la que la etapa siguiente espera a que se alcance el agua de la actual.
-  - Compartir la gráfica o la comparación como imagen (SPEC-004).
+  - Compartir la gráfica o la comparación como imagen ([SPEC-004](spec-catalogo-cafes.md)).
   - Comparar más de dos preparaciones, o una preparación con su curva objetivo en la vista de
     comparar. El detalle sí dibuja el objetivo.
   - Filtrar u ordenar el historial por receta o por ajuste.
