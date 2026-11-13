@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado, pendiente de plan. Plan: `plan-catalogo-cafes.md` (pendiente) |
+| Estado | Aprobado; plan aprobado, en implementación. Plan: [`plan-catalogo-cafes.md`](plan-catalogo-cafes.md) |
 | Fecha | 2026-11-13 |
 | Deriva de | [SPEC-002 Historial](spec-historial.md) (alcance Out: catálogo de cafés y compartir como imagen) y [SPEC-003 Curva objetivo](spec-curva-objetivo.md) (alcance Out: compartir como imagen) |
 | Módulos afectados | `:app` (nuevo paquete `dev.dotscale.coffee`, nuevo `ui/coffees`, nuevo `share`, `history`, `settings`, `ui/scale`, `ui/history`, navegación) |
@@ -31,9 +31,10 @@
 - **Éxito:**
   - Registrar un café con foto y datos básicos cuesta **5 toques o menos** desde la pantalla de
     cafés, sin contar el teclado.
-  - En el conjunto de etiquetas reales del usuario (unas 15), el OCR extrae bien **el nombre y la
-    fecha de tueste en al menos el 75 %** (12 de 15). Nunca se guarda nada sin que el usuario lo
-    revise.
+  - En las 15 etiquetas reales del usuario, el OCR extrae bien **el nombre en al menos 12 de 15** y
+    **no inventa una fecha de tueste** en ninguna de las 13 que no la traen. Solo 2 traen fecha, y
+    las dos están escritas a mano: su lectura se informa, pero no cuenta para el criterio. Nunca se
+    guarda nada sin que el usuario lo revise.
   - Al terminar una preparación queda vinculada al café elegido, y desde ese café se ven todas sus
     preparaciones.
   - La tarjeta del café se comparte en **2 toques o menos** desde el detalle del café.
@@ -57,6 +58,8 @@
   - Varias bolsas dentro de un mismo café.
   - Compartir como texto o como archivo importable por otra instalación.
   - Sincronización o copia de seguridad del catálogo.
+  - Rediseño de la navegación y de las barras superiores. Se hará en un spec posterior; el acceso a
+    Cafés de §3.6 es provisional.
 
 ## 2. Historias de Usuario y Casos de Uso
 
@@ -181,11 +184,14 @@ data class LabelFields(
   val roaster: String? = null,
   val roastDate: LocalDate? = null,
   val process: CoffeeProcess? = null,
+  val processOther: String? = null,      // con OTHER, el texto leído ("Fermentación láctica")
   val varieties: List<String> = emptyList(),
   val roastLevel: RoastLevel? = null,
   val altitudeMinM: Int? = null,
   val altitudeMaxM: Int? = null,
   val originCountry: String? = null,
+  val originRegion: String? = null,
+  val farm: String? = null,              // "Finca" o "Productor"
   val bagWeightG: Double? = null,
 )
 ```
@@ -193,18 +199,40 @@ data class LabelFields(
 - **Reglas del parser:**
   - **Nombre y tostador:** heurística por altura de línea (las más altas) que descarta líneas que
     son fechas, pesos o palabras clave.
+  - **Nombre con proceso:** si la línea siguiente al título es un proceso conocido ("Lavado",
+    "Semi lavado", "Honey", "Yellow honey", "Anaeróbico lavado"...), se une al nombre:
+    "Pacamara" + "Red honey" da "Pacamara Red Honey". Así se distinguen cafés cuyo título es la
+    variedad. El proceso se rellena igualmente en su campo.
   - **Fechas:**
-    - Formatos numéricos (`dd/mm/aa`, `dd/mm/aaaa`, `dd.mm`, `aaaa-mm-dd`) y con mes en texto en
-      español e inglés ("12 oct 2026", "Oct 12, 2026").
+    - Formatos numéricos (`dd/mm/aa`, `dd/mm/aaaa`, `aaaa-mm-dd`) y con mes en texto en español e
+      inglés ("12 oct 2026", "Oct 12, 2026").
+    - Solo junto a un rótulo de fecha ("Fecha de tueste", "Tostado", "Roasted"...): `dd.mm` sin
+      año (para no leer "12.5 oz" como 12 de mayo) y `ddmmaa` de 6 cifras sin separadores
+      ("Fecha de tueste: 120926" da 2026-09-12).
+    - Nunca son fecha de tueste: "EST. 2021", años de premios ("2024: 7°") ni números sueltos.
     - Se prefiere `dd/mm`; si `dd/mm` es inválida y `mm/dd` es válida, se usa `mm/dd`. Los años
       de 2 cifras son `20aa`.
     - Si hay varias fechas, se elige la más reciente que **no esté en el futuro** (así se descarta
       el "consumir antes de").
+  - **Rótulos de campo** en español e inglés ("Variedad", "Proceso"/"Process", "Altura"/"Altitud",
+    "Origen"/"Origin", "Región", "Finca", "Productor"): rellenan el campo con el valor que les
+    sigue. El valor con rótulo manda sobre el deducido por palabras clave.
   - **Proceso, variedad, nivel de tueste y país:** diccionarios de palabras clave en español e
-    inglés, sin distinguir mayúsculas ni tildes.
+    inglés, sin distinguir mayúsculas ni tildes. Las frases largas van primero: "Anaeróbico lavado"
+    es `ANAEROBIC`; "Semi lavado" y "Semilavado", `WET_HULLED`; "Yellow honey" y "Red honey",
+    `HONEY`; un proceso sin entrada fija ("Fermentación láctica") es `OTHER` con su texto.
+  - **Opciones impresas:** si una línea trae varias opciones del mismo campo (por ejemplo,
+    "Washed Natural Honey" con casillas, o "200 gr / 400 gr"), ese campo no se rellena. La misma
+    cantidad en dos unidades ("12oz. / 340g.") no cuenta como opciones: se usan los gramos.
+  - **Nivel de tueste:** solo `LIGHT`, `MEDIUM` o `DARK`. Los niveles combinados ("Light - Medium")
+    no se rellenan, y "Medio" solo cuenta junto a un rótulo de tueste o en una línea sola.
   - **Altitud:** un número o un rango (`1800-2000`, `1800 – 2000`, `1800 a 2000`) seguido de `m`,
-    `msnm`, `m.s.n.m.` o `masl`. Un solo valor rellena mínimo y máximo con el mismo número.
-  - **Peso:** número seguido de `g` o `kg`.
+    `mts`, `msnm`, `m.s.n.m.`, `m s.n.m.` o `masl`, o sin unidad tras un rótulo de altitud. La coma
+    es separador de miles ("1,850" es 1850). Un solo valor rellena mínimo y máximo con el mismo
+    número.
+  - **Peso:** número seguido de `g`, `gr` o `kg`, entre 50 y 5000 g.
+  - **Tostador:** suele ser un logo, así que se extrae solo cuando aparece como texto. No cuenta
+    para el criterio de aceptación.
 - **Aplicación al formulario:**
   - Solo rellena campos **vacíos**; nunca pisa lo escrito.
   - Los campos rellenados quedan marcados como "Leído de la etiqueta" hasta que el usuario los
@@ -285,6 +313,9 @@ Claves nuevas en `NavigationKeys.kt`:
   al pasar a `Active`. En `Finished` la preparación ya está guardada, así que cambiar el café aplica
   a la **siguiente**; la guardada se corrige en "Editar preparación". Opciones: cafés de `pickable()`, "Sin café" y "Nuevo café". "Nuevo café"
   abre `CoffeeEdit`; al guardar vuelve a Scale con ese café elegido.
+- **Referencia y café (cambio respecto a SPEC-003):** hoy, elegir una preparación guardada como
+  referencia copia su café al prellenado de la nueva (`ScaleViewModel.resolveBrew`). Con el catálogo
+  deja de hacerlo: el café de la preparación sale solo del selector de café de Scale.
 - **Editar preparación (`BrewEditScreen`):**
   - El campo "Café" pasa de `AntAutoComplete` a un selector del catálogo. Incluye el café
     vinculado aunque esté archivado, "Sin café" y "Nuevo café".
@@ -312,7 +343,8 @@ Claves nuevas en `NavigationKeys.kt`:
   - La de **detalle de preparación** añade la valoración (si hay) y la nota de cata, cortada a 3
     líneas con puntos suspensivos.
   - Las de gráficas llevan **al pie** el café vinculado: nombre, tostador y días desde el tueste.
-    Sin café, no hay pie.
+    Sin café, no hay pie. En la comparación va una línea por cada preparación con café vinculado, o
+    una sola si las dos usan el mismo café.
 - **Accesos:** icono de compartir en la barra superior del detalle del café, de `BrewDetailScreen`
   y de `BrewCompareScreen`, y un botón en `BrewSummaryCard`. Con un toque se abre el selector y
   con otro se elige la app.
@@ -368,11 +400,16 @@ Claves nuevas en `NavigationKeys.kt`:
       sin contar el teclado.
 - [ ] Al añadir una foto, o con "Leer etiqueta", el OCR rellena solo campos vacíos y los marca como
       "Leído de la etiqueta".
-- [ ] Con las ~15 etiquetas reales del usuario, el OCR extrae bien el nombre (igual sin distinguir
-      mayúsculas ni espacios) y la fecha de tueste (exacta) en al menos 12 de 15.
+- [ ] Con las 15 etiquetas reales del usuario, el OCR extrae bien el nombre (igual sin distinguir
+      mayúsculas, tildes ni espacios) en al menos 12 de 15.
+- [ ] En las 13 etiquetas sin fecha de tueste, el OCR deja la fecha vacía (13 de 13). La lectura de
+      las 2 fechas escritas a mano se informa, pero no cuenta. La lectura de fechas impresas se
+      cubre con casos sintéticos en `LabelParserTest`.
 - [ ] Una preparación hecha con un café elegido en Scale queda vinculada al terminar, aparece en la
       bitácora del café y descuenta su dosis del stock.
-- [ ] Editar la dosis o borrar una preparación corrige el stock sin más acciones.
+- [ ] Borrar una preparación, o cambiar su `doseG` en la base de datos, corrige el stock sin más
+      acciones. La app no permite editar la dosis; el cambio de dosis se verifica a nivel de datos
+      (`CoffeeDaoTest`).
 - [ ] El café agotado muestra "Agotado" y la sugerencia de archivar.
 - [ ] "Nueva bolsa" crea un café con los datos copiados salvo fechas y fotos.
 - [ ] La valoración y la nota de cata se editan en "Editar preparación" y se ven en el historial,
@@ -411,14 +448,15 @@ y la mediana de 5):
       sintética generada por el test.
 
 **Verificación del OCR con etiquetas reales:**
-- [ ] Las ~15 fotos están en una carpeta local **fuera del repo** y se suben al emulador o al
+- [ ] Las 15 fotos están en una carpeta local **fuera del repo** y se suben al emulador o al
       teléfono con `adb push`.
 - [ ] Un test instrumentado, excluido de la suite normal, pasa cada foto por ML Kit y guarda sus
       líneas y alturas como JSON en `app/src/test/resources/labels/`. Ese JSON se versiona y
-      alimenta `LabelParserTest`. Las fotos no se versionan.
+      alimenta `LabelParserTest`, aunque contenga todo el texto de la etiqueta (son etiquetas
+      comerciales). Las fotos no se versionan.
 - [ ] El mismo test compara lo que extrae el parser con un archivo de valores esperados (nombre y
-      fecha de tueste por etiqueta), que también vive fuera del repo, e informa de los aciertos
-      (objetivo: 12 de 15).
+      fecha de tueste por etiqueta, vacía si no la trae), que también vive fuera del repo, e
+      informa de los aciertos (objetivos: nombre 12 de 15; ninguna fecha inventada, 13 de 13).
 
 **E2E por adb** en el emulador con la báscula simulada, sin ARTEMIS:
 - [ ] Alta de un café con una foto real de la galería, revisión de lo leído y guardado.
