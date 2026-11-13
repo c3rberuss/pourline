@@ -400,6 +400,9 @@ object LabelParser {
   /** Una línea contigua de casi la misma altura es la otra mitad de un título de dos líneas. */
   private const val SAME_TITLE_HEIGHT = 0.85
 
+  /** Una línea candidata al menos de esta fracción del título compite con él: el proceso de más abajo ya no es suyo. */
+  private const val COMPETING_HEIGHT = 0.45
+
   /** Cuántas líneas después del título se busca el proceso suelto ("Pacamara" ... "Red honey"). */
   private const val PROCESS_WINDOW = 3
 
@@ -418,8 +421,15 @@ object LabelParser {
     val title = titleRows.joinToString(" ") { it.text }
     val lastTitle = rows.indexOf(titleRows.last())
 
-    val process = rows.subList(lastTitle + 1, minOf(rows.size, lastTitle + 1 + PROCESS_WINDOW)).firstOrNull {
-      it.index !in scan.labelLines && it.index !in scan.notes && isProcessOnly(it.text)
+    // El proceso suelto se busca saltando rótulos, notas, palabras excluidas ("Grano") y texto pequeño, pero se
+    // para en la primera línea grande que podría ser un nombre: separa el proceso del título.
+    val process = run {
+      for (row in rows.subList(lastTitle + 1, minOf(rows.size, lastTitle + 1 + PROCESS_WINDOW))) {
+        if (row.index in scan.labelLines || row.index in scan.notes) continue
+        if (isProcessOnly(row.text)) return@run row
+        if (row in candidates && row.heightPx >= best.heightPx * COMPETING_HEIGHT) return@run null
+      }
+      null
     }
     val name = if (process != null) joinWithProcess(title, process.text) else tidy(title)
     val roasterRow = candidates.filter { it !in titleRows }.maxWithOrNull(order)

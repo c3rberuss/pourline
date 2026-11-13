@@ -313,7 +313,7 @@ class LabelParserTest {
   @Test
   fun `a process a few lines below the title is joined to the name`() {
     val fields = LabelParser.parse(
-      listOf(OcrLine("Pacamara", 101), OcrLine("Finca Montaña Grande", 28), OcrLine("Grano", 18), OcrLine("RED HONEY", 31)),
+      listOf(OcrLine("Pacamara", 101), OcrLine("Finca: Montaña Grande", 28), OcrLine("Grano", 18), OcrLine("RED HONEY", 31)),
       today,
     )
     assertEquals("Pacamara Red Honey", fields.name)
@@ -335,5 +335,15 @@ class LabelParserTest {
       today,
     )
     assertEquals(CoffeeProcess.WASHED, fields.process)
+  }
+
+  @Test
+  fun `a process after a line that could be a name is not joined to the title`() {
+    val fields = LabelParser.parse(
+      listOf(OcrLine("ETIOPÍA GUJI", 140), OcrLine("Café de Altura", 70), OcrLine("Tostado 12/10/2026", 60), OcrLine("Natural", 60)),
+      today,
+    )
+    assertEquals("Etiopía Guji", fields.name)
+    assertEquals(CoffeeProcess.NATURAL, fields.process)
   }
 }
