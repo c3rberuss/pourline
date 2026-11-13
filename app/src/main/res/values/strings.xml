@@ -165,4 +165,23 @@
     <string name="brew_edit_discard_text">Los cambios que no hayas guardado se perderán.</string>
     <string name="brew_edit_discard">Descartar</string>
     <string name="brew_edit_keep">Seguir editando</string>
+
+    <!-- Recetas -->
+    <string name="recipe_builtin_v60_classic">V60 clásica</string>
+    <string name="recipe_builtin_four_six">Método 4:6</string>
+    <string-array name="recipe_builtin_v60_classic_stages">
+        <item>Bloom</item>
+        <item>2.º vertido</item>
+        <item>3.er vertido</item>
+    </string-array>
+    <string-array name="recipe_builtin_four_six_stages">
+        <item>1.er vertido</item>
+        <item>2.º vertido</item>
+        <item>3.er vertido</item>
+        <item>4.º vertido</item>
+        <item>5.º vertido</item>
+    </string-array>
+    <string name="recipe_copy_name">%1$s (copia)</string>
+    <string name="recipe_from_brew_name">%1$s (receta)</string>
+    <string name="recipe_builtin_tag">Predefinida</string>
 </resources>

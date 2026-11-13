@@ -13,7 +13,7 @@ abstract class BrewDao {
 
   @Query(
     "SELECT id, startedAtEpochMs, name, coffee, totalTimeMs, totalWaterG, finalRatio, stabilityScore, " +
-      "stabilityLevel, unit, simulated, preview FROM brews WHERE $FILTER " +
+      "stabilityLevel, unit, simulated, preview, fitScore FROM brews WHERE $FILTER " +
       "ORDER BY startedAtEpochMs DESC, id DESC",
   )
   abstract fun list(coffee: String?, method: BrewMethod?): Flow<List<BrewListRow>>
@@ -40,6 +40,12 @@ abstract class BrewDao {
   @Query("SELECT data FROM brew_curves WHERE brewId = :id")
   abstract suspend fun curve(id: Long): ByteArray?
 
+  @Query("SELECT data FROM brew_targets WHERE brewId = :id")
+  abstract suspend fun target(id: Long): ByteArray?
+
+  @Query("SELECT COUNT(*) FROM brews")
+  abstract fun count(): Flow<Int>
+
   @Query("SELECT DISTINCT coffee FROM brews WHERE coffee IS NOT NULL AND id != :id")
   abstract suspend fun coffeesExcept(id: Long): List<String>
 
@@ -48,6 +54,9 @@ abstract class BrewDao {
 
   @Insert
   protected abstract suspend fun insertCurveRow(curve: BrewCurveEntity)
+
+  @Insert
+  protected abstract suspend fun insertTargetRow(target: BrewTargetEntity)
 
   @Query("DELETE FROM brews WHERE id = :id")
   protected abstract suspend fun deleteBrewRow(id: Long)
@@ -67,11 +76,12 @@ abstract class BrewDao {
     notes: String?,
   )
 
-  /** Inserta la preparación y su curva en una transacción y devuelve el id. */
+  /** Inserta la preparación, su curva y, si la hay, la copia de la curva objetivo en una transacción y devuelve el id. */
   @Transaction
-  open suspend fun insertBrew(brew: BrewEntity, curveData: ByteArray): Long {
+  open suspend fun insertBrew(brew: BrewEntity, curveData: ByteArray, targetData: ByteArray? = null): Long {
     val id = insertBrewRow(brew)
     insertCurveRow(BrewCurveEntity(id, curveData))
+    if (targetData != null) insertTargetRow(BrewTargetEntity(id, targetData))
     return id
   }
 
@@ -97,14 +107,16 @@ abstract class BrewDao {
   open suspend fun deleteBrew(id: Long): DeletedBrew? {
     val entity = brew(id) ?: return null
     val curve = curve(id)?.let { BrewCurveEntity(id, it) } ?: BrewCurveEntity(id, ByteArray(0))
+    val target = target(id)?.let { BrewTargetEntity(id, it) }
     deleteBrewRow(id)
-    return DeletedBrew(entity, curve)
+    return DeletedBrew(entity, curve, target)
   }
 
-  /** Reinserta la fila y la curva con el mismo id. */
+  /** Reinserta la fila, la curva y la copia del objetivo con el mismo id. */
   @Transaction
   open suspend fun restore(deleted: DeletedBrew) {
     insertBrewRow(deleted.entity)
     insertCurveRow(deleted.curve)
+    deleted.target?.let { insertTargetRow(it) }
   }
 }

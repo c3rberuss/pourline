@@ -8,6 +8,7 @@ import dev.dotscale.brew.BrewSample
 import dev.dotscale.brew.BrewSummary
 import dev.dotscale.brew.FinishReason
 import dev.dotscale.brew.StabilityLevel
+import dev.dotscale.brew.TargetCurve
 import dev.dotscale.protocol.ScaleModel
 import dev.dotscale.protocol.WeightUnit
 
@@ -50,6 +51,17 @@ data class BrewEntity(
   val metricVersion: Int,
   /** Minicurva: 48 bytes (ver [BrewPreview]). */
   val preview: ByteArray,
+  // Referencia usada y ajuste a ella (SPEC-003). `null` sin referencia y en las anteriores a la versión 2.
+  val referenceType: ReferenceType? = null,
+  /** Sin clave foránea: el origen puede borrarse. */
+  val referenceId: Long? = null,
+  val referenceName: String? = null,
+  /** `BrewFit.targetWaterG`. */
+  val targetWaterG: Double? = null,
+  /** `BrewFit.targetEndMs`. */
+  val targetEndMs: Long? = null,
+  /** `BrewFit.score`. */
+  val fitScore: Int? = null,
 )
 
 /** Muestras y vertidos codificados con [BrewCurveCodec]. 1:1 con [BrewEntity]. */
@@ -69,6 +81,23 @@ data class BrewCurveEntity(
   val data: ByteArray,
 )
 
+/** Copia de la curva objetivo escalada, codificada con [TargetCurveCodec]. 1:1 opcional con [BrewEntity]. */
+@Entity(
+  tableName = "brew_targets",
+  foreignKeys = [
+    ForeignKey(
+      entity = BrewEntity::class,
+      parentColumns = ["id"],
+      childColumns = ["brewId"],
+      onDelete = ForeignKey.CASCADE,
+    ),
+  ],
+)
+data class BrewTargetEntity(
+  @PrimaryKey val brewId: Long,
+  val data: ByteArray,
+)
+
 /** Proyección de la lista: todo `brews` salvo los campos manuales largos. Nunca incluye la curva. */
 data class BrewListRow(
   val id: Long,
@@ -83,6 +112,7 @@ data class BrewListRow(
   val unit: WeightUnit,
   val simulated: Boolean,
   val preview: ByteArray,
+  val fitScore: Int?,
 )
 
 /** Fila de la lista. */
@@ -100,6 +130,8 @@ data class BrewListItem(
   val simulated: Boolean,
   /** Minicurva decodificada (48 valores de 0 a 1). Es una lista, no un `ByteArray`, para que la igualdad sea por contenido. */
   val preview: List<Float>,
+  /** Puntuación de ajuste al objetivo; `null` sin referencia. */
+  val fitScore: Int?,
 )
 
 /** Detalle completo: la fila, la curva decodificada y el resumen reconstruido. */
@@ -110,7 +142,11 @@ data class BrewRecord(
   val summary: BrewSummary,
   /** `true` si la curva no se pudo leer: `samples` y `summary.pours` salen vacíos. */
   val curveError: Boolean,
+  /** La curva objetivo guardada; `null` sin referencia o si no se pudo leer (ver [targetError]). */
+  val target: TargetCurve? = null,
+  /** `true` si hay una copia de la curva objetivo pero no se pudo leer. */
+  val targetError: Boolean = false,
 )
 
 /** Lo que `delete` deja en `pendingUndo` para poder restaurarlo con el mismo id. */
-data class DeletedBrew(val entity: BrewEntity, val curve: BrewCurveEntity)
+data class DeletedBrew(val entity: BrewEntity, val curve: BrewCurveEntity, val target: BrewTargetEntity? = null)

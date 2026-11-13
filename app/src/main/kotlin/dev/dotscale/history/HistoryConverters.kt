@@ -15,6 +15,11 @@ class HistoryConverters {
 
   @TypeConverter fun stringToBrewMethod(value: String): BrewMethod = BrewMethod.entries.firstOrNull { it.name == value } ?: BrewMethod.OTHER
 
+  @TypeConverter fun referenceTypeToString(value: ReferenceType?): String? = value?.name
+
+  /** Un nombre desconocido se lee como `null`: una preparación sin referencia. */
+  @TypeConverter fun stringToReferenceType(value: String?): ReferenceType? = ReferenceType.entries.firstOrNull { it.name == value }
+
   @TypeConverter fun stabilityLevelToString(value: StabilityLevel): String = value.name
 
   @TypeConverter fun stringToStabilityLevel(value: String): StabilityLevel =

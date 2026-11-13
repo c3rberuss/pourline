@@ -166,4 +166,23 @@
     <string name="brew_edit_discard_text">Changes you haven\'t saved will be lost.</string>
     <string name="brew_edit_discard">Discard</string>
     <string name="brew_edit_keep">Keep editing</string>
+
+    <!-- Recipes -->
+    <string name="recipe_builtin_v60_classic">Classic V60</string>
+    <string name="recipe_builtin_four_six">4:6 method</string>
+    <string-array name="recipe_builtin_v60_classic_stages">
+        <item>Bloom</item>
+        <item>2nd pour</item>
+        <item>3rd pour</item>
+    </string-array>
+    <string-array name="recipe_builtin_four_six_stages">
+        <item>1st pour</item>
+        <item>2nd pour</item>
+        <item>3rd pour</item>
+        <item>4th pour</item>
+        <item>5th pour</item>
+    </string-array>
+    <string name="recipe_copy_name">%1$s (copy)</string>
+    <string name="recipe_from_brew_name">%1$s (recipe)</string>
+    <string name="recipe_builtin_tag">Built-in</string>
 </resources>

@@ -1,11 +1,15 @@
 package dev.dotscale.history
 
+import dev.dotscale.brew.BrewFit
 import dev.dotscale.brew.BrewSample
 import dev.dotscale.brew.FinishReason
 import dev.dotscale.brew.FinishedBrew
 import dev.dotscale.brew.Pour
+import dev.dotscale.brew.TargetCurve
 import dev.dotscale.brew.summarize
 import dev.dotscale.protocol.ScaleModel
+import dev.dotscale.recipe.BuiltInRecipes
+import dev.dotscale.recipe.FakeRecipeTexts
 import dev.dotscale.protocol.WeightUnit
 import java.util.Random
 
@@ -55,5 +59,19 @@ object TestBrews {
     unit: WeightUnit = WeightUnit.GRAMS,
     simulated: Boolean = false,
     model: ScaleModel? = ScaleModel.DOT,
-  ) = BrewContext(startedAtEpochMs, unit, model, simulated)
+    target: UsedTarget? = null,
+    details: BrewDetails? = null,
+  ) = BrewContext(startedAtEpochMs, unit, model, simulated, target, details)
+
+  /** Una referencia determinista: la "V60 clásica" de fábrica, con el ajuste que se indique. */
+  fun usedTarget(
+    type: ReferenceType = ReferenceType.RECIPE,
+    id: Long = 1,
+    name: String = "V60 clásica",
+    score: Int? = 86,
+    factor: Double = 1.0,
+  ): UsedTarget {
+    val curve = TargetCurve.fromRecipe(BuiltInRecipes.recipe(BuiltInRecipes.V60_CLASSIC, FakeRecipeTexts())).scaled(factor)
+    return UsedTarget(type, id, name, curve, BrewFit(score, curve.finalWaterG, curve.endMs))
+  }
 }

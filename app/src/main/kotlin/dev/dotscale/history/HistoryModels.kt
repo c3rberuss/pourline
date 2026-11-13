@@ -1,6 +1,8 @@
 package dev.dotscale.history
 
+import dev.dotscale.brew.BrewFit
 import dev.dotscale.brew.FinishedBrew
+import dev.dotscale.brew.TargetCurve
 import dev.dotscale.protocol.ScaleModel
 import dev.dotscale.protocol.WeightUnit
 
@@ -11,12 +13,31 @@ data class BrewFilter(val coffee: String? = null, val method: BrewMethod? = null
 /** Punto de la gráfica de progreso. */
 data class ProgressPoint(val brewId: Long, val startedAtEpochMs: Long, val score: Int)
 
+/** Tipo de la referencia (objetivo) con la que se hizo una preparación. */
+enum class ReferenceType { RECIPE, BREW }
+
+/** La referencia con la que se hizo una preparación, tal como se guarda. */
+data class UsedTarget(
+  val type: ReferenceType,
+  val id: Long,
+  /** Nombre mostrado al empezar; no se traduce después. */
+  val name: String,
+  /** La curva escalada y congelada al empezar. */
+  val curve: TargetCurve,
+  /** Calculado una sola vez en el ViewModel y guardado sin recalcular. */
+  val fit: BrewFit,
+)
+
 /** Lo que aporta el ViewModel y la sesión no conoce. */
 data class BrewContext(
   val startedAtEpochMs: Long,
   val unit: WeightUnit,
   val scaleModel: ScaleModel?,
   val simulated: Boolean,
+  /** `null` sin referencia. */
+  val target: UsedTarget? = null,
+  /** Datos manuales prellenados desde la referencia (sin nombre ni notas); `null` sin referencia. */
+  val details: BrewDetails? = null,
 )
 
 /** Datos manuales de una preparación. */

@@ -96,6 +96,10 @@ dependencies {
   // Room (historial de preparaciones)
   implementation(libs.androidx.room.runtime)
   ksp(libs.androidx.room.compiler)
+  androidTestImplementation(libs.androidx.room.testing)
+  // `room-migration` (de room-testing) necesita kotlinx-serialization 1.8+, pero el classpath de debug
+  // resuelve 1.7.3 por lifecycle y AGP alinea androidTest con él. Solo afecta a debug, no a release.
+  debugImplementation(libs.kotlinx.serialization.core)
 
   // Navigation
   implementation(libs.androidx.navigation3.ui)

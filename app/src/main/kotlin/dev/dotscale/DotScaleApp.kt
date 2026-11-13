@@ -3,6 +3,8 @@ package dev.dotscale
 import android.app.Application
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
+import dev.dotscale.recipe.RecipeRepository
+import dev.dotscale.recipe.ResourcesRecipeTexts
 import dev.dotscale.settings.BrewSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,4 +20,6 @@ class DotScaleApp : Application() {
   val historyDatabase by lazy { HistoryDatabase.create(this) }
 
   val brewRepository by lazy { BrewRepository(historyDatabase) }
+
+  val recipeRepository by lazy { RecipeRepository(historyDatabase, ResourcesRecipeTexts(this)) }
 }
