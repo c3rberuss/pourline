@@ -12,9 +12,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -26,6 +28,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.brew.BrewConfig
 import dev.dotscale.coffee.CoffeeEntity
+import dev.dotscale.share.BrewShareData
+import dev.dotscale.share.FooterCoffee
+import dev.dotscale.share.ShareContent
+import dev.dotscale.share.ShareSender
+import dev.dotscale.share.ShareTarget
+import dev.dotscale.share.footerLines
+import dev.dotscale.share.rememberShareLauncher
+import dev.dotscale.share.rememberShareSender
 import dev.dotscale.coffee.brewDaysSinceRoast
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.history.BrewRecord
@@ -37,6 +47,7 @@ import dev.dotscale.ui.components.AntCard
 import dev.dotscale.ui.components.AntDivider
 import dev.dotscale.ui.components.AntIconButton
 import dev.dotscale.ui.components.AntIcons
+import dev.dotscale.ui.components.AntMessageHost
 import dev.dotscale.ui.components.AntRate
 import dev.dotscale.ui.components.AntSpin
 import dev.dotscale.ui.components.AntStatus
@@ -62,12 +73,16 @@ fun BrewDetailScreen(
   onCompare: (Long) -> Unit,
   onSaveAsRecipe: (Long) -> Unit,
   onOpenCoffee: (Long) -> Unit = {},
+  shareSender: ShareSender? = null,
 ) {
   val state by viewModel.state.collectAsStateWithLifecycle()
   LaunchedEffect(state) { if (state is BrewDetailState.Gone) onBack() }
+  val snackbar = remember { SnackbarHostState() }
+  val launcher = rememberShareLauncher(shareSender ?: rememberShareSender(), snackbar)
 
   val loaded = state as? BrewDetailState.Loaded
   val record = loaded?.record
+  val shareData = loaded?.let { detailShareData(it.record, it.coffee) }
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
@@ -76,8 +91,19 @@ fun BrewDetailScreen(
         navigationIcon = {
           AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
         },
+        actions = {
+          if (record != null && shareData != null) {
+            AntIconButton(
+              AntIcons.Share,
+              contentDescription = stringResource(R.string.share_image_action),
+              onClick = { launcher.share(ShareTarget.Brew(record.entity.id), ShareContent.Brew(shareData)) },
+              modifier = Modifier.testTag("brew_detail_share"),
+            )
+          }
+        },
       )
     },
+    snackbarHost = { AntMessageHost(snackbar) },
   ) { padding ->
     if (loaded == null) {
       AntSpin(Modifier.padding(padding).padding(AntTheme.spacing.xl))
@@ -99,6 +125,31 @@ fun BrewDetailScreen(
       }
     }
   }
+  launcher.Host()
+}
+
+/** La imagen del detalle: título, método, ajuste, valoración, nota de cata y el café vinculado con los días de la preparación. */
+@Composable
+private fun detailShareData(record: BrewRecord, coffee: CoffeeEntity?): BrewShareData {
+  val entity = record.entity
+  val started = formatBrewDateTime(entity.startedAtEpochMs)
+  val method = entity.method?.let { m -> if (m == BrewMethod.OTHER) entity.methodOther ?: m.label() else m.label() }
+  val linked = if (entity.coffeeId != null) coffee else null
+  return BrewShareData(
+    samples = record.samples,
+    summary = record.summary,
+    unit = entity.unit,
+    target = record.target,
+    title = entity.name ?: started,
+    subtitle = listOfNotNull(started.takeIf { entity.name != null }, method).joinToString(" · ").ifEmpty { null },
+    fitScore = entity.fitScore,
+    rating = entity.rating,
+    notes = entity.notes,
+    footer = footerLines(
+      linked?.let { FooterCoffee(it.id, it.name, it.roaster, brewDaysSinceRoast(it.roastDate, entity.startedAtEpochMs, ZoneId.systemDefault())) },
+    ),
+    curveError = record.curveError,
+  )
 }
 
 @Composable
@@ -119,7 +170,7 @@ private fun DetailContent(
     AntAlert(message = stringResource(R.string.brew_detail_curve_error), type = AntStatus.Error)
   } else {
     AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.brew_chart_title)) {
-      Chart(record.samples, entity.unit, summaryStability(record.summary), record.target)
+      Chart(record.samples, entity.unit, summaryStability(record.summary), target = record.target)
     }
   }
   BrewSummaryCard(record.summary, entity.unit)

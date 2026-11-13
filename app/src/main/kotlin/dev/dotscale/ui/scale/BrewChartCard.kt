@@ -99,7 +99,7 @@ fun BrewChartCard(
       is BrewPhase.Active -> {
         val indicator = activeIndicator(brew, phase)
         if (target != null && guide != null) TargetGuideBlock(target.curve, guide, unit)
-        Chart(brew.samples, unit, indicator.text, target?.curve)
+        Chart(brew.samples, unit, indicator.text, target = target?.curve)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
           AntTag(indicator.text, Modifier.testTag("brew_level"), color = indicator.color)
           Spacer(Modifier.weight(1f))
@@ -113,7 +113,7 @@ fun BrewChartCard(
       }
       is BrewPhase.Finished -> {
         val summary = phase.summary
-        Chart(brew.samples, unit, summaryStability(summary), lastFit?.curve)
+        Chart(brew.samples, unit, summaryStability(summary), target = lastFit?.curve)
         if (phase.rearmed) AntText(stringResource(R.string.brew_chart_ready), type = AntTextType.Secondary)
         if (phase.pourIgnored) AntAlert(message = stringResource(R.string.brew_chart_ignored), type = AntStatus.Info)
       }
@@ -198,7 +198,14 @@ private fun ArmedTargetText(target: ActiveTarget, unit: WeightUnit) {
 
 /** La gráfica con su descripción accesible; con [target] añade "Objetivo: X g en mm:ss". */
 @Composable
-internal fun Chart(samples: List<BrewSample>, unit: WeightUnit, stability: String, target: TargetCurve? = null) {
+internal fun Chart(
+  samples: List<BrewSample>,
+  unit: WeightUnit,
+  stability: String,
+  modifier: Modifier = Modifier,
+  target: TargetCurve? = null,
+  fillHeight: Boolean = false,
+) {
   val last = samples.lastOrNull { it.valid }
   val base = stringResource(
     R.string.brew_chart_description,
@@ -219,7 +226,9 @@ internal fun Chart(samples: List<BrewSample>, unit: WeightUnit, stability: Strin
     waterUnitLabel = unit.symbol,
     flowUnitLabel = stringResource(R.string.scale_flow_value, unit.symbol),
     description = description,
+    modifier = modifier,
     target = target,
+    fillHeight = fillHeight,
   )
 }
 

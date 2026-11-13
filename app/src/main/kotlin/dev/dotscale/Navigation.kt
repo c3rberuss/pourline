@@ -186,9 +186,9 @@ fun MainNavigation() {
         )
       }
       entry<BrewCompare> { key ->
-        val repository = (appContext as DotScaleApp).brewRepository
+        val app = appContext as DotScaleApp
         BrewCompareScreen(
-          viewModel { BrewCompareViewModel(repository, key.aId, key.bId) },
+          viewModel { BrewCompareViewModel(app.brewRepository, app.coffeeRepository, key.aId, key.bId) },
           onBack = { backStack.removeLastOrNull() },
         )
       }

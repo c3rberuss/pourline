@@ -3,6 +3,7 @@ package dev.dotscale.ui.scale
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -16,6 +17,7 @@ import dev.dotscale.history.BrewFilter
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
+import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.recipe.ResourcesRecipeTexts
 import dev.dotscale.sim.SimulatedScaleConnection
 import dev.dotscale.ui.coffees.CoffeePickerViewModel
@@ -108,6 +110,9 @@ class CoffeeSelectorTest {
     rule.onNodeWithText(context.getString(R.string.brew_setup_coffee_value, "Etiopía Guji", 9)).performScrollTo().assertIsDisplayed()
 
     rule.onNodeWithText(context.getString(R.string.scale_sim_add, 15)).performScrollTo().performClick()
+    // La dosis se ignora con peso 0: hay que esperar a que la báscula simulada publique los 15 g (con el host cargado tarda).
+    val weight = formatNumber(15.0, WeightUnit.GRAMS)
+    rule.waitUntil(10_000) { rule.onAllNodes(hasText(weight)).fetchSemanticsNodes().isNotEmpty() }
     rule.onNodeWithText(context.getString(R.string.scale_capture_dose)).performScrollTo().performClick()
     rule.onNodeWithText(context.getString(R.string.sim_pour_stable)).performScrollTo().performClick()
     rule.waitUntil(10_000) { exists("brew_chart") }

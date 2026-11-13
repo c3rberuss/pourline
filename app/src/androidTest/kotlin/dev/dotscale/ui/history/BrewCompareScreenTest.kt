@@ -65,7 +65,7 @@ class BrewCompareScreenTest {
   }
 
   private fun show(aId: Long, bId: Long) {
-    val viewModel = BrewCompareViewModel(repository, aId, bId)
+    val viewModel = BrewCompareViewModel(repository, CoffeeRepository(db, PhotoFiles { }), aId, bId)
     rule.setContent {
       DotScaleTheme(darkTheme = false) { BrewCompareScreen(viewModel, onBack = { backCount++ }) }
     }

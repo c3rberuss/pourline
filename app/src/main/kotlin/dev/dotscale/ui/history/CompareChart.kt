@@ -1,6 +1,7 @@
 package dev.dotscale.ui.history
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
@@ -71,6 +72,7 @@ fun CompareChart(
   unitLabel: String,
   description: String,
   modifier: Modifier = Modifier,
+  fillHeight: Boolean = false,
 ) {
   val colors = brewChartColors(AntTheme.colors)
   val labelStyle = AntTheme.typography.textSM.copy(color = colors.axisLabel)
@@ -87,7 +89,7 @@ fun CompareChart(
   Canvas(
     modifier
       .fillMaxWidth()
-      .height(ChartHeight)
+      .then(if (fillHeight) Modifier.fillMaxHeight() else Modifier.height(ChartHeight))
       .onSizeChanged { widthPx = it.width }
       .semantics { contentDescription = description },
   ) {

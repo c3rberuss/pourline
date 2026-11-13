@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,13 +28,24 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.brew.fromGrams
+import dev.dotscale.coffee.CoffeeEntity
+import dev.dotscale.coffee.brewDaysSinceRoast
 import dev.dotscale.history.BrewRecord
+import dev.dotscale.share.CompareShareData
+import dev.dotscale.share.FooterCoffee
+import dev.dotscale.share.ShareContent
+import dev.dotscale.share.ShareSender
+import dev.dotscale.share.ShareTarget
+import dev.dotscale.share.footerLines
+import dev.dotscale.share.rememberShareLauncher
+import dev.dotscale.share.rememberShareSender
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntCard
 import dev.dotscale.ui.components.AntDivider
 import dev.dotscale.ui.components.AntIconButton
 import dev.dotscale.ui.components.AntIcons
+import dev.dotscale.ui.components.AntMessageHost
 import dev.dotscale.ui.components.AntSpin
 import dev.dotscale.ui.components.AntStatus
 import dev.dotscale.ui.components.AntText
@@ -42,6 +54,7 @@ import dev.dotscale.ui.components.AntTopBar
 import dev.dotscale.ui.scale.formatDuration
 import dev.dotscale.ui.scale.formatNumber
 import dev.dotscale.ui.theme.AntTheme
+import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -49,9 +62,13 @@ import kotlin.math.roundToInt
 private const val MINUS = '−'
 
 @Composable
-fun BrewCompareScreen(viewModel: BrewCompareViewModel, onBack: () -> Unit) {
+fun BrewCompareScreen(viewModel: BrewCompareViewModel, onBack: () -> Unit, shareSender: ShareSender? = null) {
   val state by viewModel.state.collectAsStateWithLifecycle()
   LaunchedEffect(state) { if (state is BrewCompareState.Gone) onBack() }
+  val snackbar = remember { SnackbarHostState() }
+  val launcher = rememberShareLauncher(shareSender ?: rememberShareSender(), snackbar)
+  val loaded = state as? BrewCompareState.Loaded
+  val shareData = loaded?.let { compareShareData(it) }
 
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
@@ -61,8 +78,19 @@ fun BrewCompareScreen(viewModel: BrewCompareViewModel, onBack: () -> Unit) {
         navigationIcon = {
           AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
         },
+        actions = {
+          if (loaded != null && shareData != null) {
+            AntIconButton(
+              AntIcons.Share,
+              contentDescription = stringResource(R.string.share_image_action),
+              onClick = { launcher.share(ShareTarget.Compare(loaded.a.entity.id, loaded.b.entity.id), ShareContent.Compare(shareData)) },
+              modifier = Modifier.testTag("compare_share"),
+            )
+          }
+        },
       )
     },
+    snackbarHost = { AntMessageHost(snackbar) },
   ) { padding ->
     when (val current = state) {
       is BrewCompareState.Loaded -> Column(
@@ -74,6 +102,30 @@ fun BrewCompareScreen(viewModel: BrewCompareViewModel, onBack: () -> Unit) {
       BrewCompareState.Loading, BrewCompareState.Gone -> AntSpin(Modifier.padding(padding).padding(AntTheme.spacing.xl))
     }
   }
+  launcher.Host()
+}
+
+/** La imagen de la comparación: la leyenda con el nombre y la fecha de cada una, y el pie con los cafés vinculados (D4). */
+@Composable
+private fun compareShareData(state: BrewCompareState.Loaded): CompareShareData {
+  fun title(record: BrewRecord): String {
+    val entity = record.entity
+    val started = formatBrewDateTime(entity.startedAtEpochMs)
+    return if (entity.name != null) "${entity.name} · $started" else started
+  }
+
+  fun footerCoffee(record: BrewRecord, coffee: CoffeeEntity?): FooterCoffee? {
+    if (record.entity.coffeeId == null || coffee == null) return null
+    val days = brewDaysSinceRoast(coffee.roastDate, record.entity.startedAtEpochMs, ZoneId.systemDefault())
+    return FooterCoffee(coffee.id, coffee.name, coffee.roaster, days)
+  }
+  return CompareShareData(
+    a = state.a,
+    b = state.b,
+    titleA = title(state.a),
+    titleB = title(state.b),
+    footer = footerLines(footerCoffee(state.a, state.coffeeA), footerCoffee(state.b, state.coffeeB)),
+  )
 }
 
 @Composable
@@ -182,7 +234,7 @@ private fun CompareMetric.labelRes(): Int = when (this) {
 }
 
 @Composable
-private fun formatValue(metric: CompareMetric, value: Double?, unit: WeightUnit): String {
+internal fun formatValue(metric: CompareMetric, value: Double?, unit: WeightUnit): String {
   if (value == null) return stringResource(R.string.compare_none)
   return when (metric) {
     CompareMetric.TOTAL_TIME -> formatDuration(value.toLong())
@@ -195,7 +247,7 @@ private fun formatValue(metric: CompareMetric, value: Double?, unit: WeightUnit)
 
 /** B−A con "+" o "−" (U+2212); una diferencia nula se escribe "—" y una que se redondea a cero, sin signo. */
 @Composable
-private fun formatDiff(metric: CompareMetric, diff: Double?, unit: WeightUnit): String {
+internal fun formatDiff(metric: CompareMetric, diff: Double?, unit: WeightUnit): String {
   if (diff == null) return stringResource(R.string.compare_none)
   val magnitude = abs(diff)
   val body = when (metric) {

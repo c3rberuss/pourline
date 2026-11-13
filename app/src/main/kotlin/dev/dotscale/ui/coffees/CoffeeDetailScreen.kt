@@ -28,6 +28,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.coffee.CoffeeDetail
+import dev.dotscale.share.ShareContent
+import dev.dotscale.share.ShareSender
+import dev.dotscale.share.ShareTarget
+import dev.dotscale.share.rememberShareLauncher
+import dev.dotscale.share.rememberShareSender
+import dev.dotscale.share.toShareData
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntButton
 import dev.dotscale.ui.components.AntButtonType
@@ -59,9 +65,11 @@ fun CoffeeDetailScreen(
   onEdit: (Long) -> Unit,
   onNewBag: (Long) -> Unit,
   onOpenBrew: (Long) -> Unit,
+  shareSender: ShareSender? = null,
 ) {
   val state by viewModel.state.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
+  val launcher = rememberShareLauncher(shareSender ?: rememberShareSender(), snackbar)
   val scope = rememberCoroutineScope()
   var factsExpanded by rememberSaveable { mutableStateOf(false) }
   var confirmDelete by rememberSaveable { mutableStateOf(false) }
@@ -77,6 +85,18 @@ fun CoffeeDetailScreen(
         subtitle = detail?.coffee?.roaster,
         navigationIcon = {
           AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
+        },
+        actions = {
+          if (detail != null) {
+            AntIconButton(
+              AntIcons.Share,
+              contentDescription = stringResource(R.string.share_image_action),
+              onClick = {
+                launcher.share(ShareTarget.Coffee(detail.coffee.id), ShareContent.Coffee(detail.coffee.toShareData(detail.daysSinceRoast)))
+              },
+              modifier = Modifier.testTag("coffee_detail_share"),
+            )
+          }
         },
       )
     },
@@ -125,6 +145,7 @@ fun CoffeeDetailScreen(
       )
     }
   }
+  launcher.Host()
 }
 
 @Composable

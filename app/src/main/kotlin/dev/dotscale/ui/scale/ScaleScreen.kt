@@ -34,6 +34,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
+import dev.dotscale.brew.BrewSummary
+import dev.dotscale.coffee.brewDaysSinceRoast
+import dev.dotscale.share.BrewShareData
+import dev.dotscale.share.FooterCoffee
+import dev.dotscale.share.ShareContent
+import dev.dotscale.share.ShareSender
+import dev.dotscale.share.ShareTarget
+import dev.dotscale.share.footerLines
+import dev.dotscale.share.rememberShareLauncher
+import dev.dotscale.share.rememberShareSender
+import dev.dotscale.ui.history.formatBrewDateTime
+import java.time.ZoneId
 import dev.dotscale.brew.BrewPhase
 import dev.dotscale.protocol.TimerStatus
 import dev.dotscale.protocol.WeightUnit
@@ -88,9 +100,11 @@ fun ScaleScreen(
   onManageRecipes: () -> Unit,
   coffeePickerViewModel: CoffeePickerViewModel? = null,
   onNewCoffee: () -> Unit = {},
+  shareSender: ShareSender? = null,
 ) {
   val ui by viewModel.ui.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
+  val launcher = rememberShareLauncher(shareSender ?: rememberShareSender(), snackbar)
   var pickerOpen by rememberSaveable { mutableStateOf(false) }
   var coffeePickerOpen by rememberSaveable { mutableStateOf(false) }
 
@@ -164,7 +178,15 @@ fun ScaleScreen(
         val fit = ui.lastFit?.let {
           fitView(it.fit.score, it.name, it.fit.targetWaterG, it.fit.targetEndMs, summary.totalWaterG, summary.totalTimeMs)
         }
-        BrewSummaryCard(summary, ui.unit, savedBrew = ui.savedBrew, fit = fit, onAddDetails = onAddDetails)
+        val shareData = summaryShareData(ui, summary)
+        BrewSummaryCard(
+          summary,
+          ui.unit,
+          savedBrew = ui.savedBrew,
+          fit = fit,
+          onAddDetails = onAddDetails,
+          onShare = { launcher.share(ShareTarget.Summary, ShareContent.Brew(shareData)) },
+        )
       }
       DoseCard(ui, enabled, onCapture = viewModel::captureDose, onClear = viewModel::clearDose)
       UnitCard(ui.unit, enabled, onToggle = viewModel::toggleUnit)
@@ -178,6 +200,8 @@ fun ScaleScreen(
       }
     }
   }
+
+  launcher.Host()
 
   if (coffeePickerOpen && coffeePickerViewModel != null) {
     val coffees by coffeePickerViewModel.pickable.collectAsStateWithLifecycle()
@@ -515,3 +539,25 @@ private fun KeepScreenOn() {
 }
 
 private fun formatTime(seconds: Int): String = String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60)
+
+/** La imagen del resumen: la hora de inicio (la de la sesión guardada, o ahora si aún no se guardó), el objetivo, el ajuste y el café. */
+@Composable
+private fun summaryShareData(ui: ScaleUiState, summary: BrewSummary): BrewShareData {
+  val startedAt = ui.lastBrew?.startedAtEpochMs
+  val fit = ui.lastFit
+  val coffee = ui.lastBrew?.coffee
+  return BrewShareData(
+    samples = ui.brew.samples,
+    summary = summary,
+    unit = ui.unit,
+    target = fit?.curve,
+    title = formatBrewDateTime(startedAt ?: System.currentTimeMillis()),
+    subtitle = fit?.let { stringResource(R.string.target_chip, it.name) },
+    fitScore = fit?.fit?.score,
+    rating = null,
+    notes = null,
+    footer = footerLines(
+      coffee?.let { FooterCoffee(it.id, it.name, it.roaster, startedAt?.let { start -> brewDaysSinceRoast(it.roastDate, start, ZoneId.systemDefault()) }) },
+    ),
+  )
+}
