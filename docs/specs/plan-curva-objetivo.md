@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-curva-objetivo.md`](spec-curva-objetivo.md) (SPEC-003) |
-| Estado | Propuesto |
+| Estado | Completado (F0–F7). Decisiones de §2 incorporadas al spec (§3.12). Rendimiento: comparación 224 ms (mediana), lista 212 ms, detalle 201 ms, `history-perf.db` 4,4 MiB |
 | Fecha | 2026-11-13 |
 | Rama | `feat/target-curve`, creada desde `feat/brew-history` (`ebbd97d`). `develop` aún no tiene SPEC-001 ni SPEC-002 |
 | Módulos | `:app` (`:protocol` no cambia) |

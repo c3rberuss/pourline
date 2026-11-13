@@ -75,8 +75,12 @@ class SimulatedScaleConnection : ScaleConnection {
     listOf(Cmd.BATTERY, Cmd.MODEL, Cmd.BREW_MODE, Cmd.TIMER, Cmd.DEVICE_NAME, Cmd.WEIGHT_UNIT, Cmd.FIRMWARE_VERSION)
       .forEach { send(Frame(Op.READ, it)) }
     scope.launch {
+      // Plazo fijo por tick: con `delay(TICK_MS)` suelto, el trabajo de cada tick retrasa el guion (~4 %) y los
+      // vertidos guionizados salen más largos que su curva objetivo.
+      var deadlineNs = System.nanoTime()
       while (isActive) {
-        delay(TICK_MS)
+        deadlineNs += TICK_MS * NANOS_PER_MS
+        delay(((deadlineNs - System.nanoTime()) / NANOS_PER_MS).coerceAtLeast(0))
         lock.withLock { tick() }
       }
     }
@@ -179,5 +183,6 @@ class SimulatedScaleConnection : ScaleConnection {
 
   private companion object {
     const val TICK_MS = 100L
+    const val NANOS_PER_MS = 1_000_000L
   }
 }

@@ -9,9 +9,14 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
+import dev.dotscale.brew.TargetConfig
+import dev.dotscale.brew.TargetCurve
+import dev.dotscale.brew.brewFit
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
+import dev.dotscale.history.ReferenceType
 import dev.dotscale.history.TestBrews
+import dev.dotscale.history.UsedTarget
 import dev.dotscale.ui.theme.DotScaleTheme
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -22,7 +27,8 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Objetivos de rendimiento de SPEC-002 §5 con 500 preparaciones de 4 min en un `history-perf.db` aparte.
+ * Objetivos de rendimiento de SPEC-002 §5 con 500 preparaciones de 4 min en un `history-perf.db` aparte, todas con
+ * curva objetivo (SPEC-003 §5).
  * Cada tiempo se mide con una apertura de calentamiento que no cuenta y la mediana de 5 aperturas.
  * Pensado para un emulador con API 36 o superior.
  */
@@ -41,10 +47,11 @@ class HistoryPerformanceTest {
     repository = BrewRepository(db)
     runBlocking {
       repeat(BREWS) { i ->
-        repository.save(
-          TestBrews.finished(totalMs = 240_000, seed = i.toLong()),
-          TestBrews.context(startedAtEpochMs = 1_700_000_000_000 + i * 3_600_000L),
-        )
+        val finished = TestBrews.finished(totalMs = 240_000, seed = i.toLong())
+        // Todas con curva objetivo, en el peor caso: la de otra preparación de 4 min (hasta 960 puntos), no la de una receta.
+        val curve = TargetCurve.fromBrew(finished.samples, finished.summary.pours, finished.summary.totalTimeMs)!!
+        val target = UsedTarget(ReferenceType.BREW, i + 1L, "Referencia $i", curve, brewFit(finished.samples, finished.summary.totalTimeMs, curve, TargetConfig()))
+        repository.save(finished, TestBrews.context(startedAtEpochMs = 1_700_000_000_000 + i * 3_600_000L, target = target))
       }
     }
   }

@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Borrador. Plan: [`plan-curva-objetivo.md`](plan-curva-objetivo.md) |
+| Estado | Implementado (F0–F7) en `feat/target-curve`; pendiente de validación con la DOT física. Plan: [`plan-curva-objetivo.md`](plan-curva-objetivo.md) |
 | Fecha | 2026-11-12 |
 | Deriva de | [SPEC-001 Gráfica de vertido](spec-grafica-vertido.md) (Anexo) y [SPEC-002 Historial](spec-historial.md) (alcance Out) |
 | Módulos afectados | `:app` (nuevo paquete `dev.dotscale.recipe`, nuevo `ui/recipes`, `brew`, `history`, `settings`, `sim`, `ui/scale`, `ui/history`, `ui/settings`, `ui/components`, navegación) |
@@ -785,6 +785,65 @@ BrewSession ──[Finished(brew)]──▶ ScaleViewModel
 - **Permiso nuevo:** `VIBRATE`, que es normal y no pide confirmación. El sonido no necesita permisos.
 - No hay datos sensibles nuevos.
 
+### 3.12 Decisiones de implementación
+
+Aprobadas junto con el plan (`plan-curva-objetivo.md`) y aplicadas al implementarlo. Donde difieren de lo
+descrito en §3.1–§3.11, mandan estas.
+
+| ID | Tema | Decisión | Motivo |
+|---|---|---|---|
+| D1 | Orden de fases | Recetas (F4) va antes que Scale (F5), al revés que en el §8 del spec. | El selector de objetivo reutiliza `RecipeRow` y navega a `Recipes`, y `TargetSettings` hace falta ya para los ajustes de avisos. |
+| D2 | Dependencias del ViewModel | `ScaleViewModel` recibe tres interfaces: `ReferenceStore` (`reference: StateFlow<ReferenceKey?>` y `setReference`, implementada por `TargetSettings`), `TargetReferences` (`recipe(id): Flow<Recipe?>` y `brew(id): Flow<BrewRecord?>`, implementada por `RepositoryTargetReferences(recipeRepository, brewRepository)`) y `StageNotifier`. | Igual que `BrewSaver` (D2 de SPEC-002): `SharedPreferences` y Room necesitan Android, y no hay Robolectric ni mockk. |
+| D3 | `StageNotifier` (cierra la opción abierta del §3.1) | Interfaz `StageNotifier { fun stageStarted(stage: TargetStage); fun release() }` en `dev.dotscale.brew`. Implementación `AndroidStageNotifier(context, settings)` en `ui/scale`. Vibración con `VibratorManager.defaultVibrator` en API 31+ (y `Vibrator` antes), solo si `hasVibrator()`. `ToneGenerator(STREAM_NOTIFICATION, 80)` creado la primera vez que hace falta; si su constructor lanza, el sonido se omite. Lee los dos ajustes en cada aviso. `release()` se llama en `ScaleViewModel.onCleared()`. | Solo lo usa Scale, y `ToneGenerator` guarda recursos nativos que hay que liberar. |
+| D4 | `fromBrew` | La firma es `TargetCurve.fromBrew(samples, pours, totalTimeMs)`. | El caso sin vertidos necesita `totalTimeMs` para su única etapa (§3.3). |
+| D5 | Guía | `GuideState` gana `allStagesDone: Boolean` (`tMs ≥ target.endMs`), que pinta "Última etapa completada". Antes de una primera etapa con `startMs > 0`: `stage = null` y `nextStage` = la primera. Cuenta atrás: `ceil((next.startMs − tMs) / 1000)` si queda entre 1 ms y 5000 ms. Niveles con tolerancia `1e-9`, inclusivos en el 5 % y el 10 %. `tMs = clock() − t0MonoMs`; `waterG` es el de la última muestra si es válida y `null` si no. | El spec no dice cómo pintar el final ni el hueco previo a la primera etapa, y los límites se prueban en sus bordes. |
+| D6 | Reloj y avisos | `BrewState.t0MonoMs` no es nulo en `Active` ni en `Finished` (por defecto `null`, para no romper previews y tests). `StageAlertTracker.update(t0MonoMs, target, tMs): TargetStage?` se reinicia cuando cambia `t0MonoMs`. El tracker y el notifier se llaman después de `_ui.update`, nunca dentro. | El bloque de `update` puede reintentarse, y un efecto ahí dentro repetiría avisos. Usar t0 como clave reinicia el tracker con cada sesión sin más estado. |
+| D7 | Ciclo de vida del objetivo en el ViewModel | (1) La resolución (`reference` + `flatMapLatest` + `distinctUntilChanged`) produce una base sin escalar: tipo, id, nombre, curva, dosis nominal y datos para prellenar. (2) `ui.target` se memoriza por `(base, dosis en g)`: la misma instancia mientras no cambien. (3) Al pasar a `Active` se congela en `sessionTarget`. (4) `save()` calcula `brewFit` con `sessionTarget` y deja `ui.lastFit` (nombre, curva y `BrewFit`). (5) `publish()` vacía `lastFit` al empezar otra sesión, como `savedBrew`. Un contador `internal` de construcciones de la curva sirve al test de rendimiento. | `publish()` corre antes que `handle()`, así que el ajuste no puede leer `ui.target` ya descongelado. La instancia estable evita que Compose recalcule la curva reducida. |
+| D8 | Gráfica en `Finished` | Dibuja la curva de la sesión (`lastFit.curve`). El chip muestra la referencia elegida para la siguiente. | El spec no dice qué dibujar en `Finished`. Cambiar de objetivo tras terminar no debe mover la línea que se compara con la curva real. |
+| D9 | Referencia ilegible | Dos errores: `ScaleError.TargetRemoved` ("El objetivo elegido ya no existe") y `ScaleError.TargetUnreadable` ("No se pudo leer la curva de esa preparación"), para `curveError` o sin muestras válidas. En el selector se deshabilitan las filas con `totalWaterG ≤ 0`. Un BLOB corrupto solo se detecta al resolver la referencia. | La lista no decodifica curvas (D1 de SPEC-002), y un BLOB corrupto es muy raro. El texto del spec sería falso para una curva ilegible. |
+| D10 | Selector de objetivo | `TargetPicker` es un composable sin estado (listas, referencia activa y callbacks). `TargetPickerViewModel(recipeRepository, brewRepository)` vive en la entrada de Scale, y sus flujos solo se recogen con el selector abierto. Elegir pasa por `ScaleViewModel.selectTarget(key)`, que lo ignora en `Active`. `HistoryRow` gana `enabled`. | El test no necesita base de datos, y `ScaleViewModel` no carga dos listas que casi nunca se muestran. |
+| D11 | Textos de recetas | La interfaz del spec `BuiltInRecipeTexts` pasa a ser `RecipeTexts`: `builtInName(key)`, `builtInStageNames(key)`, `copyName(name)` ("<nombre> (copia)") y `fromBrewName(base)` ("<base> (receta)"). Implementación `ResourcesRecipeTexts(context)`, que lee los recursos de la aplicación en cada llamada. Las etapas van en `<string-array>`. | Duplicar y "Guardar como receta" también necesitan textos traducidos fuera de Compose. |
+| D12 | Regla de `localizedNames` | Sigue en `true` solo si el nombre y la lista de nombres de etapa son iguales a los mostrados al cargar (mismo número de etapas). Añadir o quitar una etapa también la pone en `false`. Al guardar, las columnas reciben siempre los textos mostrados. | Los nombres traducidos van por posición: con otra cantidad de etapas dejarían de cuadrar. |
+| D13 | Orden de la lista de recetas | Se ordena en Kotlin, tras traducir, con `Collator.getInstance(Locale.getDefault())` (intensidad `SECONDARY`) y después por id. | SQL solo ve el texto de respaldo, no el nombre mostrado. |
+| D14 | Base de datos | `RecipeDao` con `@Relation` (`RecipeWithStages`). `save` actualiza la fila y reemplaza las etapas en una `@Transaction`, sin borrar la receta. `restore` reinserta con el mismo id. `restoreBuiltIns` actualiza por `builtInKey` o inserta. `BuiltInRecipeSeeder` (SQL sobre `SupportSQLiteDatabase`) lo usan `Callback.onCreate` y la migración. La migración es una factoría `migration1To2(texts, clock)`. Los `CREATE TABLE` se copian del `2.json` exportado. `inMemory` también siembra. | Borrar la fila haría que `observe(id)` emitiese `null` y Scale quitase la referencia. La migración necesita `RecipeTexts`, así que no puede ser una constante. |
+| D15 | Formulario del editor | `RecipeEditForm` puro, con los textos tal como se escriben. Inicio: `m:ss` o segundos enteros. "Hasta" y dosis: `,` o `.` y un decimal como máximo. Vertido: segundos enteros. Una receta nueva empieza con una etapa (0:00, 50 g, 10 s) y la dosis vacía. Con una sola etapa, el botón de quitar está deshabilitado. "Duplicar" está deshabilitado con cambios sin guardar; al duplicar, `RecipeEdit(id)` se sustituye por `RecipeEdit(copia)` en la pila. | El spec no fija el formato de los campos ni qué duplica el editor con cambios pendientes. |
+| D16 | "Guardar como receta" | `RecipeFromBrew` parte de las etapas de `TargetCurve.fromBrew` (agua acumulada). Orden: fusionar (más de 10), redondear (inicio y duración a segundos, mínimo 1 s; agua a 1 g) y recortar a 120 s. La dosis se redondea a un decimal antes de comprobar 5-60 g. Devuelve `RecipeDraft(recipe, adjustments)`. | Misma definición de agua acumulada que la curva objetivo, y un orden que no deja duraciones de más de 120 s tras fusionar. |
+| D17 | Perfil desviado del simulador | La primera etapa no puede ir tarde porque marca t0. Desde la segunda, cada etapa empieza 8 s después de su `startMs`, y todas vierten el 80 % de su agua. Las dos clases implementan `PourScript { fun next(): Double? }`, y la conexión gana la sobrecarga `simulatePour(target, mode)`. | Retrasar todas las etapas lo mismo no cambia nada respecto a t0, así que el perfil no se desviaría en tiempo. |
+| D18 | Tipografía de la guía | `scaleFigureStyle(size)`: el estilo del peso de Scale (`heading1`, `Light`) con tamaño variable. La guía usa 40 sp; el peso sigue en 64 sp. Desvío en enteros en g y con 2 decimales en oz, con "+" o "−" (U+2212). | A 64 sp no caben "Hasta 150 g" y "+6 g" en 360 dp. |
+| D19 | Colores | `BrewChartColors.target = textSecondary`, discontinua (6 dp / 4 dp). Comparación: A = `primary.base` y B = el tono más cercano al naranja de Ant (`#FA8C16`) con ≥ 3:1 sobre `bgContainer` en cada tema. Se amplía `BrewChartColorsTest`. | El spec pide gris discontinuo. Azul y naranja se distinguen con los daltonismos más comunes. |
+| D20 | Piezas de la gráfica | `PlotArea`, la rejilla con etiquetas y `segments()` pasan a `ui/scale/ChartDrawing.kt` (`internal`). La curva objetivo se reduce con `downsample` en `remember(target, unit, plotWidthPx, xTopMs)`. | `CompareChart` las necesita, y así la curva reducida no se recalcula con cada muestra. |
+| D21 | Ajuste en el detalle y en Scale | Un único `FitBlock(fit: FitView, unit)`. `FitView` es puro y se construye desde `BrewFit` + resumen (Scale) o desde las columnas (detalle). Los botones del detalle van en dos filas: "Editar" / "Borrar" y "Comparar con…" / "Guardar como receta". | Mismas cifras en los dos sitios (criterio del §5). Cuatro botones no caben en una fila de 360 dp. |
+| D22 | Selector de B | Se extraen `HistoryFilters` y `rememberHistoryFilter(initial, coffees, methods)` de `HistoryScreen`. `ComparePickViewModel(repository, aId)` observa A (si desaparece, vuelve atrás) y expone la lista filtrada sin A, los cafés, los métodos y `hasOthers` (nueva consulta `count()`). El filtro inicial se crea cuando A ya está cargada. | Sin A cargada no se sabe con qué café empezar, y el `rememberSaveable` fijaría "Todos". |
+| D23 | Ajustes | `SettingsScreen(brewSettings, targetSettings, onRestoreRecipes: suspend () -> Unit, onBack)`. Tras restaurar se muestra el `AntMessage` "Recetas predefinidas restauradas". | Se sigue pudiendo probar aislada, sin `CompositionLocal`. |
+| D24 | `BrewContext` | Gana `target: UsedTarget? = null` y `details: BrewDetails? = null`. El repositorio guarda `details?.normalized()`. El café de una preparación de referencia no se vuelve a pasar por `canonicalCoffee`. | Los valores por defecto evitan tocar los sitios que no usan objetivo. El café copiado ya es una grafía existente. |
+
+**Ajustes durante la implementación** (no cambian el comportamiento del §5):
+
+- `ActiveTarget` lleva además `scaledDoseG` (la dosis capturada, en g, con la que se escaló): "Escalada a 16,4 g"
+  la necesita y no se puede deducir del factor.
+- `ScaleViewModel` recibe un último parámetro `targetConfig: TargetConfig = TargetConfig()`; `ScaleScreen` recibe
+  también el `TargetPickerViewModel` y `onManageRecipes`.
+- `RecipeRepository.duplicate` devuelve `Long?` (`null` si la receta ya no existe), y `RecipeFromBrew` marca la
+  dosis que falta con `doseG = 0` en el borrador, que el editor muestra como campo vacío.
+- `<uses-permission android:name="android.permission.VIBRATE" />` se añadió en F2 y no en F5, como pedía el plan.
+- `kotlinx-serialization-core` 1.8.1 se fija solo en `debugImplementation`: `room-migration` (de `room-testing`)
+  necesita 1.8 o más, pero el classpath de debug resuelve 1.7.3 por lifecycle y AGP alinea `androidTest` con él.
+  No afecta a release. Es el aviso de lint `NewerVersionAvailable` de más respecto a la línea base de F0.
+- `drawGridAndLabels` gana `showFlowAxis` y `leftTitleColor` para que `CompareChart` dibuje un solo eje Y.
+- El selector de B y el historial comparten `HistoryFilters`/`rememberHistoryFilter`. Los cafés y métodos del
+  selector son los de todo el historial, A incluida: si no, el café inicial de A desaparecería de las opciones y
+  la regla "si el valor desaparece, vuelve a Todos" lo borraría al cargar.
+- El E2E usa "Fin automático" en 60 s y no en 30 s: entre el primer y el segundo vertido de "V60 clásica" hay
+  35 s sin verter, y con 30 s la sesión terminaría a mitad de la receta.
+- `SimulatedScaleConnection` programa cada tick contra un plazo fijo (`System.nanoTime`) y no con `delay(100)` suelto.
+  Con el `delay` suelto, el trabajo de cada tick alargaba el guion un ~4 %: "Seguir objetivo" terminaba en 02:00
+  y daba un ajuste de 74 en el E2E, y con el plazo fijo termina en 01:55 y da 97.
+- El color del desvío de la guía se pasa con `AntText(type = …)`. `figure.copy(color = …)` no tenía efecto, porque
+  `AntText` pasa `color = antTextColor(type)` a `Text` y ese parámetro pisa el del estilo. Lo cubre
+  `BrewChartCardTargetTest.theDeviationIsColoredByItsLevel`.
+- Con el perfil desviado el ajuste sale 0 y no "≤ 60 por poco": falta un 20 % del agua, y el error medio supera
+  el 10 % del agua final (§3.5), que ya da 0.
+
 ## 4. Casos Límite y Manejo de Errores
 
 | Escenario | Comportamiento esperado |
@@ -828,90 +887,92 @@ BrewSession ──[Finished(brew)]──▶ ScaleViewModel
 ## 5. Criterios de Aceptación (Definition of Done)
 
 **Funcionales** (verificables con la báscula simulada):
-- [ ] Con "V60 clásica" activa, la gráfica de `Armed` muestra la curva objetivo y la etapa 1.
+- [x] Con "V60 clásica" activa, la gráfica de `Armed` muestra la curva objetivo y la etapa 1.
       Elegirla cuesta 2 toques desde Scale.
-- [ ] Elegir una preparación del historial como objetivo cuesta 3 toques desde Scale.
-- [ ] La referencia elegida sigue activa tras salir de Scale y tras `am force-stop` de la app.
-- [ ] Capturar 16,4 g con una receta de 15 g escala el agua de todas las etapas ×16,4/15. Tras el
+- [x] Elegir una preparación del historial como objetivo cuesta 3 toques desde Scale.
+- [x] La referencia elegida sigue activa tras salir de Scale y tras `am force-stop` de la app.
+- [x] Capturar 16,4 g con una receta de 15 g escala el agua de todas las etapas ×16,4/15. Tras el
       inicio, capturar otra dosis no cambia la curva.
-- [ ] Durante `Active` se ven la etapa en curso, la cuenta atrás de 5 s y el desvío en gramos con
+- [x] Durante `Active` se ven la etapa en curso, la cuenta atrás de 5 s y el desvío en gramos con
       su nivel (5 % y 10 %).
-- [ ] Al empezar cada etapa con `startMs > 0` hay una vibración, si está activada, y un pitido, si
-      está activado y el móvil no está en silencio. Hay un solo aviso por etapa.
-- [ ] El perfil fiel del simulador con "V60 clásica" termina con el agua dentro de ±3 %, el tiempo
+- [x] Al empezar cada etapa con `startMs > 0` hay una vibración, si está activada, y un pitido, si
+      está activado y el móvil no está en silencio. Hay un solo aviso por etapa. (Verificado con
+      `StageAlertTrackerTest` y `ScaleViewModelTargetTest` y un notifier falso: la vibración y el pitido reales
+      no se observaron en el emulador.)
+- [x] El perfil fiel del simulador con "V60 clásica" termina con el agua dentro de ±3 %, el tiempo
       dentro de ±5 s y un ajuste ≥ 90. El perfil desviado da un ajuste ≤ 60.
-- [ ] La tarjeta de resumen y el detalle muestran el mismo ajuste, y el detalle dibuja la curva
+- [x] La tarjeta de resumen y el detalle muestran el mismo ajuste, y el detalle dibuja la curva
       objetivo guardada aunque la receta se edite o se borre después.
-- [ ] Una preparación hecha con receta se guarda con el método, la molienda y la temperatura de la
+- [x] Una preparación hecha con receta se guarda con el método, la molienda y la temperatura de la
       receta. Con una preparación de referencia, también con su café.
-- [ ] Las filas del historial de preparaciones con referencia muestran el `AntTag` "Ajuste N".
-- [ ] Con el móvil en inglés, las predefinidas sin renombrar se llaman "Classic V60" y "4:6 method".
-- [ ] En Recetas se puede crear, editar, duplicar y borrar con "Deshacer". La validación de §3.2
+- [x] Las filas del historial de preparaciones con referencia muestran el `AntTag` "Ajuste N".
+- [x] Con el móvil en inglés, las predefinidas sin renombrar se llaman "Classic V60" y "4:6 method".
+- [x] En Recetas se puede crear, editar, duplicar y borrar con "Deshacer". La validación de §3.2
       bloquea "Guardar".
-- [ ] "Restaurar recetas predefinidas" devuelve las dos a sus valores de fábrica sin tocar las del
+- [x] "Restaurar recetas predefinidas" devuelve las dos a sus valores de fábrica sin tocar las del
       usuario.
-- [ ] "Guardar como receta" sobre una preparación simulada abre el editor con una etapa por vertido.
-- [ ] Desde el historial, superponer dos preparaciones cuesta 3 toques (fila A, "Comparar con…",
+- [x] "Guardar como receta" sobre una preparación simulada abre el editor con una etapa por vertido.
+- [x] Desde el historial, superponer dos preparaciones cuesta 3 toques (fila A, "Comparar con…",
       fila B). El selector de B empieza filtrado por el café de A. La vista muestra dos gráficas y
       la tabla con B−A.
-- [ ] Sin objetivo, Scale y el guardado no cambian respecto a SPEC-002 (no hay regresiones en sus
+- [x] Sin objetivo, Scale y el guardado no cambian respecto a SPEC-002 (no hay regresiones en sus
       tests).
-- [ ] Todos los textos nuevos existen en `values/` y `values-en/`.
+- [x] Todos los textos nuevos existen en `values/` y `values-en/`.
 
 **Datos:**
-- [ ] `MIGRATION_1_2` pasa un test con `MigrationTestHelper`:
+- [x] `MIGRATION_1_2` pasa un test con `MigrationTestHelper`:
   - Las preparaciones de la versión 1 se conservan con todas sus columnas.
   - Las columnas nuevas quedan a `null`.
   - Existen las dos recetas predefinidas.
-- [ ] El esquema de la versión 2 está exportado en `app/schemas/`.
+- [x] El esquema de la versión 2 está exportado en `app/schemas/`.
 
 **Rendimiento** (emulador con API 36 o superior, misma metodología que SPEC-002 §5):
-- [ ] La vista de comparación de dos preparaciones de 10 min muestra sus gráficas en menos de
+- [x] La vista de comparación de dos preparaciones de 10 min muestra sus gráficas en menos de
       500 ms (mediana de 5 aperturas, con una de calentamiento).
-- [ ] La curva objetivo y su versión para dibujar no se recalculan con cada muestra (verificado con
+- [x] La curva objetivo y su versión para dibujar no se recalculan con cada muestra (verificado con
       un test del ViewModel que cuenta las construcciones).
-- [ ] `history.db` sigue por debajo de 10 MB con 500 preparaciones de 4 min, todas con curva
+- [x] `history.db` sigue por debajo de 10 MB con 500 preparaciones de 4 min, todas con curva
       objetivo.
 
 **Pruebas JVM** (`app/src/test/kotlin/dev/dotscale/`):
-- [ ] `TargetCurveTest`:
+- [x] `TargetCurveTest`:
   - `fromRecipe` con rampas y mesetas, y con la primera etapa empezando después de 0.
   - `waterAt` antes, dentro y después de la curva.
   - `fromBrew` con reducción a 250 ms, etapas desde los vertidos (agua acumulada) y el caso sin
     vertidos.
   - `scaled`.
-- [ ] `TargetGuideTest`:
+- [x] `TargetGuideTest`:
   - Etapa en `Armed`, `Active` y `Finished`.
   - Cuenta atrás de 5 a 1.
   - Desvío con su signo y los tres niveles en sus límites.
   - `deviationG = null` con una muestra inválida.
-- [ ] `StageAlertTrackerTest`:
+- [x] `StageAlertTrackerTest`:
   - Un aviso por etapa y ninguno con `startMs = 0`.
   - Un solo aviso al cruzar varias etapas.
   - Reinicio con cada sesión.
-- [ ] `BrewFitTest`:
+- [x] `BrewFitTest`:
   - Una curva calcada da 100.
   - Un error medio del 10 % o más da 0.
   - Ventana alargada cuando la preparación para antes.
   - Diferencias finales.
   - `score = null` sin muestras válidas.
-- [ ] `RecipeValidatorTest`: cada regla de §3.2, en sus límites.
-- [ ] Nombres traducidos: `localizedNames` pasa a `false` al cambiar un nombre y no al cambiar solo
+- [x] `RecipeValidatorTest`: cada regla de §3.2, en sus límites.
+- [x] Nombres traducidos: `localizedNames` pasa a `false` al cambiar un nombre y no al cambiar solo
       cantidades.
-- [ ] `RecipeFromBrewTest`:
+- [x] `RecipeFromBrewTest`:
   - Una etapa por vertido.
   - Fusión por la pausa más corta.
   - Recorte a 120 s.
   - Dosis vacía fuera de 5-60 g.
   - Caso sin vertidos.
   - Redondeos.
-- [ ] `TargetCurveCodecTest`:
+- [x] `TargetCurveCodecTest`:
   - Ida y vuelta con nombres nulos y no nulos.
   - Error de 0,005 o menos en el agua.
   - Rechazo controlado de un BLOB corrupto.
-- [ ] `SimulatedTargetPourTest`: con `BrewSession` y `brewFit`, el perfil fiel cumple ±3 %, ±5 s y
+- [x] `SimulatedTargetPourTest`: con `BrewSession` y `brewFit`, el perfil fiel cumple ±3 %, ±5 s y
       un ajuste ≥ 90, y el desviado da un ajuste ≤ 60.
-- [ ] `ScaleViewModelTargetTest`, con falsos de `TargetSettings`, del repositorio y de
+- [x] `ScaleViewModelTargetTest`, con falsos de `TargetSettings`, del repositorio y de
       `StageNotifier`:
   - Resolución y escalado de la referencia.
   - Congelación en `Active`.
@@ -920,18 +981,18 @@ BrewSession ──[Finished(brew)]──▶ ScaleViewModel
   - Avisos hacia el notifier.
 
 **Pruebas instrumentadas** (`app/src/androidTest/kotlin/dev/dotscale/`):
-- [ ] `HistoryMigrationTest` (`MigrationTestHelper`, versión 1 → 2).
-- [ ] `RecipeDaoTest` con Room en memoria:
+- [x] `HistoryMigrationTest` (`MigrationTestHelper`, versión 1 → 2).
+- [x] `RecipeDaoTest` con Room en memoria:
   - Guardar con etapas y leer.
   - Reemplazar las etapas al editar.
   - Duplicar.
   - Borrar con cascada y `restore` con el mismo id.
   - `restoreBuiltIns`.
-- [ ] `BrewDaoTest` (ampliado):
+- [x] `BrewDaoTest` (ampliado):
   - Guardado con `brew_targets` y las columnas nuevas.
   - Cascada al borrar.
   - `restore` con el objetivo.
-- [ ] Tests de Compose:
+- [x] Tests de Compose:
   - `TargetPickerTest`: pestañas, elegir una receta (2 toques) y una preparación (3 toques),
     "Quitar objetivo" y filas deshabilitadas.
   - `BrewChartCardTargetTest`: guía en `Armed` y `Active`, cuenta atrás y niveles del desvío.
@@ -941,10 +1002,10 @@ BrewSession ──[Finished(brew)]──▶ ScaleViewModel
   - `BrewCompareScreenTest`: leyenda, dos gráficas, tabla con B−A y "—" para los nulos.
   - `ComparePickScreenTest`: filtro inicial con el café de A, A excluida y estado vacío.
   - `HistoryScreenTest` (ampliado): `AntTag` "Ajuste N" solo en las filas con referencia.
-- [ ] `ComparePerformanceTest`: el objetivo de rendimiento de la comparación.
+- [x] `ComparePerformanceTest`: el objetivo de rendimiento de la comparación.
 
 **E2E por adb** en el emulador con la báscula simulada, sin ARTEMIS, y con "Fin automático" en 30 s:
-- [ ] Recorrido:
+- [x] Recorrido:
   1. Elegir "V60 clásica".
   2. Capturar la dosis.
   3. "Seguir objetivo" y esperar el fin. Comprobar el ajuste en el resumen.
@@ -953,8 +1014,8 @@ BrewSession ──[Finished(brew)]──▶ ScaleViewModel
   6. Repetir con "Seguir con desvío".
   7. Comparar las dos preparaciones.
   8. `am force-stop`, volver a abrir y comprobar que la referencia sigue activa.
-- [ ] Las interacciones verificadas se plasman en los tests instrumentados.
-- [ ] `./gradlew :app:testDebugUnitTest`, los tests instrumentados y `./gradlew :app:lintDebug`
+- [x] Las interacciones verificadas se plasman en los tests instrumentados.
+- [x] `./gradlew :app:testDebugUnitTest`, los tests instrumentados y `./gradlew :app:lintDebug`
       pasan sin avisos nuevos.
 
 ## 6. Preguntas abiertas
