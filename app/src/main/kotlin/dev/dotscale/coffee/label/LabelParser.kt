@@ -16,12 +16,13 @@ object LabelParser {
   private const val MAX_PROCESS_LINE_WORDS = 4
 
   fun parse(lines: List<OcrLine>, today: LocalDate): LabelFields {
-    val rows = lines.mapIndexed { i, l -> Row(i, l.text.trim(), l.heightPx) }.filter { it.text.isNotEmpty() }
+    val rows = toRows(lines)
     val scan = scan(rows)
+    // Las notas de cata no cuentan para proceso, variedad ni nivel; sí pueden traer peso, altitud o país.
     val usable = rows.filter { it.index !in scan.notes }
 
     val (process, processOther) = processOf(usable, scan)
-    val altitude = altitudeOf(usable, scan)
+    val altitude = altitudeOf(rows, scan)
     val (name, roaster) = nameAndRoaster(rows, scan)
     val roastDate = LabelDates.pick(LabelDates.findAll(rows.map { it.text }, today), today)
 
@@ -35,10 +36,10 @@ object LabelParser {
       roastLevel = levelOf(usable, scan),
       altitudeMinM = altitude?.first,
       altitudeMaxM = altitude?.second,
-      originCountry = countryOf(usable, scan),
+      originCountry = countryOf(rows, scan),
       originRegion = scan.values[Label.REGION]?.let(::tidy),
       farm = scan.values[Label.FARM]?.let(::tidy),
-      bagWeightG = weightOf(usable, scan),
+      bagWeightG = weightOf(rows, scan),
     )
   }
 
@@ -46,6 +47,32 @@ object LabelParser {
 
   private class Row(val index: Int, val text: String, val heightPx: Int) {
     val folded = fold(text)
+  }
+
+  private fun toRows(lines: List<OcrLine>): List<Row> =
+    lines.mapIndexed { i, l -> Row(i, normalize(l.text.trim()), l.heightPx) }.filter { it.text.isNotEmpty() }
+
+  /**
+   * Arregla lo que el OCR confunde con frecuencia: la "İ" turca (y su punto combinado) y el cero dentro de una
+   * palabra ("R0J0", "LAVAD0"). Un cero pegado a una letra y no a un dígito es una "o".
+   */
+  internal fun normalize(text: String): String {
+    val clean = text.replace('\u0130', 'I').replace('\u0131', 'i').replace("\u0307", "")
+    val out = StringBuilder(clean.length)
+    clean.forEachIndexed { i, c ->
+      val before = clean.getOrNull(i - 1)
+      val after = clean.getOrNull(i + 1)
+      val letterBefore = before?.isLetter() == true
+      val letterAfter = after?.isLetter() == true
+      val inWord = (letterBefore && after?.isDigit() != true) || (letterAfter && before?.isDigit() != true)
+      if (c == '0' && inWord) {
+        val neighbor = if (letterBefore) before else after!!
+        out.append(if (neighbor.isLowerCase()) 'o' else 'O')
+      } else {
+        out.append(c)
+      }
+    }
+    return out.toString()
   }
 
   private class Scan(
@@ -56,6 +83,8 @@ object LabelParser {
     val notes: Set<Int>,
     /** Rótulos que aparecen aunque su valor no se haya podido leer. */
     val present: Set<Label>,
+    /** Líneas que son un rótulo de variedad o su valor: las demás pueden traer una variedad que sea el título. */
+    val varietyLines: Set<Int>,
   )
 
   private class Hit(val label: Label, val value: String, val explicit: Boolean)
@@ -80,6 +109,8 @@ object LabelParser {
   }
 
   /** El texto original desde [start]: los índices solo valen si plegar no cambió el largo. */
+  private fun looksLikeProse(text: String) = text.any { it == ',' || it == '.' || it == ';' } || wordCount(text) >= 3
+
   private fun valueFrom(row: Row, start: Int): String =
     if (row.folded.length == row.text.length) row.text.substring(start) else row.folded.substring(start)
 
@@ -88,10 +119,17 @@ object LabelParser {
     val labelLines = mutableSetOf<Int>()
     val notes = mutableSetOf<Int>()
     val present = mutableSetOf<Label>()
+    val varietyLines = mutableSetOf<Int>()
     var inNotes = false
     rows.forEachIndexed { pos, row ->
       val hit = hitOf(row)
-      if (notesRegex.containsMatchIn(row.folded)) inNotes = true else if (hit != null) inNotes = false
+      // Una sección de notas sigue mientras las líneas parezcan prosa: el orden de lectura mezcla columnas, y una
+      // línea corta sin puntuación ya no es una nota.
+      if (notesRegex.containsMatchIn(row.folded)) {
+        inNotes = true
+      } else if (hit != null || !looksLikeProse(row.text)) {
+        inNotes = false
+      }
       if (inNotes) {
         notes += row.index
         return@forEachIndexed
@@ -99,21 +137,22 @@ object LabelParser {
       if (hit == null) return@forEachIndexed
       labelLines += row.index
       present += hit.label
+      if (hit.label == Label.VARIETY) varietyLines += row.index
       var value = hit.value
       if (value.isEmpty()) {
         val next = rows.getOrNull(pos + 1)
         if (next != null && hitOf(next) == null && !notesRegex.containsMatchIn(next.folded)) {
           value = next.text
           labelLines += next.index
+          if (hit.label == Label.VARIETY) varietyLines += next.index
         }
       }
       if (value.isNotEmpty()) values.putIfAbsent(hit.label, value)
     }
-    return Scan(values, labelLines, notes, present)
+    return Scan(values, labelLines, notes, present, varietyLines)
   }
 
-  internal fun labeledValues(lines: List<OcrLine>): Map<LabelKeywords.Label, String> =
-    scan(lines.mapIndexed { i, l -> Row(i, l.text.trim(), l.heightPx) }.filter { it.text.isNotEmpty() }).values
+  internal fun labeledValues(lines: List<OcrLine>): Map<LabelKeywords.Label, String> = scan(toRows(lines)).values
 
   // ---------------------------------------------------------------- proceso
 
@@ -307,7 +346,10 @@ object LabelParser {
   private val weightUnit = Regex("\\d\\s*(?:g|gr|grs|kg|oz|lb|lbs|ml)\\b", RegexOption.IGNORE_CASE)
 
   private fun isNameCandidate(row: Row, scan: Scan): Boolean {
-    if (row.index in scan.labelLines || row.index in scan.notes) return false
+    if (row.index in scan.notes) return false
+    // Una variedad sola en su línea que un rótulo ajeno ("Origin:") se tragó sigue pudiendo ser el título.
+    val swallowedVariety = row.index in scan.labelLines && row.index !in scan.varietyLines && isVarietyOnly(row)
+    if (row.index in scan.labelLines && !swallowedVariety) return false
     val text = row.text
     val letters = text.count { it.isLetter() }
     val visible = text.count { !it.isWhitespace() }
@@ -320,16 +362,67 @@ object LabelParser {
     return !isProcessOnly(text)
   }
 
+  /** Una variedad del diccionario sola en su línea ("Geisha", "Icatú Amarillo"): casi siempre es el título. */
+  private fun isVarietyOnly(row: Row): Boolean {
+    var folded = row.folded
+    var found = false
+    for ((regex, _) in varietyRegexes) {
+      while (true) {
+        val m = regex.find(folded) ?: break
+        found = true
+        folded = folded.replaceRange(m.range, " ".repeat(m.range.count()))
+      }
+    }
+    return found && folded.none { it.isLetterOrDigit() }
+  }
+
+  /** Palabra de marca, tolerando que el OCR añada letras al final ("espressoo"). */
+  private fun isBrandLike(row: Row) = Regex("[a-z]+").findAll(row.folded).any { token ->
+    LabelKeywords.brandWords.any { token.value == it || (it.length >= MIN_PREFIX_BRAND && token.value.startsWith(it)) }
+  }
+
+  private const val MIN_PREFIX_BRAND = 6
+
+  /**
+   * Puntuación de una línea como nombre: su altura, x4 si es una variedad sola en su línea y x0,25 si parece una
+   * marca ("Specialty Coffee"). El valor de un rótulo ("Variedad: ...") nunca llega aquí: no es candidato.
+   */
+  private fun nameScore(row: Row): Double {
+    var score = row.heightPx.toDouble()
+    if (isVarietyOnly(row)) score *= VARIETY_BOOST
+    if (isBrandLike(row)) score *= BRAND_PENALTY
+    return score
+  }
+
+  private const val VARIETY_BOOST = 4.0
+  private const val BRAND_PENALTY = 0.25
+
+  /** Una línea contigua de casi la misma altura es la otra mitad de un título de dos líneas. */
+  private const val SAME_TITLE_HEIGHT = 0.85
+
+  /** Cuántas líneas después del título se busca el proceso suelto ("Pacamara" ... "Red honey"). */
+  private const val PROCESS_WINDOW = 3
+
   private fun nameAndRoaster(rows: List<Row>, scan: Scan): Pair<String?, String?> {
     val candidates = rows.filter { isNameCandidate(it, scan) }
-    val nameRow = candidates.maxWithOrNull(compareBy<Row> { it.heightPx }.thenByDescending { it.index }) ?: return null to null
-    val position = rows.indexOf(nameRow)
-    val joined = rows.getOrNull(position + 1)?.takeIf {
+    val order = compareBy<Row> { nameScore(it) }.thenByDescending { it.index }
+    val best = candidates.maxWithOrNull(order) ?: return null to null
+    val position = rows.indexOf(best)
+
+    fun similar(neighbor: Row?) =
+      neighbor != null && neighbor in candidates && !isBrandLike(neighbor) &&
+        neighbor.heightPx >= best.heightPx * SAME_TITLE_HEIGHT
+    val before = rows.getOrNull(position - 1)?.takeIf(::similar)
+    val after = rows.getOrNull(position + 1)?.takeIf(::similar)
+    val titleRows = listOfNotNull(before, best, after)
+    val title = titleRows.joinToString(" ") { it.text }
+    val lastTitle = rows.indexOf(titleRows.last())
+
+    val process = rows.subList(lastTitle + 1, minOf(rows.size, lastTitle + 1 + PROCESS_WINDOW)).firstOrNull {
       it.index !in scan.labelLines && it.index !in scan.notes && isProcessOnly(it.text)
     }
-    val name = if (joined != null) joinWithProcess(nameRow.text, joined.text) else tidy(nameRow.text)
-    val roasterRow = candidates.filter { it !== nameRow }
-      .maxWithOrNull(compareBy<Row> { it.heightPx }.thenByDescending { it.index })
+    val name = if (process != null) joinWithProcess(title, process.text) else tidy(title)
+    val roasterRow = candidates.filter { it !in titleRows }.maxWithOrNull(order)
     return name to roasterRow?.let { tidy(it.text) }
   }
 

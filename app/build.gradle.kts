@@ -38,6 +38,8 @@ android {
   testOptions {
     // Los tests JVM del ViewModel llaman a `Log`; los métodos de Android devuelven valores por defecto.
     unitTests.isReturnDefaultValues = true
+    // `-PlabelsExpected=<ruta>` activa la prueba de aciertos con las etiquetas reales (F4); sin ella se salta.
+    unitTests.all { it.systemProperty("dotscale.labelsExpected", providers.gradleProperty("labelsExpected").getOrElse("")) }
   }
 
   packaging {
@@ -85,6 +87,8 @@ dependencies {
   // Local tests: jUnit, coroutines, Android runner
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
+  // Lee los fixtures JSON del OCR (las etiquetas reales)
+  testImplementation(libs.kotlinx.serialization.json)
 
   // Instrumented tests: jUnit rules and runners
   androidTestImplementation(libs.androidx.test.core)

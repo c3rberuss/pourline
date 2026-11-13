@@ -5,6 +5,7 @@ import dev.dotscale.coffee.RoastLevel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.time.LocalDate
 
@@ -238,6 +239,29 @@ class LabelParserTest {
     assertTrue(parse("   ").isEmpty)
   }
 
+  // ---------------------------------------------------------------- etiquetas reales (F4)
+
+  @Test
+  fun `every real label parses without exceptions and with a name and no future date`() {
+    val fixtures = LabelFixtures.load()
+    assertTrue("faltan los fixtures de app/src/test/resources/labels/", fixtures.isNotEmpty())
+    fixtures.forEach { fixture ->
+      val fields = LabelParser.parse(fixture.lines, fixture.capturedOn)
+      assertTrue("${fixture.file}: sin nombre", !fields.name.isNullOrBlank())
+      fields.roastDate?.let { assertTrue("${fixture.file}: fecha futura $it", !it.isAfter(fixture.capturedOn)) }
+    }
+  }
+
+  @Test
+  fun `real labels reach the target`() {
+    val path = System.getProperty("dotscale.labelsExpected").orEmpty()
+    assumeTrue("sin -PlabelsExpected", path.isNotEmpty())
+    val expected = parseExpected(java.io.File(path).readText())
+    val parsed = LabelFixtures.load().associate { it.file to LabelParser.parse(it.lines, it.capturedOn) }
+    val score = score(expected, parsed)
+    assertTrue(score.toReport(), score.meetsTarget())
+  }
+
   @Test
   fun `internal readers`() {
     assertEquals(setOf(CoffeeProcess.WASHED), LabelParser.processesIn("Lavado").map { it.process }.toSet())
@@ -245,5 +269,71 @@ class LabelParserTest {
     assertEquals(1800 to 1800, LabelParser.altitudeIn("1800 m", labeled = false))
     assertEquals(listOf(340.0), LabelParser.weightsIn("12oz. / 340g."))
     assertEquals("Lavado", LabelParser.labeledValues(lines("Proceso: Lavado"))[LabelKeywords.Label.PROCESS])
+  }
+
+  // ---------------------------------------------------------------- ajustes con etiquetas reales (F4)
+
+  @Test
+  fun `a brand slogan is not the name even when the OCR adds letters`() {
+    val fields = LabelParser.parse(
+      listOf(OcrLine("VIVA ESPRESSOo", 120), OcrLine("LAS MERCEDES", 84), OcrLine("Proceso", 29), OcrLine("Honey", 28)),
+      today,
+    )
+    assertEquals("Las Mercedes", fields.name)
+  }
+
+  @Test
+  fun `a variety swallowed by an unrelated label can still be the title`() {
+    val fields = LabelParser.parse(
+      listOf(OcrLine("PUPA", 382), OcrLine("ORIGIN:", 36), OcrLine("Geisha", 120), OcrLine("CHIRIQUI, PANAMA", 37)),
+      today,
+    )
+    assertEquals("Geisha", fields.name)
+  }
+
+  @Test
+  fun `the value of a variety label is never the title`() {
+    val fields = LabelParser.parse(
+      listOf(OcrLine("LAS MERCEDES", 84), OcrLine("VARIEDAD", 26), OcrLine("ICATÚ AMARILLO", 40)),
+      today,
+    )
+    assertEquals("Las Mercedes", fields.name)
+    assertEquals(listOf("Icatú Amarillo"), fields.varieties)
+  }
+
+  @Test
+  fun `two adjacent title lines of similar height form one name`() {
+    val fields = LabelParser.parse(
+      listOf(OcrLine("DULCE", 77), OcrLine("SINFONÍA FLORAL", 89), OcrLine("SECRET BLEND EDITION", 34)),
+      today,
+    )
+    assertEquals("Dulce Sinfonía Floral", fields.name)
+  }
+
+  @Test
+  fun `a process a few lines below the title is joined to the name`() {
+    val fields = LabelParser.parse(
+      listOf(OcrLine("Pacamara", 101), OcrLine("Finca Montaña Grande", 28), OcrLine("Grano", 18), OcrLine("RED HONEY", 31)),
+      today,
+    )
+    assertEquals("Pacamara Red Honey", fields.name)
+  }
+
+  @Test
+  fun `OCR confusions are normalized`() {
+    assertEquals("LAVADO", LabelParser.normalize("LAVAD0"))
+    assertEquals("BOURBÓN ROJO", LabelParser.normalize("BOURBÓN R0J0"))
+    assertEquals("SINFONIA", LabelParser.normalize("SINFON\u0130A"))
+    assertEquals("1800 m", LabelParser.normalize("1800 m"))
+    assertEquals("2026", LabelParser.normalize("2026"))
+  }
+
+  @Test
+  fun `a short line after the notes ends the notes section`() {
+    val fields = LabelParser.parse(
+      listOf(OcrLine("Notas:", 20), OcrLine("Fragancia a toffee, chocolate y frutos", 44), OcrLine("Lavado", 40)),
+      today,
+    )
+    assertEquals(CoffeeProcess.WASHED, fields.process)
   }
 }

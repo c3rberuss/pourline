@@ -48,6 +48,7 @@ internal object LabelKeywords {
     "geisha" to "Geisha", "gesha" to "Gesha", "typica" to "Typica", "tipica" to "Typica",
     "caturra" to "Caturra", "catuai" to "Catuaí", "pacamara" to "Pacamara", "pacas" to "Pacas",
     "sl28" to "SL28", "sl-28" to "SL28", "sl34" to "SL34", "sl-34" to "SL34",
+    "icatu amarillo" to "Icatú Amarillo", "icatu rojo" to "Icatú Rojo", "icatu" to "Icatú",
     "heirloom" to "Heirloom", "74110" to "74110", "74112" to "74112",
     "castillo" to "Castillo", "maragogipe" to "Maragogipe", "pache" to "Pache",
     "sidra" to "Sidra", "java" to "Java", "batian" to "Batian", "laurina" to "Laurina",
@@ -102,6 +103,15 @@ internal object LabelKeywords {
 
   /** Una línea con alguno de estos textos no aporta fecha de tueste (D41). */
   val dateExclusions = listOf("est.", "est ", "since", "desde", "premio", "award", "cup of excellence")
+
+  /**
+   * Palabras de marca o genéricas ("Specialty Coffee", "Tostadores"): una línea con alguna es casi siempre un logo o
+   * un lema, no el nombre del café. Penalizan la línea al elegir el nombre; no la descartan.
+   */
+  val brandWords = setOf(
+    "coffee", "coffees", "cafe", "specialty", "speciality", "specially", "espresso", "roaster", "roasters",
+    "roasting", "tostador", "tostadores", "shop", "especialidad", "edition", "edicion",
+  )
 
   /** Una línea con alguna de estas palabras no es el nombre del café. */
   val nameExclusions = listOf(
