@@ -183,5 +183,78 @@
     </string-array>
     <string name="recipe_copy_name">%1$s (copia)</string>
     <string name="recipe_from_brew_name">%1$s (receta)</string>
+
+    <!-- Recetas: lista -->
+    <string name="recipe_title">Recetas</string>
+    <string name="recipe_open">Abrir recetas</string>
+    <string name="recipe_add">Crear receta</string>
+    <string name="recipe_empty">Aún no hay recetas</string>
+    <string name="recipe_deleted">Receta borrada</string>
+    <string name="recipe_undo">Deshacer</string>
     <string name="recipe_builtin_tag">Predefinida</string>
+    <string name="recipe_active_tag">Activa</string>
+    <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s</string>
+    <plurals name="recipe_stage_count">
+        <item quantity="one">%1$d etapa</item>
+        <item quantity="other">%1$d etapas</item>
+    </plurals>
+
+    <!-- Recetas: editor -->
+    <string name="recipe_edit_title_new">Nueva receta</string>
+    <string name="recipe_edit_title">Editar receta</string>
+    <string name="recipe_edit_name">Nombre</string>
+    <string name="recipe_edit_method">Método</string>
+    <string name="recipe_edit_method_none">Sin método</string>
+    <string name="recipe_edit_method_other">¿Cuál?</string>
+    <string name="recipe_edit_grind">Molienda</string>
+    <string name="recipe_edit_grind_hint">Media, 21 clics…</string>
+    <string name="recipe_edit_temp">Temperatura del agua (°C)</string>
+    <string name="recipe_edit_notes">Notas (instrucciones)</string>
+    <string name="recipe_edit_dose">Dosis (g)</string>
+    <string name="recipe_edit_stages">Etapas</string>
+    <string name="recipe_edit_stage_name">Etapa %1$d (nombre opcional)</string>
+    <string name="recipe_edit_stage_start">Inicio (m:ss)</string>
+    <string name="recipe_edit_stage_water">Hasta (g)</string>
+    <string name="recipe_edit_stage_duration">Vertido (s)</string>
+    <string name="recipe_edit_stage_remove">Quitar etapa %1$d</string>
+    <string name="recipe_edit_add_stage">Añadir etapa</string>
+    <string name="recipe_edit_totals">Agua total %1$s g · Ratio 1:%2$s</string>
+    <string name="recipe_edit_totals_water">Agua total %1$s g</string>
+    <string name="recipe_edit_preview">Vista previa de la curva</string>
+    <string name="recipe_edit_save">Guardar</string>
+    <string name="recipe_edit_duplicate">Duplicar</string>
+    <string name="recipe_edit_delete">Borrar</string>
+    <string name="recipe_edit_adjusted_title">Se ajustó la preparación para convertirla en receta</string>
+    <plurals name="recipe_edit_adjusted_merged">
+        <item quantity="one">Se fusionó %1$d par de vertidos para quedar en 10 etapas.</item>
+        <item quantity="other">Se fusionaron %1$d pares de vertidos para quedar en 10 etapas.</item>
+    </plurals>
+    <string name="recipe_edit_adjusted_clamped">Los vertidos de más de 120 s se recortaron a 120 s.</string>
+    <string name="recipe_edit_adjusted_dose">La dosis de la preparación no está entre 5 y 60 g: escríbela para poder guardar.</string>
+    <string name="recipe_edit_discard_title">¿Descartar los cambios?</string>
+    <string name="recipe_edit_discard_text">Los cambios que no hayas guardado se perderán.</string>
+    <string name="recipe_edit_discard">Descartar</string>
+    <string name="recipe_edit_keep">Seguir editando</string>
+    <string name="recipe_error_name">Escribe un nombre</string>
+    <string name="recipe_error_dose">Entre 5 y 60 g, con un decimal como máximo</string>
+    <string name="recipe_error_temp">Entre 0 y 100 °C, con un decimal como máximo</string>
+    <string name="recipe_error_start">Escribe m:ss (1:30) o segundos (90)</string>
+    <string name="recipe_error_start_overlaps">Empieza antes de que termine la etapa anterior</string>
+    <string name="recipe_error_start_late">La última etapa debe empezar antes de 10:00</string>
+    <string name="recipe_error_water">Entre 0 y 1000 g, con un decimal como máximo</string>
+    <string name="recipe_error_water_order">Debe ser mayor que la etapa anterior</string>
+    <string name="recipe_error_duration">Entre 1 y 120 s</string>
+    <string name="recipe_error_stage_count">Entre 1 y 10 etapas</string>
+
+    <!-- Ajustes: guía de etapas y recetas -->
+    <string name="settings_stage_title">Guía de etapas</string>
+    <string name="settings_stage_vibration">Vibrar al empezar cada etapa</string>
+    <string name="settings_stage_sound">Sonido al empezar cada etapa</string>
+    <string name="settings_recipes_title">Recetas</string>
+    <string name="settings_recipes_restore">Restaurar recetas predefinidas</string>
+    <string name="settings_recipes_restore_title">¿Restaurar las recetas predefinidas?</string>
+    <string name="settings_recipes_restore_text">Las recetas predefinidas vuelven a sus valores de fábrica y se crean de nuevo las que borraste. Tus recetas no cambian.</string>
+    <string name="settings_recipes_restore_confirm">Restaurar</string>
+    <string name="settings_recipes_restore_cancel">Cancelar</string>
+    <string name="settings_recipes_restored">Recetas predefinidas restauradas</string>
 </resources>

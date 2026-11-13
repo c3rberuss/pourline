@@ -19,6 +19,8 @@ data class BrewChartColors(
   val irregular: Color,
   val turbulent: Color,
   val neutral: Color,
+  /** Curva objetivo: gris discontinuo. */
+  val target: Color,
   val grid: Color,
   val axisLabel: Color,
 ) {
@@ -42,6 +44,7 @@ fun brewChartColors(colors: AntColors) = BrewChartColors(
   irregular = colors.warning.text,
   turbulent = colors.error.text,
   neutral = colors.textSecondary,
+  target = colors.textSecondary,
   grid = colors.split,
   axisLabel = colors.textSecondary,
 )

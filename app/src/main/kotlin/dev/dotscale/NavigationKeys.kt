@@ -15,3 +15,5 @@ import kotlinx.serialization.Serializable
 @Serializable data class BrewDetail(val id: Long) : NavKey
 
 @Serializable data class BrewEdit(val id: Long) : NavKey
+@Serializable data object Recipes : NavKey
+@Serializable data class RecipeEdit(val id: Long? = null, val fromBrewId: Long? = null) : NavKey

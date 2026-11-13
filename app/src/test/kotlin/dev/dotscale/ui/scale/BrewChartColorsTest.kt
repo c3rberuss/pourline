@@ -27,6 +27,7 @@ class BrewChartColorsTest {
       "irregular" to chart.irregular,
       "turbulent" to chart.turbulent,
       "neutral" to chart.neutral,
+      "target" to chart.target,
     ).forEach { (name, color) ->
       val ratio = ratio(color, background)
       assertTrue("$mode $name = $ratio", ratio >= 3.0)
@@ -40,6 +41,13 @@ class BrewChartColorsTest {
 
   @Test
   fun `series are visible in dark mode`() = check(antDarkColors())
+
+  @Test
+  fun `the target curve is the secondary text gray`() {
+    listOf(antLightColors(), antDarkColors()).forEach { colors ->
+      assertTrue(brewChartColors(colors).target == colors.textSecondary)
+    }
+  }
 
   @Test
   fun `flow color follows the level and falls back to neutral`() {

@@ -10,6 +10,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import dev.dotscale.ble.BleScaleConnection
+import dev.dotscale.recipe.ResourcesRecipeTexts
 import dev.dotscale.sim.SimulatedScaleConnection
 import dev.dotscale.ui.history.BrewDetailScreen
 import dev.dotscale.ui.history.BrewDetailViewModel
@@ -17,6 +18,10 @@ import dev.dotscale.ui.history.BrewEditScreen
 import dev.dotscale.ui.history.BrewEditViewModel
 import dev.dotscale.ui.history.HistoryScreen
 import dev.dotscale.ui.history.HistoryViewModel
+import dev.dotscale.ui.recipes.RecipeEditScreen
+import dev.dotscale.ui.recipes.RecipeEditViewModel
+import dev.dotscale.ui.recipes.RecipesScreen
+import dev.dotscale.ui.recipes.RecipesViewModel
 import dev.dotscale.ui.scale.ScaleScreen
 import dev.dotscale.ui.scale.ScaleViewModel
 import dev.dotscale.ui.scan.ScanScreen
@@ -42,6 +47,7 @@ fun MainNavigation() {
           onSimulatedSelected = { backStack.add(Scale(address = null, name = simulatedName)) },
           onOpenSettings = { backStack.add(Settings) },
           onOpenHistory = { backStack.add(History) },
+          onOpenRecipes = { backStack.add(Recipes) },
         )
       }
       entry<Scale> { key ->
@@ -64,7 +70,31 @@ fun MainNavigation() {
         )
       }
       entry<Settings> {
-        SettingsScreen((appContext as DotScaleApp).brewSettings, onBack = { backStack.removeLastOrNull() })
+        val app = appContext as DotScaleApp
+        SettingsScreen(
+          app.brewSettings,
+          app.targetSettings,
+          onRestoreRecipes = { app.recipeRepository.restoreBuiltIns() },
+          onBack = { backStack.removeLastOrNull() },
+        )
+      }
+      entry<Recipes> {
+        val repository = (appContext as DotScaleApp).recipeRepository
+        RecipesScreen(
+          viewModel { RecipesViewModel(repository) },
+          onBack = { backStack.removeLastOrNull() },
+          onOpenRecipe = { id -> backStack.add(RecipeEdit(id = id)) },
+          onCreateRecipe = { backStack.add(RecipeEdit()) },
+        )
+      }
+      entry<RecipeEdit> { key ->
+        val app = appContext as DotScaleApp
+        RecipeEditScreen(
+          viewModel { RecipeEditViewModel(app.recipeRepository, app.brewRepository, ResourcesRecipeTexts(appContext), key.id, key.fromBrewId) },
+          onBack = { backStack.removeLastOrNull() },
+          // Duplicar abre la copia en lugar de la original: atrás vuelve a la lista.
+          onDuplicated = { copyId -> backStack[backStack.lastIndex] = RecipeEdit(id = copyId) },
+        )
       }
       entry<History> {
         val repository = (appContext as DotScaleApp).brewRepository

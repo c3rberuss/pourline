@@ -28,6 +28,17 @@ object AntIcons {
   val History: ImageVector by lazy {
     strokeIcon("History", "M3 12A9 9 0 1 0 12 3C9.48 3 7.07 4 5.26 5.74L3 8", "M3 3V8H8", "M12 7V12L15 14")
   }
+  /** Hoja con líneas de texto y una gota: las recetas. */
+  val Recipe: ImageVector by lazy {
+    strokeIcon(
+      "Recipe",
+      "M6 3H15L19 7V19A2 2 0 0 1 17 21H6A2 2 0 0 1 4 19V5A2 2 0 0 1 6 3Z",
+      "M15 3V7H19",
+      "M8 11H11",
+      "M8 14H11",
+      "M15 12C13.5 14 13 14.8 13 15.8A2 2 0 0 0 17 15.8C17 14.8 16.5 14 15 12Z",
+    )
+  }
   val Play: ImageVector by lazy { strokeIcon("Play", "M6 3L20 12L6 21Z") }
   val Pause: ImageVector by lazy {
     strokeIcon(
