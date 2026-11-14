@@ -1,0 +1,210 @@
+package dev.dotscale.ui
+
+import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import dev.dotscale.AppDependencies
+import dev.dotscale.MainNavigation
+import dev.dotscale.ble.BluetoothEnvironment
+import dev.dotscale.ble.DeviceScanner
+import dev.dotscale.ble.ScannedDevice
+import dev.dotscale.coffee.CoffeeRepository
+import dev.dotscale.coffee.photo.CoffeeImages
+import dev.dotscale.coffee.photo.CoffeePhotoStore
+import dev.dotscale.coffee.photo.LocalCoffeeImages
+import dev.dotscale.history.BrewRepository
+import dev.dotscale.history.HistoryDatabase
+import dev.dotscale.protocol.Frame
+import dev.dotscale.protocol.ScaleMessage
+import dev.dotscale.recipe.RecipeRepository
+import dev.dotscale.recipe.ResourcesRecipeTexts
+import dev.dotscale.scale.ConnectionState
+import dev.dotscale.scale.ConnectionStep
+import dev.dotscale.scale.ScaleConnection
+import dev.dotscale.session.AutoReconnect
+import dev.dotscale.session.RepositoryScaleCoffees
+import dev.dotscale.session.RepositoryTargetReferences
+import dev.dotscale.session.ScaleConnectionFactory
+import dev.dotscale.session.ScaleSessionManager
+import dev.dotscale.session.ScaleTarget
+import dev.dotscale.settings.BrewSettings
+import dev.dotscale.settings.ConnectionSettings
+import dev.dotscale.settings.ExperienceMode
+import dev.dotscale.settings.ExperienceSettings
+import dev.dotscale.settings.LocalExperienceMode
+import dev.dotscale.settings.TargetSettings
+import dev.dotscale.settings.ThemeSettings
+import dev.dotscale.sim.SimulatedScaleConnection
+import dev.dotscale.ui.coffees.FakeLabelOcr
+import dev.dotscale.ui.scale.SilentNotifier
+import dev.dotscale.ui.theme.DotScaleTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
+import java.io.File
+
+/** Permisos y Bluetooth a voluntad del test. */
+class FakeBluetoothEnvironment(permissions: Boolean = true, bluetoothOn: Boolean = true) : BluetoothEnvironment {
+  @Volatile var permissions = permissions
+  val on = MutableStateFlow(bluetoothOn)
+
+  override fun permissionsGranted() = permissions
+
+  override val enabled: StateFlow<Boolean> get() = on
+}
+
+/** Una conexión que se queda en `Connecting` ([hang]) o falla ([failure]), para ver esos estados de la tarjeta. */
+class ScriptedConnection(private val hang: Boolean) : ScaleConnection {
+  private val _state = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
+  override val state: StateFlow<ConnectionState> = _state
+  override val messages: Flow<ScaleMessage> = emptyFlow()
+
+  override suspend fun connect() {
+    _state.value = ConnectionState.Connecting(ConnectionStep.BONDING)
+    if (hang) awaitCancellation()
+    _state.value = ConnectionState.Failed("fallo simulado")
+    throw IllegalStateException("fallo simulado")
+  }
+
+  override suspend fun send(frame: Frame) = Unit
+
+  override fun disconnect() {
+    _state.value = ConnectionState.Disconnected
+  }
+}
+
+/** Un escáner que encuentra una báscula y sigue buscando. */
+class FakeScanner(private val devices: List<ScannedDevice> = listOf(DOT)) : DeviceScanner {
+  var scans = 0
+    private set
+
+  override fun scan() = flow {
+    scans++
+    devices.forEach { emit(it) }
+    awaitCancellation()
+  }
+
+  companion object {
+    val DOT = ScannedDevice(
+      address = "AA:BB:CC:DD:EE:01",
+      name = "DOT-A1B2",
+      rssi = -58,
+      advertisement = null,
+      advertisesScaleService = true,
+    )
+  }
+}
+
+/**
+ * Las dependencias de la app para los tests de navegación (D32): Room en memoria, preferencias propias
+ * (`"settings_test"`, borradas al crear y al cerrar), la báscula simulada y un Bluetooth falso. Nada toca el
+ * `history.db` ni las preferencias reales.
+ */
+class TestAppDependencies(
+  private val context: Context,
+  val bluetooth: FakeBluetoothEnvironment = FakeBluetoothEnvironment(),
+  val scanner: FakeScanner = FakeScanner(),
+) {
+  init {
+    context.deleteSharedPreferences(PREFS)
+  }
+
+  private val texts = ResourcesRecipeTexts(context)
+  private val photosDir = File(context.cacheDir, "test_app_photos").also { it.deleteRecursively() }
+  private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+  val db: HistoryDatabase = HistoryDatabase.inMemory(context, texts)
+  val brewSettings = BrewSettings(context, PREFS)
+  val targetSettings = TargetSettings(context, PREFS)
+  val themeSettings = ThemeSettings(context, PREFS)
+  val experienceSettings = ExperienceSettings(context, PREFS)
+  val connectionSettings = ConnectionSettings(context, PREFS)
+  val brews = BrewRepository(db)
+  val photoStore = CoffeePhotoStore(photosDir, context.cacheDir)
+  val coffees = CoffeeRepository(db, photoStore)
+  val recipes = RecipeRepository(db, texts)
+
+  /** Cada destino se conecta a una báscula simulada, también el "real"; un test puede cambiarlo. */
+  @Volatile var connectionFor: (ScaleTarget) -> ScaleConnection = { SimulatedScaleConnection() }
+  val connectionsMade = java.util.Collections.synchronizedList(mutableListOf<ScaleTarget>())
+
+  val scaleSession = ScaleSessionManager(
+    connections = ScaleConnectionFactory { target ->
+      connectionsMade += target
+      connectionFor(target)
+    },
+    scope = MainScope(),
+    autoFinishSeconds = brewSettings.autoFinishSeconds,
+    saver = brews,
+    applicationScope = appScope,
+    references = targetSettings,
+    targets = RepositoryTargetReferences(recipes, brews),
+    notifier = SilentNotifier,
+    coffeeStore = brewSettings,
+    coffees = RepositoryScaleCoffees(coffees),
+    memory = connectionSettings,
+  )
+
+  val autoReconnect = AutoReconnect(scaleSession, connectionSettings, bluetooth, MainScope())
+
+  val dependencies = AppDependencies(
+    brewSettings = brewSettings,
+    targetSettings = targetSettings,
+    themeSettings = themeSettings,
+    experienceSettings = experienceSettings,
+    freeBrewDefaults = brewSettings,
+    scaleMemory = connectionSettings,
+    brewRepository = brews,
+    coffeeRepository = coffees,
+    recipeRepository = recipes,
+    recipeTexts = texts,
+    coffeePhotoStore = photoStore,
+    coffeeImages = CoffeeImages(photoStore, maxBytes = 1024 * 1024),
+    labelOcr = FakeLabelOcr(),
+    scaleSession = scaleSession,
+    autoReconnect = autoReconnect,
+    bluetooth = bluetooth,
+    scanner = scanner,
+  )
+
+  /** Marca el primer arranque como hecho (sin esto aparece la elección de modo). */
+  fun skipOnboarding(mode: ExperienceMode = ExperienceMode.BASIC) =
+    experienceSettings.completeOnboarding(mode)
+
+  fun close() {
+    scaleSession.disconnect()
+    appScope.cancel()
+    db.close()
+    photosDir.deleteRecursively()
+    context.deleteSharedPreferences(PREFS)
+  }
+
+  private companion object {
+    const val PREFS = "settings_test"
+  }
+}
+
+/** Monta `MainNavigation` con [deps], el tema y el modo como `MainActivity`. */
+@Composable
+fun TestApp(deps: TestAppDependencies) {
+  val mode by deps.experienceSettings.mode.collectAsState()
+  CompositionLocalProvider(
+    LocalExperienceMode provides mode,
+    LocalCoffeeImages provides deps.dependencies.coffeeImages,
+  ) {
+    DotScaleTheme(darkTheme = false) { MainNavigation(deps.dependencies) }
+  }
+}
+
+/** Las descripciones (es y en) de los iconos de sección que ya no están en ninguna barra superior. */
+val SectionIconDescriptions = listOf("Abrir cafés", "Open coffees", "Abrir recetas", "Open recipes", "Abrir historial", "Open history")

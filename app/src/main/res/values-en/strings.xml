@@ -3,20 +3,12 @@
     <string name="app_name">Dot Scale</string>
 
     <!-- Scan -->
-    <string name="scan_title">Find scale</string>
     <string name="scan_start">Scan</string>
     <string name="scan_stop">Stop</string>
     <string name="scan_show_all">Show all</string>
-    <string name="scan_devices">Nearby devices</string>
     <string name="scan_scanning">Scanning…</string>
     <string name="scan_idle">Scan stopped</string>
-    <string name="scan_permissions_title">Bluetooth permission</string>
-    <string name="scan_bluetooth_off_title">Bluetooth is off</string>
     <string name="scan_empty">Turn the scale on and bring it close to the phone.</string>
-    <string name="scan_simulated">Try with simulated scale</string>
-    <string name="scan_permissions_needed">Bluetooth permission is needed to find the scale.</string>
-    <string name="scan_grant_permissions">Grant permissions</string>
-    <string name="scan_bluetooth_off">Bluetooth is off. Turn it on to find the scale.</string>
     <string name="scan_unknown_device">Unnamed device</string>
     <string name="scan_rssi">%1$d dBm</string>
 
@@ -120,7 +112,6 @@
 
     <!-- History -->
     <string name="history_title">History</string>
-    <string name="history_open">Open history</string>
     <string name="history_filter_coffee">Coffee</string>
     <string name="history_filter_method">Method</string>
     <string name="history_filter_all">All</string>
@@ -225,7 +216,6 @@
 
     <!-- Recipes: list -->
     <string name="recipe_title">Recipes</string>
-    <string name="recipe_open">Open recipes</string>
     <string name="recipe_add">Create recipe</string>
     <string name="recipe_empty">No recipes yet</string>
     <string name="recipe_deleted">Recipe deleted</string>
@@ -373,7 +363,6 @@
 
     <!-- Coffees -->
     <string name="coffees_title">Coffees</string>
-    <string name="coffees_open">Open coffees</string>
     <string name="coffees_add">Add coffee</string>
     <string name="coffees_search_hint">Search by name, roaster or origin</string>
     <string name="coffees_search_clear">Clear search</string>
@@ -511,4 +500,38 @@
     <string name="share_error">The image could not be generated</string>
     <string name="share_action">Share</string>
     <string name="share_image_action">Share image</string>
+    <string name="tab_prepare">Brew</string>
+    <string name="tab_coffees">Coffees</string>
+    <string name="tab_recipes">Recipes</string>
+    <string name="tab_history">History</string>
+    <string name="prepare_recipe">Recipe</string>
+    <string name="prepare_dose">Dose</string>
+    <string name="prepare_ratio">Ratio</string>
+    <string name="prepare_water">Water</string>
+    <string name="prepare_grams">g</string>
+    <string name="prepare_ratio_prefix">1:</string>
+    <string name="prepare_ratio_value">1:%1$s</string>
+    <string name="prepare_empty_value">—</string>
+    <string name="prepare_start">Start</string>
+    <string name="prepare_start_disabled">Connect the scale to start.</string>
+    <string name="prepare_range_error">The dose goes from 5 to 60 g and the ratio from 10 to 20.</string>
+    <string name="scale_card_no_permission">We need Bluetooth permission</string>
+    <string name="scale_card_grant">Grant permission</string>
+    <string name="scale_card_bluetooth_off">Bluetooth is off</string>
+    <string name="scale_card_enable">Turn on</string>
+    <string name="scale_card_connect_prompt">Connect your scale</string>
+    <string name="scale_card_connect">Connect</string>
+    <string name="scale_card_connecting">Connecting to %1$s…</string>
+    <string name="scale_card_connected">%1$s connected</string>
+    <string name="scale_card_failed">Could not connect to %1$s</string>
+    <string name="scale_card_retry">Retry</string>
+    <string name="scale_card_change">Change scale</string>
+    <string name="scale_card_disconnected">%1$s disconnected</string>
+    <string name="scale_card_disconnect">Disconnect</string>
+    <string name="scale_card_menu">Scale options</string>
+    <string name="connect_title">Connect scale</string>
+    <string name="connect_simulated">Use simulated scale</string>
+    <string name="onboarding_title">How do you brew your coffee?</string>
+    <string name="onboarding_hint">You can change it any time in Settings.</string>
+    <string name="onboarding_skip">Skip</string>
 </resources>

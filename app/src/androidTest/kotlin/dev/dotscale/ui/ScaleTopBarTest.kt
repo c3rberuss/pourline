@@ -28,10 +28,7 @@ class ScaleTopBarTest {
   private val title = "Báscula de cocina con nombre largo ".padEnd(40, 'x')
 
   @Test
-  fun aLongTitleIsEllipsizedAndTheActionsStayVisibleAndClickable() {
-    var coffees = 0
-    var history = 0
-    var settings = 0
+  fun aLongTitleIsEllipsizedAndTheBackArrowAndBatteryStayVisible() {
     var back = 0
     rule.setContent {
       DotScaleTheme(darkTheme = false) {
@@ -41,9 +38,6 @@ class ScaleTopBarTest {
             subtitle = null,
             batteryPercent = 80,
             onBack = { back++ },
-            onOpenHistory = { history++ },
-            onOpenCoffees = { coffees++ },
-            onOpenSettings = { settings++ },
           )
         }
       }
@@ -55,13 +49,10 @@ class ScaleTopBarTest {
     assertTrue("el título debería recortarse con elipsis", layouts.single().hasVisualOverflow)
 
     rule.onNodeWithContentDescription(context.getString(R.string.scale_battery, 80)).assertIsDisplayed()
-    rule.onNodeWithContentDescription(context.getString(R.string.coffees_open)).assertIsDisplayed().performClick()
-    rule.onNodeWithContentDescription(context.getString(R.string.history_open)).assertIsDisplayed().performClick()
-    rule.onNodeWithContentDescription(context.getString(R.string.settings_open)).assertIsDisplayed().performClick()
+    // Las secciones viven en la barra inferior: la barra de la sesión solo tiene la flecha y la batería.
+    SectionIconDescriptions.forEach { rule.onNodeWithContentDescription(it).assertDoesNotExist() }
+    rule.onNodeWithContentDescription(context.getString(R.string.settings_open)).assertDoesNotExist()
     rule.onNodeWithContentDescription(context.getString(R.string.scale_back)).assertIsDisplayed().performClick()
-    assertEquals(1, coffees)
-    assertEquals(1, history)
-    assertEquals(1, settings)
     assertEquals(1, back)
   }
 }

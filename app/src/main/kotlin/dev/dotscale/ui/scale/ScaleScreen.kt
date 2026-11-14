@@ -97,9 +97,6 @@ fun ScaleScreen(
   pickerViewModel: TargetPickerViewModel,
   title: String,
   onBack: () -> Unit,
-  onOpenSettings: () -> Unit,
-  onOpenHistory: () -> Unit,
-  onOpenCoffees: () -> Unit,
   onAddDetails: (Long) -> Unit,
   onManageRecipes: () -> Unit,
   coffeePickerViewModel: CoffeePickerViewModel? = null,
@@ -142,9 +139,6 @@ fun ScaleScreen(
         subtitle = info,
         batteryPercent = ui.batteryPercent,
         onBack = onBack,
-        onOpenHistory = onOpenHistory,
-        onOpenCoffees = onOpenCoffees,
-        onOpenSettings = onOpenSettings,
       )
     },
     snackbarHost = { AntMessageHost(snackbar) },
@@ -255,16 +249,13 @@ fun ScaleScreen(
 internal fun scaleFigureStyle(size: TextUnit): TextStyle =
   AntTheme.typography.heading1.copy(fontSize = size, lineHeight = size * LINE_HEIGHT_RATIO, fontWeight = FontWeight.Light)
 
-/** Barra superior de Scale: el título se recorta con elipsis y las acciones siguen visibles. */
+/** Barra superior de Scale: el título se recorta con elipsis y la batería sigue visible. */
 @Composable
 internal fun ScaleTopBar(
   title: String,
   subtitle: String?,
   batteryPercent: Int?,
   onBack: () -> Unit,
-  onOpenHistory: () -> Unit,
-  onOpenCoffees: () -> Unit,
-  onOpenSettings: () -> Unit,
 ) {
   AntTopBar(
     title = title,
@@ -274,20 +265,12 @@ internal fun ScaleTopBar(
     },
     actions = {
       batteryPercent?.let { BatteryTag(it) }
-      AntIconButton(
-        AntIcons.Coffee,
-        contentDescription = stringResource(R.string.coffees_open),
-        onClick = onOpenCoffees,
-        modifier = Modifier.testTag("scale_open_coffees"),
-      )
-      AntIconButton(AntIcons.History, contentDescription = stringResource(R.string.history_open), onClick = onOpenHistory)
-      AntIconButton(AntIcons.Settings, contentDescription = stringResource(R.string.settings_open), onClick = onOpenSettings)
     },
   )
 }
 
 @Composable
-private fun BatteryTag(percent: Int) {
+internal fun BatteryTag(percent: Int) {
   val description = stringResource(R.string.scale_battery, percent)
   AntTag(
     text = stringResource(R.string.scale_battery_short, percent),

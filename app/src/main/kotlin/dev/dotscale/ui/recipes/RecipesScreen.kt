@@ -33,7 +33,7 @@ import dev.dotscale.ui.theme.AntTheme
 @Composable
 fun RecipesScreen(
   viewModel: RecipesViewModel,
-  onBack: () -> Unit,
+  onBack: (() -> Unit)?,
   onOpenRecipe: (Long) -> Unit,
   onCreateRecipe: () -> Unit,
 ) {
@@ -56,8 +56,10 @@ fun RecipesScreen(
     topBar = {
       AntTopBar(
         title = stringResource(R.string.recipe_title),
-        navigationIcon = {
-          AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
+        navigationIcon = onBack?.let { back ->
+          {
+            AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = back)
+          }
         },
         actions = {
           AntIconButton(

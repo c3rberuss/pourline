@@ -38,7 +38,7 @@ import dev.dotscale.ui.components.showAntMessage
 import dev.dotscale.ui.theme.AntTheme
 
 @Composable
-fun HistoryScreen(viewModel: HistoryViewModel, onBack: () -> Unit, onOpenBrew: (Long) -> Unit) {
+fun HistoryScreen(viewModel: HistoryViewModel, onBack: (() -> Unit)?, onOpenBrew: (Long) -> Unit) {
   val items by viewModel.items.collectAsStateWithLifecycle()
   val progress by viewModel.progress.collectAsStateWithLifecycle()
   val coffees by viewModel.coffees.collectAsStateWithLifecycle()
@@ -65,8 +65,10 @@ fun HistoryScreen(viewModel: HistoryViewModel, onBack: () -> Unit, onOpenBrew: (
     topBar = {
       AntTopBar(
         title = stringResource(R.string.history_title),
-        navigationIcon = {
-          AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
+        navigationIcon = onBack?.let { back ->
+          {
+            AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = back)
+          }
         },
       )
     },

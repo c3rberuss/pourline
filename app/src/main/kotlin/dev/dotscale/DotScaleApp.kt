@@ -1,6 +1,8 @@
 package dev.dotscale
 
 import android.app.Application
+import dev.dotscale.ble.AndroidBluetoothEnvironment
+import dev.dotscale.ble.ScaleScanner
 import dev.dotscale.coffee.CoffeeRepository
 import dev.dotscale.coffee.label.MlKitLabelOcr
 import dev.dotscale.coffee.photo.CoffeeImages
@@ -10,6 +12,7 @@ import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.recipe.RecipeRepository
 import dev.dotscale.recipe.ResourcesRecipeTexts
 import dev.dotscale.session.AndroidScaleConnections
+import dev.dotscale.session.AutoReconnect
 import dev.dotscale.session.RepositoryScaleCoffees
 import dev.dotscale.session.RepositoryTargetReferences
 import dev.dotscale.session.ScaleSessionManager
@@ -88,6 +91,37 @@ class DotScaleApp : Application() {
       coffeeStore = brewSettings,
       coffees = RepositoryScaleCoffees(coffeeRepository),
       memory = connectionSettings,
+    )
+  }
+
+  /** El Bluetooth del teléfono: permisos y encendido (receptor de `ACTION_STATE_CHANGED`). */
+  val bluetoothEnvironment by lazy { AndroidBluetoothEnvironment(this) }
+
+  /** Reconecta a la última báscula real al abrir la app, al volver a primer plano y al encender el Bluetooth. */
+  val autoReconnect by lazy {
+    AutoReconnect(scaleSession, connectionSettings, bluetoothEnvironment, MainScope())
+  }
+
+  /** Lo que reciben las pantallas (D32). */
+  val dependencies by lazy {
+    AppDependencies(
+      brewSettings = brewSettings,
+      targetSettings = targetSettings,
+      themeSettings = themeSettings,
+      experienceSettings = experienceSettings,
+      freeBrewDefaults = brewSettings,
+      scaleMemory = connectionSettings,
+      brewRepository = brewRepository,
+      coffeeRepository = coffeeRepository,
+      recipeRepository = recipeRepository,
+      recipeTexts = ResourcesRecipeTexts(this),
+      coffeePhotoStore = coffeePhotoStore,
+      coffeeImages = coffeeImages,
+      labelOcr = labelOcr,
+      scaleSession = scaleSession,
+      autoReconnect = autoReconnect,
+      bluetooth = bluetoothEnvironment,
+      scanner = ScaleScanner(this),
     )
   }
 }

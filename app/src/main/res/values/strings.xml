@@ -2,20 +2,12 @@
     <string name="app_name">Dot Scale</string>
 
     <!-- Escaneo -->
-    <string name="scan_title">Buscar báscula</string>
     <string name="scan_start">Buscar</string>
     <string name="scan_stop">Detener</string>
     <string name="scan_show_all">Mostrar todos</string>
-    <string name="scan_devices">Dispositivos cercanos</string>
     <string name="scan_scanning">Buscando…</string>
     <string name="scan_idle">Búsqueda detenida</string>
-    <string name="scan_permissions_title">Permiso de Bluetooth</string>
-    <string name="scan_bluetooth_off_title">Bluetooth apagado</string>
     <string name="scan_empty">Enciende la báscula y acércala al teléfono.</string>
-    <string name="scan_simulated">Probar con báscula simulada</string>
-    <string name="scan_permissions_needed">Se necesita permiso de Bluetooth para buscar la báscula.</string>
-    <string name="scan_grant_permissions">Conceder permisos</string>
-    <string name="scan_bluetooth_off">El Bluetooth está apagado. Actívalo para buscar la báscula.</string>
     <string name="scan_unknown_device">Dispositivo sin nombre</string>
     <string name="scan_rssi">%1$d dBm</string>
 
@@ -119,7 +111,6 @@
 
     <!-- Historial -->
     <string name="history_title">Historial</string>
-    <string name="history_open">Abrir historial</string>
     <string name="history_filter_coffee">Café</string>
     <string name="history_filter_method">Método</string>
     <string name="history_filter_all">Todos</string>
@@ -224,7 +215,6 @@
 
     <!-- Recetas: lista -->
     <string name="recipe_title">Recetas</string>
-    <string name="recipe_open">Abrir recetas</string>
     <string name="recipe_add">Crear receta</string>
     <string name="recipe_empty">Aún no hay recetas</string>
     <string name="recipe_deleted">Receta borrada</string>
@@ -372,7 +362,6 @@
 
     <!-- Cafés -->
     <string name="coffees_title">Cafés</string>
-    <string name="coffees_open">Abrir cafés</string>
     <string name="coffees_add">Registrar café</string>
     <string name="coffees_search_hint">Buscar por nombre, tostador u origen</string>
     <string name="coffees_search_clear">Borrar búsqueda</string>
@@ -510,4 +499,38 @@
     <string name="share_error">No se pudo generar la imagen</string>
     <string name="share_action">Compartir</string>
     <string name="share_image_action">Compartir imagen</string>
+    <string name="tab_prepare">Preparar</string>
+    <string name="tab_coffees">Cafés</string>
+    <string name="tab_recipes">Recetas</string>
+    <string name="tab_history">Historial</string>
+    <string name="prepare_recipe">Receta</string>
+    <string name="prepare_dose">Dosis</string>
+    <string name="prepare_ratio">Ratio</string>
+    <string name="prepare_water">Agua</string>
+    <string name="prepare_grams">g</string>
+    <string name="prepare_ratio_prefix">1:</string>
+    <string name="prepare_ratio_value">1:%1$s</string>
+    <string name="prepare_empty_value">—</string>
+    <string name="prepare_start">Empezar</string>
+    <string name="prepare_start_disabled">Conecta la báscula para empezar.</string>
+    <string name="prepare_range_error">La dosis va de 5 a 60 g y el ratio, de 10 a 20.</string>
+    <string name="scale_card_no_permission">Necesitamos permiso de Bluetooth</string>
+    <string name="scale_card_grant">Dar permisos</string>
+    <string name="scale_card_bluetooth_off">Bluetooth apagado</string>
+    <string name="scale_card_enable">Activar</string>
+    <string name="scale_card_connect_prompt">Conecta tu báscula</string>
+    <string name="scale_card_connect">Conectar</string>
+    <string name="scale_card_connecting">Conectando a %1$s…</string>
+    <string name="scale_card_connected">%1$s conectada</string>
+    <string name="scale_card_failed">No se pudo conectar a %1$s</string>
+    <string name="scale_card_retry">Reintentar</string>
+    <string name="scale_card_change">Cambiar báscula</string>
+    <string name="scale_card_disconnected">%1$s desconectada</string>
+    <string name="scale_card_disconnect">Desconectar</string>
+    <string name="scale_card_menu">Opciones de la báscula</string>
+    <string name="connect_title">Conectar báscula</string>
+    <string name="connect_simulated">Usar báscula simulada</string>
+    <string name="onboarding_title">¿Cómo preparas tu café?</string>
+    <string name="onboarding_hint">Puedes cambiarlo cuando quieras en Ajustes.</string>
+    <string name="onboarding_skip">Saltar</string>
 </resources>

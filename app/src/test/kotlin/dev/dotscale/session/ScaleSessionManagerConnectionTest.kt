@@ -160,6 +160,50 @@ class ScaleSessionManagerConnectionTest {
   }
 
   @Test
+  fun `a connection that fails before Ready is a failure and a retry clears it`() {
+    factory.configure = { it.connectGate = CompletableDeferred() }
+    manager.connect(real)
+    factory.connections.single().state.value = ConnectionState.Failed("timeout")
+
+    assertTrue(manager.ui.value.lastFailure)
+
+    factory.configure = {}
+    manager.retry()
+
+    assertFalse(manager.ui.value.lastFailure)
+    assertEquals(ConnectionState.Ready, manager.ui.value.connection)
+  }
+
+  @Test
+  fun `losing an established connection is not a failure`() {
+    manager.connect(real)
+    factory.connections.single().state.value = ConnectionState.Failed("perdida")
+
+    assertFalse(manager.ui.value.lastFailure)
+  }
+
+  @Test
+  fun `disconnect marks the user choice until the next connect`() {
+    assertFalse(manager.userDisconnected)
+    manager.connect(real)
+    assertFalse(manager.userDisconnected)
+
+    manager.disconnect()
+    assertTrue(manager.userDisconnected)
+
+    manager.connect(real)
+    assertFalse(manager.userDisconnected)
+  }
+
+  @Test
+  fun `replacing the connection is not a user disconnect`() {
+    manager.connect(real)
+    manager.connect(simulated)
+
+    assertFalse(manager.userDisconnected)
+  }
+
+  @Test
   fun `a pour while disarmed neither creates a session nor saves anything`() {
     manager.connect(simulated)
     pour()

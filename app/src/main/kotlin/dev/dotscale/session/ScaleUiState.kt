@@ -49,6 +49,8 @@ data class ActiveTarget(
   val curve: TargetCurve,
   /** `dosis capturada / dosis nominal`, o 1 si falta alguna. */
   val factor: Double,
+  /** La dosis con la que se hizo la curva (la de la receta o de la preparación); `null` si no la había. */
+  val nominalDoseG: Double? = null,
   /** La dosis capturada, en gramos, con la que se escaló; `null` si el factor no sale de una dosis. */
   val scaledDoseG: Double?,
   /** Datos manuales que se copian de la referencia al guardar (sin nombre ni notas). */
@@ -63,6 +65,8 @@ data class SessionFit(val name: String, val curve: TargetCurve, val fit: BrewFit
 
 data class ScaleUiState(
   val connection: ConnectionState = ConnectionState.Disconnected,
+  /** La última conexión falló antes de llegar a `Ready` (no es lo mismo que perder una ya establecida). */
+  val lastFailure: Boolean = false,
   val weight: Double = 0.0,
   val flowRate: Double = 0.0,
   val seconds: Int = 0,
@@ -98,6 +102,7 @@ data class ScaleUiState(
   /** Una conexión nueva: el estado del dispositivo vuelve a su valor inicial; sesión, objetivo, café y dosis siguen. */
   fun resetDevice(isSimulated: Boolean): ScaleUiState = copy(
     connection = ConnectionState.Disconnected,
+    lastFailure = false,
     weight = 0.0,
     flowRate = 0.0,
     seconds = 0,

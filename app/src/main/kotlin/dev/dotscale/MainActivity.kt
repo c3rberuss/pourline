@@ -13,6 +13,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.coffee.photo.LocalCoffeeImages
 import dev.dotscale.settings.LocalExperienceMode
@@ -22,14 +24,15 @@ import dev.dotscale.ui.theme.DotScaleTheme
 
 class MainActivity : ComponentActivity() {
   private val app get() = application as DotScaleApp
+  private val deps get() = app.dependencies
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
     enableEdgeToEdge()
     setContent {
-      val themeMode by app.themeSettings.mode.collectAsStateWithLifecycle()
-      val experienceMode by app.experienceSettings.mode.collectAsStateWithLifecycle()
+      val themeMode by deps.themeSettings.mode.collectAsStateWithLifecycle()
+      val experienceMode by deps.experienceSettings.mode.collectAsStateWithLifecycle()
       val darkTheme = themeMode.isDark()
 
       // Los iconos de las barras del sistema siguen al tema de la app, no solo al del teléfono.
@@ -41,12 +44,15 @@ class MainActivity : ComponentActivity() {
         onDispose {}
       }
 
+      // El primer ON_START del proceso es el arranque de la app; los siguientes, volver a primer plano (D29).
+      LifecycleEventEffect(Lifecycle.Event.ON_START) { deps.autoReconnect.onForeground() }
+
       CompositionLocalProvider(
         LocalExperienceMode provides experienceMode,
-        LocalCoffeeImages provides app.coffeeImages,
+        LocalCoffeeImages provides deps.coffeeImages,
       ) {
         DotScaleTheme(darkTheme = darkTheme) {
-          Box(Modifier.fillMaxSize().background(AntTheme.colors.bgLayout)) { MainNavigation() }
+          Box(Modifier.fillMaxSize().background(AntTheme.colors.bgLayout)) { MainNavigation(deps) }
         }
       }
     }

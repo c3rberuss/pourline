@@ -73,9 +73,6 @@ class BrewChartTest {
           picker,
           title = "Test",
           onBack = {},
-          onOpenSettings = {},
-          onOpenHistory = {},
-          onOpenCoffees = {},
           onAddDetails = {},
           onManageRecipes = { managed++ },
         )

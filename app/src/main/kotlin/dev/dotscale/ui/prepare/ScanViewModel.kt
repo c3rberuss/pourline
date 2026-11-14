@@ -1,8 +1,8 @@
-package dev.dotscale.ui.scan
+package dev.dotscale.ui.prepare
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.dotscale.ble.ScaleScanner
+import dev.dotscale.ble.DeviceScanner
 import dev.dotscale.ble.ScannedDevice
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,15 +21,13 @@ data class ScanUiState(
   val error: String? = null,
 )
 
-class ScanViewModel(private val scanner: ScaleScanner) : ViewModel() {
+class ScanViewModel(private val scanner: DeviceScanner) : ViewModel() {
 
   private val found = MutableStateFlow<Map<String, ScannedDevice>>(emptyMap())
   private val _ui = MutableStateFlow(ScanUiState())
   val ui: StateFlow<ScanUiState> = _ui.asStateFlow()
 
   private var job: Job? = null
-
-  val isBluetoothEnabled: Boolean get() = scanner.isBluetoothEnabled
 
   init {
     viewModelScope.launch { found.collect { refresh() } }

@@ -81,8 +81,8 @@ fun BrewChartCard(
     val editable = phase !is BrewPhase.Active
     if (onPickTarget != null || onPickCoffee != null) {
       Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
-        if (onPickTarget != null) TargetRow(target, enabled = editable, onClick = onPickTarget)
-        if (onPickCoffee != null) CoffeeRow(coffee, enabled = editable, onClick = onPickCoffee)
+        if (onPickTarget != null) TargetSelectRow(target, enabled = editable, onClick = onPickTarget)
+        if (onPickCoffee != null) CoffeeSelectRow(coffee, enabled = editable, onClick = onPickCoffee)
       }
     }
     when (phase) {
@@ -120,59 +120,6 @@ fun BrewChartCard(
         if (phase.pourIgnored) AntAlert(message = stringResource(R.string.brew_chart_ignored), type = AntStatus.Info)
       }
     }
-  }
-}
-
-private val SetupLabelWidth = 72.dp
-private val SetupIconSize = 16.dp
-
-/** Una fila de preparación (D5): la etiqueta a la izquierda y un disparador con el valor elegido. */
-@Composable
-private fun BrewSetupRow(label: String, trigger: @Composable (Modifier) -> Unit) {
-  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs), verticalAlignment = Alignment.CenterVertically) {
-    AntText(label, Modifier.width(SetupLabelWidth), type = AntTextType.Secondary)
-    trigger(Modifier.weight(1f))
-  }
-}
-
-@Composable
-private fun TargetRow(target: ActiveTarget?, enabled: Boolean, onClick: () -> Unit) {
-  BrewSetupRow(stringResource(R.string.brew_setup_target)) { modifier ->
-    AntSelectTrigger(
-      value = target?.name ?: stringResource(R.string.brew_setup_target_none),
-      onClick = onClick,
-      modifier = modifier,
-      leading = { Icon(AntIcons.Recipe, contentDescription = null, modifier = Modifier.size(SetupIconSize), tint = AntTheme.colors.textTertiary) },
-      enabled = enabled,
-      description = target?.let { stringResource(R.string.target_chip, it.name) } ?: stringResource(R.string.target_chip_none),
-      testTag = "target_chip",
-    )
-  }
-}
-
-@Composable
-private fun CoffeeRow(coffee: PickedCoffee?, enabled: Boolean, onClick: () -> Unit) {
-  val days = coffee?.let { daysSinceRoast(it.roastDate, LocalDate.now()) }
-  val value = when {
-    coffee == null -> stringResource(R.string.brew_setup_coffee_none)
-    days != null -> stringResource(R.string.brew_setup_coffee_value, coffee.name, days)
-    else -> coffee.name
-  }
-  val description = when {
-    coffee == null -> stringResource(R.string.brew_setup_coffee_description_none)
-    days != null -> pluralStringResource(R.plurals.brew_setup_coffee_description, days, coffee.name, days)
-    else -> stringResource(R.string.brew_setup_coffee_description_plain, coffee.name)
-  }
-  BrewSetupRow(stringResource(R.string.brew_setup_coffee)) { modifier ->
-    AntSelectTrigger(
-      value = value,
-      onClick = onClick,
-      modifier = modifier,
-      leading = { Icon(AntIcons.Coffee, contentDescription = null, modifier = Modifier.size(SetupIconSize), tint = AntTheme.colors.textTertiary) },
-      enabled = enabled,
-      description = description,
-      testTag = "coffee_trigger",
-    )
   }
 }
 

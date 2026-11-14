@@ -27,14 +27,17 @@ data class ScannedDevice(
     get() = model != null || advertisesScaleService || name?.contains("TIMEMORE", ignoreCase = true) == true
 }
 
-@SuppressLint("MissingPermission") // ScanScreen pide los permisos antes de escanear.
-class ScaleScanner(context: Context) {
+/** Busca básculas cerca. Lo implementa [ScaleScanner]; en los tests, un falso. */
+fun interface DeviceScanner {
+  /** Escanea hasta que se cancele el collect. */
+  fun scan(): Flow<ScannedDevice>
+}
+
+@SuppressLint("MissingPermission") // Preparar pide los permisos antes de abrir la hoja de conexión.
+class ScaleScanner(context: Context) : DeviceScanner {
   private val adapter = context.applicationContext.getSystemService(BluetoothManager::class.java)?.adapter
 
-  val isBluetoothEnabled: Boolean get() = adapter?.isEnabled == true
-
-  /** Escanea hasta que se cancele el collect. */
-  fun scan(): Flow<ScannedDevice> = callbackFlow {
+  override fun scan(): Flow<ScannedDevice> = callbackFlow {
     val scanner = adapter?.takeIf { it.isEnabled }?.bluetoothLeScanner
     if (scanner == null) {
       close(IllegalStateException("El Bluetooth está apagado"))

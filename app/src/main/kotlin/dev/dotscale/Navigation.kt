@@ -1,18 +1,30 @@
 package dev.dotscale
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import dev.dotscale.recipe.ResourcesRecipeTexts
-import dev.dotscale.session.ScaleSessionManager
-import dev.dotscale.session.ScaleTarget
 import dev.dotscale.ui.coffees.CoffeeDetailScreen
 import dev.dotscale.ui.coffees.CoffeeDetailViewModel
 import dev.dotscale.ui.coffees.CoffeeEditScreen
@@ -20,6 +32,8 @@ import dev.dotscale.ui.coffees.CoffeeEditViewModel
 import dev.dotscale.ui.coffees.CoffeePickerViewModel
 import dev.dotscale.ui.coffees.CoffeesScreen
 import dev.dotscale.ui.coffees.CoffeesViewModel
+import dev.dotscale.ui.components.AntTabBar
+import dev.dotscale.ui.components.AntTabBarItem
 import dev.dotscale.ui.history.BrewCompareScreen
 import dev.dotscale.ui.history.BrewCompareViewModel
 import dev.dotscale.ui.history.BrewDetailScreen
@@ -30,178 +44,219 @@ import dev.dotscale.ui.history.ComparePickScreen
 import dev.dotscale.ui.history.ComparePickViewModel
 import dev.dotscale.ui.history.HistoryScreen
 import dev.dotscale.ui.history.HistoryViewModel
+import dev.dotscale.ui.onboarding.OnboardingScreen
+import dev.dotscale.ui.prepare.PrepareScreen
+import dev.dotscale.ui.prepare.PrepareViewModel
 import dev.dotscale.ui.recipes.RecipeEditScreen
 import dev.dotscale.ui.recipes.RecipeEditViewModel
 import dev.dotscale.ui.recipes.RecipesScreen
 import dev.dotscale.ui.recipes.RecipesViewModel
 import dev.dotscale.ui.scale.ScaleScreen
 import dev.dotscale.ui.scale.TargetPickerViewModel
-import dev.dotscale.ui.scan.ScanScreen
 import dev.dotscale.ui.settings.SettingsScreen
 
-/** Destino de una entrada `Scale`: la MAC, o la simulada si no hay. */
-private fun Scale.toTarget(simulatedName: String): ScaleTarget =
-  address?.let { ScaleTarget.Real(it, name) } ?: ScaleTarget.Simulated(simulatedName)
-
-/** Conecta al crearse y desconecta (terminando y guardando una sesión activa) al sacar la entrada de la pila. */
-private class ScaleLease(private val session: ScaleSessionManager, target: ScaleTarget) : ViewModel() {
-  init {
-    session.connect(target)
+/**
+ * La app: la elección del primer arranque (D11) mientras `onboardingDone` sea falso y, después, las cuatro
+ * pestañas con su pila cada una (D30).
+ */
+@Composable
+fun MainNavigation(deps: AppDependencies) {
+  val onboardingDone by deps.experienceSettings.onboardingDone.collectAsStateWithLifecycle()
+  if (onboardingDone) {
+    TabsNavigation(deps)
+  } else {
+    OnboardingScreen(onChoose = deps.experienceSettings::completeOnboarding)
   }
-
-  override fun onCleared() = session.disconnect()
 }
 
 @Composable
-fun MainNavigation() {
-  val backStack = rememberNavBackStack(Scan)
-  val appContext = LocalContext.current.applicationContext
-  val simulatedName = stringResource(R.string.scale_simulation)
+private fun TabsNavigation(deps: AppDependencies) {
+  var tab by rememberSaveable { mutableStateOf(Tab.PREPARE) }
+  val stacks = Tab.entries.associateWith { rememberNavBackStack(it.root) }
+  val entries = Tab.entries.associateWith { t ->
+    // Cada pila se decora por separado (con sus propios decoradores): así conserva sus ViewModels y su estado
+    // guardado al cambiar de pestaña y no los comparte con otra pila.
+    rememberDecoratedNavEntries(
+      backStack = stacks.getValue(t),
+      entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
+      entryProvider = tabEntryProvider(t, stacks.getValue(t), deps) { tab = it },
+    )
+  }
+  val activeStack = stacks.getValue(tab)
+  val showBar = showsBottomBar(activeStack.lastOrNull())
 
-  NavDisplay(
-    backStack = backStack,
-    onBack = { backStack.removeLastOrNull() },
-    entryDecorators = listOf(
-      rememberSaveableStateHolderNavEntryDecorator(),
-      rememberViewModelStoreNavEntryDecorator(),
-    ),
-    entryProvider = entryProvider {
-      entry<Scan> {
-        ScanScreen(
-          onDeviceSelected = { address, name -> backStack.add(Scale(address, name)) },
-          onSimulatedSelected = { backStack.add(Scale(address = null, name = simulatedName)) },
-          onOpenSettings = { backStack.add(Settings) },
-          onOpenHistory = { backStack.add(History) },
-          onOpenRecipes = { backStack.add(Recipes) },
-          onOpenCoffees = { backStack.add(Coffees) },
-        )
-      }
-      entry<Scale> { key ->
-        val app = appContext as DotScaleApp
-        // Provisional hasta F6: la entrada conecta al crearse y desconecta al sacarse de la pila (no al rotar).
-        viewModel { ScaleLease(app.scaleSession, key.toTarget(simulatedName)) }
-        val pickerViewModel = viewModel { TargetPickerViewModel(app.recipeRepository, app.brewRepository) }
-        val coffeePickerViewModel = viewModel { CoffeePickerViewModel(app.coffeeRepository) }
-        ScaleScreen(
-          app.scaleSession,
-          pickerViewModel,
-          title = key.name,
-          onBack = { backStack.removeLastOrNull() },
-          onOpenSettings = { backStack.add(Settings) },
-          onOpenHistory = { backStack.add(History) },
-          onOpenCoffees = { backStack.add(Coffees) },
-          onAddDetails = { id -> backStack.add(BrewEdit(id)) },
-          onManageRecipes = { backStack.add(Recipes) },
-          coffeePickerViewModel = coffeePickerViewModel,
-          onNewCoffee = { backStack.add(CoffeeEdit()) },
-        )
-      }
-      entry<Coffees> {
-        val repository = (appContext as DotScaleApp).coffeeRepository
-        CoffeesScreen(
-          viewModel { CoffeesViewModel(repository) },
-          onBack = { backStack.removeLastOrNull() },
-          onOpenCoffee = { id -> backStack.add(CoffeeDetail(id)) },
-          onAddCoffee = { backStack.add(CoffeeEdit()) },
-        )
-      }
-      entry<CoffeeDetail> { key ->
-        val repository = (appContext as DotScaleApp).coffeeRepository
-        CoffeeDetailScreen(
-          viewModel { CoffeeDetailViewModel(repository, key.id) },
-          onBack = { backStack.removeLastOrNull() },
-          onEdit = { id -> backStack.add(CoffeeEdit(id = id)) },
-          onNewBag = { id -> backStack.add(CoffeeEdit(fromCoffeeId = id)) },
-          onOpenBrew = { id -> backStack.add(BrewDetail(id)) },
-        )
-      }
-      entry<CoffeeEdit> { key ->
-        val app = appContext as DotScaleApp
-        CoffeeEditScreen(
-          viewModel { CoffeeEditViewModel(app.coffeeRepository, app.coffeePhotoStore, app.labelOcr, key.id, key.fromCoffeeId) },
-          newCameraTarget = app.coffeePhotoStore::newCameraTarget,
-          onBack = { backStack.removeLastOrNull() },
-          // Una bolsa nueva se abre en su detalle (atrás vuelve al café original); en los demás casos, la pantalla
-          // de origen ya muestra el resultado.
-          onSaved = { savedId ->
-            if (key.fromCoffeeId != null) backStack[backStack.lastIndex] = CoffeeDetail(savedId) else backStack.removeLastOrNull()
-          },
-          isEdit = key.id != null,
-        )
-      }
-      entry<Settings> {
-        val app = appContext as DotScaleApp
-        SettingsScreen(
-          app.brewSettings,
-          app.targetSettings,
-          app.experienceSettings,
-          app.themeSettings,
-          onRestoreRecipes = { app.recipeRepository.restoreBuiltIns() },
-          onBack = { backStack.removeLastOrNull() },
-        )
-      }
-      entry<Recipes> {
-        val repository = (appContext as DotScaleApp).recipeRepository
-        RecipesScreen(
-          viewModel { RecipesViewModel(repository) },
-          onBack = { backStack.removeLastOrNull() },
-          onOpenRecipe = { id -> backStack.add(RecipeEdit(id = id)) },
-          onCreateRecipe = { backStack.add(RecipeEdit()) },
-        )
-      }
-      entry<RecipeEdit> { key ->
-        val app = appContext as DotScaleApp
-        RecipeEditScreen(
-          viewModel { RecipeEditViewModel(app.recipeRepository, app.brewRepository, ResourcesRecipeTexts(appContext), key.id, key.fromBrewId) },
-          onBack = { backStack.removeLastOrNull() },
-          // Duplicar abre la copia en lugar de la original: atrás vuelve a la lista.
-          onDuplicated = { copyId -> backStack[backStack.lastIndex] = RecipeEdit(id = copyId) },
-        )
-      }
-      entry<History> {
-        val repository = (appContext as DotScaleApp).brewRepository
-        HistoryScreen(
-          viewModel { HistoryViewModel(repository) },
-          onBack = { backStack.removeLastOrNull() },
-          onOpenBrew = { id -> backStack.add(BrewDetail(id)) },
-        )
-      }
-      entry<BrewDetail> { key ->
-        val app = appContext as DotScaleApp
-        BrewDetailScreen(
-          viewModel { BrewDetailViewModel(app.brewRepository, app.coffeeRepository, key.id) },
-          onBack = { backStack.removeLastOrNull() },
-          onOpenCoffee = { id -> backStack.add(CoffeeDetail(id)) },
-          onEdit = { id -> backStack.add(BrewEdit(id)) },
-          onCompare = { id -> backStack.add(ComparePick(id)) },
-          onSaveAsRecipe = { id -> backStack.add(RecipeEdit(fromBrewId = id)) },
-        )
-      }
-      entry<ComparePick> { key ->
-        val repository = (appContext as DotScaleApp).brewRepository
-        ComparePickScreen(
-          viewModel { ComparePickViewModel(repository, key.aId) },
-          onBack = { backStack.removeLastOrNull() },
-          // Atrás desde la comparación vuelve al detalle de A, no al selector.
-          onPick = { bId -> backStack[backStack.lastIndex] = BrewCompare(key.aId, bId) },
-        )
-      }
-      entry<BrewCompare> { key ->
-        val app = appContext as DotScaleApp
-        BrewCompareScreen(
-          viewModel { BrewCompareViewModel(app.brewRepository, app.coffeeRepository, key.aId, key.bId) },
-          onBack = { backStack.removeLastOrNull() },
-        )
-      }
-      entry<BrewEdit> { key ->
-        val app = appContext as DotScaleApp
-        BrewEditScreen(
-          viewModel { BrewEditViewModel(app.brewRepository, app.coffeeRepository, key.id) },
-          onBack = { backStack.removeLastOrNull() },
-          coffeePickerViewModel = viewModel { CoffeePickerViewModel(app.coffeeRepository) },
-          onNewCoffee = { backStack.add(CoffeeEdit()) },
-        )
-      }
-    },
-  )
+  Column(Modifier.fillMaxSize()) {
+    NavDisplay(
+      // Con las entradas de Preparar debajo, "Atrás" en la raíz de otra pestaña tiene a dónde ir (D30).
+      entries = if (tab == Tab.PREPARE) entries.getValue(Tab.PREPARE) else entries.getValue(Tab.PREPARE) + entries.getValue(tab),
+      modifier = Modifier
+        .weight(1f)
+        // La barra inferior ya ocupa el inset de navegación: las pantallas de dentro no lo suman otra vez.
+        .then(if (showBar) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier),
+      onBack = {
+        when (backAction(tab, activeStack.size)) {
+          BackAction.Pop -> activeStack.removeLastOrNull()
+          BackAction.SelectPrepare -> tab = Tab.PREPARE
+          BackAction.Exit -> Unit
+        }
+      },
+    )
+    if (showBar) {
+      val items = Tab.entries.map { AntTabBarItem(it, stringResource(it.label), it.icon, it.testTag) }
+      AntTabBar(
+        items = items,
+        selected = tab,
+        // Tocar la pestaña activa vuelve a su raíz.
+        onSelect = { selected -> if (selected == tab) activeStack.popToRoot() else tab = selected },
+      )
+    }
+  }
+}
+
+/** Una entrada cuyo `contentKey` lleva el prefijo de la pestaña: dos pilas con la misma clave no comparten `ViewModel` ni estado. */
+private inline fun <reified K : NavKey> EntryProviderScope<NavKey>.tabEntry(tab: Tab, noinline content: @Composable (K) -> Unit) {
+  entry<K>(clazzContentKey = { key -> "${tab.name}/$key" }, content = content)
+}
+
+/** Las pantallas de la pestaña [tab]; los accesos cruzados se apilan en su propia pila [stack] (D31). */
+private fun tabEntryProvider(
+  tab: Tab,
+  stack: NavBackStack<NavKey>,
+  deps: AppDependencies,
+  selectTab: (Tab) -> Unit,
+): (NavKey) -> NavEntry<NavKey> = entryProvider {
+  fun back() {
+    stack.removeLastOrNull()
+  }
+
+  tabEntry<Prepare>(tab) {
+    val viewModel = viewModel { PrepareViewModel(deps.scaleSession, deps.scaleMemory, deps.freeBrewDefaults, deps.bluetooth) }
+    PrepareScreen(
+      viewModel = viewModel,
+      scanner = deps.scanner,
+      pickerViewModel = viewModel { TargetPickerViewModel(deps.recipeRepository, deps.brewRepository) },
+      coffeePickerViewModel = viewModel { CoffeePickerViewModel(deps.coffeeRepository) },
+      onOpenSettings = { stack.add(Settings) },
+      onStart = { stack.add(Session) },
+      onManageRecipes = { selectTab(Tab.RECIPES) },
+      onNewCoffee = { stack.add(CoffeeEdit()) },
+    )
+  }
+  tabEntry<Session>(tab) {
+    // Provisional hasta F7: la pantalla de la báscula. Al salir termina y guarda una sesión activa y la desarma;
+    // la conexión sigue (cambiar de pantalla no desconecta).
+    val session = deps.scaleSession
+    val scaleTarget by session.target.collectAsStateWithLifecycle()
+    val leave = {
+      session.finishBrew()
+      session.disarm()
+      back()
+    }
+    BackHandler(onBack = leave)
+    ScaleScreen(
+      session,
+      viewModel { TargetPickerViewModel(deps.recipeRepository, deps.brewRepository) },
+      title = scaleTarget?.name.orEmpty(),
+      onBack = leave,
+      onAddDetails = { id -> stack.add(BrewEdit(id)) },
+      onManageRecipes = { selectTab(Tab.RECIPES) },
+      coffeePickerViewModel = viewModel { CoffeePickerViewModel(deps.coffeeRepository) },
+      onNewCoffee = { stack.add(CoffeeEdit()) },
+    )
+  }
+  tabEntry<Coffees>(tab) {
+    CoffeesScreen(
+      viewModel { CoffeesViewModel(deps.coffeeRepository) },
+      onBack = null,
+      onOpenCoffee = { id -> stack.add(CoffeeDetail(id)) },
+      onAddCoffee = { stack.add(CoffeeEdit()) },
+    )
+  }
+  tabEntry<CoffeeDetail>(tab) { key ->
+    CoffeeDetailScreen(
+      viewModel { CoffeeDetailViewModel(deps.coffeeRepository, key.id) },
+      onBack = ::back,
+      onEdit = { id -> stack.add(CoffeeEdit(id = id)) },
+      onNewBag = { id -> stack.add(CoffeeEdit(fromCoffeeId = id)) },
+      onOpenBrew = { id -> stack.add(BrewDetail(id)) },
+    )
+  }
+  tabEntry<CoffeeEdit>(tab) { key ->
+    CoffeeEditScreen(
+      viewModel { CoffeeEditViewModel(deps.coffeeRepository, deps.coffeePhotoStore, deps.labelOcr, key.id, key.fromCoffeeId) },
+      newCameraTarget = deps.coffeePhotoStore::newCameraTarget,
+      onBack = ::back,
+      // Una bolsa nueva se abre en su detalle (atrás vuelve al café original); en los demás casos, la pantalla
+      // de origen ya muestra el resultado.
+      onSaved = { savedId ->
+        if (key.fromCoffeeId != null) stack[stack.lastIndex] = CoffeeDetail(savedId) else back()
+      },
+      isEdit = key.id != null,
+    )
+  }
+  tabEntry<Settings>(tab) {
+    SettingsScreen(
+      deps.brewSettings,
+      deps.targetSettings,
+      deps.experienceSettings,
+      deps.themeSettings,
+      onRestoreRecipes = { deps.recipeRepository.restoreBuiltIns() },
+      onBack = ::back,
+    )
+  }
+  tabEntry<Recipes>(tab) {
+    RecipesScreen(
+      viewModel { RecipesViewModel(deps.recipeRepository) },
+      onBack = null,
+      onOpenRecipe = { id -> stack.add(RecipeEdit(id = id)) },
+      onCreateRecipe = { stack.add(RecipeEdit()) },
+    )
+  }
+  tabEntry<RecipeEdit>(tab) { key ->
+    RecipeEditScreen(
+      viewModel { RecipeEditViewModel(deps.recipeRepository, deps.brewRepository, deps.recipeTexts, key.id, key.fromBrewId) },
+      onBack = ::back,
+      // Duplicar abre la copia en lugar de la original: atrás vuelve a la lista.
+      onDuplicated = { copyId -> stack[stack.lastIndex] = RecipeEdit(id = copyId) },
+    )
+  }
+  tabEntry<History>(tab) {
+    HistoryScreen(
+      viewModel { HistoryViewModel(deps.brewRepository) },
+      onBack = null,
+      onOpenBrew = { id -> stack.add(BrewDetail(id)) },
+    )
+  }
+  tabEntry<BrewDetail>(tab) { key ->
+    BrewDetailScreen(
+      viewModel { BrewDetailViewModel(deps.brewRepository, deps.coffeeRepository, key.id) },
+      onBack = ::back,
+      onOpenCoffee = { id -> stack.add(CoffeeDetail(id)) },
+      onEdit = { id -> stack.add(BrewEdit(id)) },
+      onCompare = { id -> stack.add(ComparePick(id)) },
+      onSaveAsRecipe = { id -> stack.add(RecipeEdit(fromBrewId = id)) },
+    )
+  }
+  tabEntry<ComparePick>(tab) { key ->
+    ComparePickScreen(
+      viewModel { ComparePickViewModel(deps.brewRepository, key.aId) },
+      onBack = ::back,
+      // Atrás desde la comparación vuelve al detalle de A, no al selector.
+      onPick = { bId -> stack[stack.lastIndex] = BrewCompare(key.aId, bId) },
+    )
+  }
+  tabEntry<BrewCompare>(tab) { key ->
+    BrewCompareScreen(
+      viewModel { BrewCompareViewModel(deps.brewRepository, deps.coffeeRepository, key.aId, key.bId) },
+      onBack = ::back,
+    )
+  }
+  tabEntry<BrewEdit>(tab) { key ->
+    BrewEditScreen(
+      viewModel { BrewEditViewModel(deps.brewRepository, deps.coffeeRepository, key.id) },
+      onBack = ::back,
+      coffeePickerViewModel = viewModel { CoffeePickerViewModel(deps.coffeeRepository) },
+      onNewCoffee = { stack.add(CoffeeEdit()) },
+    )
+  }
 }

@@ -108,6 +108,10 @@ class ScaleSessionManager(
   /** El destino elegido en el último [connect]; se conserva tras [disconnect] para poder reconectar. */
   val target: StateFlow<ScaleTarget?> = _target.asStateFlow()
 
+  /** `true` desde que el usuario pulsa "Desconectar" hasta el siguiente [connect]: la reconexión automática lo respeta (D29). */
+  var userDisconnected = false
+    private set
+
   /** Compuerta de la sesión (D16): los pesos, taras y estados del temporizador solo llegan a la `BrewSession` armado. */
   private var armed = false
 
@@ -159,7 +163,13 @@ class ScaleSessionManager(
           emptyList()
         }
         if (s == ConnectionState.Ready) rememberRealScale()
-        publish { it.copy(connection = s) }
+        // "Falló": una conexión que no llegó a `Ready`; perder una ya establecida es "desconectada" (D12).
+        val failed = when (s) {
+          is ConnectionState.Failed -> !wasReady
+          is ConnectionState.Disconnected -> _ui.value.lastFailure
+          else -> false
+        }
+        publish { it.copy(connection = s, lastFailure = failed) }
         handle(effects)
       }
     }
@@ -309,6 +319,7 @@ class ScaleSessionManager(
       name = base.name,
       curve = if (factor == 1.0) base.curve else base.curve.scaled(factor),
       factor = factor,
+      nominalDoseG = nominal,
       scaledDoseG = doseG.takeIf { factor != 1.0 },
       prefill = base.prefill,
     )
@@ -389,6 +400,7 @@ class ScaleSessionManager(
    */
   fun connect(target: ScaleTarget) {
     closeConnection()
+    userDisconnected = false
     val created = connections.create(target)
     _target.value = target
     connection.value = created
@@ -415,6 +427,7 @@ class ScaleSessionManager(
    */
   fun disconnect() {
     closeConnection()
+    userDisconnected = true
     armed = false
     notifier.release()
   }

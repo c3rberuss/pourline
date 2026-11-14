@@ -40,7 +40,7 @@ import java.time.LocalDate
 @Composable
 fun CoffeesScreen(
   viewModel: CoffeesViewModel,
-  onBack: () -> Unit,
+  onBack: (() -> Unit)?,
   onOpenCoffee: (Long) -> Unit,
   onAddCoffee: () -> Unit,
 ) {
@@ -61,7 +61,7 @@ private fun CoffeesContent(
   onQueryChange: (String) -> Unit,
   archived: Boolean,
   onArchivedChange: (Boolean) -> Unit,
-  onBack: () -> Unit,
+  onBack: (() -> Unit)?,
   onOpenCoffee: (Long) -> Unit,
   onAddCoffee: () -> Unit,
 ) {
@@ -70,8 +70,10 @@ private fun CoffeesContent(
     topBar = {
       AntTopBar(
         title = stringResource(R.string.coffees_title),
-        navigationIcon = {
-          AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
+        navigationIcon = onBack?.let { back ->
+          {
+            AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = back)
+          }
         },
         actions = {
           AntIconButton(
