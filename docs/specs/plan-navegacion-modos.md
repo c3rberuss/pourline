@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-navegacion-modos.md`](spec-navegacion-modos.md) (SPEC-005) |
-| Estado | Aprobado el 2026-11-14 con las propuestas de P1 a P4 (§6). Commits por fase autorizados, sin push. |
+| Estado | Completado (F0 a F8) el 2026-11-14. Pendiente solo lo que exige una báscula o un teléfono reales (ver «Resultado de la implementación»). Aprobado con las propuestas de P1 a P4 (§6); commits por fase autorizados, sin push. |
 | Fecha | 2026-11-14 |
 | Rama | `feat/navigation-modes`, creada desde `feat/coffee-catalog` (`a3f142a`, SPEC-004 sin fusionar), con el commit del spec (`ac390ca`) |
 | Módulos | `:app` (`:protocol` no cambia) |
@@ -16,6 +16,101 @@ que faltan, y F8 es la verificación (rendimiento, recorrido del usuario nuevo, 
 ARTEMIS). Antes de las fases están las decisiones que el spec deja abiertas (§2), incluidas las cuatro
 preguntas de su §6. Varias amplían o concretan el spec (D9, D12, D13, D17, D19, D24, D27, D37 y D40);
 conviene revisarlas antes de empezar F1.
+
+## Resultado de la implementación
+
+Todo se verificó en `emulator-5556` (AVD `SG_API34`, API 34, 1080 × 2400, 420 dpi) con la báscula simulada. No hay
+báscula ni teléfono físicos. El plan pedía API 36 para el rendimiento: no hay un emulador así en este equipo.
+
+**Pruebas.** JVM: 600 tests, 1 ignorado, 0 fallos (línea base de F0: 511). Instrumentados: 323 tests en la suite
+completa antes de F8 con un solo fallo (y 335 al final de F8, con dos fallos: este y el caso Experto de rendimiento), el ya conocido `CoffeeDetailScreenTest.theFactsAreFoldedByDefaultAndOpenOnTap`
+(`'Natural · Claro'` no se muestra; viene de SPEC-004 y no se tocó). `SessionScreenTest` pasa (21), `SessionLayoutTest`
+(19 pasos caben sin desplazar en Básico y en Experto), `SessionTopBarTest`, `PrepareCoffeeTest`, `NewUserJourneyTest` y
+`SessionPerformanceTest` (Básico pasa siempre; Experto pasó una vez y falló otra, ver «Rendimiento»).
+
+**Lint (`lintDebug`).** 0 errores y 21 avisos, igual que la línea base de F0 (los 19 de dependencias y SDK de siempre
+más 2 `UnusedResources` de `backup_rules` y `data_extraction_rules`). Se borraron las 30 cadenas que dejó sin uso
+la sesión nueva.
+
+**Rendimiento** (`SessionPerformanceTest`: `FrameMetrics.TOTAL_DURATION`, 120 s de vertido tras 5 s de calentamiento;
+umbral p95 ≤ 32 ms, ≤ 5 % de fotogramas por encima de 32 ms y ninguno de más de 250 ms):
+
+| Caso | Fotogramas | p50 | p90 | p95 | p99 | Máx. | > 32 ms |
+|---|---|---|---|---|---|---|---|
+| Básico (dial) | 7161 | 17,8 | 21,7 | 22,5 | 27,6 | 81,6 | 0,53 % |
+| Experto, página 2 (gráfica) | 1302 | 17,5 | 19,0 | 20,9 | 34,6 | 51,9 | 2,69 % |
+| Experto, página 2, segunda pasada (suite completa) | 1297 | 17,5 | 19,6 | 33,8 | 36,5 | 51,5 | 5,86 % |
+
+La primera versión de la gráfica en vivo no cumplía (Experto: p95 de 35,4 ms y 25 % de fotogramas por encima de
+32 ms). Con `FrameMetrics` por fase, los fotogramas lentos eran dibujo (10 ms) y GPU (15 ms). Se arregló en
+`BrewChart`: la rejilla y las etiquetas van en una capa propia (`graphicsLayer`) que no se vuelve a grabar con cada
+muestra, y el flujo se dibuja en tramos de un mismo color con un `Path` en lugar de un `drawLine` por punto.
+
+**El caso Experto está en el límite y no es estable.** La primera pasada con el arreglo dio p95 de 20,9 ms; la segunda,
+dentro de la suite completa, 33,8 ms con un 5,86 % de fotogramas por encima de 32 ms, es decir, no cumple por muy poco
+ni el p95 ni el 5 %. En los fotogramas lentos el dibujo en el hilo de la interfaz es de 2 ms y la GPU, de 16: el
+tiempo lo pone la GPU emulada del emulador, no el código. `SessionPerformanceTest.expertPour…` mantiene los umbrales
+del plan y por eso puede fallar de forma intermitente en este emulador; no se ha relajado.
+
+**Contraste con `dumpsys gfxinfo` (E2E, paso 12, Experto en la página 2, 110 s, compilación debug).** 1192
+fotogramas, p50 17 ms, p90 34 ms, p95 34 ms, p99 40 ms; unos 365 fotogramas (30 %) entre 32 y 36 ms. No coincide con
+el test instrumentado, y por encima del umbral de 32 ms. `gfxinfo` mide desde el vsync previsto y en un test de Compose
+la recomposición la lleva el reloj del test, no el `Choreographer`; el emulador tiene GPU emulada. No se sabe cuál
+refleja mejor un teléfono: queda pendiente medirlo en uno real (ver «Pendiente»).
+
+**Capturas.** `SessionScreenshotCapture` (solo con `-e screenshots true`, lanzado con `am instrument`) guarda 26 PNG en
+`files/session-screens` del almacenamiento externo de la app: Preparar, los tres pasos previos, el vertido y el resumen
+en Básico y en Experto, y la gráfica en Experto, en claro y en oscuro. Se revisaron a ojo.
+
+**E2E por adb (§7.3).** Paso 1 a 13 recorridos en el emulador, sin ARTEMIS, con `adb logcat -b crash` vacío:
+
+| Paso | Resultado |
+|---|---|
+| 1 | Cumple: elección de modo, Preparar, tarjeta de permiso, «Dar permisos» y «Conecta tu báscula». |
+| 2 | Cumple: hoja con «Buscar», «Mostrar todos» y la simulada; se cierra y la tarjeta queda «conectada». El estado «Conectando…» dura menos que una captura de `uiautomator` y no se vio. |
+| 3 | Cumple en parte: la tarjeta sigue conectada al cambiar de pestaña y «Atrás» en Cafés vuelve a Preparar. No había cafés, así que no se abrió el detalle de uno; la pila y el segundo toque en la pestaña los cubre `TabsNavigationTest`. |
+| 4 | Cumple: 18 g y 1:15 dan 270 g, sobreviven a `force-stop`, no vuelve a salir el primer arranque y la simulada no reconecta. |
+| 5 | Cumple: sin barra inferior; timer, agua, paso actual con instrucción y siguiente a la vez; el modo experto no reinicia el timer, la gráfica sale en la página 2 y al desactivarlo vuelve a la 1; con `font_scale` 1,3 sigue todo visible. |
+| 6 | Cumple: «Descartar» vuelve a Preparar y el historial no tiene esa preparación. |
+| 7 | Cumple: «Bluetooth apagado» con «Activar» y el enlace a la simulada; al permitir, «Conecta tu báscula». |
+| 8 | Cumple: la sesión sigue con el mismo timer y los mismos pasos al girar. En horizontal el panel de pasos queda fuera de pantalla (no es un criterio, ver «Hallazgos»). |
+| 9 | Cumple: tras `am kill` desde segundo plano, Preparar sin sesión. |
+| 10 | Cumple: la V60 clásica tiene 5 pasos con 2 Esperar; con un paso Remover («Swirl» en el emulador, que está en inglés) con instrucción, la lista muestra su icono y la sesión su instrucción al llegar. |
+| 11 | Cumple: en Experto, el detalle muestra la gráfica, la estabilidad, el ajuste, «Comparar» y «Guardar como receta». |
+| 12 | Hecho, con la discrepancia del apartado de rendimiento. |
+| 13 | Hecho con 26 capturas en lugar de 12 (ver «Desviaciones de F7 y F8»). |
+
+**Pendiente (hardware).** Todo sobre una DOT real: la trama de tara, el peso estable de la dosis (la ventana de 2 s está
+calibrada sin datos reales), la reconexión a una báscula recordada y el sonido y la vibración de los avisos. El
+rendimiento de la sesión en un teléfono real, sobre todo Experto con la gráfica.
+
+**Hallazgos (no cambiados).**
+- El interruptor «Modo experto» del menú ⋯ no tiene nombre accesible (`uiautomator` lo marca `NAF`): la fila no lo
+  asocia a su etiqueta.
+- La fila de una receta cuenta solo los vertidos (D34): la V60 clásica con 5 pasos figura con «3 pasos», y la 4:6, con 9
+  pasos, con «5 pasos». Antes decía «etapas» y era correcto.
+- En horizontal, la sesión no muestra el paso actual ni la lista sin desplazar.
+- `SessionOptionsSheet` y el resto de la sesión no tienen tests de accesibilidad.
+
+## Desviaciones de F0 a F8
+
+Las de F0 a F6 las dio quien encargó F7 y F8; las de F7 y F8 son de esta ejecución.
+
+- **F0 a F6:** `AntTabBarItem.id`; los tests del gestor con `ScaleTarget.Real`; `connectGate` y `disconnects` en
+  `FakeScaleConnection`; `close()` pasó a `disconnect()` con `notifier.release()`; error «Entre 1 y 20 pasos»;
+  `MergedPours` «10 vertidos»; `fromBrew` da 5 pasos; `TargetCurveCodec` solo guarda `POUR`; `ExperienceSettingsTest`;
+  `AutoReconnect` con `scope` y `onForeground()`; `DeviceScanner` y `ScanViewModel`; `lastFailure`, `userDisconnected`
+  y `nominalDoseG`; `TargetSelectRow` y `CoffeeSelectRow` con `modifier` y `label`; `FreeBrewDefaultsTest`,
+  `TestAppDependencies` y `TestApp`.
+- **F7:** `StabilitySection` pasó a `internal`. `BrewSession` gana un `beginActive` interno que comparten `startNow` y el arranque por peso. Cinco tests del gestor se adaptaron a la compuerta de sesión (`beginArmedSession`). Los tags de
+  la sesión son los de `SessionScreen.kt`. `SessionLayoutTest` usa `maximumWindowMetrics` en lugar de
+  `displayMetrics`, que no da los 2400 px.
+- **F8:** `NewUserJourneyTest` vive en `ui/session/` y no pasa por la hoja de conexión (usa `SessionDriver.connect()`),
+  no comprueba la fila del Historial ni la ausencia de la clave `Settings`. `SessionPerformanceTest` mide con
+  `waitUntil` (con `Thread.sleep` la interfaz no avanza y no hay fotogramas) y una receta propia de 200 s en lugar de
+  la V60 clásica de 115 s. `SessionScreenshotCapture` guarda 26 capturas en `session-screens`, no 12 en
+  `screenshots`. `TestApp` respeta ahora `ThemeSettings` (antes forzaba claro). `BrewChart` se tocó por rendimiento.
+  Texto de la fila de recetas: «etapa» pasó a «paso» en `recipe_stage_count`.
 
 ## 1. Punto de partida
 
@@ -83,63 +178,9 @@ conviene revisarlas antes de empezar F1.
 
 ## 2. Decisiones que completan el spec
 
-Se aprueban junto con el plan. Al terminar se pasan al spec como §3.8, como en los specs anteriores. Las que
-dependen de una pregunta de §6 lo indican.
+Se aprobaron junto con el plan y, al terminar, pasaron al spec como §3.8, como en los specs anteriores.
 
-### 2.1 Diseño visual
-
-| ID | Tema | Decisión | Motivo |
-|---|---|---|---|
-| D1 | Barra inferior | `AntTabBar` (nuevo, F0.2): 56 dp más el inset de navegación, fondo `bgContainer`, línea superior en `split`; icono de 24 dp y texto `textSM`; la pestaña activa en `primary.base`, las demás en `textSecondary`. Iconos: `Dripper` (Preparar, nuevo), `Coffee`, `Recipe` y `History`. | Es el patrón del `Tabs` inferior de móvil sobre los tokens Ant. Con icono y texto (§5). |
-| D2 | Menú ⋯ de la sesión | Una hoja inferior (`AntDrawer`, "Opciones") con tres filas: "Modo experto" (`AntSwitch`), "Unidad" (`AntSegmented` g/oz, con la regla de habilitado de `UnitCard`: solo con la báscula en `Ready`) y "Reiniciar" (P2). Con la báscula simulada añade la sección "Simulación" con los controles de `SimulationCard`. | Un menú desplegable no admite bien un segmentado; la hoja ya existe y cumple "en el menú ⋯ o en una hoja" (§3.4). |
-| D3 | Diálogo de salida | `AntChoiceModal` (nuevo): título, texto y botones apilados a todo el ancho: "Terminar y guardar" (`Primary`), "Descartar" (`danger`) y "Seguir preparando". Tocar fuera equivale a "Seguir preparando". | Tres botones no caben en una fila a 360 dp. |
-| D4 | Dial | `AntProgressCircle` (nuevo, el `Progress type="circle"` de antd) dentro de `BrewDial`. Tamaño `min(ancho × 0,62; alto disponible × 0,34; 260 dp)` con `BoxWithConstraints`; trazo de 12 dp. El aro se satura al 100 %. Con receta, separaciones de 2° en el agua acumulada de cada paso `POUR` (los `SWIRL` y `WAIT` no añaden agua, así que no tienen segmento). | Garantiza el criterio sin scroll en 1080 × 2400 en los dos modos (F0.3, R8). Un segmento de agua 0 no se vería. |
-| D5 | Página 2 del dial (Experto) | `HorizontalPager` de 2 páginas (1 en Básico) con `AntPageIndicator` (nuevo, dos puntos). La página 2 compone `BrewChart` con la curva objetivo a la altura del dial. Al pasar a Básico estando en la página 2, `scrollToPage(0)`. | §3.4 y §4. El pager solo compone la página visible (y la vecina durante el gesto), así la gráfica no cuesta en la página 1. |
-| D6 | Siguiente paso | "Siguiente: {tipo} {nombre} en {m:ss}", con el tiempo que falta (`nextStage.startMs − elapsedMs`). En los últimos 5 s, el número sale de `GuideState.countdownS` ("en 5 s") en `primary.base` y negrita. Sin nombre: "Siguiente: Esperar en 0:25". | El spec pide la cuenta atrás de 5 s; fuera de esa ventana también conviene saber cuánto falta. |
-| D7 | Preparación libre (sin receta) | Título "Preparación libre". El bloque del paso actual muestra un único paso sintético "Verter hasta {agua objetivo}" y no hay "Siguiente" ni lista. | Sin receta no hay pasos que guiar; el aro sí tiene objetivo (`dosis × ratio`). |
-| D8 | Resumen | Sustituye al dial y a la lista (F0.3). Básico: tiempo total, agua, dosis, ratio, café, valoración y notas (las dos últimas aparecen tras "Añadir detalles", leídas de la preparación guardada). Experto añade flujo medio y máximo, `StabilitySection`, `FitBlock` y motivo de fin. Botones "Añadir detalles", "Compartir" y "Listo" (principal). | §3.2 y §3.4. |
-| D9 | Detalle de preparación en Básico | Se ocultan la tarjeta de la gráfica, `BrewSummaryCard`, `FitCard`, la tarjeta "Cata", "Comparar" y "Guardar como receta". Se muestra `BrewFactsCard` (nueva: fecha, receta, café como enlace, dosis, agua, ratio, tiempo total, valoración y notas) y debajo "Detalles" (método, molienda, temperatura) y "Editar"/"Borrar". | El spec lista lo que se oculta y lo que muestra la tarjeta de datos. `BrewSummaryCard` lleva la estabilidad y "Cata" repetiría café, valoración y notas. **Amplía** el §3.6 (oculta dos tarjetas más). |
-| D10 | Fila del historial en Básico | `HistoryRow(showMetrics = false)`: sin la etiqueta de estabilidad ni la de ajuste. La minicurva decorativa (`BrewPreviewLine`, sin ejes ni semántica) se mantiene. | §3.6 pide quitar la estabilidad; el ajuste es métrica de Experto (§3.2). La minicurva no es una gráfica con datos; se puede quitar si se prefiere. |
-| D11 | Primer arranque | No es una clave de navegación: `MainNavigation` muestra `OnboardingScreen` en lugar de las pestañas mientras `onboardingDone == false`. | Sin barra, sin pila que restaurar y con "Atrás" saliendo de la app. Los nombres de §3.1 son orientativos. |
-| D12 | Tarjeta de báscula | `ScaleCard` con los estados de §3.3. Variante de "Falló o se desconectó": si la última conexión falló, "No se pudo conectar a {nombre}" con "Reintentar"; si se desconectó (por el usuario o por pérdida), "{nombre} desconectada" con "Conectar". Las dos con "Cambiar báscula". "Conectada" lleva el menú (`AntIconButton(More)` con "Desconectar" y "Cambiar báscula"). | "Reintentar" tras un "Desconectar" del usuario sería confuso. |
-| D13 | Báscula simulada sin permisos o con Bluetooth apagado | En esos dos estados la tarjeta añade un enlace secundario "Usar báscula simulada" (P3). | No hay báscula física: sin el enlace, un usuario sin permisos no podría probar nada (hoy `ScanScreen` lo muestra siempre). **Amplía** la tabla de §3.3. |
-
-### 2.2 Implementación
-
-| ID | Tema | Decisión | Motivo |
-|---|---|---|---|
-| D14 | Paquetes | Nuevo `dev.dotscale.session`: `ScaleSessionManager`, `ScaleTarget`, `ScaleMemory`, `AutoReconnect`, `PrepFlow`, `BrewPlan`. En F2 se mueven ahí `ScaleUiState.kt`, `ScaleCoffees.kt` y `TargetReferences.kt` (`git mv`, solo cambia el `package`). Nuevos `dev.dotscale.ui.prepare`, `dev.dotscale.ui.session` y `dev.dotscale.ui.onboarding`. `ui/scale` conserva las piezas de dibujo reutilizadas. | El gestor no es UI. Los archivos puros se comprueban con `grep "import android"`. |
-| D15 | Gestor de la app | `ScaleSessionManager` es un objeto por proceso en `DotScaleApp`, con `MainScope()` (`Dispatchers.Main.immediate`), igual que el hilo de `viewModelScope` de hoy. La conexión se crea al conectar: `fun interface ScaleConnectionFactory { fun create(target: ScaleTarget): ScaleConnection }` (`AndroidScaleConnections`: `Real` → `BleScaleConnection(context, address)`, `Simulated` → `SimulatedScaleConnection()`). Los flujos de la conexión se recogen con `flatMapLatest` sobre `MutableStateFlow<ScaleConnection?>`. | Cambiar de pestaña no desconecta (§3.3) y la rotación no afecta. Con la fábrica, los tests siguen con `FakeScaleConnection`. |
-| D16 | Compuerta de la sesión | El gestor solo pasa pesos, taras y estados del temporizador a la `BrewSession` mientras está **armado**: desde que `PrepFlow` llega al paso 4 hasta que la sesión pasa a `Finished`, se descarta o se cierra. Fuera de eso, los pesos solo actualizan la pantalla y `PrepFlow`. En F2–F6 la pantalla provisional (`ScaleScreen`) arma al entrar. | Sin compuerta, un vertido en Cafés o en Preparar empezaría y guardaría una sesión, y una tara en el resumen la rearmaría (hoy `onTared` en `Finished` rearma). |
-| D17 | Peso estable del paso Dosis (cierra §6, pregunta 3) | Se calcula en la app, en `PrepFlow`, sin depender de ninguna bandera BLE: ventana de 2 s con al menos 3 lecturas válidas, `máx − mín ≤ 0,3 g` y peso ≥ `max(1 g; 0,5 × dosis objetivo)`; la dosis es la media de la ventana redondeada a 0,1 g. La dosis objetivo es la nominal de la receta o la de Preparar. En el paso 3, antes de la tara, una nueva ventana estable entre `0,5 ×` y `1,5 ×` la dosis objetivo que difiera más de 0,3 g sustituye a la dosis (recaptura). Constantes en `PrepConfig`. | La DOT no envía bandera de estabilidad y el código no calcula estabilidad de peso. El 50 % evita capturar la primera cucharada; la recaptura corrige una captura temprana sin botón nuevo, y el 150 % impide que el agua de un vertido se tome como café. **Amplía** "el peso es > 0" del §3.4. |
-| D18 | Captura sin tara automática | En la sesión, la dosis se fija con `captureDose(tare = false)`; el paso 3 pide la tara. `captureDose()` sin argumento conserva el comportamiento de hoy (fija y tara) hasta que se borra `ScaleScreen` en F7. | Si la captura tarase, el paso 3 se confirmaría solo con esa tara y nunca se vería. |
-| D19 | Confirmación de tara (pasos 1 y 3) | Vale cualquiera de: (a) `ScaleMessage.Tared(success = true)`; (b) tras "Tarar" en la app, el peso queda en `|p| ≤ 0,3 g` durante 1 s dentro de los 5 s siguientes; (c) sin tara enviada, el peso pasa de ≥ 1 g a `|p| ≤ 0,3 g` estable 1 s (botón físico sin trama). "Saltar" siempre está. | No se ha verificado que la DOT envíe la trama de tara ni con qué frecuencia manda el peso (memoria del proyecto): ninguna suposición BLE es el único camino. **Amplía** "se recibe la confirmación de tara". |
-| D20 | Curva con tipos | `TargetStage` gana `type: StageType = POUR` e `instruction: String? = null`. `TargetCurve.fromRecipe` genera los **puntos solo con los pasos `POUR`** (el mismo algoritmo de hoy sobre esa subsecuencia) y las **etapas con todos** los pasos. `TargetCurve.endMs` pasa a ser el fin del último `POUR` (es el tiempo objetivo de `brewFit`); nuevo `lastStepEndMs` (fin del último paso de cualquier tipo) para `GuideState.allStagesDone`. `finalWaterG` no cambia. | Puntos idénticos punto a punto para una receta migrada (§3.5) y misma métrica aunque una receta acabe en `WAIT`. La guía y los avisos ven todos los pasos (§3.5). |
-| D21 | `TargetCurveCodec` (cierra §6, pregunta 2) | El formato v1 no cambia: `encode` escribe solo las etapas `POUR` (reindexadas) y `decode` las lee como `POUR`. | La curva guardada solo se usa para superponer el objetivo en la gráfica del detalle; la meseta sale de los puntos. Sin versión nueva, lo ya guardado y lo nuevo son iguales para una receta migrada. |
-| D22 | "Descartar" (cierra §6, pregunta 1) | Se evita el guardado: `BrewSession.discard(nowMs)` vuelve a un estado armado limpio sin emitir `BrewEffect.Finished` (emite `PauseTimer` si el temporizador corría). El gestor cierra la compuerta, olvida el objetivo y el café congelados y la dosis, y la pantalla vuelve a Preparar. | No hay escritura que deshacer: ni carrera con el guardado (`applicationScope`), ni `lastUsedAtEpochMs` del café que recalcular, ni `pendingUndo` que limpiar. |
-| D23 | Métodos nuevos de `BrewSession` | `fun reset()` (estado armado limpio, conserva el último estado del temporizador), `fun discard(nowMs: Long): List<BrewEffect>` (D22) y `fun startNow(nowMs: Long): List<BrewEffect>` ("Empezar timer": pasa a `Active` con `t0 = nowMs`, línea base = último peso válido o 0, y los mismos efectos de temporizador que `startSession`). | Son las acciones de la tabla de §3.4 que hoy no existen; quedan en la máquina pura y se prueban en la JVM. |
-| D24 | Ciclo de vida de la dosis | La dosis capturada se borra al terminar ("Listo"), al descartar y al cambiar de unidad (como hoy). Si se sale con la X antes de `Active`, se conserva: al volver a "Empezar", el paso 2 se da por hecho (§3.4). Una desconexión durante los pasos previos devuelve `PrepFlow` al paso 1 al reconectar, con la dosis conservada. | Da sentido a "si la dosis ya estaba capturada antes de abrir la sesión". Tras reconectar, la báscula puede haber perdido la tara. |
-| D25 | Timer de la sesión | `elapsedMs = clock() − t0` en `Active` (el `t0` de la sesión), publicado en cada lectura y en el tick de 1 s; en `Finished`, `summary.totalTimeMs`. Formato `m:ss` con `formatClock(ms)` (sale de `formatTime` privado de `ScaleScreen.kt` a `Formatters.kt`). | No depende del contador de la báscula, sin verificar, y coincide con los tiempos de la curva y de la guía. |
-| D26 | Agua objetivo | `session/BrewPlan.kt`: `data class BrewPlan(val doseG: Double, val ratio: Double)` y `fun targetWaterG(target: ActiveTarget?, capturedDoseG: Double?, plan: BrewPlan): Double`: con receta, `target.curve.finalWaterG` (ya escalada por `factor`); sin receta, `(capturedDoseG ?: plan.doseG) × plan.ratio`. | §3.3 y §4 ("sin receta, el aro usa la dosis configurada en Preparar" cuando se salta la dosis). |
-| D27 | Dosis y ratio de Preparar | Siempre en gramos. Dosis de 5 a 60 g con un decimal (como `RecipeValidator`); ratio de 10,0 a 20,0 con un decimal. `AntInput` numéricos; un valor fuera de rango marca el campo y no se guarda. `BrewSettings` gana `defaultDoseG: StateFlow<Double>`, `defaultRatio: StateFlow<Double>` y sus `set…`, tras la interfaz `FreeBrewDefaults`. | El spec no fija rangos. Los de la dosis ya existen para recetas; 1:10–1:20 cubre filtrado. |
-| D28 | Última báscula | `ScaleMemory` (`lastScale: StateFlow<RememberedScale?>`, `remember(scale)`), implementada por `ConnectionSettings` (`last_scale_address`, `last_scale_name`). El gestor llama a `remember` cuando una conexión `ScaleTarget.Real` llega a `Ready`. Conectar la simulada no la borra: si había una real recordada, se sigue reconectando a esa (P4). | §3.3: solo se recuerda la real. Confirmado por el usuario (P4). |
-| D29 | Reconexión automática | `AutoReconnect` con tres disparadores: arranque de la app, vuelta a primer plano (`ON_START` de `MainActivity`) y Bluetooth que pasa a encendido (`BluetoothEnvironment.enabled`, un `BroadcastReceiver` de `ACTION_STATE_CHANGED` expuesto como `StateFlow`). Conecta solo si hay báscula real recordada, permisos, Bluetooth encendido, nada conectado ni conectando, y el usuario no pulsó "Desconectar" en esta ejecución. Un fallo no reintenta hasta el siguiente disparador. | §3.3 y §4: sin bucles en segundo plano. Tras un "Desconectar" explícito, reconectar al volver a la app molestaría. |
-| D30 | Pila por pestaña | `enum class Tab(root, label, icon, testTag)`; una `rememberNavBackStack(tab.root)` por pestaña y `var tab by rememberSaveable`. Las entradas de cada pila se decoran con `rememberDecoratedNavEntries` y un `entryProvider` cuyo `contentKey` lleva el prefijo de la pestaña (`"HISTORY/BrewDetail(id=5)"`). `NavDisplay` recibe las entradas de Preparar y, si la pestaña activa es otra, las suyas detrás; su `onBack` aplica `backAction` (D31). | Es la receta de pilas múltiples de Navigation 3. El prefijo evita que dos pilas compartan `ViewModel` o estado guardado. Con las entradas de Preparar debajo, "Atrás" en la raíz de otra pestaña tiene a dónde ir, y en Preparar raíz pasa al sistema (sale). |
-| D31 | Reglas de navegación | `TabNavigation.kt` (puro): `fun showsBottomBar(key: NavKey): Boolean` (falso en `Session`, `CoffeeEdit`, `RecipeEdit` y `BrewEdit`); `fun backAction(tab: Tab, stackSize: Int): BackAction` (`Pop`, `SelectPrepare`, `Exit`); tocar la pestaña activa vacía su pila hasta la raíz. Los accesos cruzados se apilan en la pestaña actual (también `ComparePick`, `BrewCompare`, `BrewEdit` y `RecipeEdit` desde un `BrewDetail` abierto en Cafés). "Gestionar recetas" del `TargetPicker` en Preparar selecciona la pestaña Recetas. | §3.1. La tabla del spec es orientativa en las pilas; la regla general es "dentro de la pestaña actual". |
-| D32 | Dependencias de la app | `AppDependencies` (nuevo) agrupa los singletons de `DotScaleApp` (repositorios, ajustes, gestor, `AutoReconnect`, `BluetoothEnvironment`, fábrica del escáner). `MainNavigation(deps)` los recibe en lugar de `appContext as DotScaleApp`. Las clases de ajustes ganan `prefsName: String = PREFS_NAME`. | Los tests de pestañas, del recorrido del usuario nuevo y de rendimiento montan la app con Room en memoria, preferencias propias (`"settings_test"`) y la báscula simulada. |
-| D33 | Modo en la UI | `ExperienceMode.shows(feature: ExpertFeature): Boolean` (puro; todas las entradas de `ExpertFeature` son de Experto). `LocalExperienceMode` (`compositionLocalOf`), provisto en `MainActivity` desde `ExperienceSettings.mode`, con valor por defecto `EXPERT`. | Los tests de pantalla existentes, que no lo proveen, siguen viendo todo. El defecto de la preferencia sigue siendo `BASIC` (§3.2). |
-| D34 | Pasos con tipo: modelo | `enum class StageType { POUR, SWIRL, WAIT }` en `recipe/Recipe.kt`. `RecipeStage` gana `type: StageType = POUR` e `instruction: String? = null`. `fun List<RecipeStage>.withDerivedWater()` fija el `targetWaterG` de `SWIRL` y `WAIT` al acumulado del `POUR` anterior (0 si no hay). `Recipe.totalWaterG` es el del último `POUR`. `RecipeListItem.stageCount` cuenta solo `POUR`. | §3.5. Con el recuento de vertidos la fila de una receta migrada no cambia ("3 etapas"). |
-| D35 | Migración v3 → v4 | `val MIGRATION_3_4`: `ALTER TABLE recipe_stages ADD COLUMN type TEXT NOT NULL DEFAULT 'POUR'` y `ADD COLUMN instruction TEXT`. Por cada receta, lee sus pasos por `position`, aplica `StageGaps.fillWaits` y, si cambian, borra sus filas y las vuelve a insertar con `position` renumerada (la clave primaria es `(recipeId, position)`). La entidad declara `@ColumnInfo(defaultValue = "POUR")` para que `runMigrationsAndValidate` acepte el esquema. | Renumerar en el sitio chocaría con la clave primaria; borrar e insertar por receta no toca `recipes`. |
-| D36 | Huecos | `recipe/StageGaps.kt` (puro): `fun fillWaits(stages: List<RecipeStage>): List<RecipeStage>`. Un `WAIT` por hueco `> 0` (también desde 0 si el primer paso empieza después), con el agua acumulada anterior, sin nombre ni instrucción. Los solapes (`hueco ≤ 0`) no generan nada. Lo usan la migración y `RecipeFromBrew`. | §3.5 y §4. Una sola implementación probada en la JVM. |
-| D37 | Duración de `WAIT` (P1) | `POUR` y `SWIRL` de 1 a 120 s; `WAIT` de 1 a 600 s (`MAX_WAIT_MS = 600_000`, igual que `MAX_LAST_START_MS`). | Un hueco de más de 120 s (vertidos a 0:00 y 3:00) migra a un `WAIT` que el validador rechazaría al guardar la receta. Aprobado (P1); el §3.5 del spec ya lo recoge. |
-| D38 | Sembrado y cadena de migraciones | `BuiltInRecipeSeeder.seed(db, texts, nowMs, schema: SeedSchema = SeedSchema.CURRENT)`. `SeedSchema.V2` inserta solo los pasos `POUR`, sin las columnas nuevas; lo usa `migration1To2`. La 3 → 4 convierte esas filas en la definición nueva. | La cadena 1 → 2 → 3 → 4 sigue siendo válida y el resultado es igual a una instalación nueva. |
-| D39 | Predefinidas | La definición nueva es exactamente `fillWaits` de la antigua: V60 clásica con 5 pasos (`POUR` 0:00 40 g 10 s, `WAIT` 0:10 35 s, `POUR` 0:45 150 g 20 s, `WAIT` 1:05 25 s, `POUR` 1:30 250 g 25 s) y 4:6 con 9 (5 `POUR` de 10 s cada 45 s y 4 `WAIT` de 35 s). Sin `WAIT` final. Los `WAIT` no tienen nombre (elemento vacío en el `string-array`) y todos los pasos tienen instrucción (`recipe_builtin_<key>_instructions`, es y en). `RecipeTexts.builtInStageNames` pasa a `List<String?>` (vacío → `null`) y gana `builtInStageInstructions(key): List<String?>`; `RecipeRepository.toRecipe` traduce también las instrucciones mientras `localizedNames`. | Como la definición coincide con la estructura migrada, los nombres e instrucciones por índice cuadran en una base migrada. Misma curva que hoy (§3.5). "Esperar" con el nombre "Espera" se leería "Esperar Espera". |
-| D40 | `RecipeFromBrew` | Límite propio `MAX_POURS = 10` (en lugar de `MAX_STAGES`) para fusionar vertidos y, tras redondear, `fillWaits`. Resultado de 19 pasos como máximo. | Con `MAX_STAGES = 20` fusionaría hasta 20 vertidos y los huecos superarían el límite. Las esperas explícitas son el modelo nuevo (§7 del spec descarta los huecos implícitos). |
-| D41 | `SimulatedTargetPour` | Ventanas, origen y retraso de `DEVIATED` solo con los pasos `POUR`. | Un `WAIT` inicial desplazaría el origen del guion y el retraso de "desde la 2.ª etapa" caería en una espera. |
-| D42 | `PrepFlow` | Máquina pura en `session/PrepFlow.kt` (firma en F7) con efectos `PrepEffect.SendTare`, `SetDose(grams: Double?)`, `Arm` y `StartNow`, que ejecuta el gestor. El gestor le pasa cada peso mientras el paso no es `POUR`. | Probable sin Android (§3.4), con el patrón de efectos de `BrewSession`. |
-| D43 | "Reiniciar" (P2) | Aprobado: antes de `Active`, vuelve al paso 1 y olvida la dosis capturada; en `Active` está deshabilitado (la X ya ofrece terminar o descartar); en `Finished`, empieza otra sesión con la misma receta y el mismo café, como "Listo" + "Empezar". | El spec no define qué reinicia. Hoy "Reiniciar" pone a cero el temporizador de la báscula, y en `Active` eso termina la sesión (`TIMER_RESET`). |
-| D44 | Muerte del proceso | Si al restaurar la pila de Preparar la cima es `Session` y el gestor no tiene sesión, la entrada se retira sola (`LaunchedEffect`). | §4: al volver, Preparar sin sesión. |
-| D45 | Commits | Uno por fase, en Conventional Commits y en inglés, sin `Co-Authored-By` ni firmas de herramientas, y solo cuando se pidan. El mensaje se propone al final de cada fase. El plan, cuando se apruebe: `docs(specs): add navigation and modes implementation plan (SPEC-005)`. | Convenciones del usuario. |
+Las decisiones D1 a D45 pasaron al §3.8 del spec ([`spec-navegacion-modos.md`](spec-navegacion-modos.md#38-decisiones-de-implementación-d1-a-d45)), que es ahora su fuente de verdad. Este plan las cita por su número.
 
 ### 2.3 Por qué la curva migrada es idéntica (D20, D35)
 

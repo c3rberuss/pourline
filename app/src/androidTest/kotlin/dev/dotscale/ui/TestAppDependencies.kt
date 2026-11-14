@@ -37,6 +37,7 @@ import dev.dotscale.settings.ExperienceMode
 import dev.dotscale.settings.ExperienceSettings
 import dev.dotscale.settings.LocalExperienceMode
 import dev.dotscale.settings.TargetSettings
+import dev.dotscale.settings.ThemeMode
 import dev.dotscale.settings.ThemeSettings
 import dev.dotscale.sim.SimulatedScaleConnection
 import dev.dotscale.ui.coffees.FakeLabelOcr
@@ -212,11 +213,13 @@ class TestAppDependencies(
 @Composable
 fun TestApp(deps: TestAppDependencies) {
   val mode by deps.experienceSettings.mode.collectAsState()
+  // Claro salvo que el test pida oscuro: el modo del sistema del emulador no debe cambiar los tests.
+  val theme by deps.themeSettings.mode.collectAsState()
   CompositionLocalProvider(
     LocalExperienceMode provides mode,
     LocalCoffeeImages provides deps.dependencies.coffeeImages,
   ) {
-    DotScaleTheme(darkTheme = false) { MainNavigation(deps.dependencies) }
+    DotScaleTheme(darkTheme = theme == ThemeMode.DARK) { MainNavigation(deps.dependencies) }
   }
 }
 
