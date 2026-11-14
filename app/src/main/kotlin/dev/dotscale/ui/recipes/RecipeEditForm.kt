@@ -117,19 +117,35 @@ data class RecipeEditForm(
 
   fun isDirty(initial: RecipeEditForm): Boolean = this != initial
 
-  /** Inicio en el fin de la anterior más 30 s, agua anterior más 50 g y 10 s de vertido. */
+  /** Un `POUR` que empieza donde acaba el paso anterior, con el agua del último `POUR` más 50 g y 10 s. */
   fun addStage(): RecipeEditForm {
     if (!canAddStage) return this
     val previous = stages.lastOrNull()
     val previousStart = previous?.let { parseStart(it.start) }
     val previousDuration = previous?.let { parseSeconds(it.duration) }
-    val previousWater = stages.lastOrNull { it.type == StageType.POUR }?.let { parseGrams(it.water) }
     val next = StageForm(
-      start = if (previousStart != null && previousDuration != null) formatStart(previousStart + previousDuration + 30_000) else "",
-      water = previousWater?.let { formatNumber(it + 50) }.orEmpty(),
+      start = if (previousStart != null && previousDuration != null) formatStart(previousStart + previousDuration) else "",
+      water = proposedWater(stages.size).orEmpty(),
       duration = "10",
     )
     return copy(stages = stages + next)
+  }
+
+  /**
+   * Cambia el tipo de un paso. A `SWIRL` y `WAIT` vacía el agua (no se pide); a `POUR` propone el agua del último
+   * `POUR` anterior más 50 g. Si el tipo no cambia, no toca nada.
+   */
+  fun setStageType(index: Int, type: StageType): RecipeEditForm {
+    val stage = stages.getOrNull(index) ?: return this
+    if (stage.type == type) return this
+    val water = if (type == StageType.POUR) proposedWater(index).orEmpty() else ""
+    return updateStage(index, stage.copy(type = type, water = water))
+  }
+
+  /** El último `POUR` antes de [index] más 50 g, o `null` si no se puede leer; 50 g si no hay ninguno. */
+  private fun proposedWater(index: Int): String? {
+    val previousPour = stages.take(index).lastOrNull { it.type == StageType.POUR } ?: return formatNumber(50.0)
+    return parseGrams(previousPour.water)?.let { formatNumber(it + 50) }
   }
 
   fun removeStage(index: Int): RecipeEditForm =

@@ -4,6 +4,9 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -17,7 +20,10 @@ import dev.dotscale.R
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
+import dev.dotscale.history.BrewMethod
 import dev.dotscale.recipe.BuiltInRecipes
+import dev.dotscale.recipe.Recipe
+import dev.dotscale.recipe.RecipeStage
 import dev.dotscale.recipe.RecipeRepository
 import dev.dotscale.recipe.ResourcesRecipeTexts
 import dev.dotscale.ui.theme.DotScaleTheme
@@ -73,6 +79,13 @@ class RecipeEditScreenTest {
 
   private fun exists(tag: String) = rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
 
+  /** Elige el tipo de un paso con su etiqueta, dentro del segmentado `recipe_stage_type_<i>`. */
+  private fun chooseType(index: Int, labelRes: Int) {
+    rule.onNode(hasText(context.getString(labelRes)) and hasAnyAncestor(hasTestTag("recipe_stage_type_$index")))
+      .performScrollTo()
+      .performClick()
+  }
+
   @Test
   fun aNewRecipeStartsWithOneStageAndSaveIsDisabledUntilItIsValid() {
     show()
@@ -119,13 +132,99 @@ class RecipeEditScreenTest {
   fun addStageProposesTheNextValuesAndIsDisabledWithTwentyStages() {
     show()
     rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick()
-    rule.onNodeWithTag("recipe_stage_start_1").performScrollTo().assertTextEquals("0:40") // fin 0:10 + 30 s
+    rule.onNodeWithTag("recipe_stage_start_1").performScrollTo().assertTextEquals("0:10") // el fin del paso anterior
     rule.onNodeWithTag("recipe_stage_water_1").assertTextEquals("100") // 50 + 50 g
     rule.onNodeWithTag("recipe_stage_duration_1").assertTextEquals("10")
 
     repeat(18) { rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick() }
     assertTrue(exists("recipe_stage_19"))
     rule.onNodeWithTag("recipe_add_stage").performScrollTo().assertIsNotEnabled()
+  }
+
+  @Test
+  fun choosingWaitHidesTheWaterAndChoosingPourBringsItBackWithAProposal() {
+    show()
+    rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick()
+    assertTrue(exists("recipe_stage_water_1"))
+    chooseType(1, R.string.step_type_wait)
+    assertFalse(exists("recipe_stage_water_1"))
+    assertTrue(exists("recipe_stage_water_0"))
+    chooseType(1, R.string.step_type_swirl)
+    assertFalse(exists("recipe_stage_water_1"))
+    chooseType(1, R.string.step_type_pour)
+    rule.onNodeWithTag("recipe_stage_water_1").performScrollTo().assertTextEquals("100") // 50 + 50 g
+  }
+
+  @Test
+  fun anInstructionIsKeptWhenSavingAndTheCounterFollowsIt() {
+    show()
+    type("recipe_edit_name", "Con instrucción")
+    type("recipe_edit_dose", "16")
+    rule.onNodeWithTag("recipe_stage_instruction_counter_0").performScrollTo().assertTextEquals("0/200")
+    type("recipe_stage_instruction_0", "Vierte en espiral")
+    rule.onNodeWithTag("recipe_stage_instruction_counter_0").assertTextEquals("17/200")
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitUntil(5_000) { backCount == 1 }
+    val saved = runBlocking { recipes.get(recipes.list().first().single { !it.builtIn }.id)!! }
+    assertEquals("Vierte en espiral", saved.stages.single().instruction)
+  }
+
+  @Test
+  fun anInstructionOver200CharactersShowsItsErrorAndBlocksSave() {
+    show()
+    type("recipe_edit_name", "Larga")
+    type("recipe_edit_dose", "16")
+    type("recipe_stage_instruction_0", "a".repeat(201))
+    rule.onNodeWithTag("recipe_stage_instruction_error_0").performScrollTo()
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsNotEnabled()
+    replace("recipe_stage_instruction_0", "a".repeat(200))
+    assertFalse(exists("recipe_stage_instruction_error_0"))
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsEnabled()
+  }
+
+  @Test
+  fun theClassicV60ShowsItsFiveStepsWithTwoWaits() {
+    show(id = builtInId(BuiltInRecipes.V60_CLASSIC))
+    assertTrue(exists("recipe_stage_4"))
+    assertFalse(exists("recipe_stage_5"))
+    // Los dos pasos de espera no piden agua; los tres vertidos sí.
+    for (i in listOf(1, 3)) assertFalse("water $i", exists("recipe_stage_water_$i"))
+    for (i in listOf(0, 2, 4)) assertTrue("water $i", exists("recipe_stage_water_$i"))
+    rule.onNodeWithTag("recipe_stage_water_4").performScrollTo().assertTextEquals("250")
+    // Cada paso trae su instrucción.
+    rule.onNodeWithTag("recipe_stage_instruction_0").performScrollTo()
+    val instruction = texts.builtInStageInstructions(BuiltInRecipes.V60_CLASSIC).first()!!
+    rule.onNodeWithTag("recipe_stage_instruction_0").assertTextEquals(instruction, includeEditableText = true)
+  }
+
+  @Test
+  fun aRecipeOf21StepsInsertedBySqlShowsTheCountErrorAndCannotBeSavedUntilReduced() {
+    val id = runBlocking {
+      val saved = recipes.save(
+        Recipe(
+          name = "Larga",
+          method = BrewMethod.V60,
+          doseG = 15.0,
+          stages = listOf(RecipeStage(null, 0, 40.0, 10_000)),
+        ),
+      )
+      saved
+    }
+    val sql = db.openHelper.writableDatabase
+    for (i in 1..20) {
+      sql.execSQL(
+        "INSERT INTO recipe_stages (recipeId, position, name, startMs, targetWaterG, durationMs, type, instruction) " +
+          "VALUES ($id, $i, NULL, ${i * 20_000}, ${40.0 + i}, 10000, 'POUR', NULL)",
+      )
+    }
+    show(id = id)
+    assertTrue(exists("recipe_stage_20"))
+    rule.onNodeWithTag("recipe_edit_error_general").performScrollTo()
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsNotEnabled()
+    rule.onNodeWithTag("recipe_add_stage").performScrollTo().assertIsNotEnabled()
+    rule.onNodeWithContentDescription(context.getString(R.string.recipe_edit_stage_remove, 21)).performScrollTo().performClick()
+    assertFalse(exists("recipe_edit_error_general"))
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsEnabled()
   }
 
   @Test
