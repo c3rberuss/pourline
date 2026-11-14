@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -247,7 +248,7 @@ class ScaleSessionManagerBrewTest {
     viewModel.finishBrew()
     assertEquals(SavedBrew.Saving, viewModel.ui.value.savedBrew)
 
-    connection.messages.tryEmit(ScaleMessage.Tared(success = true))
+    viewModel.beginArmedSession()
     repeat(5) { weight(0.0) }
     repeat(30) { weight(4.0) }
     assertTrue(viewModel.ui.value.brew.phase is BrewPhase.Active)
@@ -261,17 +262,37 @@ class ScaleSessionManagerBrewTest {
   // --- Temporizador (SPEC-002 §3.5) ---
 
   @Test
-  fun `finishing sends pause timer and the tare that rearms sends reset timer`() {
+  fun `finishing sends pause timer and a tare in the summary neither rearms nor sends anything`() {
     activePour()
     connection.messages.tryEmit(ScaleMessage.Timer(TimerStatus.RUNNING))
     connection.sent.clear()
     viewModel.finishBrew()
     assertEquals(listOf(ScaleCommands.pauseTimer()), connection.sent)
+    assertFalse(viewModel.isArmed)
 
     connection.messages.tryEmit(ScaleMessage.Timer(TimerStatus.PAUSED))
     connection.sent.clear()
     connection.messages.tryEmit(ScaleMessage.Tared(success = true))
-    assertEquals(listOf(ScaleCommands.resetTimer()), connection.sent)
+    assertTrue(connection.sent.isEmpty())
+    repeat(5) { weight(0.0) }
+    repeat(30) { weight(4.0) }
+    assertTrue(viewModel.ui.value.brew.phase is BrewPhase.Finished)
+    assertEquals(1, saver.calls.size)
+  }
+
+  @Test
+  fun `the next guided session after a paused timer resets and starts the timer`() {
+    activePour()
+    connection.messages.tryEmit(ScaleMessage.Timer(TimerStatus.RUNNING))
+    viewModel.finishBrew()
+    connection.messages.tryEmit(ScaleMessage.Timer(TimerStatus.PAUSED))
+    connection.sent.clear()
+
+    viewModel.beginArmedSession()
+    activePour()
+
+    assertEquals(listOf(ScaleCommands.resetTimer(), ScaleCommands.startTimer()), connection.sent)
+    assertTrue(viewModel.ui.value.brew.phase is BrewPhase.Active)
   }
 
   @Test

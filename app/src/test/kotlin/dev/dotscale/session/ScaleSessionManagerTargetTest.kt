@@ -347,7 +347,7 @@ class ScaleSessionManagerTargetTest {
     viewModel.finishBrew()
     assertNotNull(ui.lastFit)
 
-    connection.messages.tryEmit(ScaleMessage.Tared(success = true))
+    viewModel.beginArmedSession()
     activePour()
 
     assertNull(ui.lastFit)
@@ -410,7 +410,7 @@ class ScaleSessionManagerTargetTest {
     activePour()
     advanceSeconds(35)
     viewModel.finishBrew()
-    connection.messages.tryEmit(ScaleMessage.Tared(success = true))
+    viewModel.beginArmedSession()
     activePour()
     advanceSeconds(35)
 

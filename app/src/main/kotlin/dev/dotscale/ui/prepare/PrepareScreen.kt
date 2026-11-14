@@ -156,7 +156,10 @@ fun PrepareScreen(
       Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
         AntButton(
           text = stringResource(R.string.prepare_start),
-          onClick = onStart,
+          onClick = {
+            viewModel.startSession()
+            onStart()
+          },
           modifier = Modifier.fillMaxWidth().testTag("prepare_start"),
           type = AntButtonType.Primary,
           size = AntSize.Large,

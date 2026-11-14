@@ -52,7 +52,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  *
  * Android solo admite una operación GATT a la vez, así que todas pasan por [gattOp].
  */
-@SuppressLint("MissingPermission") // ScanScreen pide los permisos antes de crear la conexión.
+@SuppressLint("MissingPermission") // La sesión pide los permisos antes de crear la conexión.
 class BleScaleConnection(
   context: Context,
   private val address: String,

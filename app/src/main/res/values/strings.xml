@@ -15,30 +15,15 @@
     <string name="scale_back">Volver</string>
     <string name="scale_battery">Batería %1$d%%</string>
     <string name="scale_battery_short">%1$d%%</string>
-    <string name="scale_weight">Peso</string>
-    <string name="scale_flow">Flujo</string>
-    <string name="scale_time">Tiempo</string>
     <string name="scale_flow_value">%1$s/s</string>
-    <string name="scale_out_of_range">Fuera de rango</string>
-    <string name="scale_tare">Tara</string>
-    <string name="scale_start">Iniciar</string>
-    <string name="scale_pause">Pausar</string>
-    <string name="scale_reset">Reiniciar</string>
-    <string name="scale_unit_label">Unidad</string>
-    <string name="scale_capture_dose">Fijar dosis</string>
-    <string name="scale_clear_dose">Quitar dosis</string>
-    <string name="scale_dose_title">Dosis y ratio</string>
     <string name="scale_dose">Dosis</string>
     <string name="scale_ratio">Ratio</string>
     <string name="scale_ratio_value">1:%1$.1f</string>
     <string name="scale_ratio_empty">—</string>
-    <string name="scale_dose_hint">Pon el café en la báscula y pulsa «Fijar dosis»: se guarda el peso y se hace tara para empezar a verter.</string>
     <string name="scale_error_command">No se pudo enviar la orden a la báscula</string>
     <string name="scale_error_save">No se pudo guardar la preparación</string>
-    <string name="scale_retry">Reintentar</string>
     <string name="scale_simulation">Simulación</string>
     <string name="scale_sim_add">+%1$d g</string>
-    <string name="scale_info">%1$s · firmware %2$s</string>
 
     <!-- Estado de conexión -->
     <string name="conn_disconnected">Desconectada</string>
@@ -66,11 +51,7 @@
 
     <!-- Gráfica de vertido -->
     <string name="brew_chart_title">Vertido</string>
-    <string name="brew_chart_empty">Vierte agua para empezar</string>
     <string name="brew_chart_description">Gráfica de vertido. Agua: %1$s %2$s. Flujo: %3$s %2$s por segundo. Estabilidad: %4$s.</string>
-    <string name="brew_chart_finish">Terminar</string>
-    <string name="brew_chart_ready">Lista para la siguiente preparación</string>
-    <string name="brew_chart_ignored">Haz tara o reinicia el temporizador para empezar una nueva preparación.</string>
     <string name="brew_level_stable">Estable</string>
     <string name="brew_level_irregular">Irregular</string>
     <string name="brew_level_turbulent">Turbulento</string>
@@ -223,8 +204,8 @@
     <string name="recipe_active_tag">Activa</string>
     <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s</string>
     <plurals name="recipe_stage_count">
-        <item quantity="one">%1$d etapa</item>
-        <item quantity="other">%1$d etapas</item>
+        <item quantity="one">%1$d paso</item>
+        <item quantity="other">%1$d pasos</item>
     </plurals>
 
     <!-- Recetas: editor -->
@@ -281,10 +262,10 @@
     <string name="recipe_error_instruction_long">Máximo 200 caracteres</string>
     <string name="recipe_error_no_pour">Añade al menos un paso de tipo Verter</string>
 
-    <!-- Ajustes: guía de etapas y recetas -->
-    <string name="settings_stage_title">Guía de etapas</string>
-    <string name="settings_stage_vibration">Vibrar al empezar cada etapa</string>
-    <string name="settings_stage_sound">Sonido al empezar cada etapa</string>
+    <!-- Ajustes: guía de pasos y recetas -->
+    <string name="settings_stage_title">Guía de pasos</string>
+    <string name="settings_stage_vibration">Vibrar al empezar cada paso</string>
+    <string name="settings_stage_sound">Sonido al empezar cada paso</string>
     <string name="settings_recipes_title">Recetas</string>
     <string name="settings_recipes_restore">Restaurar recetas predefinidas</string>
     <string name="settings_recipes_restore_title">¿Restaurar las recetas predefinidas?</string>
@@ -295,17 +276,7 @@
 
     <string name="target_chip">Objetivo: %1$s</string>
     <string name="target_chip_none">Objetivo: ninguno</string>
-    <string name="target_stage_armed">Etapa %1$s: hasta %2$s en %3$d s</string>
-    <string name="target_stage_label">%1$d/%2$d</string>
-    <string name="target_stage_label_named">%1$d/%2$d · %3$s</string>
-    <string name="target_scaled">Escalada a %1$s</string>
-    <string name="target_up_to">Hasta %1$s</string>
-    <string name="target_next_in">Siguiente en %1$d s</string>
-    <string name="target_before_first">En espera de la etapa 1/%1$d</string>
-    <string name="target_all_done">Última etapa completada</string>
     <string name="target_description">Objetivo: %1$s en %2$s</string>
-    <string name="target_deviation_description">Desvío: %1$s</string>
-    <string name="target_deviation_none">—</string>
     <string name="target_error_removed">El objetivo elegido ya no existe</string>
     <string name="target_error_unreadable">No se pudo leer la curva de esa preparación</string>
     <string name="target_picker_title">Elegir objetivo</string>
@@ -533,4 +504,59 @@
     <string name="onboarding_title">¿Cómo preparas tu café?</string>
     <string name="onboarding_hint">Puedes cambiarlo cuando quieras en Ajustes.</string>
     <string name="onboarding_skip">Saltar</string>
+    <!-- Sesión guiada -->
+    <string name="session_close">Salir de la sesión</string>
+    <string name="session_options">Opciones</string>
+    <string name="session_title_free">Preparación libre</string>
+    <string name="session_retry">Reintentar</string>
+    <string name="session_dial_description">%1$s de %2$s, %3$d %%</string>
+    <string name="session_dial_ratio_flow">%1$s · %2$s</string>
+    <string name="session_step_description">Paso %1$d de %2$d, %3$s</string>
+    <string name="session_step_title">%1$s · %2$s</string>
+    <string name="session_step_up_to">hasta %1$s</string>
+    <string name="session_step_waiting">Espera al primer paso</string>
+    <string name="session_steps_done">Todos los pasos completados</string>
+    <string name="session_free_step">Verter hasta %1$s</string>
+    <string name="session_next">Siguiente: %1$s en %2$s</string>
+    <string name="session_next_seconds">%1$d s</string>
+    <string name="session_deviation">Desvío %1$s</string>
+    <string name="session_finish">Terminar</string>
+    <string name="session_options_expert">Modo experto</string>
+    <string name="session_options_unit">Unidad</string>
+    <string name="session_options_restart">Reiniciar</string>
+    <string name="session_options_simulation">Simulación</string>
+    <string name="prep_stepper">Paso %1$d de 4</string>
+    <string name="prep_step_label">Paso %1$d de 4 · %2$s</string>
+    <string name="prep_step_tare">Tara</string>
+    <string name="prep_step_dose">Dosis</string>
+    <string name="prep_step_tare_pour">Tara para verter</string>
+    <string name="prep_step_pour">Vertido</string>
+    <string name="prep_instruction_tare">Coloca el filtro y la jarra y tara</string>
+    <string name="prep_instruction_dose">Añade el café molido</string>
+    <string name="prep_instruction_dose_target">Añade el café molido (%1$s)</string>
+    <string name="prep_instruction_tare_pour">Tara otra vez y empieza a verter</string>
+    <string name="prep_instruction_pour">Empieza a verter</string>
+    <string name="prep_tare">Tarar</string>
+    <string name="prep_skip">Saltar</string>
+    <string name="prep_capture">Capturar ahora</string>
+    <string name="prep_skip_dose">Saltar (sin dosis)</string>
+    <string name="prep_start_timer">Empezar timer</string>
+    <string name="prep_waiting_tare">Esperando la tara…</string>
+    <string name="prep_dose_value">Dosis: %1$s</string>
+    <string name="prep_no_dose">Sin dosis</string>
+    <string name="summary_saved">Preparación guardada</string>
+    <string name="summary_saving">Guardando la preparación…</string>
+    <string name="summary_failed">No se pudo guardar la preparación</string>
+    <string name="summary_dose">Dosis</string>
+    <string name="summary_ratio_coffee">Ratio %1$s · Café %2$s</string>
+    <string name="summary_ratio">Ratio %1$s</string>
+    <string name="summary_reason">Motivo de fin</string>
+    <string name="summary_details">Añadir detalles</string>
+    <string name="summary_share">Compartir</string>
+    <string name="summary_done">Listo</string>
+    <string name="exit_title">¿Terminar la preparación?</string>
+    <string name="exit_text">Puedes guardarla o descartarla.</string>
+    <string name="exit_save">Terminar y guardar</string>
+    <string name="exit_discard">Descartar</string>
+    <string name="exit_continue">Seguir preparando</string>
 </resources>

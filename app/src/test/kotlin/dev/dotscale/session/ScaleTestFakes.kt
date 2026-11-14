@@ -244,3 +244,14 @@ fun brewRecord(
 /** 250 g en 100 s, a ritmo constante: una curva válida cualquiera. */
 fun rampSamples(totalMs: Long = 100_000, totalG: Double = 250.0): List<BrewSample> =
   (0..totalMs step 500).map { t -> BrewSample(t, totalG * t / totalMs, totalG / (totalMs / 1000.0), null, valid = true) }
+
+/**
+ * Abre otra sesión guiada y la lleva hasta armada saltando los pasos previos. Desde `Finished` la compuerta está
+ * cerrada (D16), así que una segunda sesión empieza así y no con una tara.
+ */
+fun ScaleSessionManager.beginArmedSession(plan: BrewPlan = BrewPlan(doseG = 15.0, ratio = 16.0)) {
+  startSession(plan)
+  prepSkip()
+  prepSkipDose()
+  prepSkip()
+}

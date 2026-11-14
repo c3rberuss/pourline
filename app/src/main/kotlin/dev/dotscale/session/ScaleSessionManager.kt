@@ -12,6 +12,7 @@ import dev.dotscale.brew.TargetConfig
 import dev.dotscale.brew.TargetCurve
 import dev.dotscale.brew.TargetGuide
 import dev.dotscale.brew.brewFit
+import dev.dotscale.brew.fromGrams
 import dev.dotscale.brew.toGrams
 import dev.dotscale.coffee.PickedCoffee
 import dev.dotscale.history.BrewContext
@@ -112,10 +113,19 @@ class ScaleSessionManager(
   var userDisconnected = false
     private set
 
-  /** Compuerta de la sesión (D16): los pesos, taras y estados del temporizador solo llegan a la `BrewSession` armado. */
+  /**
+   * Compuerta de la sesión (D16): los pesos, taras y estados del temporizador solo llegan a la `BrewSession` armado,
+   * desde que [PrepFlow] llega al paso de verter hasta que la sesión pasa a `Finished`, se descarta o se cierra.
+   */
   private var armed = false
 
   val isArmed: Boolean get() = armed
+
+  /** Los pasos previos de la sesión abierta; `null` sin sesión (D42). */
+  private var prep: PrepFlow? = null
+
+  /** La dosis y el ratio de Preparar con los que se abrió la sesión; `null` sin sesión abierta. */
+  private var sessionPlan: BrewPlan? = null
 
   private val _errors = Channel<ScaleError>(Channel.BUFFERED)
   val errors = _errors.receiveAsFlow()
@@ -157,10 +167,14 @@ class ScaleSessionManager(
       connection.flatMapLatest { it?.state ?: flowOf(ConnectionState.Disconnected) }.collect { s ->
         val wasReady = previous == ConnectionState.Ready
         previous = s
-        val effects = if (wasReady && (s is ConnectionState.Disconnected || s is ConnectionState.Failed)) {
-          session.onDisconnected(clock())
-        } else {
-          emptyList()
+        val lost = wasReady && (s is ConnectionState.Disconnected || s is ConnectionState.Failed)
+        val effects = if (lost) session.onDisconnected(clock()) else emptyList()
+        if (lost) {
+          // Antes de `Active` no hay nada que guardar: la sesión vuelve al paso 1 y la compuerta se cierra.
+          prep?.onDisconnected()
+          if (session.state.phase is BrewPhase.Armed) armed = false
+        } else if (s == ConnectionState.Ready) {
+          prep?.takeIf { it.state.interrupted }?.onReconnected()
         }
         if (s == ConnectionState.Ready) rememberRealScale()
         // "Falló": una conexión que no llegó a `Ready`; perder una ya establecida es "desconectada" (D12).
@@ -221,7 +235,10 @@ class ScaleSessionManager(
   private fun onMessage(message: ScaleMessage) {
     val now = clock()
     // Cambiar de unidad borra la dosis de la pantalla (ver `reduce`) y también la de la sesión.
-    if (message is ScaleMessage.UnitChanged && message.unit != _ui.value.unit) session.setDoseGrams(null)
+    if (message is ScaleMessage.UnitChanged && message.unit != _ui.value.unit) {
+      session.setDoseGrams(null)
+      prep?.forgetDose()
+    }
     val effects = if (!armed) {
       emptyList()
     } else {
@@ -234,6 +251,45 @@ class ScaleSessionManager(
     }
     publish { it.reduce(message) }
     handle(effects)
+    applyPrep(prepEffects(message, now))
+  }
+
+  /** Los pasos previos ven los pesos y las taras mientras no estén en el paso de verter (D42). */
+  private fun prepEffects(message: ScaleMessage, now: Long): List<PrepEffect> {
+    val flow = prep ?: return emptyList()
+    return when {
+      message is ScaleMessage.Weight && flow.state.step != PrepStep.POUR ->
+        flow.onWeight(toGrams(message.weight, message.unit), valid = !message.outOfRange, nowMs = now)
+      message is ScaleMessage.Tared && message.success -> flow.onTared(now)
+      else -> emptyList()
+    }
+  }
+
+  /** Ejecuta lo que piden los pasos previos y publica su estado. */
+  private fun applyPrep(effects: List<PrepEffect>) {
+    if (prep == null) return
+    var startNow = false
+    for (effect in effects) {
+      when (effect) {
+        PrepEffect.SendTare -> tare()
+        is PrepEffect.SetDose -> setSessionDose(effect.grams)
+        PrepEffect.Arm -> armed = true
+        PrepEffect.StartNow -> startNow = true
+      }
+    }
+    if (startNow) {
+      val timer = session.startNow(clock())
+      publish()
+      handle(timer)
+    } else {
+      publish()
+    }
+  }
+
+  /** Fija la dosis de la sesión (en gramos) sin tarar. */
+  private fun setSessionDose(grams: Double?) {
+    session.setDoseGrams(grams)
+    publish { it.copy(dose = grams?.let { g -> fromGrams(g, it.unit) }) }
   }
 
   private fun onResolution(resolution: Resolution) {
@@ -256,7 +312,7 @@ class ScaleSessionManager(
    */
   private fun publish(transform: (ScaleUiState) -> ScaleUiState = { it }) {
     _ui.update { current ->
-      val next = transform(current).copy(brew = session.state).withTarget(current).withCoffee(current)
+      val next = transform(current).copy(brew = session.state).withTarget(current).withCoffee(current).withSession()
       if (next.brew.phase is BrewPhase.Active && (next.savedBrew != null || next.lastFit != null || next.lastBrew != null)) {
         if (next.savedBrew != null) saveGeneration.incrementAndGet()
         next.copy(savedBrew = null, lastFit = null, lastBrew = null)
@@ -289,6 +345,24 @@ class ScaleSessionManager(
       TargetGuide.at(it.curve, phase, tMs, waterG, targetConfig)
     }
     return copy(target = target, guide = guide)
+  }
+
+  /** Lo de la sesión abierta: los pasos previos, el tiempo (D25) y el agua objetivo (D26). */
+  private fun ScaleUiState.withSession(): ScaleUiState {
+    val phase = brew.phase
+    val t0 = brew.t0MonoMs
+    val elapsed = when {
+      phase is BrewPhase.Active && t0 != null -> clock() - t0
+      phase is BrewPhase.Finished -> phase.summary.totalTimeMs
+      else -> null
+    }
+    val plan = sessionPlan
+    return copy(
+      prep = this@ScaleSessionManager.prep?.state,
+      elapsedMs = elapsed,
+      plan = plan,
+      targetWaterG = plan?.let { targetWaterG(target, dose?.let { d -> toGrams(d, unit) }, it) },
+    )
   }
 
   /** El café para este estado: fuera de `Active` sigue a la elección; en `Active` es el que había al empezar. */
@@ -350,7 +424,10 @@ class ScaleSessionManager(
         is BrewEffect.Finished -> null
       }
     }
-    effects.filterIsInstance<BrewEffect.Finished>().forEach { save(it.brew) }
+    val finished = effects.filterIsInstance<BrewEffect.Finished>()
+    // La sesión terminó: la compuerta se cierra, así una tara o un vertido en el resumen no la rearma (D16).
+    if (finished.isNotEmpty()) armed = false
+    finished.forEach { save(it.brew) }
     if (frames.isNotEmpty()) send(frames)
   }
 
@@ -435,21 +512,108 @@ class ScaleSessionManager(
   /** Cierra la conexión actual, si hay; los comandos del temporizador no se envían: la conexión se cierra justo después. */
   private fun closeConnection() {
     val current = connection.value ?: return
-    session.finish(clock()).filterIsInstance<BrewEffect.Finished>().forEach { save(it.brew) }
+    val finished = session.finish(clock()).filterIsInstance<BrewEffect.Finished>()
+    if (finished.isNotEmpty()) armed = false
+    finished.forEach { save(it.brew) }
     connection.value = null
     current.disconnect()
     publish { it.copy(connection = ConnectionState.Disconnected) }
   }
 
-  /** La `BrewSession` empieza a recibir pesos, taras y estados del temporizador. */
-  fun arm() {
+  /** La `BrewSession` empieza a recibir pesos, taras y estados del temporizador. La sesión guiada la arma con [PrepEffect.Arm]. */
+  internal fun arm() {
     armed = true
   }
 
   /** La `BrewSession` deja de recibir pesos; la pantalla sigue viéndolos. */
-  fun disarm() {
+  internal fun disarm() {
     armed = false
   }
+
+  /**
+   * "Empezar": abre la sesión guiada con los pasos previos en el paso 1. Si ya había una dosis capturada, el paso de
+   * la dosis se da por hecho (D24). Se ignora con una sesión `Active`.
+   */
+  fun startSession(plan: BrewPlan) {
+    if (session.state.phase is BrewPhase.Active) return
+    session.reset()
+    armed = false
+    forgetFrozen()
+    sessionPlan = plan
+    val objective = _ui.value.target?.nominalDoseG ?: plan.doseG
+    prep = PrepFlow(objective).also { flow -> flow.start(_ui.value.dose?.let { toGrams(it, _ui.value.unit) }) }
+    if (_ui.value.savedBrew != null) saveGeneration.incrementAndGet()
+    publish { it.copy(savedBrew = null, lastFit = null, lastBrew = null) }
+  }
+
+  /**
+   * Cierra la sesión: "Listo" (desde `Finished`) o la X antes de `Active`. Desde `Finished` la dosis se borra; si se sale
+   * antes de `Active` se conserva (D24). La compuerta ya estaba cerrada desde `Finished`.
+   */
+  fun endSession() {
+    if (session.state.phase is BrewPhase.Active) handle(session.finish(clock()))
+    val finished = session.state.phase is BrewPhase.Finished
+    armed = false
+    prep = null
+    sessionPlan = null
+    if (finished) {
+      session.setDoseGrams(null)
+      publish { it.copy(dose = null) }
+    } else {
+      publish()
+    }
+  }
+
+  /**
+   * "Descartar": termina la sesión sin guardarla (D22). La `BrewSession` vuelve a armada y limpia sin emitir
+   * `Finished`; la dosis, el objetivo y el café congelados se olvidan.
+   */
+  fun discardSession() {
+    val effects = session.discard(clock())
+    armed = false
+    prep = null
+    sessionPlan = null
+    forgetFrozen()
+    session.setDoseGrams(null)
+    publish { it.copy(dose = null) }
+    handle(effects)
+  }
+
+  /**
+   * "Reiniciar" (D43): antes de `Active`, vuelve al paso 1 y olvida la dosis; en `Active` no hace nada; en `Finished`,
+   * empieza otra sesión con la misma receta y el mismo café.
+   */
+  fun restartPrep() {
+    val plan = sessionPlan ?: return
+    when (session.state.phase) {
+      is BrewPhase.Active -> return
+      is BrewPhase.Finished -> endSession()
+      BrewPhase.Armed -> clearDose()
+    }
+    startSession(plan)
+  }
+
+  private fun forgetFrozen() {
+    sessionTarget = null
+    frozenFor = null
+    sessionCoffee = null
+    coffeeFrozenFor = null
+  }
+
+  /** "Tarar" de los pasos previos: envía la tara y espera su confirmación. */
+  fun prepTare() = applyPrep(prep?.tare(clock()).orEmpty())
+
+  /** "Saltar" de las taras (pasos 1 y 3). */
+  fun prepSkip() = applyPrep(prep?.skip().orEmpty())
+
+  /** "Capturar ahora": el peso actual es la dosis, sin esperar a que sea estable. */
+  fun prepCaptureNow() = applyPrep(prep?.captureNow(toGrams(_ui.value.weight, _ui.value.unit)).orEmpty())
+
+  /** "Saltar (sin dosis)". */
+  fun prepSkipDose() = applyPrep(prep?.skipDose().orEmpty())
+
+  /** "Empezar timer": la sesión pasa a `Active` sin esperar al agua. */
+  fun prepStartTimer() = applyPrep(prep?.startTimer().orEmpty())
 
   fun tare() = send(ScaleCommands.tare())
 
@@ -463,13 +627,13 @@ class ScaleSessionManager(
     ScaleCommands.setWeightUnit(if (_ui.value.unit == WeightUnit.GRAMS) WeightUnit.OUNCES else WeightUnit.GRAMS),
   )
 
-  /** Guarda el peso actual como dosis de café y hace tara para empezar a verter. */
-  fun captureDose() {
+  /** Guarda el peso actual como dosis de café y, con [tare], hace tara para empezar a verter (D18). */
+  fun captureDose(tare: Boolean = true) {
     val current = _ui.value.weight
     if (current <= 0) return
     session.setDoseGrams(toGrams(current, _ui.value.unit))
     publish { it.copy(dose = current) }
-    tare()
+    if (tare) tare()
   }
 
   fun clearDose() {

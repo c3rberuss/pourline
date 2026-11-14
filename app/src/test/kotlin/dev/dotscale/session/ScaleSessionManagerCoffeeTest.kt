@@ -163,7 +163,7 @@ class ScaleSessionManagerCoffeeTest {
     assertEquals(saver.calls.single().context.startedAtEpochMs, last.startedAtEpochMs)
 
     // Al empezar la siguiente sesión, lastBrew se borra y el café es el nuevo.
-    connection.messages.tryEmit(ScaleMessage.Tared(success = true))
+    viewModel.beginArmedSession()
     repeat(5) { weight(0.0, 0.0) }
     repeat(30) { weight(4.0, 4.0) }
     assertTrue(ui.brew.phase is BrewPhase.Active)

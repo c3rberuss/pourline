@@ -117,6 +117,9 @@ class PrepareViewModel(
 
   fun retry() = manager.retry()
 
+  /** "Empezar": abre la sesión guiada con la dosis y el ratio de Preparar. */
+  fun startSession() = manager.startSession(ui.value.plan)
+
   fun disconnect() = manager.disconnect()
 
   fun selectTarget(key: ReferenceKey?) = manager.selectTarget(key)

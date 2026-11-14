@@ -1,14 +1,15 @@
 package dev.dotscale
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -51,9 +52,11 @@ import dev.dotscale.ui.recipes.RecipeEditScreen
 import dev.dotscale.ui.recipes.RecipeEditViewModel
 import dev.dotscale.ui.recipes.RecipesScreen
 import dev.dotscale.ui.recipes.RecipesViewModel
-import dev.dotscale.ui.scale.ScaleScreen
 import dev.dotscale.ui.scale.TargetPickerViewModel
+import dev.dotscale.ui.session.SessionScreen
 import dev.dotscale.ui.settings.SettingsScreen
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 /**
  * La app: la elección del primer arranque (D11) mientras `onboardingDone` sea falso y, después, las cuatro
@@ -143,25 +146,19 @@ private fun tabEntryProvider(
     )
   }
   tabEntry<Session>(tab) {
-    // Provisional hasta F7: la pantalla de la báscula. Al salir termina y guarda una sesión activa y la desarma;
-    // la conexión sigue (cambiar de pantalla no desconecta).
     val session = deps.scaleSession
-    val scaleTarget by session.target.collectAsStateWithLifecycle()
-    val leave = {
-      session.finishBrew()
-      session.disarm()
-      back()
+    val hasSession by remember { session.ui.map { it.hasSession }.distinctUntilChanged() }
+      .collectAsStateWithLifecycle(remember { session.ui.value.hasSession })
+    // D44: una `Session` restaurada sin sesión abierta (proceso muerto) se retira sola.
+    LaunchedEffect(hasSession) {
+      if (!hasSession && stack.lastOrNull() is Session) stack.removeLastOrNull()
     }
-    BackHandler(onBack = leave)
-    ScaleScreen(
-      session,
-      viewModel { TargetPickerViewModel(deps.recipeRepository, deps.brewRepository) },
-      title = scaleTarget?.name.orEmpty(),
-      onBack = leave,
+    SessionScreen(
+      session = session,
+      modeStore = deps.experienceSettings,
+      brews = deps.brewRepository,
       onAddDetails = { id -> stack.add(BrewEdit(id)) },
-      onManageRecipes = { selectTab(Tab.RECIPES) },
-      coffeePickerViewModel = viewModel { CoffeePickerViewModel(deps.coffeeRepository) },
-      onNewCoffee = { stack.add(CoffeeEdit()) },
+      onDone = { stack.popToRoot() },
     )
   }
   tabEntry<Coffees>(tab) {

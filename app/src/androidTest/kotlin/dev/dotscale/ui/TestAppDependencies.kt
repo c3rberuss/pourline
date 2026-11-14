@@ -6,6 +6,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import dev.dotscale.AppDependencies
+import dev.dotscale.brew.StageNotifier
+import dev.dotscale.brew.TargetStage
 import dev.dotscale.MainNavigation
 import dev.dotscale.ble.BluetoothEnvironment
 import dev.dotscale.ble.DeviceScanner
@@ -83,6 +85,17 @@ class ScriptedConnection(private val hang: Boolean) : ScaleConnection {
   }
 }
 
+/** Apunta los avisos de paso que recibe (en orden de llegada). */
+class RecordingNotifier : StageNotifier {
+  val started = java.util.Collections.synchronizedList(mutableListOf<TargetStage>())
+
+  override fun stageStarted(stage: TargetStage) {
+    started += stage
+  }
+
+  override fun release() = Unit
+}
+
 /** Un escáner que encuentra una báscula y sigue buscando. */
 class FakeScanner(private val devices: List<ScannedDevice> = listOf(DOT)) : DeviceScanner {
   var scans = 0
@@ -114,6 +127,7 @@ class TestAppDependencies(
   private val context: Context,
   val bluetooth: FakeBluetoothEnvironment = FakeBluetoothEnvironment(),
   val scanner: FakeScanner = FakeScanner(),
+  notifier: StageNotifier = SilentNotifier,
 ) {
   init {
     context.deleteSharedPreferences(PREFS)
@@ -149,7 +163,7 @@ class TestAppDependencies(
     applicationScope = appScope,
     references = targetSettings,
     targets = RepositoryTargetReferences(recipes, brews),
-    notifier = SilentNotifier,
+    notifier = notifier,
     coffeeStore = brewSettings,
     coffees = RepositoryScaleCoffees(coffees),
     memory = connectionSettings,

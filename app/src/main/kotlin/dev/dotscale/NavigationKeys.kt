@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 /** Raíz de la pestaña Preparar: la tarjeta de báscula y la configuración de la preparación. */
 @Serializable data object Prepare : NavKey
 
-/** La sesión de preparación (provisional hasta F7: la pantalla de la báscula). Sin barra inferior. */
+/** La sesión guiada de preparación: pasos previos, vertido y resumen. Sin barra inferior. */
 @Serializable data object Session : NavKey
 
 @Serializable data object Settings : NavKey

@@ -194,6 +194,55 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
   private fun startSession() {
     t0 = run.first().nowMs
     baselineG = runPreValidG ?: run.first().weightG
+    beginActive(run.toList())
+  }
+
+  /** "Empezar timer": pasa a `Active` sin esperar al agua, con `t0 = nowMs` y la línea base en el último peso válido (o 0). */
+  fun startNow(nowMs: Long): List<BrewEffect> {
+    if (kind != Kind.ARMED) return emptyList()
+    t0 = nowMs
+    baselineG = lastValidWeightG ?: 0.0
+    lastAboveMs = 0L // sin agua aún: la inactividad cuenta desde el inicio
+    run.clear()
+    beginActive(emptyList())
+    publish()
+    return drain()
+  }
+
+  /** Vuelve a un estado armado y limpio; conserva el último estado del temporizador y el último peso válido. */
+  fun reset() {
+    kind = Kind.ARMED
+    run.clear()
+    runPreValidG = null
+    summary = null
+    rearmed = false
+    pourIgnored = false
+    samples = ArrayList()
+    pours.clear()
+    openPour = null
+    window.clear()
+    lastValidWaterG = null
+    currentStability = null
+    currentLevel = null
+    snapshot = emptyList()
+    ignoreTimerReset = false
+    dirty = true
+    publish()
+  }
+
+  /**
+   * Descarta la sesión sin emitir [BrewEffect.Finished]: vuelve a armada y limpia. Si estaba `Active` con el
+   * temporizador en marcha, emite [BrewEffect.PauseTimer].
+   */
+  fun discard(@Suppress("UNUSED_PARAMETER") nowMs: Long): List<BrewEffect> {
+    val wasActive = kind == Kind.ACTIVE
+    reset()
+    if (wasActive && lastTimer == TimerStatus.RUNNING) pending += BrewEffect.PauseTimer
+    return drain()
+  }
+
+  /** Arranca la sesión con `t0` y la línea base ya fijados; [confirmation] son las lecturas que confirmaron el vertido. */
+  private fun beginActive(confirmation: List<RunPoint>) {
     samples = ArrayList()
     pours.clear()
     openPour = null
@@ -207,7 +256,6 @@ class BrewSession(private val config: BrewConfig = BrewConfig()) {
     ignoreTimerReset = false
     kind = Kind.ACTIVE
 
-    val confirmation = run.toList()
     run.clear()
     confirmation.forEach { appendSample(it.nowMs - t0, it.weightG, it.flowGps, valid = true) }
 

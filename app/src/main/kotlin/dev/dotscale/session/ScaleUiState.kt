@@ -95,7 +95,18 @@ data class ScaleUiState(
   val coffee: PickedCoffee? = null,
   /** `null` sin sesión guardada; vuelve a `null` al empezar otra sesión. */
   val lastBrew: LastBrew? = null,
+  /** Los pasos previos de la sesión abierta; `null` sin sesión. En `POUR` la sesión ya está armada. */
+  val prep: PrepState? = null,
+  /** El tiempo de la sesión (D25): `reloj − t0` en `Active` y el tiempo total en `Finished`; `null` antes. */
+  val elapsedMs: Long? = null,
+  /** La dosis y el ratio de Preparar con los que se abrió la sesión; `null` sin sesión abierta. */
+  val plan: BrewPlan? = null,
+  /** El agua objetivo del aro (D26); `null` sin sesión abierta. */
+  val targetWaterG: Double? = null,
 ) {
+  /** Hay una sesión abierta: desde "Empezar" hasta "Listo", la X antes de `Active` o "Descartar". */
+  val hasSession: Boolean get() = plan != null
+
   /** Ratio agua:café (p. ej. 15.0 → 1:15). */
   val ratio: Double? get() = dose?.takeIf { it > 0 && weight > 0 }?.let { weight / it }
 
