@@ -11,6 +11,10 @@ import dev.dotscale.brew.TargetCurve
 import dev.dotscale.brew.brewFit
 import dev.dotscale.recipe.BuiltInRecipes
 import dev.dotscale.recipe.FakeRecipeTexts
+import dev.dotscale.recipe.StageGaps
+import dev.dotscale.recipe.StageType
+import dev.dotscale.recipe.recipeOf
+import dev.dotscale.recipe.stage
 import dev.dotscale.recipe.v60Classic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -138,5 +142,37 @@ class SimulatedTargetPourTest {
     )
     val pour = SimulatedTargetPour(late, FollowMode.FAITHFUL)
     assertTrue(pour.next()!! > 0.5)
+  }
+
+  @Test
+  fun `explicit waits do not change the total water or the fit of the faithful profile`() {
+    val old = recipeOf(stage(0, 40.0, 10), stage(45, 150.0, 20), stage(90, 250.0, 25))
+    val withoutWaits = TargetCurve.fromRecipe(old)
+    val withWaits = TargetCurve.fromRecipe(old.copy(stages = StageGaps.fillWaits(old.stages)))
+    assertEquals(5, withWaits.stages.size)
+    val a = run(withoutWaits, FollowMode.FAITHFUL)
+    val b = run(withWaits, FollowMode.FAITHFUL)
+    assertEquals(a.summary.totalWaterG, b.summary.totalWaterG, 0.0)
+    assertEquals(a.fit.score, b.fit.score)
+    assertEquals(3, b.summary.pours.size)
+  }
+
+  @Test
+  fun `a leading wait does not delay the first pour`() {
+    val pours = recipeOf(stage(10, 40.0, 10), stage(50, 100.0, 10))
+    val withWait = TargetCurve.fromRecipe(pours.copy(stages = StageGaps.fillWaits(pours.stages)))
+    assertEquals(StageType.WAIT, withWait.stages.first().type)
+    assertTrue(SimulatedTargetPour(withWait, FollowMode.FAITHFUL).next()!! > 0.5)
+  }
+
+  @Test
+  fun `the deviated profile delays from the second pour, not from the second step`() {
+    val faithful = SimulatedTargetPour(curve, FollowMode.FAITHFUL).let { p -> generateSequence { p.next() }.toList() }
+    val deviated = SimulatedTargetPour(curve, FollowMode.DEVIATED).let { p -> generateSequence { p.next() }.toList() }
+    // El primer vertido (los 10 s del bloom) es igual de intenso en los dos; la espera de después no cuenta como etapa tardía.
+    assertTrue(deviated.first() > 0.5)
+    assertTrue(deviated.size > faithful.size)
+    val result = run(curve, FollowMode.DEVIATED)
+    assertEquals(8_000.0, result.timeDiffMs.toDouble(), 2_000.0)
   }
 }

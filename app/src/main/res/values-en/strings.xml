@@ -179,15 +179,39 @@
     <string name="recipe_builtin_four_six">4:6 method</string>
     <string-array name="recipe_builtin_v60_classic_stages">
         <item>Bloom</item>
+        <item></item>
         <item>2nd pour</item>
+        <item></item>
         <item>3rd pour</item>
     </string-array>
     <string-array name="recipe_builtin_four_six_stages">
         <item>1st pour</item>
+        <item></item>
         <item>2nd pour</item>
+        <item></item>
         <item>3rd pour</item>
+        <item></item>
         <item>4th pour</item>
+        <item></item>
         <item>5th pour</item>
+    </string-array>
+    <string-array name="recipe_builtin_v60_classic_instructions">
+        <item>Pour in a spiral to wet all the grounds.</item>
+        <item>Let the coffee bloom.</item>
+        <item>Pour in slow circles from the center.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Pour in slow circles and finish pouring.</item>
+    </string-array>
+    <string-array name="recipe_builtin_four_six_instructions">
+        <item>Pour slowly and evenly: it sets the sweetness.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Pour slowly and evenly: it sets the acidity.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Pour to start building body.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Pour without rushing.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Last pour: take your time, up to the total water.</item>
     </string-array>
     <string name="recipe_copy_name">%1$s (copy)</string>
     <string name="recipe_from_brew_name">%1$s (recipe)</string>
@@ -234,8 +258,8 @@
     <string name="recipe_edit_delete">Delete</string>
     <string name="recipe_edit_adjusted_title">The brew was adjusted to turn it into a recipe</string>
     <plurals name="recipe_edit_adjusted_merged">
-        <item quantity="one">%1$d pair of pours was merged to end up with 10 stages.</item>
-        <item quantity="other">%1$d pairs of pours were merged to end up with 10 stages.</item>
+        <item quantity="one">%1$d pair of pours was merged to end up with 10 pours.</item>
+        <item quantity="other">%1$d pairs of pours were merged to end up with 10 pours.</item>
     </plurals>
     <string name="recipe_edit_adjusted_clamped">Pours longer than 120 s were cut to 120 s.</string>
     <string name="recipe_edit_adjusted_dose">The brew\'s dose is not between 5 and 60 g: enter it to be able to save.</string>
@@ -252,7 +276,9 @@
     <string name="recipe_error_water">Between 0 and 1000 g, one decimal at most</string>
     <string name="recipe_error_water_order">Must be more than the previous stage</string>
     <string name="recipe_error_duration">Between 1 and 120 s</string>
-    <string name="recipe_error_stage_count">Between 1 and 10 stages</string>
+    <string name="recipe_error_stage_count">Between 1 and 20 steps</string>
+    <string name="recipe_error_instruction_long">200 characters at most</string>
+    <string name="recipe_error_no_pour">Add at least one Pour step</string>
 
     <!-- Settings: stage guide and recipes -->
     <string name="settings_stage_title">Stage guide</string>

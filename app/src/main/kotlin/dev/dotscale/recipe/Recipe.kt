@@ -22,19 +22,42 @@ data class Recipe(
   /** `true`: los nombres se muestran traducidos (solo predefinidas sin renombrar). */
   val localizedNames: Boolean = false,
 ) {
-  val totalWaterG: Double get() = stages.last().targetWaterG
+  /** El agua acumulada del último paso `POUR`. */
+  val totalWaterG: Double get() = stages.lastOrNull { it.type == StageType.POUR }?.targetWaterG ?: 0.0
   val ratio: Double get() = totalWaterG / doseG
 }
+
+/** Qué hay que hacer en un paso: verter agua, remover o esperar. */
+enum class StageType { POUR, SWIRL, WAIT }
 
 data class RecipeStage(
   /** Opcional ("Bloom"). */
   val name: String?,
   /** Instante de inicio relativo a t0. */
   val startMs: Long,
-  /** Agua ACUMULADA al terminar el vertido de la etapa. */
+  /**
+   * Agua ACUMULADA al terminar el paso. En `SWIRL` y `WAIT` no añaden agua y valen lo mismo que el `POUR`
+   * anterior (0 si no hay): ver [withDerivedWater].
+   */
   val targetWaterG: Double,
-  /** Duración del vertido. */
+  /** Duración del paso. */
   val durationMs: Long,
+  val type: StageType = StageType.POUR,
+  /** Texto libre de hasta 200 caracteres que la sesión muestra mientras el paso está en curso. */
+  val instruction: String? = null,
 ) {
   val endMs: Long get() = startMs + durationMs
+}
+
+/** Fija el agua de cada `SWIRL` y `WAIT` al acumulado del `POUR` anterior (0 si no hay). */
+fun List<RecipeStage>.withDerivedWater(): List<RecipeStage> {
+  var accumulated = 0.0
+  return map { stage ->
+    if (stage.type == StageType.POUR) {
+      accumulated = stage.targetWaterG
+      stage
+    } else {
+      stage.copy(targetWaterG = accumulated)
+    }
+  }
 }

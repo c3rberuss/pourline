@@ -7,6 +7,8 @@ import dev.dotscale.recipe.RecipeDraft
 import dev.dotscale.recipe.RecipeError
 import dev.dotscale.recipe.RecipeStage
 import dev.dotscale.recipe.RecipeValidator
+import dev.dotscale.recipe.StageType
+import dev.dotscale.recipe.withDerivedWater
 import dev.dotscale.ui.history.TempResult
 import dev.dotscale.ui.history.parseWaterTemp
 
@@ -25,15 +27,22 @@ enum class FieldError {
   WATER_INVALID,
   WATER_NOT_INCREASING,
   DURATION_INVALID,
+  INSTRUCTION_TOO_LONG,
+
+  /** Menos de 1 o más de 20 pasos. */
   STAGE_COUNT,
+
+  /** Ningún paso es de tipo Verter. */
+  NO_POUR,
 }
 
 data class StageFieldErrors(
   val start: FieldError? = null,
   val water: FieldError? = null,
   val duration: FieldError? = null,
+  val instruction: FieldError? = null,
 ) {
-  val any: Boolean get() = start != null || water != null || duration != null
+  val any: Boolean get() = start != null || water != null || duration != null || instruction != null
 }
 
 data class RecipeFormErrors(
@@ -46,12 +55,17 @@ data class RecipeFormErrors(
   val any: Boolean get() = name != null || dose != null || temp != null || general != null || stages.any { it.any }
 }
 
-/** Una fila de etapa tal como se escribe: inicio `m:ss` o segundos, "Hasta" en g y vertido en s. */
+/**
+ * Una fila de paso tal como se escribe: inicio `m:ss` o segundos, "Hasta" en g (solo en `POUR`) y duración en s.
+ * En `SWIRL` y `WAIT`, [water] va vacío: el agua es la del vertido anterior y no se pide.
+ */
 data class StageForm(
   val name: String = "",
   val start: String = "",
   val water: String = "",
   val duration: String = "",
+  val type: StageType = StageType.POUR,
+  val instruction: String = "",
 )
 
 private val START_CLOCK = Regex("""(\d{1,2}):([0-5]\d)""")
@@ -109,7 +123,7 @@ data class RecipeEditForm(
     val previous = stages.lastOrNull()
     val previousStart = previous?.let { parseStart(it.start) }
     val previousDuration = previous?.let { parseSeconds(it.duration) }
-    val previousWater = previous?.let { parseGrams(it.water) }
+    val previousWater = stages.lastOrNull { it.type == StageType.POUR }?.let { parseGrams(it.water) }
     val next = StageForm(
       start = if (previousStart != null && previousDuration != null) formatStart(previousStart + previousDuration + 30_000) else "",
       water = previousWater?.let { formatNumber(it + 50) }.orEmpty(),
@@ -125,12 +139,14 @@ data class RecipeEditForm(
     if (index !in stages.indices) this else copy(stages = stages.mapIndexed { i, old -> if (i == index) stage else old })
 
   /**
-   * `true` si la receta sigue con los nombres traducidos: venía así y ni el nombre ni la lista de
-   * nombres de etapa cambian respecto a [initial] (añadir o quitar una etapa también la cambia).
+   * `true` si la receta sigue con los textos traducidos: venía así y ni el nombre ni los nombres, tipos e
+   * instrucciones de los pasos cambian respecto a [initial] (añadir o quitar un paso también los cambia).
    */
   fun keepsLocalizedNames(initial: RecipeEditForm, wasLocalized: Boolean): Boolean =
     wasLocalized && name.trim() == initial.name.trim() &&
-      stages.map { it.name.trim() } == initial.stages.map { it.name.trim() }
+      stages.map { it.name.trim() } == initial.stages.map { it.name.trim() } &&
+      stages.map { it.type } == initial.stages.map { it.type } &&
+      stages.map { it.instruction.trim() } == initial.stages.map { it.instruction.trim() }
 
   /** Errores por campo: de formato y de [RecipeValidator]. */
   fun errors(): RecipeFormErrors {
@@ -138,9 +154,11 @@ data class RecipeEditForm(
     val validator = RecipeValidator.validate(parsed.recipe)
 
     fun has(error: RecipeError) = error in validator
-    val stageErrors = stages.mapIndexed { i, _ ->
+    val stageErrors = stages.mapIndexed { i, form ->
       val p = parsed.stages[i]
       val prev = parsed.stages.getOrNull(i - 1)
+      val prevPourWater = (0 until i).lastOrNull { stages[it].type == StageType.POUR }?.let { parsed.stages[it].water }
+      val isPour = form.type == StageType.POUR
       val last = i == stages.lastIndex
       StageFieldErrors(
         start = when {
@@ -151,9 +169,10 @@ data class RecipeEditForm(
           else -> null
         },
         water = when {
+          !isPour -> null
           p.water == null -> FieldError.WATER_INVALID
           has(RecipeError.WaterOutOfRange(i)) -> FieldError.WATER_INVALID
-          prev?.water != null && has(RecipeError.WaterNotIncreasing(i)) -> FieldError.WATER_NOT_INCREASING
+          prevPourWater != null && has(RecipeError.WaterNotIncreasing(i)) -> FieldError.WATER_NOT_INCREASING
           else -> null
         },
         duration = when {
@@ -161,6 +180,7 @@ data class RecipeEditForm(
           has(RecipeError.DurationOutOfRange(i)) -> FieldError.DURATION_INVALID
           else -> null
         },
+        instruction = FieldError.INSTRUCTION_TOO_LONG.takeIf { has(RecipeError.InstructionTooLong(i)) },
       )
     }
     return RecipeFormErrors(
@@ -168,7 +188,11 @@ data class RecipeEditForm(
       dose = FieldError.DOSE_INVALID.takeIf { parsed.dose == null || has(RecipeError.DoseInvalid) },
       temp = FieldError.TEMP_INVALID.takeIf { tempResult == TempResult.Invalid || has(RecipeError.TempInvalid) },
       stages = stageErrors,
-      general = FieldError.STAGE_COUNT.takeIf { has(RecipeError.StageCountInvalid) },
+      general = when {
+        has(RecipeError.StageCountInvalid) -> FieldError.STAGE_COUNT
+        has(RecipeError.NoPour) -> FieldError.NO_POUR
+        else -> null
+      },
     )
   }
 
@@ -177,11 +201,12 @@ data class RecipeEditForm(
   /** La receta, o `null` si algún campo no es válido. */
   fun toRecipe(id: Long = 0, builtInKey: String? = null, localizedNames: Boolean = false): Recipe? {
     if (errors().any) return null
-    return parse().recipe.copy(id = id, builtInKey = builtInKey, localizedNames = localizedNames)
+    val recipe = parse().recipe
+    return recipe.copy(id = id, builtInKey = builtInKey, localizedNames = localizedNames, stages = recipe.stages.withDerivedWater())
   }
 
-  /** Agua total y ratio en vivo; `null` si la última etapa o la dosis no se pueden leer. */
-  fun totalWaterG(): Double? = stages.lastOrNull()?.let { parseGrams(it.water) }
+  /** Agua total y ratio en vivo; `null` si el último vertido o la dosis no se pueden leer. */
+  fun totalWaterG(): Double? = stages.lastOrNull { it.type == StageType.POUR }?.let { parseGrams(it.water) }
 
   fun ratio(): Double? {
     val water = totalWaterG() ?: return null
@@ -197,7 +222,10 @@ data class RecipeEditForm(
 
   /** Los campos que no se leen valen 0 en la receta de trabajo, y sus errores de [RecipeValidator] se descartan. */
   private fun parse(): Parsed {
-    val parsedStages = stages.map { ParsedStage(parseStart(it.start), parseGrams(it.water), parseSeconds(it.duration)) }
+    val parsedStages = stages.map {
+      val water = if (it.type == StageType.POUR) parseGrams(it.water) else 0.0
+      ParsedStage(parseStart(it.start), water, parseSeconds(it.duration))
+    }
     val dose = parseGrams(dose)
     val method = method
     val recipe = Recipe(
@@ -210,7 +238,7 @@ data class RecipeEditForm(
       doseG = dose ?: 0.0,
       stages = stages.mapIndexed { i, s ->
         val p = parsedStages[i]
-        RecipeStage(s.name.cleaned(), p.start ?: 0, p.water ?: 0.0, p.duration ?: 0)
+        RecipeStage(s.name.cleaned(), p.start ?: 0, p.water ?: 0.0, p.duration ?: 0, s.type, s.instruction.cleaned())
       },
     )
     return Parsed(recipe, dose, parsedStages)
@@ -229,8 +257,10 @@ data class RecipeEditForm(
         StageForm(
           name = it.name.orEmpty(),
           start = formatStart(it.startMs),
-          water = formatNumber(it.targetWaterG),
+          water = if (it.type == StageType.POUR) formatNumber(it.targetWaterG) else "",
           duration = Math.round(it.durationMs / 1000.0).toString(),
+          type = it.type,
+          instruction = it.instruction.orEmpty(),
         )
       },
     )

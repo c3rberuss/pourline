@@ -1,5 +1,6 @@
 package dev.dotscale.recipe
 
+import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -49,6 +50,9 @@ data class RecipeStageEntity(
   val startMs: Long,
   val targetWaterG: Double,
   val durationMs: Long,
+  /** `DEFAULT 'POUR'` para que `ALTER TABLE` de la migración 3 → 4 deje los pasos existentes como vertidos. */
+  @ColumnInfo(defaultValue = "POUR") val type: StageType = StageType.POUR,
+  val instruction: String? = null,
 )
 
 data class RecipeWithStages(

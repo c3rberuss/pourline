@@ -1,13 +1,14 @@
 package dev.dotscale.sim
 
 import dev.dotscale.brew.TargetCurve
+import dev.dotscale.recipe.StageType
 import kotlin.random.Random
 
 enum class FollowMode {
   /** Sigue la curva: agua dentro de ±3 %, tiempo dentro de ±5 s y ajuste ≥ 90. */
   FAITHFUL,
 
-  /** Desde la 2.ª etapa, cada una empieza 8 s tarde, y todas vierten el 80 % de su agua. Ajuste ≤ 60. */
+  /** Desde el 2.º vertido, cada uno empieza 8 s tarde, y todas vierten el 80 % de su agua. Ajuste ≤ 60. */
   DEVIATED,
 }
 
@@ -16,10 +17,10 @@ enum class FollowMode {
  *
  * Por cada etapa vierte el agua de la etapa durante su ventana con un flujo de base constante
  * (`agua de la etapa / duración`), al que aplica un factor aleatorio de ±10 % que cambia cada
- * [FACTOR_TICKS] ticks y el suavizado de [SimulatedPour]. No vierte en las esperas. Termina tras la última
- * etapa, cuando el flujo baja de [END_FLOW_GPS].
+ * [FACTOR_TICKS] ticks y el suavizado de [SimulatedPour]. Solo cuentan los pasos `POUR` (D41): no vierte en
+ * los `SWIRL` ni en los `WAIT`. Termina tras el último vertido, cuando el flujo baja de [END_FLOW_GPS].
  *
- * El tiempo del guion empieza en el inicio de la primera etapa: el primer tick ya vierte, porque la
+ * El tiempo del guion empieza en el inicio del primer vertido: el primer tick ya vierte, porque la
  * sesión marca su t0 con el primer vertido.
  */
 class SimulatedTargetPour(target: TargetCurve, private val mode: FollowMode, seed: Int = 42) : PourScript {
@@ -33,10 +34,11 @@ class SimulatedTargetPour(target: TargetCurve, private val mode: FollowMode, see
   private var factor = 1.0
 
   init {
-    val origin = target.stages.first().startMs
+    val pours = target.stages.filter { it.type == StageType.POUR }
+    val origin = pours.first().startMs
     val share = if (mode == FollowMode.DEVIATED) DEVIATED_WATER_SHARE else 1.0
     var previousWater = 0.0
-    windows = target.stages.mapIndexed { i, stage ->
+    windows = pours.mapIndexed { i, stage ->
       val water = (stage.targetWaterG - previousWater).coerceAtLeast(0.0) * share
       previousWater = stage.targetWaterG
       val durationMs = (stage.endMs - stage.startMs).coerceAtLeast(TICK_MS)

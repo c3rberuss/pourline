@@ -34,12 +34,67 @@ class RecipeValidatorTest {
   }
 
   @Test
-  fun `from 1 to 10 stages`() {
+  fun `from 1 to 20 stages`() {
     assertEquals(listOf(RecipeError.StageCountInvalid), errors(valid().copy(stages = emptyList())))
-    val ten = (0 until 10).map { stage(it * 30, 40.0 + it * 10, 10) }
-    assertTrue(errors(valid().copy(stages = ten)).isEmpty())
-    val eleven = (0 until 11).map { stage(it * 30, 40.0 + it * 10, 10) }
-    assertEquals(listOf(RecipeError.StageCountInvalid), errors(valid().copy(stages = eleven)))
+    val twenty = (0 until 20).map { stage(it * 30, 40.0 + it * 10, 10) }
+    assertTrue(errors(valid().copy(stages = twenty)).isEmpty())
+    val twentyOne = (0 until 21).map { stage(it * 30, 40.0 + it * 10, 10) }
+    assertEquals(listOf(RecipeError.StageCountInvalid), errors(valid().copy(stages = twentyOne)))
+  }
+
+  @Test
+  fun `a recipe needs at least one pour`() {
+    assertEquals(
+      listOf(RecipeError.NoPour),
+      errors(recipeOf(stage(0, 0.0, 10, type = StageType.WAIT))),
+    )
+    assertEquals(
+      listOf(RecipeError.NoPour),
+      errors(recipeOf(stage(0, 0.0, 10, type = StageType.SWIRL), stage(10, 0.0, 10, type = StageType.WAIT))),
+    )
+  }
+
+  @Test
+  fun `water only grows between pours and a wait with the same total is valid`() {
+    assertTrue(
+      errors(recipeOf(stage(0, 40.0, 10), stage(10, 40.0, 30, type = StageType.WAIT), stage(40, 100.0, 10))).isEmpty(),
+    )
+    assertTrue(
+      errors(recipeOf(stage(0, 40.0, 10), stage(10, 0.0, 5, type = StageType.SWIRL), stage(15, 100.0, 10))).isEmpty(),
+    )
+    assertEquals(
+      listOf(RecipeError.WaterNotIncreasing(2)),
+      errors(recipeOf(stage(0, 40.0, 10), stage(10, 40.0, 30, type = StageType.WAIT), stage(40, 40.0, 10))),
+    )
+  }
+
+  @Test
+  fun `the instruction has 200 characters at most`() {
+    assertTrue(errors(recipeOf(stage(0, 40.0, 10, instruction = "a".repeat(200)))).isEmpty())
+    assertEquals(
+      listOf(RecipeError.InstructionTooLong(0)),
+      errors(recipeOf(stage(0, 40.0, 10, instruction = "a".repeat(201)))),
+    )
+  }
+
+  @Test
+  fun `the duration depends on the type, a wait goes up to 600 s`() {
+    val pour = stage(0, 40.0, 10)
+    fun waitOf(seconds: Long) = RecipeStage(null, 10_000, 40.0, seconds * 1_000, StageType.WAIT)
+    fun swirlOf(seconds: Long) = RecipeStage(null, 10_000, 40.0, seconds * 1_000, StageType.SWIRL)
+    assertTrue(errors(recipeOf(pour, waitOf(600))).isEmpty())
+    assertEquals(listOf(RecipeError.DurationOutOfRange(1)), errors(recipeOf(pour, waitOf(601))))
+    assertEquals(listOf(RecipeError.DurationOutOfRange(1)), errors(recipeOf(pour, waitOf(0))))
+    assertTrue(errors(recipeOf(pour, swirlOf(120))).isEmpty())
+    assertEquals(listOf(RecipeError.DurationOutOfRange(1)), errors(recipeOf(pour, swirlOf(121))))
+  }
+
+  @Test
+  fun `a swirl that starts before the previous pour ends overlaps`() {
+    assertEquals(
+      listOf(RecipeError.StartOverlaps(1)),
+      errors(recipeOf(stage(0, 40.0, 10), stage(5, 40.0, 5, type = StageType.SWIRL))),
+    )
   }
 
   @Test

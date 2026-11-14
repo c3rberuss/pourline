@@ -5,8 +5,11 @@ interface RecipeTexts {
   /** Nombre traducido de una predefinida (`"v60_classic"`, `"four_six"`). */
   fun builtInName(key: String): String
 
-  /** Nombres traducidos de sus etapas, en orden. */
-  fun builtInStageNames(key: String): List<String>
+  /** Nombres traducidos de sus pasos, en orden; `null` en los que no tienen nombre (las esperas). */
+  fun builtInStageNames(key: String): List<String?>
+
+  /** Instrucciones traducidas de sus pasos, en orden. */
+  fun builtInStageInstructions(key: String): List<String?>
 
   /** `"<nombre> (copia)"`. */
   fun copyName(name: String): String

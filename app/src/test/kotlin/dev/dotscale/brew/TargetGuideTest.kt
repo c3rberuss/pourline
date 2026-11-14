@@ -1,5 +1,6 @@
 package dev.dotscale.brew
 
+import dev.dotscale.recipe.StageType
 import dev.dotscale.recipe.recipeOf
 import dev.dotscale.recipe.stage
 import dev.dotscale.recipe.v60Classic
@@ -11,7 +12,7 @@ import org.junit.Test
 
 class TargetGuideTest {
   private val config = TargetConfig()
-  private val curve = TargetCurve.fromRecipe(v60Classic()) // etapas en 0, 45 s y 90 s; 250 g
+  private val curve = TargetCurve.fromRecipe(v60Classic()) // pasos en 0, 10, 45, 65 y 90 s (vertido, espera, vertido, espera, vertido); 250 g
   private val active = BrewPhase.Active(pouring = true)
 
   private fun guide(tMs: Long?, waterG: Double? = null, phase: BrewPhase = active) =
@@ -32,10 +33,37 @@ class TargetGuideTest {
   fun `active picks the stage for the clock`() {
     assertEquals(0, guide(5_000).stage?.index)
     assertEquals(1, guide(5_000).nextStage?.index)
-    assertEquals(1, guide(45_000).stage?.index)
-    assertEquals(2, guide(45_000).nextStage?.index)
-    assertEquals(2, guide(100_000).stage?.index)
+    assertEquals(2, guide(45_000).stage?.index)
+    assertEquals(3, guide(45_000).nextStage?.index)
+    assertEquals(4, guide(100_000).stage?.index)
     assertNull(guide(100_000).nextStage)
+  }
+
+  @Test
+  fun `in a gap the current stage is the wait and the next one is the pour`() {
+    val g = guide(30_000)
+    assertEquals(StageType.WAIT, g.stage?.type)
+    assertEquals(1, g.stage?.index)
+    assertEquals(StageType.POUR, g.nextStage?.type)
+    assertEquals(2, g.nextStage?.index)
+  }
+
+  @Test
+  fun `the countdown also runs before a wait`() {
+    assertNull(guide(4_999).countdownS) // quedan 5001 ms hasta el WAIT de los 10 s
+    assertEquals(5, guide(5_000).countdownS)
+    assertEquals(1, guide(9_999).countdownS)
+  }
+
+  @Test
+  fun `a final wait keeps the guide alive until it ends`() {
+    val withWait = TargetCurve.fromRecipe(
+      recipeOf(stage(0, 40.0, 10), stage(10, 40.0, 20, type = StageType.WAIT)),
+    )
+    val during = TargetGuide.at(withWait, active, 25_000, 40.0, config)
+    assertFalse(during.allStagesDone)
+    assertEquals(StageType.WAIT, during.stage?.type)
+    assertTrue(TargetGuide.at(withWait, active, 30_000, 40.0, config).allStagesDone)
   }
 
   @Test
@@ -110,7 +138,7 @@ class TargetGuideTest {
     val g = guide(41_000, waterG = null)
     assertNull(g.deviationG)
     assertNull(g.deviationLevel)
-    assertEquals(0, g.stage?.index)
+    assertEquals(1, g.stage?.index)
     assertEquals(4, g.countdownS)
   }
 
@@ -120,7 +148,7 @@ class TargetGuideTest {
     assertFalse(before.allStagesDone)
     val after = guide(130_000, 255.0)
     assertTrue(after.allStagesDone)
-    assertEquals(2, after.stage?.index)
+    assertEquals(4, after.stage?.index)
     assertEquals(5.0, after.deviationG!!, 1e-9)
     assertEquals(DeviationLevel.OK, after.deviationLevel)
   }

@@ -378,5 +378,7 @@ private fun fieldErrorText(error: FieldError): String = stringResource(
     FieldError.WATER_NOT_INCREASING -> R.string.recipe_error_water_order
     FieldError.DURATION_INVALID -> R.string.recipe_error_duration
     FieldError.STAGE_COUNT -> R.string.recipe_error_stage_count
+    FieldError.NO_POUR -> R.string.recipe_error_no_pour
+    FieldError.INSTRUCTION_TOO_LONG -> R.string.recipe_error_instruction_long
   },
 )

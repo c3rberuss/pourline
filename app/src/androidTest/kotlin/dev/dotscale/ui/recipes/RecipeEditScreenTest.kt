@@ -116,15 +116,15 @@ class RecipeEditScreenTest {
   }
 
   @Test
-  fun addStageProposesTheNextValuesAndIsDisabledWithTenStages() {
+  fun addStageProposesTheNextValuesAndIsDisabledWithTwentyStages() {
     show()
     rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick()
     rule.onNodeWithTag("recipe_stage_start_1").performScrollTo().assertTextEquals("0:40") // fin 0:10 + 30 s
     rule.onNodeWithTag("recipe_stage_water_1").assertTextEquals("100") // 50 + 50 g
     rule.onNodeWithTag("recipe_stage_duration_1").assertTextEquals("10")
 
-    repeat(8) { rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick() }
-    assertTrue(exists("recipe_stage_9"))
+    repeat(18) { rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick() }
+    assertTrue(exists("recipe_stage_19"))
     rule.onNodeWithTag("recipe_add_stage").performScrollTo().assertIsNotEnabled()
   }
 
@@ -254,9 +254,9 @@ class RecipeEditScreenTest {
     val brewId = runBlocking { brews.save(TestBrews.finished(doseG = null), TestBrews.context()) }
     show(fromBrewId = brewId)
     assertTrue(exists("recipe_edit_adjusted"))
-    // Tres vertidos → tres etapas.
-    assertTrue(exists("recipe_stage_2"))
-    assertFalse(exists("recipe_stage_3"))
+    // Tres vertidos con dos huecos → tres vertidos y dos esperas (D40).
+    assertTrue(exists("recipe_stage_4"))
+    assertFalse(exists("recipe_stage_5"))
     rule.onNodeWithTag("recipe_edit_dose").performScrollTo().assertTextEquals("")
     rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsNotEnabled()
 
