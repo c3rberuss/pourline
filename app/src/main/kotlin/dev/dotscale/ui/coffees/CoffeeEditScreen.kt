@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.coffee.CoffeeError
@@ -55,6 +56,7 @@ import dev.dotscale.ui.components.AntTopBar
 import dev.dotscale.ui.components.showAntMessage
 import dev.dotscale.ui.theme.AntSize
 import dev.dotscale.ui.theme.AntTheme
+import dev.dotscale.ui.theme.DotScaleTheme
 import java.time.LocalDate
 
 private const val NOTES_MIN_LINES = 3
@@ -179,7 +181,7 @@ fun CoffeeEditScreen(
         )
       }
 
-      CoffeeFields(form, shown, suggestions, viewModel, today)
+      CoffeeFields(form, shown, suggestions, viewModel::update, viewModel::addVariety, viewModel::removeVariety, today)
     }
   }
 
@@ -215,7 +217,9 @@ private fun CoffeeFields(
   form: CoffeeForm,
   errors: Map<CoffeeField, CoffeeError>,
   suggestions: dev.dotscale.coffee.CoffeeSuggestions,
-  viewModel: CoffeeEditViewModel,
+  onUpdate: (CoffeeField, CoffeeForm.() -> CoffeeForm) -> Unit,
+  onAddVariety: (String) -> Unit,
+  onRemoveVariety: (String) -> Unit,
   today: () -> LocalDate,
 ) {
   fun status(field: CoffeeField) = if (field in errors) AntInputStatus.Error else AntInputStatus.Default
@@ -240,7 +244,7 @@ private fun CoffeeFields(
   Item(CoffeeField.NAME, R.string.coffee_field_name, required = true) {
     AntInput(
       value = form.name,
-      onValueChange = { v -> viewModel.update(CoffeeField.NAME) { copy(name = v) } },
+      onValueChange = { v -> onUpdate(CoffeeField.NAME) { copy(name = v) } },
       modifier = Modifier.fillMaxWidth().testTag("coffee_edit_name"),
       status = status(CoffeeField.NAME),
     )
@@ -248,7 +252,7 @@ private fun CoffeeFields(
   Item(CoffeeField.ROASTER, R.string.coffee_field_roaster) {
     AntAutoComplete(
       value = form.roaster,
-      onValueChange = { v -> viewModel.update(CoffeeField.ROASTER) { copy(roaster = v) } },
+      onValueChange = { v -> onUpdate(CoffeeField.ROASTER) { copy(roaster = v) } },
       suggestions = suggestions.roasters,
       modifier = Modifier.fillMaxWidth().testTag("coffee_edit_roaster"),
     )
@@ -260,7 +264,7 @@ private fun CoffeeFields(
       Item(CoffeeField.COUNTRY, R.string.coffee_field_country) {
         AntAutoComplete(
           value = form.country,
-          onValueChange = { v -> viewModel.update(CoffeeField.COUNTRY) { copy(country = v) } },
+          onValueChange = { v -> onUpdate(CoffeeField.COUNTRY) { copy(country = v) } },
           suggestions = suggestions.countries,
           modifier = Modifier.fillMaxWidth().testTag("coffee_edit_country"),
         )
@@ -270,7 +274,7 @@ private fun CoffeeFields(
       Item(CoffeeField.REGION, R.string.coffee_field_region) {
         AntAutoComplete(
           value = form.region,
-          onValueChange = { v -> viewModel.update(CoffeeField.REGION) { copy(region = v) } },
+          onValueChange = { v -> onUpdate(CoffeeField.REGION) { copy(region = v) } },
           suggestions = suggestions.regions,
           modifier = Modifier.fillMaxWidth().testTag("coffee_edit_region"),
         )
@@ -280,7 +284,7 @@ private fun CoffeeFields(
   Item(CoffeeField.FARM, R.string.coffee_field_farm) {
     AntInput(
       value = form.farm,
-      onValueChange = { v -> viewModel.update(CoffeeField.FARM) { copy(farm = v) } },
+      onValueChange = { v -> onUpdate(CoffeeField.FARM) { copy(farm = v) } },
       modifier = Modifier.fillMaxWidth().testTag("coffee_edit_farm"),
     )
   }
@@ -289,9 +293,9 @@ private fun CoffeeFields(
       varieties = form.varieties,
       text = form.varietyText,
       suggestions = suggestions.varieties,
-      onTextChange = { v -> viewModel.update(CoffeeField.VARIETIES) { copy(varietyText = v) } },
-      onAdd = viewModel::addVariety,
-      onRemove = viewModel::removeVariety,
+      onTextChange = { v -> onUpdate(CoffeeField.VARIETIES) { copy(varietyText = v) } },
+      onAdd = onAddVariety,
+      onRemove = onRemoveVariety,
     )
   }
   Item(CoffeeField.PROCESS, R.string.coffee_field_process) {
@@ -302,7 +306,7 @@ private fun CoffeeFields(
       AntSelect(
         options = options,
         selected = form.process,
-        onSelect = { p -> viewModel.update(CoffeeField.PROCESS) { copy(process = p, processOther = if (p == CoffeeProcess.OTHER) processOther else "") } },
+        onSelect = { p -> onUpdate(CoffeeField.PROCESS) { copy(process = p, processOther = if (p == CoffeeProcess.OTHER) processOther else "") } },
         label = null,
         modifier = Modifier.fillMaxWidth(),
         placeholder = none,
@@ -311,7 +315,7 @@ private fun CoffeeFields(
       if (form.process == CoffeeProcess.OTHER) {
         AntInput(
           value = form.processOther,
-          onValueChange = { v -> viewModel.update(CoffeeField.PROCESS_OTHER) { copy(processOther = v) } },
+          onValueChange = { v -> onUpdate(CoffeeField.PROCESS_OTHER) { copy(processOther = v) } },
           modifier = Modifier.fillMaxWidth().testTag("coffee_edit_process_other"),
           placeholder = stringResource(R.string.coffee_field_process_other),
         )
@@ -322,7 +326,7 @@ private fun CoffeeFields(
     Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
       AntInput(
         value = form.altitudeMin,
-        onValueChange = { v -> viewModel.update(CoffeeField.ALTITUDE_MIN) { copy(altitudeMin = v) } },
+        onValueChange = { v -> onUpdate(CoffeeField.ALTITUDE_MIN) { copy(altitudeMin = v) } },
         modifier = Modifier.weight(1f).testTag("coffee_edit_altitude_min"),
         placeholder = stringResource(R.string.coffee_field_altitude_from),
         status = status(CoffeeField.ALTITUDE_MIN),
@@ -331,7 +335,7 @@ private fun CoffeeFields(
       AntText("–")
       AntInput(
         value = form.altitudeMax,
-        onValueChange = { v -> viewModel.update(CoffeeField.ALTITUDE_MAX) { copy(altitudeMax = v) } },
+        onValueChange = { v -> onUpdate(CoffeeField.ALTITUDE_MAX) { copy(altitudeMax = v) } },
         modifier = Modifier.weight(1f).testTag("coffee_edit_altitude_max"),
         placeholder = stringResource(R.string.coffee_field_altitude_to),
         status = status(CoffeeField.ALTITUDE_MIN),
@@ -350,7 +354,7 @@ private fun CoffeeFields(
         AntSelect(
           options = options,
           selected = form.roastLevel,
-          onSelect = { l -> viewModel.update(CoffeeField.ROAST_LEVEL) { copy(roastLevel = l) } },
+          onSelect = { l -> onUpdate(CoffeeField.ROAST_LEVEL) { copy(roastLevel = l) } },
           label = null,
           modifier = Modifier.fillMaxWidth(),
           placeholder = none,
@@ -362,7 +366,7 @@ private fun CoffeeFields(
       Item(CoffeeField.ROAST_DATE, R.string.coffee_field_roast_date) {
         AntDatePicker(
           value = form.roastDate,
-          onValueChange = { d -> viewModel.update(CoffeeField.ROAST_DATE) { copy(roastDate = d) } },
+          onValueChange = { d -> onUpdate(CoffeeField.ROAST_DATE) { copy(roastDate = d) } },
           modifier = Modifier.fillMaxWidth(),
           placeholder = stringResource(R.string.coffee_field_date_hint),
           maxDate = today(),
@@ -375,7 +379,7 @@ private fun CoffeeFields(
   Item(CoffeeField.ROASTER_NOTES, R.string.coffee_field_roaster_notes) {
     AntInput(
       value = form.roasterNotes,
-      onValueChange = { v -> viewModel.update(CoffeeField.ROASTER_NOTES) { copy(roasterNotes = v) } },
+      onValueChange = { v -> onUpdate(CoffeeField.ROASTER_NOTES) { copy(roasterNotes = v) } },
       modifier = Modifier.fillMaxWidth().testTag("coffee_edit_roaster_notes"),
       singleLine = false,
       minLines = NOTES_MIN_LINES,
@@ -388,7 +392,7 @@ private fun CoffeeFields(
       Item(CoffeeField.BAG_WEIGHT, R.string.coffee_field_bag_weight) {
         AntInput(
           value = form.bagWeight,
-          onValueChange = { v -> viewModel.update(CoffeeField.BAG_WEIGHT) { copy(bagWeight = v) } },
+          onValueChange = { v -> onUpdate(CoffeeField.BAG_WEIGHT) { copy(bagWeight = v) } },
           modifier = Modifier.fillMaxWidth().testTag("coffee_edit_bag_weight"),
           status = status(CoffeeField.BAG_WEIGHT),
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -399,7 +403,7 @@ private fun CoffeeFields(
       Item(CoffeeField.PRICE, R.string.coffee_field_price) {
         AntInput(
           value = form.price,
-          onValueChange = { v -> viewModel.update(CoffeeField.PRICE) { copy(price = v) } },
+          onValueChange = { v -> onUpdate(CoffeeField.PRICE) { copy(price = v) } },
           modifier = Modifier.fillMaxWidth().testTag("coffee_edit_price"),
           prefix = { AntText("$", type = dev.dotscale.ui.components.AntTextType.Secondary) },
           status = status(CoffeeField.PRICE),
@@ -411,7 +415,7 @@ private fun CoffeeFields(
   Item(CoffeeField.OPENED_DATE, R.string.coffee_field_opened_date) {
     AntDatePicker(
       value = form.openedDate,
-      onValueChange = { d -> viewModel.update(CoffeeField.OPENED_DATE) { copy(openedDate = d) } },
+      onValueChange = { d -> onUpdate(CoffeeField.OPENED_DATE) { copy(openedDate = d) } },
       modifier = Modifier.fillMaxWidth(),
       placeholder = stringResource(R.string.coffee_field_date_hint),
       maxDate = today(),
@@ -419,4 +423,46 @@ private fun CoffeeFields(
       testTag = "coffee_edit_opened_date",
     )
   }
+}
+
+private val previewForm = CoffeeForm(
+  name = "Etiopía Guji Hambela",
+  roaster = "Café de Altura",
+  country = "Etiopía",
+  region = "Guji",
+  varieties = listOf("Heirloom", "74110"),
+  process = CoffeeProcess.NATURAL,
+  altitudeMin = "1800",
+  altitudeMax = "2200",
+  roastLevel = RoastLevel.LIGHT,
+  roastDate = LocalDate.of(2026, 10, 12),
+  bagWeight = "250",
+  ocrFilled = setOf(CoffeeField.NAME, CoffeeField.ROASTER),
+)
+
+@Composable
+private fun CoffeeEditPreviewBody() {
+  Column(Modifier.padding(AntTheme.spacing.base), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm)) {
+    CoffeeFields(
+      previewForm,
+      emptyMap(),
+      dev.dotscale.coffee.CoffeeSuggestions(),
+      { _, _ -> },
+      {},
+      {},
+      { LocalDate.of(2026, 11, 13) },
+    )
+  }
+}
+
+@Preview(name = "Editar café claro", showBackground = true, heightDp = 2400)
+@Composable
+private fun CoffeeEditPreview() {
+  DotScaleTheme(darkTheme = false) { CoffeeEditPreviewBody() }
+}
+
+@Preview(name = "Editar café oscuro", showBackground = true, heightDp = 2400)
+@Composable
+private fun CoffeeEditPreviewDark() {
+  DotScaleTheme(darkTheme = true) { CoffeeEditPreviewBody() }
 }

@@ -25,9 +25,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.coffee.CoffeeDetail
+import dev.dotscale.coffee.CoffeeEntity
+import dev.dotscale.coffee.CoffeeLogEntry
+import dev.dotscale.coffee.CoffeeProcess
+import dev.dotscale.coffee.RoastLevel
 import dev.dotscale.share.ShareContent
 import dev.dotscale.share.ShareSender
 import dev.dotscale.share.ShareTarget
@@ -54,6 +59,8 @@ import dev.dotscale.ui.components.AntTitle
 import dev.dotscale.ui.components.AntTopBar
 import dev.dotscale.ui.components.showAntMessage
 import dev.dotscale.ui.theme.AntTheme
+import dev.dotscale.ui.theme.DotScaleTheme
+import java.time.LocalDate
 import kotlinx.coroutines.launch
 
 private const val PERCENT = 100f
@@ -305,4 +312,47 @@ private fun StatusCard(detail: CoffeeDetail) {
       )
     }
   }
+}
+
+private val previewDetail = CoffeeDetail(
+  coffee = CoffeeEntity(
+    id = 1,
+    name = "Etiopía Guji Hambela",
+    roaster = "Café de Altura",
+    originCountry = "Etiopía",
+    originRegion = "Guji",
+    varieties = listOf("Heirloom", "74110"),
+    process = CoffeeProcess.NATURAL,
+    altitudeMinM = 1800,
+    altitudeMaxM = 2200,
+    roastLevel = RoastLevel.LIGHT,
+    roastDate = LocalDate.of(2026, 10, 12),
+    roasterNotes = "Jazmín, bergamota y durazno maduro.",
+    bagWeightG = 250.0,
+    createdAtEpochMs = 0,
+  ),
+  stockG = 180.0,
+  soldOut = false,
+  daysSinceRoast = 9,
+  brews = listOf(
+    CoffeeLogEntry(2, 1_794_000_000_000, rating = 4, notes = "Mandarina y miel", daysSinceRoast = 9, doseG = 15.0),
+    CoffeeLogEntry(1, 1_793_900_000_000, rating = null, notes = null, daysSinceRoast = 8, doseG = 15.0),
+  ),
+)
+
+@Composable
+private fun CoffeeDetailPreviewBody() {
+  DetailList(previewDetail, PaddingValues(), factsExpanded = true, {}, {}, {}, {}, {}, {})
+}
+
+@Preview(name = "Detalle claro", showBackground = true, heightDp = 1400)
+@Composable
+private fun CoffeeDetailPreview() {
+  DotScaleTheme(darkTheme = false) { CoffeeDetailPreviewBody() }
+}
+
+@Preview(name = "Detalle oscuro", showBackground = true, heightDp = 1400)
+@Composable
+private fun CoffeeDetailPreviewDark() {
+  DotScaleTheme(darkTheme = true) { CoffeeDetailPreviewBody() }
 }

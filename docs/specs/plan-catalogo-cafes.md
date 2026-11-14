@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-catalogo-cafes.md`](spec-catalogo-cafes.md) (SPEC-004) |
-| Estado | En implementación: F0 a F8 hechas. F4 (etiquetas reales): 13 de 15 nombres bien extraídos (objetivo 12), 0 fechas inventadas en las 13 etiquetas sin fecha; las 2 fechas escritas a mano no se leen (no cuentan). Fallos: `Pacamana` (el OCR lee mal la variedad) y `Tusell` (logo del tostador más alto que el nombre). |
+| Estado | Completado (F0 a F9). Las decisiones D1 a D41 están en el spec, §3.8. F4 (etiquetas reales): 13 de 15 nombres bien extraídos (objetivo 12), 0 fechas inventadas en las 13 etiquetas sin fecha; las 2 fechas escritas a mano no se leen (no cuentan). Fallos: `Pacamana` (el OCR lee mal la variedad) y `Tusell` (logo del tostador más alto que el nombre). F9: rendimiento en el emulador (mediana de 5): lista de 200 cafés con foto 216 ms (< 1 s), OCR de la etiqueta sintética de 1600 px 59 ms (< 3 s), imagen del café 286 ms y de la preparación de 10 min con objetivo 622 ms (< 1 s). `lintDebug`: 0 errores y 21 avisos, sin cambios frente a F7. Suite instrumentada completa: 260 tests en verde. E2E 1 a 13 hechos por adb salvo el 1b (cámara), que queda manual. |
 | Fecha | 2026-11-13 |
 | Rama | `feat/coffee-catalog`, creada desde `develop` (`0a7a6b2`), con el commit del spec (`edbad3c`) |
 | Módulos | `:app` (`:protocol` no cambia) |
@@ -845,6 +845,8 @@ Anotar en este plan qué permisos añade ML Kit y aplicar D29.
 la revisión del manifiesto fusionado y `zipalign -c -P 16 -v 4 app/build/outputs/apk/debug/app-debug.apk`
 para las bibliotecas nativas de ML Kit (R3).
 
+**Resultado (F3):** el manifiesto fusionado de ML Kit añadía `INTERNET` y `ACCESS_NETWORK_STATE`; se aplicó D29: `INTERNET` eliminado con `tools:node="remove"` y `ACCESS_NETWORK_STATE` conservado (solo lee el estado de la red). El APK pasó de 13,66 MB a 58,74 MB por el modelo incluido (58,83 MB al cerrar F9). `zipalign -c -P 16 -v 4` sobre el APK de depuración: `Verification successful`, así que las bibliotecas nativas de ML Kit están alineadas a 16 KB (R3 no se materializa). El OCR funciona en modo avión.
+
 Commit sugerido: `feat(coffee): store label photos and read them with on-device OCR`.
 
 ### F4. Etiquetas reales
@@ -1108,6 +1110,11 @@ Commit sugerido: `feat(share): share coffee cards and brew charts as images`.
 
 **Cierre:** marcar el checklist del §5 del spec, pasar D1–D41 al spec como §3.8, enlazar este plan desde la
 cabecera del spec y marcar el plan como completado con las medidas.
+
+**Resultado (F9):**
+- `CoffeePerformanceTest` (4 tests, emulador, mediana de 5 tras una pasada de calentamiento): lista `[227, 216, 192, 216, 196]` ms, mediana 216 ms; OCR `[61, 72, 59, 55, 40]` ms, mediana 59 ms; imagen del café `[310, 273, 286, 303, 283]` ms, mediana 286 ms; imagen de la preparación `[616, 622, 701, 583, 644]` ms, mediana 622 ms.
+- E2E por adb en el emulador con la báscula simulada, sin ARTEMIS: pasos 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 y 13 correctos. El 1b (cámara) queda manual. El registro de fallos (`adb logcat -b crash -d`) quedó vacío en todo el recorrido y no quedaron fotos huérfanas tras descartar el editor. Las dos imágenes compartidas (café y preparación) midieron 1080 × 1350 y se revisaron a ojo; solo había un PNG en `cache/shared`.
+- Los previews claro y oscuro de Detalle, Edición y Selector están en `CoffeeDetailScreen.kt`, `CoffeeEditScreen.kt` y `CoffeePicker.kt`; para el de Edición, `CoffeeFields` recibe `onUpdate`, `onAddVariety` y `onRemoveVariety` en lugar del ViewModel. Compilan; no se han renderizado en Android Studio.
 
 Commit sugerido: `test(coffee): add coffee performance test and verify the catalog flow`.
 

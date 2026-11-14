@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.dotscale.R
 import dev.dotscale.coffee.CoffeeListItem
@@ -30,6 +31,8 @@ import dev.dotscale.ui.components.AntInput
 import dev.dotscale.ui.components.AntText
 import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.theme.AntTheme
+import dev.dotscale.ui.theme.DotScaleTheme
+import java.time.LocalDate
 
 private val ListMaxHeight = 360.dp
 
@@ -112,4 +115,21 @@ fun CoffeePicker(
       )
     }
   }
+}
+
+private val previewPickable = listOf(
+  CoffeeListItem(1, "Etiopía Guji Hambela", "Café de Altura", "Etiopía", "Guji", LocalDate.of(2026, 10, 12), 9, 180.0, false, null, false),
+  CoffeeListItem(2, "Kenia Kiambu AA", "Origen Tostadores", "Kenia", null, LocalDate.of(2026, 10, 2), 19, 0.0, true, null, false),
+)
+
+@Preview(name = "Selector claro", showBackground = true, heightDp = 700)
+@Composable
+private fun CoffeePickerPreview() {
+  DotScaleTheme(darkTheme = false) { CoffeePicker(previewPickable, selectedId = 1, onSelect = {}, onClear = {}, onNew = {}, onClose = {}) }
+}
+
+@Preview(name = "Selector oscuro", showBackground = true, heightDp = 700)
+@Composable
+private fun CoffeePickerPreviewDark() {
+  DotScaleTheme(darkTheme = true) { CoffeePicker(previewPickable, selectedId = 1, onSelect = {}, onClear = {}, onNew = {}, onClose = {}) }
 }
