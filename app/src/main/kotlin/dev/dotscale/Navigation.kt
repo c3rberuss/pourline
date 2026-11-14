@@ -134,6 +134,8 @@ fun MainNavigation() {
         SettingsScreen(
           app.brewSettings,
           app.targetSettings,
+          app.experienceSettings,
+          app.themeSettings,
           onRestoreRecipes = { app.recipeRepository.restoreBuiltIns() },
           onBack = { backStack.removeLastOrNull() },
         )

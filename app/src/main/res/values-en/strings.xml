@@ -60,11 +60,15 @@
 
     <!-- Appearance -->
     <string name="theme_title">Appearance</string>
-    <string name="theme_change">Change appearance</string>
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_hint">“System” follows the light or dark mode of the phone.</string>
+    <string name="mode_title">Mode</string>
+    <string name="mode_basic">Basic</string>
+    <string name="mode_expert">Expert</string>
+    <string name="mode_basic_hint">We guide you step by step. Just the essentials.</string>
+    <string name="mode_expert_hint">Charts, flow stability and brew comparison.</string>
 
     <!-- Common -->
     <string name="action_close">Close</string>
@@ -143,6 +147,9 @@
     <string name="brew_detail_tasting">Tasting</string>
     <string name="brew_detail_rating">Rating</string>
     <string name="brew_detail_coffee_legacy">Not in the catalog</string>
+    <string name="brew_facts_title">Details</string>
+    <string name="brew_facts_date">Date</string>
+    <string name="brew_facts_recipe">Recipe</string>
     <string name="brew_detail_method">Method</string>
     <string name="brew_detail_grind">Grind</string>
     <string name="brew_detail_temp">Temperature</string>

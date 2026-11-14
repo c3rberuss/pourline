@@ -2,6 +2,7 @@ package dev.dotscale.ui
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -14,7 +15,11 @@ import dev.dotscale.recipe.BuiltInRecipes
 import dev.dotscale.recipe.RecipeRepository
 import dev.dotscale.recipe.ResourcesRecipeTexts
 import dev.dotscale.settings.BrewSettings
+import dev.dotscale.settings.ExperienceMode
+import dev.dotscale.settings.ExperienceSettings
 import dev.dotscale.settings.TargetSettings
+import dev.dotscale.settings.ThemeMode
+import dev.dotscale.settings.ThemeSettings
 import dev.dotscale.ui.settings.SettingsScreen
 import dev.dotscale.ui.theme.DotScaleTheme
 import kotlinx.coroutines.flow.first
@@ -34,6 +39,8 @@ class SettingsScreenTest {
   private val context = InstrumentationRegistry.getInstrumentation().targetContext
   private val settings = BrewSettings(context)
   private val targetSettings = TargetSettings(context)
+  private val experience = ExperienceSettings(context, TEST_PREFS)
+  private val theme = ThemeSettings(context, TEST_PREFS)
   private val previous = settings.autoFinishSeconds.value
   private val previousVibration = targetSettings.stageVibration.value
   private val previousSound = targetSettings.stageSound.value
@@ -46,6 +53,9 @@ class SettingsScreenTest {
     settings.setAutoFinishSeconds(60) // así el clic en "30 s" siempre es un cambio
     targetSettings.setStageVibration(true)
     targetSettings.setStageSound(true)
+    context.getSharedPreferences(TEST_PREFS, android.content.Context.MODE_PRIVATE).edit().clear().commit()
+    experience.setMode(ExperienceMode.EXPERT)
+    theme.setMode(ThemeMode.SYSTEM)
     db = HistoryDatabase.inMemory(context)
     recipes = RecipeRepository(db, ResourcesRecipeTexts(context))
     rule.setContent {
@@ -53,6 +63,8 @@ class SettingsScreenTest {
         SettingsScreen(
           settings,
           targetSettings,
+          experience,
+          theme,
           onRestoreRecipes = {
             restoreCalls++
             recipes.restoreBuiltIns()
@@ -69,7 +81,10 @@ class SettingsScreenTest {
     targetSettings.setStageVibration(previousVibration)
     targetSettings.setStageSound(previousSound)
     db.close()
+    context.getSharedPreferences(TEST_PREFS, android.content.Context.MODE_PRIVATE).edit().clear().commit()
   }
+
+  private fun testPrefs() = context.getSharedPreferences(TEST_PREFS, android.content.Context.MODE_PRIVATE)
 
   private fun prefs() = context.getSharedPreferences(BrewSettings.PREFS_NAME, android.content.Context.MODE_PRIVATE)
 
@@ -80,6 +95,38 @@ class SettingsScreenTest {
     assertEquals(30, settings.autoFinishSeconds.value)
     val stored = prefs().getInt(BrewSettings.KEY_AUTO_FINISH, -1)
     assertEquals(30, stored)
+  }
+
+  @Test
+  fun theModeSegmentedSavesTheExperienceMode() {
+    rule.onNodeWithText(context.getString(R.string.mode_basic)).performClick()
+    assertEquals(ExperienceMode.BASIC, experience.mode.value)
+    assertEquals("BASIC", testPrefs().getString(ExperienceSettings.KEY_MODE, null))
+
+    rule.onNodeWithText(context.getString(R.string.mode_expert)).performClick()
+    assertEquals(ExperienceMode.EXPERT, experience.mode.value)
+    assertEquals("EXPERT", testPrefs().getString(ExperienceSettings.KEY_MODE, null))
+  }
+
+  @Test
+  fun theThemeSegmentedSavesTheThemeMode() {
+    rule.onNodeWithText(context.getString(R.string.theme_dark)).performScrollTo().performClick()
+    assertEquals(ThemeMode.DARK, theme.mode.value)
+    assertEquals("DARK", testPrefs().getString(ThemeSettings.KEY_MODE, null))
+
+    rule.onNodeWithText(context.getString(R.string.theme_light)).performClick()
+    assertEquals("LIGHT", testPrefs().getString(ThemeSettings.KEY_MODE, null))
+  }
+
+  @Test
+  fun theRestoreButtonOnlyShowsInExpertMode() {
+    rule.onNodeWithTag("settings_recipes_restore").performScrollTo().assertExists()
+
+    rule.onNodeWithText(context.getString(R.string.mode_basic)).performScrollTo().performClick()
+    rule.onAllNodesWithTag("settings_recipes_restore").assertCountEquals(0)
+
+    rule.onNodeWithText(context.getString(R.string.mode_expert)).performScrollTo().performClick()
+    rule.onNodeWithTag("settings_recipes_restore").performScrollTo().assertExists()
   }
 
   @Test
@@ -127,5 +174,9 @@ class SettingsScreenTest {
     assertEquals(texts.builtInName(BuiltInRecipes.V60_CLASSIC), restored.name)
     assertEquals(15.0, restored.doseG, 0.0)
     assertTrue(restored.localizedNames)
+  }
+
+  private companion object {
+    const val TEST_PREFS = "settings_test"
   }
 }

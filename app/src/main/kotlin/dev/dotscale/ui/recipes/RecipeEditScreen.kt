@@ -34,6 +34,8 @@ import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.recipe.Adjustment
 import dev.dotscale.recipe.RecipeValidator
 import dev.dotscale.recipe.StageType
+import dev.dotscale.settings.ExpertFeature
+import dev.dotscale.settings.LocalExperienceMode
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntButton
 import dev.dotscale.ui.components.AntButtonType
@@ -181,7 +183,7 @@ fun RecipeEditScreen(viewModel: RecipeEditViewModel, onBack: () -> Unit, onDupli
       )
 
       Totals(form)
-      Preview(form)
+      if (LocalExperienceMode.current.shows(ExpertFeature.RECIPE_CURVE_PREVIEW)) Preview(form)
 
       AntButton(
         text = stringResource(R.string.recipe_edit_save),

@@ -43,7 +43,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.dotscale.R
 import dev.dotscale.ble.ScaleScanner
 import dev.dotscale.ble.ScannedDevice
-import dev.dotscale.settings.ThemeModeButton
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntBadge
 import dev.dotscale.ui.components.AntBadgeStatus
@@ -113,7 +112,6 @@ fun ScanScreen(
           AntIconButton(AntIcons.Recipe, contentDescription = stringResource(R.string.recipe_open), onClick = onOpenRecipes)
           AntIconButton(AntIcons.History, contentDescription = stringResource(R.string.history_open), onClick = onOpenHistory)
           AntIconButton(AntIcons.Settings, contentDescription = stringResource(R.string.settings_open), onClick = onOpenSettings)
-          ThemeModeButton()
         },
       )
     },

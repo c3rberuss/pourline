@@ -44,7 +44,8 @@ import dev.dotscale.scale.ConnectionStep
 import dev.dotscale.session.ScaleError
 import dev.dotscale.session.ScaleSessionManager
 import dev.dotscale.session.ScaleUiState
-import dev.dotscale.settings.ThemeModeButton
+import dev.dotscale.settings.ExpertFeature
+import dev.dotscale.settings.LocalExperienceMode
 import dev.dotscale.share.BrewShareData
 import dev.dotscale.share.FooterCoffee
 import dev.dotscale.share.ShareContent
@@ -244,6 +245,7 @@ fun ScaleScreen(
         onManageRecipes()
       },
       onClose = { pickerOpen = false },
+      showBrews = LocalExperienceMode.current.shows(ExpertFeature.TARGET_FROM_BREW),
     )
   }
 }
@@ -280,7 +282,6 @@ internal fun ScaleTopBar(
       )
       AntIconButton(AntIcons.History, contentDescription = stringResource(R.string.history_open), onClick = onOpenHistory)
       AntIconButton(AntIcons.Settings, contentDescription = stringResource(R.string.settings_open), onClick = onOpenSettings)
-      ThemeModeButton()
     },
   )
 }

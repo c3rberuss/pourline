@@ -15,7 +15,9 @@ import dev.dotscale.session.RepositoryTargetReferences
 import dev.dotscale.session.ScaleSessionManager
 import dev.dotscale.settings.BrewSettings
 import dev.dotscale.settings.ConnectionSettings
+import dev.dotscale.settings.ExperienceSettings
 import dev.dotscale.settings.TargetSettings
+import dev.dotscale.settings.ThemeSettings
 import dev.dotscale.ui.scale.AndroidStageNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +33,12 @@ class DotScaleApp : Application() {
 
   /** Referencia activa y avisos de etapa; una sola instancia, como [brewSettings]. */
   val targetSettings by lazy { TargetSettings(this) }
+
+  /** Apariencia (sistema, claro, oscuro); una sola instancia, como [brewSettings]. */
+  val themeSettings by lazy { ThemeSettings(this) }
+
+  /** Modo Básico/Experto y primer arranque; una sola instancia, como [brewSettings]. */
+  val experienceSettings by lazy { ExperienceSettings(this) }
 
   override fun onCreate() {
     super.onCreate()

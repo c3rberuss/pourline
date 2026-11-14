@@ -2,7 +2,6 @@ package dev.dotscale.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
@@ -14,8 +13,6 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
-import dev.dotscale.settings.LocalThemeSettings
-import dev.dotscale.settings.ThemeSettings
 import dev.dotscale.ui.scale.ScaleTopBar
 import dev.dotscale.ui.theme.DotScaleTheme
 import org.junit.Assert.assertEquals
@@ -37,19 +34,17 @@ class ScaleTopBarTest {
     var settings = 0
     var back = 0
     rule.setContent {
-      CompositionLocalProvider(LocalThemeSettings provides ThemeSettings(context)) {
-        DotScaleTheme(darkTheme = false) {
-          Box(Modifier.width(360.dp)) {
-            ScaleTopBar(
-              title = title,
-              subtitle = null,
-              batteryPercent = 80,
-              onBack = { back++ },
-              onOpenHistory = { history++ },
-              onOpenCoffees = { coffees++ },
-              onOpenSettings = { settings++ },
-            )
-          }
+      DotScaleTheme(darkTheme = false) {
+        Box(Modifier.width(360.dp)) {
+          ScaleTopBar(
+            title = title,
+            subtitle = null,
+            batteryPercent = 80,
+            onBack = { back++ },
+            onOpenHistory = { history++ },
+            onOpenCoffees = { coffees++ },
+            onOpenSettings = { settings++ },
+          )
         }
       }
     }
@@ -60,7 +55,6 @@ class ScaleTopBarTest {
     assertTrue("el título debería recortarse con elipsis", layouts.single().hasVisualOverflow)
 
     rule.onNodeWithContentDescription(context.getString(R.string.scale_battery, 80)).assertIsDisplayed()
-    rule.onNodeWithContentDescription(context.getString(R.string.theme_change)).assertIsDisplayed()
     rule.onNodeWithContentDescription(context.getString(R.string.coffees_open)).assertIsDisplayed().performClick()
     rule.onNodeWithContentDescription(context.getString(R.string.history_open)).assertIsDisplayed().performClick()
     rule.onNodeWithContentDescription(context.getString(R.string.settings_open)).assertIsDisplayed().performClick()

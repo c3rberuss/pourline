@@ -59,11 +59,15 @@
 
     <!-- Apariencia -->
     <string name="theme_title">Apariencia</string>
-    <string name="theme_change">Cambiar apariencia</string>
     <string name="theme_system">Sistema</string>
     <string name="theme_light">Claro</string>
     <string name="theme_dark">Oscuro</string>
     <string name="theme_hint">«Sistema» sigue el modo claro u oscuro del teléfono.</string>
+    <string name="mode_title">Modo</string>
+    <string name="mode_basic">Básico</string>
+    <string name="mode_expert">Experto</string>
+    <string name="mode_basic_hint">Te guiamos paso a paso. Solo lo esencial.</string>
+    <string name="mode_expert_hint">Gráficas, estabilidad del flujo y comparación de preparaciones.</string>
 
     <!-- Comunes -->
     <string name="action_close">Cerrar</string>
@@ -142,6 +146,9 @@
     <string name="brew_detail_tasting">Cata</string>
     <string name="brew_detail_rating">Valoración</string>
     <string name="brew_detail_coffee_legacy">No está en el catálogo</string>
+    <string name="brew_facts_title">Datos</string>
+    <string name="brew_facts_date">Fecha</string>
+    <string name="brew_facts_recipe">Receta</string>
     <string name="brew_detail_method">Método</string>
     <string name="brew_detail_grind">Molienda</string>
     <string name="brew_detail_temp">Temperatura</string>

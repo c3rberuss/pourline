@@ -1,5 +1,6 @@
 package dev.dotscale.ui.recipes
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
@@ -26,6 +27,8 @@ import dev.dotscale.recipe.Recipe
 import dev.dotscale.recipe.RecipeStage
 import dev.dotscale.recipe.RecipeRepository
 import dev.dotscale.recipe.ResourcesRecipeTexts
+import dev.dotscale.settings.ExperienceMode
+import dev.dotscale.settings.LocalExperienceMode
 import dev.dotscale.ui.theme.DotScaleTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -60,11 +63,13 @@ class RecipeEditScreenTest {
   @After
   fun tearDown() = db.close()
 
-  private fun show(id: Long? = null, fromBrewId: Long? = null): RecipeEditViewModel {
+  private fun show(id: Long? = null, fromBrewId: Long? = null, mode: ExperienceMode = ExperienceMode.EXPERT): RecipeEditViewModel {
     val viewModel = RecipeEditViewModel(recipes, brews, texts, id, fromBrewId)
     rule.setContent {
-      DotScaleTheme(darkTheme = false) {
-        RecipeEditScreen(viewModel, onBack = { backCount++ }, onDuplicated = { duplicatedId = it })
+      CompositionLocalProvider(LocalExperienceMode provides mode) {
+        DotScaleTheme(darkTheme = false) {
+          RecipeEditScreen(viewModel, onBack = { backCount++ }, onDuplicated = { duplicatedId = it })
+        }
       }
     }
     rule.waitUntil(5_000) { rule.onAllNodesWithTag("recipe_edit_save").fetchSemanticsNodes().isNotEmpty() }
@@ -139,6 +144,22 @@ class RecipeEditScreenTest {
     repeat(18) { rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick() }
     assertTrue(exists("recipe_stage_19"))
     rule.onNodeWithTag("recipe_add_stage").performScrollTo().assertIsNotEnabled()
+  }
+
+  @Test
+  fun theCurvePreviewShowsOnlyInExpertMode() {
+    show(id = builtInId(BuiltInRecipes.V60_CLASSIC), mode = ExperienceMode.EXPERT)
+    rule.onNodeWithTag("recipe_edit_preview").performScrollTo().assertExists()
+  }
+
+  @Test
+  fun inBasicModeThereIsNoCurvePreviewButTheStepsAreEditable() {
+    show(id = builtInId(BuiltInRecipes.V60_CLASSIC), mode = ExperienceMode.BASIC)
+    assertFalse(exists("recipe_edit_preview"))
+    assertTrue(exists("recipe_stage_4"))
+    rule.onNodeWithTag("recipe_edit_totals").performScrollTo().assertExists()
+    chooseType(1, R.string.step_type_swirl)
+    assertFalse(exists("recipe_stage_water_1"))
   }
 
   @Test

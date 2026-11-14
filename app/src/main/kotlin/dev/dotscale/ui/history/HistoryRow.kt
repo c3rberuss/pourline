@@ -42,10 +42,20 @@ import dev.dotscale.ui.theme.AntTheme
 
 private const val DISABLED_ALPHA = 0.45f
 
-/** Fila del historial: minicurva, título, café, agua y tiempo en la unidad guardada, ratio y etiquetas. */
+/**
+ * Fila del historial: minicurva, título, café, agua y tiempo en la unidad guardada, ratio y etiquetas. Con
+ * [showMetrics] `false` (modo Básico) no muestra las etiquetas de estabilidad ni de ajuste; la minicurva, que es
+ * decorativa, se mantiene.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun HistoryRow(item: BrewListItem, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+fun HistoryRow(
+  item: BrewListItem,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  showMetrics: Boolean = true,
+) {
   val state = if (enabled) Modifier else Modifier.alpha(DISABLED_ALPHA).semantics { disabled() }
   AntCard(modifier.testTag("history_row").then(state), size = AntCardSize.Small, onClick = if (enabled) onClick else null) {
     Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm), verticalAlignment = Alignment.Top) {
@@ -70,20 +80,24 @@ fun HistoryRow(item: BrewListItem, onClick: () -> Unit, modifier: Modifier = Mod
           text = stringResource(R.string.history_row_stats, water, formatDuration(item.totalTimeMs)) + ratio,
           type = AntTextType.Secondary,
         )
-        FlowRow(
-          horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
-          verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
-          modifier = Modifier.fillMaxWidth(),
-        ) {
-          val score = item.stabilityScore
-          val level = item.stabilityLevel
-          if (score != null && level != null) {
-            AntTag(levelText(level, score), color = level.tagColor())
-          } else {
-            AntTag(stringResource(R.string.history_row_no_score))
+        if (showMetrics || item.simulated) {
+          FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
+            verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
+            modifier = Modifier.fillMaxWidth(),
+          ) {
+            if (showMetrics) {
+              val score = item.stabilityScore
+              val level = item.stabilityLevel
+              if (score != null && level != null) {
+                AntTag(levelText(level, score), color = level.tagColor())
+              } else {
+                AntTag(stringResource(R.string.history_row_no_score))
+              }
+              item.fitScore?.let { AntTag(stringResource(R.string.history_row_fit, it), Modifier.testTag("history_row_fit")) }
+            }
+            if (item.simulated) AntTag(stringResource(R.string.history_row_simulated), color = AntTagColor.Primary)
           }
-          item.fitScore?.let { AntTag(stringResource(R.string.history_row_fit, it), Modifier.testTag("history_row_fit")) }
-          if (item.simulated) AntTag(stringResource(R.string.history_row_simulated), color = AntTagColor.Primary)
         }
       }
     }

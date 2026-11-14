@@ -25,8 +25,11 @@ object NoCoffeeStore : CoffeeStore {
  * Hay una sola instancia por proceso (ver `DotScaleApp`), para que el ViewModel de la pantalla
  * Scale y la pantalla de ajustes observen el mismo flujo.
  */
-class BrewSettings(context: Context) : CoffeeStore {
-  private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+class BrewSettings(
+  context: Context,
+  prefsName: String = PREFS_NAME,
+) : CoffeeStore {
+  private val prefs = context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
   private val _autoFinishSeconds = MutableStateFlow(readAutoFinish())
 
   /** Segundos sin verter tras los que la preparación se da por terminada. */

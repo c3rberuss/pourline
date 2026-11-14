@@ -23,6 +23,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.history.BrewFilter
+import dev.dotscale.settings.ExpertFeature
+import dev.dotscale.settings.LocalExperienceMode
 import dev.dotscale.ui.components.AntCard
 import dev.dotscale.ui.components.AntEmpty
 import dev.dotscale.ui.components.AntIconButton
@@ -57,6 +59,7 @@ fun HistoryScreen(viewModel: HistoryViewModel, onBack: () -> Unit, onOpenBrew: (
   // Salir del historial vacía el deshacer.
   DisposableEffect(viewModel) { onDispose { viewModel.clearPendingUndo() } }
 
+  val mode = LocalExperienceMode.current
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
@@ -77,7 +80,7 @@ fun HistoryScreen(viewModel: HistoryViewModel, onBack: () -> Unit, onOpenBrew: (
       item(key = "filters") {
         HistoryFilters(filter, coffees, methods, onChange = { filter = it })
       }
-      progress?.let { points ->
+      progress?.takeIf { mode.shows(ExpertFeature.HISTORY_STABILITY_PROGRESS) }?.let { points ->
         item(key = "progress") {
           AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.history_progress_title)) {
             if (points.size >= 2) {
@@ -101,7 +104,7 @@ fun HistoryScreen(viewModel: HistoryViewModel, onBack: () -> Unit, onOpenBrew: (
             AntEmpty(stringResource(if (filtered) R.string.history_empty_filtered else R.string.history_empty))
           }
         } else {
-          items(rows, key = { it.id }) { item -> HistoryRow(item, onClick = { onOpenBrew(item.id) }) }
+          items(rows, key = { it.id }) { item -> HistoryRow(item, onClick = { onOpenBrew(item.id) }, showMetrics = mode.shows(ExpertFeature.HISTORY_ROW_METRICS)) }
         }
       }
     }

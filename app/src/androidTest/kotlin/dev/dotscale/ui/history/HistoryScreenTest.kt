@@ -1,5 +1,6 @@
 package dev.dotscale.ui.history
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -23,6 +24,8 @@ import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
 import dev.dotscale.history.UsedCoffee
+import dev.dotscale.settings.ExperienceMode
+import dev.dotscale.settings.LocalExperienceMode
 import dev.dotscale.ui.coffees.formatCoffeeDate
 import dev.dotscale.ui.theme.DotScaleTheme
 import kotlinx.coroutines.runBlocking
@@ -81,11 +84,13 @@ class HistoryScreenTest {
     db.openHelper.writableDatabase.execSQL("UPDATE brews SET coffee = ? WHERE id = ?", arrayOf<Any>(coffee, it))
   }
 
-  private fun show() {
+  private fun show(mode: ExperienceMode = ExperienceMode.EXPERT) {
     val viewModel = HistoryViewModel(repository)
     rule.setContent {
-      DotScaleTheme(darkTheme = false) {
-        HistoryScreen(viewModel, onBack = {}, onOpenBrew = { opened = it })
+      CompositionLocalProvider(LocalExperienceMode provides mode) {
+        DotScaleTheme(darkTheme = false) {
+          HistoryScreen(viewModel, onBack = {}, onOpenBrew = { opened = it })
+        }
       }
     }
   }
@@ -97,6 +102,33 @@ class HistoryScreenTest {
   /** El texto aparece también en las filas; el del menú es el que está dentro del popup. */
   private fun clickMenuOption(text: String) =
     rule.onNode(hasText(text) and hasAnyAncestor(isPopup())).performClick()
+
+  @Test
+  fun inBasicModeThereIsNoProgressCardAndTheRowsHaveNoStabilityOrFitTags() {
+    runBlocking {
+      repository.save(TestBrews.finished(totalMs = 60_000), TestBrews.context(startedAtEpochMs = 1_000, target = TestBrews.usedTarget(score = 86)))
+      repository.save(TestBrews.finished(totalMs = 60_000), TestBrews.context(startedAtEpochMs = 2_000, simulated = true))
+    }
+    show(ExperienceMode.BASIC)
+    waitForRows(2)
+
+    rule.onAllNodesWithText(context.getString(R.string.history_progress_title)).assertCountEquals(0)
+    rule.onAllNodesWithTag("progress_empty").assertCountEquals(0)
+    rule.onAllNodesWithTag("progress_chart").assertCountEquals(0)
+    rule.onAllNodesWithTag("history_row_fit", useUnmergedTree = true).assertCountEquals(0)
+    rule.onAllNodesWithText(context.getString(R.string.history_row_no_score), substring = true).assertCountEquals(0)
+    // Lo que no es una métrica sigue: la etiqueta de simulada.
+    rows()[0].assertTextContains(context.getString(R.string.history_row_simulated), substring = true)
+  }
+
+  @Test
+  fun inExpertModeTheProgressCardAndTheRowTagsShow() {
+    seed(startedAt = 1_000, scored = false)
+    show(ExperienceMode.EXPERT)
+    waitForRows(1)
+    rule.onNodeWithText(context.getString(R.string.history_progress_title)).assertIsDisplayed()
+    rows()[0].assertTextContains(context.getString(R.string.history_row_no_score), substring = true)
+  }
 
   @Test
   fun emptyStateWhenThereAreNoBrews() {

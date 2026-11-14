@@ -52,19 +52,24 @@ fun TargetPicker(
   onClear: () -> Unit,
   onManageRecipes: () -> Unit,
   onClose: () -> Unit,
+  showBrews: Boolean = true,
 ) {
   var tab by rememberSaveable { mutableStateOf(PickerTab.RECIPES) }
+  // Sin preparaciones como objetivo (modo Básico) solo hay recetas y no hace falta el segmentado.
+  val effectiveTab = if (showBrews) tab else PickerTab.RECIPES
   AntDrawer(title = stringResource(R.string.target_picker_title), onClose = onClose, modifier = Modifier.testTag("target_picker")) {
-    AntSegmented(
-      options = listOf(
-        AntSegmentedOption(PickerTab.RECIPES, stringResource(R.string.target_picker_recipes)),
-        AntSegmentedOption(PickerTab.HISTORY, stringResource(R.string.target_picker_history)),
-      ),
-      selected = tab,
-      onSelect = { tab = it },
-      modifier = Modifier.fillMaxWidth().testTag("target_picker_tabs"),
-    )
-    when (tab) {
+    if (showBrews) {
+      AntSegmented(
+        options = listOf(
+          AntSegmentedOption(PickerTab.RECIPES, stringResource(R.string.target_picker_recipes)),
+          AntSegmentedOption(PickerTab.HISTORY, stringResource(R.string.target_picker_history)),
+        ),
+        selected = tab,
+        onSelect = { tab = it },
+        modifier = Modifier.fillMaxWidth().testTag("target_picker_tabs"),
+      )
+    }
+    when (effectiveTab) {
       PickerTab.RECIPES -> if (recipes.isEmpty()) {
         EmptyText(stringResource(R.string.target_picker_empty_recipes))
       } else {
