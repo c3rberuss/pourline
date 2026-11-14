@@ -1,4 +1,4 @@
-package dev.dotscale.ui.scale
+package dev.dotscale.session
 
 import dev.dotscale.brew.BrewFit
 import dev.dotscale.brew.BrewState
@@ -94,6 +94,23 @@ data class ScaleUiState(
 ) {
   /** Ratio agua:café (p. ej. 15.0 → 1:15). */
   val ratio: Double? get() = dose?.takeIf { it > 0 && weight > 0 }?.let { weight / it }
+
+  /** Una conexión nueva: el estado del dispositivo vuelve a su valor inicial; sesión, objetivo, café y dosis siguen. */
+  fun resetDevice(isSimulated: Boolean): ScaleUiState = copy(
+    connection = ConnectionState.Disconnected,
+    weight = 0.0,
+    flowRate = 0.0,
+    seconds = 0,
+    unit = WeightUnit.GRAMS,
+    outOfRange = false,
+    timer = TimerStatus.RESET,
+    batteryPercent = null,
+    model = null,
+    firmware = null,
+    deviceName = null,
+    brewStage = null,
+    isSimulated = isSimulated,
+  )
 
   fun reduce(message: ScaleMessage): ScaleUiState = when (message) {
     is ScaleMessage.Weight -> copy(

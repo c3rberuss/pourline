@@ -1,4 +1,4 @@
-package dev.dotscale.ui.scale
+package dev.dotscale.session
 
 import dev.dotscale.protocol.ScaleMessage
 import dev.dotscale.protocol.TimerStatus

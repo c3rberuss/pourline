@@ -14,6 +14,7 @@ import dev.dotscale.brew.FinishReason
 import dev.dotscale.brew.StabilityLevel
 import dev.dotscale.brew.fromGrams
 import dev.dotscale.protocol.WeightUnit
+import dev.dotscale.session.SavedBrew
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntButton
 import dev.dotscale.ui.components.AntCard

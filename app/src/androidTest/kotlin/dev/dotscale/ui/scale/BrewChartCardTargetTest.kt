@@ -34,6 +34,7 @@ import dev.dotscale.history.ReferenceType
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.recipe.Recipe
 import dev.dotscale.recipe.RecipeStage
+import dev.dotscale.session.ActiveTarget
 import dev.dotscale.settings.ReferenceKey
 import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.components.antTextColor

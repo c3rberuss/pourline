@@ -1,10 +1,5 @@
-package dev.dotscale.ui.scale
+package dev.dotscale.session
 
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.dotscale.brew.BrewPhase
 import dev.dotscale.coffee.PickedCoffee
 import dev.dotscale.protocol.ScaleMessage
@@ -30,14 +25,14 @@ import java.time.LocalDate
 
 /** La elección del café en Scale: preselección, congelado en `Active`, guardado y "Nuevo café" (D21, D23, D32). */
 @OptIn(ExperimentalCoroutinesApi::class)
-class ScaleViewModelCoffeeTest {
+class ScaleSessionManagerCoffeeTest {
   private val connection = FakeScaleConnection()
   private val saver = FakeBrewSaver()
   private val coffees = FakeScaleCoffees()
   private val scheduler = TestCoroutineScheduler()
-  private val store = ViewModelStore()
   private var now = 1_000L
-  private lateinit var viewModel: ScaleViewModel
+  private lateinit var viewModel: ScaleSessionManager
+  private lateinit var managerScope: CoroutineScope
   private lateinit var applicationScope: CoroutineScope
 
   private val ui get() = viewModel.ui.value
@@ -52,32 +47,31 @@ class ScaleViewModelCoffeeTest {
     applicationScope = CoroutineScope(SupervisorJob() + dispatcher)
     val initial = FakeCoffeeStore(initialCoffee)
     coffeeStoreRef = initial
-    val factory = viewModelFactory {
-      initializer {
-        ScaleViewModel(
-          connection,
-          MutableStateFlow(120),
-          saver,
-          applicationScope,
-          FakeReferenceStore(),
-          FakeTargetReferences(),
-          FakeNotifier(),
-          coffeeStore = initial,
-          coffees = coffees,
-          clock = { now },
-          wallClock = { WALL_BASE + now },
-        )
-      }
-    }
-    viewModel = ViewModelProvider.create(store, factory)[ScaleViewModel::class]
+    managerScope = CoroutineScope(SupervisorJob() + dispatcher)
+    viewModel = ScaleSessionManager(
+        { connection },
+        managerScope,
+        MutableStateFlow(120),
+        saver,
+        applicationScope,
+        FakeReferenceStore(),
+        FakeTargetReferences(),
+        FakeNotifier(),
+        coffeeStore = initial,
+        coffees = coffees,
+        clock = { now },
+        wallClock = { WALL_BASE + now },
+    )
+    viewModel.connect(ScaleTarget.Real("00:11:22:33:44:55", "Test"))
+    viewModel.arm()
   }
 
   private lateinit var coffeeStoreRef: FakeCoffeeStore
 
   @After
   fun tearDown() {
-    store.clear()
-    if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
+    if (::viewModel.isInitialized) viewModel.disconnect()
+    if (::managerScope.isInitialized) managerScope.cancel()
     if (::applicationScope.isInitialized) applicationScope.cancel()
     Dispatchers.resetMain()
   }
@@ -230,14 +224,10 @@ class ScaleViewModelCoffeeTest {
     val dispatcher = UnconfinedTestDispatcher(scheduler)
     Dispatchers.setMain(dispatcher)
     applicationScope = CoroutineScope(SupervisorJob() + dispatcher)
-    viewModel = ViewModelProvider.create(
-      store,
-      viewModelFactory {
-        initializer {
-          ScaleViewModel(connection, MutableStateFlow(120), saver, applicationScope, references, targets, FakeNotifier(), clock = { now })
-        }
-      },
-    )[ScaleViewModel::class]
+    managerScope = CoroutineScope(SupervisorJob() + dispatcher)
+    viewModel = ScaleSessionManager({ connection }, managerScope, MutableStateFlow(120), saver, applicationScope, references, targets, FakeNotifier(), clock = { now })
+    viewModel.connect(ScaleTarget.Real("00:11:22:33:44:55", "Test"))
+    viewModel.arm()
     assertNotNull(ui.target)
     assertNull(ui.target!!.prefill.coffee)
   }

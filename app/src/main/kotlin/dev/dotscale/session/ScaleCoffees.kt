@@ -1,4 +1,4 @@
-package dev.dotscale.ui.scale
+package dev.dotscale.session
 
 import dev.dotscale.coffee.CoffeeRepository
 import dev.dotscale.coffee.PickedCoffee

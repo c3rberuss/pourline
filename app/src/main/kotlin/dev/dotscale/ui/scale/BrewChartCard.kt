@@ -27,13 +27,15 @@ import dev.dotscale.brew.BrewState
 import dev.dotscale.brew.BrewSummary
 import dev.dotscale.brew.FinishReason
 import dev.dotscale.brew.GuideState
-import dev.dotscale.brew.TargetCurve
 import dev.dotscale.brew.Pour
 import dev.dotscale.brew.StabilityLevel
+import dev.dotscale.brew.TargetCurve
 import dev.dotscale.brew.fromGrams
 import dev.dotscale.coffee.PickedCoffee
 import dev.dotscale.coffee.daysSinceRoast
 import dev.dotscale.protocol.WeightUnit
+import dev.dotscale.session.ActiveTarget
+import dev.dotscale.session.SessionFit
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntButton
 import dev.dotscale.ui.components.AntCard

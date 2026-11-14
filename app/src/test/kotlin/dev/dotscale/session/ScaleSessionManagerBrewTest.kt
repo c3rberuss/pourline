@@ -1,10 +1,5 @@
-package dev.dotscale.ui.scale
+package dev.dotscale.session
 
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.viewModelFactory
-import androidx.lifecycle.viewmodel.initializer
 import dev.dotscale.brew.BrewPhase
 import dev.dotscale.brew.FinishReason
 import dev.dotscale.protocol.ScaleCommands
@@ -19,8 +14,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -33,16 +28,16 @@ import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ScaleViewModelBrewTest {
+class ScaleSessionManagerBrewTest {
 
   private val connection = FakeScaleConnection()
   private val saver = FakeBrewSaver()
   private val scheduler = TestCoroutineScheduler()
   private val autoFinish = MutableStateFlow(60)
-  private val store = ViewModelStore()
   private val errors = mutableListOf<ScaleError>()
   private var now = 1_000L
-  private lateinit var viewModel: ScaleViewModel
+  private lateinit var viewModel: ScaleSessionManager
+  private lateinit var managerScope: CoroutineScope
   private lateinit var applicationScope: CoroutineScope
 
   @Before
@@ -50,26 +45,25 @@ class ScaleViewModelBrewTest {
     val dispatcher = UnconfinedTestDispatcher(scheduler)
     Dispatchers.setMain(dispatcher)
     applicationScope = CoroutineScope(SupervisorJob() + dispatcher)
-    val factory = viewModelFactory {
-      initializer {
-        ScaleViewModel(
-          connection,
-          autoFinish,
-          saver,
-          applicationScope,
-          FakeReferenceStore(),
-          FakeTargetReferences(),
-          FakeNotifier(),
-          clock = { now },
-          wallClock = { WALL_BASE + now },
-        )
-      }
-    }
-    viewModel = ViewModelProvider.create(store, factory)[ScaleViewModel::class]
+    managerScope = CoroutineScope(SupervisorJob() + dispatcher)
+    viewModel = ScaleSessionManager(
+        { connection },
+        managerScope,
+        autoFinish,
+        saver,
+        applicationScope,
+        FakeReferenceStore(),
+        FakeTargetReferences(),
+        FakeNotifier(),
+        clock = { now },
+        wallClock = { WALL_BASE + now },
+    )
+    viewModel.connect(ScaleTarget.Real("00:11:22:33:44:55", "Test"))
+    viewModel.arm()
     applicationScope.launch { viewModel.errors.collect { errors += it } }
   }
 
-  /** Pasa el tiempo sin notificaciones: avanza el reloj y el tick de 1 s del ViewModel. */
+  /** Pasa el tiempo sin notificaciones: avanza el reloj y el tick de 1 s del gestor. */
   private fun advanceSeconds(seconds: Int) = repeat(seconds) {
     now += 1_000
     scheduler.advanceTimeBy(1_000)
@@ -78,8 +72,8 @@ class ScaleViewModelBrewTest {
 
   @After
   fun tearDown() {
-    store.clear() // cierra `viewModelScope`; el tick de 1 s no termina solo
-    viewModel.viewModelScope.cancel()
+    viewModel.disconnect()
+    managerScope.cancel() // el tick de 1 s no termina solo
     applicationScope.cancel()
     Dispatchers.resetMain()
   }
@@ -214,33 +208,33 @@ class ScaleViewModelBrewTest {
   }
 
   @Test
-  fun `clearing the view model with an active session saves it as manual`() {
+  fun `disconnecting the manager with an active session saves it as manual`() {
     activePour()
-    store.clear()
+    viewModel.disconnect()
 
     val call = saver.calls.single()
     assertEquals(FinishReason.MANUAL, call.brew.summary.reason)
   }
 
   @Test
-  fun `clearing the view model after the session finished does not save again`() {
+  fun `disconnecting the manager after the session finished does not save again`() {
     activePour()
     viewModel.finishBrew()
-    store.clear()
+    viewModel.disconnect()
     assertEquals(1, saver.calls.size)
   }
 
   @Test
-  fun `clearing the view model without a session saves nothing`() {
-    store.clear()
+  fun `disconnecting the manager without a session saves nothing`() {
+    viewModel.disconnect()
     assertTrue(saver.calls.isEmpty())
   }
 
   @Test
-  fun `the save is not cancelled when the view model is cleared`() {
+  fun `the save is not cancelled when the manager disconnects`() {
     saver.gate = CompletableDeferred()
     activePour()
-    store.clear()
+    viewModel.disconnect()
     saver.gate!!.complete(Unit)
     assertEquals(1, saver.calls.size)
     assertEquals(2L, saver.nextId) // `save` llegó hasta el final

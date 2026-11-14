@@ -3,15 +3,16 @@ package dev.dotscale
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import dev.dotscale.ble.BleScaleConnection
 import dev.dotscale.recipe.ResourcesRecipeTexts
-import dev.dotscale.sim.SimulatedScaleConnection
+import dev.dotscale.session.ScaleSessionManager
+import dev.dotscale.session.ScaleTarget
 import dev.dotscale.ui.coffees.CoffeeDetailScreen
 import dev.dotscale.ui.coffees.CoffeeDetailViewModel
 import dev.dotscale.ui.coffees.CoffeeEditScreen
@@ -19,9 +20,9 @@ import dev.dotscale.ui.coffees.CoffeeEditViewModel
 import dev.dotscale.ui.coffees.CoffeePickerViewModel
 import dev.dotscale.ui.coffees.CoffeesScreen
 import dev.dotscale.ui.coffees.CoffeesViewModel
-import dev.dotscale.ui.history.BrewDetailScreen
 import dev.dotscale.ui.history.BrewCompareScreen
 import dev.dotscale.ui.history.BrewCompareViewModel
+import dev.dotscale.ui.history.BrewDetailScreen
 import dev.dotscale.ui.history.BrewDetailViewModel
 import dev.dotscale.ui.history.BrewEditScreen
 import dev.dotscale.ui.history.BrewEditViewModel
@@ -33,14 +34,23 @@ import dev.dotscale.ui.recipes.RecipeEditScreen
 import dev.dotscale.ui.recipes.RecipeEditViewModel
 import dev.dotscale.ui.recipes.RecipesScreen
 import dev.dotscale.ui.recipes.RecipesViewModel
-import dev.dotscale.ui.scale.AndroidStageNotifier
-import dev.dotscale.ui.scale.RepositoryScaleCoffees
-import dev.dotscale.ui.scale.RepositoryTargetReferences
 import dev.dotscale.ui.scale.ScaleScreen
-import dev.dotscale.ui.scale.ScaleViewModel
 import dev.dotscale.ui.scale.TargetPickerViewModel
 import dev.dotscale.ui.scan.ScanScreen
 import dev.dotscale.ui.settings.SettingsScreen
+
+/** Destino de una entrada `Scale`: la MAC, o la simulada si no hay. */
+private fun Scale.toTarget(simulatedName: String): ScaleTarget =
+  address?.let { ScaleTarget.Real(it, name) } ?: ScaleTarget.Simulated(simulatedName)
+
+/** Conecta al crearse y desconecta (terminando y guardando una sesión activa) al sacar la entrada de la pila. */
+private class ScaleLease(private val session: ScaleSessionManager, target: ScaleTarget) : ViewModel() {
+  init {
+    session.connect(target)
+  }
+
+  override fun onCleared() = session.disconnect()
+}
 
 @Composable
 fun MainNavigation() {
@@ -68,23 +78,12 @@ fun MainNavigation() {
       }
       entry<Scale> { key ->
         val app = appContext as DotScaleApp
-        val viewModel = viewModel {
-          ScaleViewModel(
-            key.address?.let { BleScaleConnection(appContext, it) } ?: SimulatedScaleConnection(),
-            app.brewSettings.autoFinishSeconds,
-            app.brewRepository,
-            app.applicationScope,
-            references = app.targetSettings,
-            targets = RepositoryTargetReferences(app.recipeRepository, app.brewRepository),
-            notifier = AndroidStageNotifier(appContext, app.targetSettings),
-            coffeeStore = app.brewSettings,
-            coffees = RepositoryScaleCoffees(app.coffeeRepository),
-          )
-        }
+        // Provisional hasta F6: la entrada conecta al crearse y desconecta al sacarse de la pila (no al rotar).
+        viewModel { ScaleLease(app.scaleSession, key.toTarget(simulatedName)) }
         val pickerViewModel = viewModel { TargetPickerViewModel(app.recipeRepository, app.brewRepository) }
         val coffeePickerViewModel = viewModel { CoffeePickerViewModel(app.coffeeRepository) }
         ScaleScreen(
-          viewModel,
+          app.scaleSession,
           pickerViewModel,
           title = key.name,
           onBack = { backStack.removeLastOrNull() },

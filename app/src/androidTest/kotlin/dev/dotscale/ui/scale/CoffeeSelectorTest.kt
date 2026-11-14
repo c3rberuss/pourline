@@ -19,6 +19,10 @@ import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.recipe.ResourcesRecipeTexts
+import dev.dotscale.session.RepositoryScaleCoffees
+import dev.dotscale.session.RepositoryTargetReferences
+import dev.dotscale.session.ScaleSessionManager
+import dev.dotscale.session.ScaleTarget
 import dev.dotscale.sim.SimulatedScaleConnection
 import dev.dotscale.ui.coffees.CoffeePickerViewModel
 import dev.dotscale.ui.theme.DotScaleTheme
@@ -61,17 +65,22 @@ class CoffeeSelectorTest {
       coffees.save(TestBrews.coffeeDraft(name = "Etiopía Guji", roastDate = today.minusDays(9), bagWeightG = 250.0))
     }
     val store = MemoryCoffeeStore()
-    val viewModel = ScaleViewModel(
-      connection,
-      MutableStateFlow(60),
-      saver = brews,
-      applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-      references = MemoryReferenceStore(),
-      targets = RepositoryTargetReferences(dev.dotscale.recipe.RecipeRepository(db, texts), brews),
-      notifier = SilentNotifier,
-      coffeeStore = store,
-      coffees = RepositoryScaleCoffees(coffees),
-    )
+    lateinit var viewModel: ScaleSessionManager
+    rule.runOnUiThread {
+      viewModel = ScaleSessionManager(
+        connections = { connection },
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+        autoFinishSeconds = MutableStateFlow(60),
+        saver = brews,
+        applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        references = MemoryReferenceStore(),
+        targets = RepositoryTargetReferences(dev.dotscale.recipe.RecipeRepository(db, texts), brews),
+        notifier = SilentNotifier,
+        coffeeStore = store,
+        coffees = RepositoryScaleCoffees(coffees),
+      )
+      viewModel.connect(ScaleTarget.Simulated("Test"))
+    }
     val picker = TargetPickerViewModel(dev.dotscale.recipe.RecipeRepository(db, texts), brews)
     val coffeePicker = CoffeePickerViewModel(coffees)
     rule.setContent {

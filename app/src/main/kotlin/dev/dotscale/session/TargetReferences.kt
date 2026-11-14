@@ -1,4 +1,4 @@
-package dev.dotscale.ui.scale
+package dev.dotscale.session
 
 import dev.dotscale.history.BrewRecord
 import dev.dotscale.history.BrewRepository

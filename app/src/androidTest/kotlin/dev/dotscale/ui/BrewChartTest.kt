@@ -2,6 +2,7 @@ package dev.dotscale.ui
 
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -9,7 +10,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
 import dev.dotscale.history.BrewRepository
@@ -17,11 +17,12 @@ import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.recipe.BuiltInRecipes
 import dev.dotscale.recipe.RecipeRepository
 import dev.dotscale.recipe.ResourcesRecipeTexts
+import dev.dotscale.session.RepositoryTargetReferences
+import dev.dotscale.session.ScaleSessionManager
+import dev.dotscale.session.ScaleTarget
 import dev.dotscale.sim.SimulatedScaleConnection
 import dev.dotscale.ui.scale.MemoryReferenceStore
-import dev.dotscale.ui.scale.RepositoryTargetReferences
 import dev.dotscale.ui.scale.ScaleScreen
-import dev.dotscale.ui.scale.ScaleViewModel
 import dev.dotscale.ui.scale.SilentNotifier
 import dev.dotscale.ui.scale.TargetPickerViewModel
 import dev.dotscale.ui.theme.DotScaleTheme
@@ -50,15 +51,20 @@ class BrewChartTest {
     db = HistoryDatabase.inMemory(context, texts)
     val recipes = RecipeRepository(db, texts)
     val brews = BrewRepository(db)
-    val viewModel = ScaleViewModel(
-      connection,
-      MutableStateFlow(60),
-      saver = { _, _ -> 1L },
-      applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-      references = MemoryReferenceStore(),
-      targets = RepositoryTargetReferences(recipes, brews),
-      notifier = SilentNotifier,
-    )
+    lateinit var viewModel: ScaleSessionManager
+    rule.runOnUiThread {
+      viewModel = ScaleSessionManager(
+        connections = { connection },
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+        autoFinishSeconds = MutableStateFlow(60),
+        saver = { _, _ -> 1L },
+        applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        references = MemoryReferenceStore(),
+        targets = RepositoryTargetReferences(recipes, brews),
+        notifier = SilentNotifier,
+      )
+      viewModel.connect(ScaleTarget.Simulated("Test"))
+    }
     val picker = TargetPickerViewModel(recipes, brews)
     rule.setContent {
       DotScaleTheme(darkTheme = false) {

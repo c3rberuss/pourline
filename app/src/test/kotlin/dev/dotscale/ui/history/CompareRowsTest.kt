@@ -3,8 +3,8 @@ package dev.dotscale.ui.history
 import dev.dotscale.brew.GRAMS_PER_OUNCE
 import dev.dotscale.history.BrewRecord
 import dev.dotscale.protocol.WeightUnit
-import dev.dotscale.ui.scale.brewRecord
-import dev.dotscale.ui.scale.rampSamples
+import dev.dotscale.session.brewRecord
+import dev.dotscale.session.rampSamples
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

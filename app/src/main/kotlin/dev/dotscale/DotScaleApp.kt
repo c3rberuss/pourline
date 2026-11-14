@@ -9,10 +9,17 @@ import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.recipe.RecipeRepository
 import dev.dotscale.recipe.ResourcesRecipeTexts
+import dev.dotscale.session.AndroidScaleConnections
+import dev.dotscale.session.RepositoryScaleCoffees
+import dev.dotscale.session.RepositoryTargetReferences
+import dev.dotscale.session.ScaleSessionManager
 import dev.dotscale.settings.BrewSettings
+import dev.dotscale.settings.ConnectionSettings
 import dev.dotscale.settings.TargetSettings
+import dev.dotscale.ui.scale.AndroidStageNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.io.File
@@ -52,4 +59,27 @@ class DotScaleApp : Application() {
   val coffeeRepository by lazy { CoffeeRepository(historyDatabase, coffeePhotoStore) }
 
   val recipeRepository by lazy { RecipeRepository(historyDatabase, ResourcesRecipeTexts(this)) }
+
+  /** La última báscula real que llegó a `Ready`; una sola instancia, como [brewSettings]. */
+  val connectionSettings by lazy { ConnectionSettings(this) }
+
+  /**
+   * La conexión con la báscula y la sesión de preparación: un objeto por proceso. Su ámbito es el hilo principal
+   * del proceso, así que cambiar de pestaña o rotar no la toca.
+   */
+  val scaleSession by lazy {
+    ScaleSessionManager(
+      connections = AndroidScaleConnections(this),
+      scope = MainScope(),
+      autoFinishSeconds = brewSettings.autoFinishSeconds,
+      saver = brewRepository,
+      applicationScope = applicationScope,
+      references = targetSettings,
+      targets = RepositoryTargetReferences(recipeRepository, brewRepository),
+      notifier = AndroidStageNotifier(this, targetSettings),
+      coffeeStore = brewSettings,
+      coffees = RepositoryScaleCoffees(coffeeRepository),
+      memory = connectionSettings,
+    )
+  }
 }

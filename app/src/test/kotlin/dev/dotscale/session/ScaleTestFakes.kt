@@ -1,4 +1,4 @@
-package dev.dotscale.ui.scale
+package dev.dotscale.session
 
 import dev.dotscale.brew.BrewSample
 import dev.dotscale.brew.BrewSummary
@@ -18,6 +18,7 @@ import dev.dotscale.protocol.ScaleMessage
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.recipe.Recipe
 import dev.dotscale.scale.ConnectionState
+import dev.dotscale.scale.ConnectionStep
 import dev.dotscale.scale.ScaleConnection
 import dev.dotscale.settings.CoffeeStore
 import dev.dotscale.settings.ReferenceKey
@@ -39,7 +40,18 @@ class FakeScaleConnection : ScaleConnection {
   /** Tramas cuyo envío falla (después de registrarse en [sent]). */
   val failing = mutableSetOf<Frame>()
 
+  /** Si no es `null`, `connect()` se queda en `Connecting` hasta que se complete. */
+  var connectGate: CompletableDeferred<Unit>? = null
+
+  /** Cuántas veces se llamó a `disconnect()`. */
+  var disconnects = 0
+    private set
+
   override suspend fun connect() {
+    connectGate?.let {
+      state.value = ConnectionState.Connecting(ConnectionStep.CONNECTING)
+      it.await()
+    }
     state.value = ConnectionState.Ready
   }
 
@@ -48,7 +60,35 @@ class FakeScaleConnection : ScaleConnection {
     if (frame in failing) throw IllegalStateException("fallo simulado")
   }
 
-  override fun disconnect() = Unit
+  override fun disconnect() {
+    disconnects++
+  }
+}
+
+/** Da una [FakeScaleConnection] nueva por cada destino y guarda los destinos pedidos. */
+class RecordingConnectionFactory : ScaleConnectionFactory {
+  val targets = mutableListOf<ScaleTarget>()
+  val connections = mutableListOf<FakeScaleConnection>()
+
+  /** Se aplica a cada conexión nueva antes de devolverla (por ejemplo, para poner un `connectGate`). */
+  var configure: (FakeScaleConnection) -> Unit = {}
+
+  override fun create(target: ScaleTarget): ScaleConnection {
+    targets += target
+    return FakeScaleConnection().also { configure(it); connections += it }
+  }
+}
+
+/** Recuerda la última báscula real; [remembered] registra las llamadas a `remember`. */
+class FakeScaleMemory(initial: RememberedScale? = null) : ScaleMemory {
+  private val _lastScale = MutableStateFlow(initial)
+  override val lastScale: StateFlow<RememberedScale?> = _lastScale.asStateFlow()
+  val remembered = mutableListOf<RememberedScale>()
+
+  override fun remember(scale: RememberedScale) {
+    remembered += scale
+    _lastScale.value = scale
+  }
 }
 
 class SavedCall(val brew: FinishedBrew, val context: BrewContext)

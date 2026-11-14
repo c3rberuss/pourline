@@ -1,10 +1,5 @@
-package dev.dotscale.ui.scale
+package dev.dotscale.session
 
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.dotscale.brew.BrewPhase
 import dev.dotscale.brew.DeviationLevel
 import dev.dotscale.brew.TargetConfig
@@ -40,7 +35,7 @@ import org.junit.Test
 import kotlin.math.ceil
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ScaleViewModelTargetTest {
+class ScaleSessionManagerTargetTest {
 
   private val connection = FakeScaleConnection()
   private val saver = FakeBrewSaver()
@@ -49,10 +44,10 @@ class ScaleViewModelTargetTest {
   private val notifier = FakeNotifier()
   private val scheduler = TestCoroutineScheduler()
   private val autoFinish = MutableStateFlow(120)
-  private val store = ViewModelStore()
   private val errors = mutableListOf<ScaleError>()
   private var now = 1_000L
-  private lateinit var viewModel: ScaleViewModel
+  private lateinit var viewModel: ScaleSessionManager
+  private lateinit var managerScope: CoroutineScope
   private lateinit var applicationScope: CoroutineScope
 
   private val ui get() = viewModel.ui.value
@@ -62,29 +57,28 @@ class ScaleViewModelTargetTest {
     val dispatcher = UnconfinedTestDispatcher(scheduler)
     Dispatchers.setMain(dispatcher)
     applicationScope = CoroutineScope(SupervisorJob() + dispatcher)
-    val factory = viewModelFactory {
-      initializer {
-        ScaleViewModel(
-          connection,
-          autoFinish,
-          saver,
-          applicationScope,
-          references,
-          targets,
-          notifier,
-          clock = { now },
-          wallClock = { WALL_BASE + now },
-        )
-      }
-    }
-    viewModel = ViewModelProvider.create(store, factory)[ScaleViewModel::class]
+    managerScope = CoroutineScope(SupervisorJob() + dispatcher)
+    viewModel = ScaleSessionManager(
+        { connection },
+        managerScope,
+        autoFinish,
+        saver,
+        applicationScope,
+        references,
+        targets,
+        notifier,
+        clock = { now },
+        wallClock = { WALL_BASE + now },
+    )
+    viewModel.connect(ScaleTarget.Real("00:11:22:33:44:55", "Test"))
+    viewModel.arm()
     applicationScope.launch { viewModel.errors.collect { errors += it } }
   }
 
   @After
   fun tearDown() {
-    store.clear()
-    viewModel.viewModelScope.cancel()
+    viewModel.disconnect()
+    managerScope.cancel()
     applicationScope.cancel()
     Dispatchers.resetMain()
   }
@@ -431,8 +425,8 @@ class ScaleViewModelTargetTest {
   }
 
   @Test
-  fun `clearing the view model releases the notifier`() {
-    store.clear()
+  fun `disconnecting the manager releases the notifier`() {
+    viewModel.disconnect()
     assertEquals(1, notifier.released)
   }
 

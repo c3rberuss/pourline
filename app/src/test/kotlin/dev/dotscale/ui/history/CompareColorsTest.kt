@@ -3,10 +3,10 @@ package dev.dotscale.ui.history
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.toArgb
-import dev.dotscale.brew.ChartAxis
 import dev.dotscale.brew.BrewSample
+import dev.dotscale.brew.ChartAxis
 import dev.dotscale.protocol.WeightUnit
-import dev.dotscale.ui.scale.rampSamples
+import dev.dotscale.session.rampSamples
 import dev.dotscale.ui.theme.AntColors
 import dev.dotscale.ui.theme.AntPalette
 import dev.dotscale.ui.theme.antDarkColors

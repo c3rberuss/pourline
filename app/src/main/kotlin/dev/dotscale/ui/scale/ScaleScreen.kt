@@ -23,10 +23,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
@@ -34,8 +34,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
+import dev.dotscale.brew.BrewPhase
 import dev.dotscale.brew.BrewSummary
 import dev.dotscale.coffee.brewDaysSinceRoast
+import dev.dotscale.protocol.TimerStatus
+import dev.dotscale.protocol.WeightUnit
+import dev.dotscale.scale.ConnectionState
+import dev.dotscale.scale.ConnectionStep
+import dev.dotscale.session.ScaleError
+import dev.dotscale.session.ScaleSessionManager
+import dev.dotscale.session.ScaleUiState
+import dev.dotscale.settings.ThemeModeButton
 import dev.dotscale.share.BrewShareData
 import dev.dotscale.share.FooterCoffee
 import dev.dotscale.share.ShareContent
@@ -44,16 +53,10 @@ import dev.dotscale.share.ShareTarget
 import dev.dotscale.share.footerLines
 import dev.dotscale.share.rememberShareLauncher
 import dev.dotscale.share.rememberShareSender
-import dev.dotscale.ui.history.formatBrewDateTime
-import java.time.ZoneId
-import dev.dotscale.brew.BrewPhase
-import dev.dotscale.protocol.TimerStatus
-import dev.dotscale.protocol.WeightUnit
-import dev.dotscale.scale.ConnectionState
-import dev.dotscale.scale.ConnectionStep
 import dev.dotscale.sim.FollowMode
 import dev.dotscale.sim.PourProfile
-import dev.dotscale.settings.ThemeModeButton
+import dev.dotscale.ui.coffees.CoffeePicker
+import dev.dotscale.ui.coffees.CoffeePickerViewModel
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntBadge
 import dev.dotscale.ui.components.AntBadgeStatus
@@ -69,8 +72,6 @@ import dev.dotscale.ui.components.AntLoadingIcon
 import dev.dotscale.ui.components.AntMessageHost
 import dev.dotscale.ui.components.AntSegmented
 import dev.dotscale.ui.components.AntSegmentedOption
-import dev.dotscale.ui.coffees.CoffeePicker
-import dev.dotscale.ui.coffees.CoffeePickerViewModel
 import dev.dotscale.ui.components.AntStatistic
 import dev.dotscale.ui.components.AntStatus
 import dev.dotscale.ui.components.AntTag
@@ -80,8 +81,10 @@ import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.components.AntTopBar
 import dev.dotscale.ui.components.AntVerticalDivider
 import dev.dotscale.ui.components.showAntMessage
+import dev.dotscale.ui.history.formatBrewDateTime
 import dev.dotscale.ui.theme.AntSize
 import dev.dotscale.ui.theme.AntTheme
+import java.time.ZoneId
 import java.util.Locale
 
 private const val LOW_BATTERY_PERCENT = 20
@@ -89,7 +92,7 @@ private const val LINE_HEIGHT_RATIO = 1.125f
 
 @Composable
 fun ScaleScreen(
-  viewModel: ScaleViewModel,
+  session: ScaleSessionManager,
   pickerViewModel: TargetPickerViewModel,
   title: String,
   onBack: () -> Unit,
@@ -102,7 +105,8 @@ fun ScaleScreen(
   onNewCoffee: () -> Unit = {},
   shareSender: ShareSender? = null,
 ) {
-  val ui by viewModel.ui.collectAsStateWithLifecycle()
+  LaunchedEffect(session) { session.arm() }
+  val ui by session.ui.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
   val launcher = rememberShareLauncher(shareSender ?: rememberShareSender(), snackbar)
   var pickerOpen by rememberSaveable { mutableStateOf(false) }
@@ -112,8 +116,8 @@ fun ScaleScreen(
   val saveError = stringResource(R.string.scale_error_save)
   val removedError = stringResource(R.string.target_error_removed)
   val unreadableError = stringResource(R.string.target_error_unreadable)
-  LaunchedEffect(viewModel) {
-    viewModel.errors.collect { error ->
+  LaunchedEffect(session) {
+    session.errors.collect { error ->
       val text = when (error) {
         is ScaleError.Command -> error.detail ?: commandError
         ScaleError.SaveFailed -> saveError
@@ -153,19 +157,19 @@ fun ScaleScreen(
         .padding(AntTheme.spacing.base),
       verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
     ) {
-      ConnectionBanner(ui.connection, onRetry = viewModel::connect)
+      ConnectionBanner(ui.connection, onRetry = session::retry)
       WeightCard(ui)
       BrewControls(
         running = ui.timer == TimerStatus.RUNNING,
         enabled = enabled,
-        onTare = viewModel::tare,
-        onToggleTimer = viewModel::toggleTimer,
-        onReset = viewModel::resetTimer,
+        onTare = session::tare,
+        onToggleTimer = session::toggleTimer,
+        onReset = session::resetTimer,
       )
       BrewChartCard(
         ui.brew,
         ui.unit,
-        onFinish = viewModel::finishBrew,
+        onFinish = session::finishBrew,
         target = ui.target,
         guide = ui.guide,
         lastFit = ui.lastFit,
@@ -188,14 +192,14 @@ fun ScaleScreen(
           onShare = { launcher.share(ShareTarget.Summary, ShareContent.Brew(shareData)) },
         )
       }
-      DoseCard(ui, enabled, onCapture = viewModel::captureDose, onClear = viewModel::clearDose)
-      UnitCard(ui.unit, enabled, onToggle = viewModel::toggleUnit)
+      DoseCard(ui, enabled, onCapture = session::captureDose, onClear = session::clearDose)
+      UnitCard(ui.unit, enabled, onToggle = session::toggleUnit)
       if (ui.isSimulated) {
         SimulationCard(
           hasTarget = ui.target != null,
-          onAdd = viewModel::simulateAdd,
-          onPour = viewModel::simulatePour,
-          onFollow = viewModel::simulateTargetPour,
+          onAdd = session::simulateAdd,
+          onPour = session::simulatePour,
+          onFollow = session::simulateTargetPour,
         )
       }
     }
@@ -208,11 +212,11 @@ fun ScaleScreen(
     CoffeePicker(
       coffees = coffees,
       selectedId = ui.coffee?.id,
-      onSelect = viewModel::selectCoffee,
-      onClear = if (ui.coffee != null) ({ viewModel.selectCoffee(null) }) else null,
+      onSelect = session::selectCoffee,
+      onClear = if (ui.coffee != null) ({ session.selectCoffee(null) }) else null,
       onNew = {
         coffeePickerOpen = false
-        viewModel.requestNewCoffee()
+        session.requestNewCoffee()
         onNewCoffee()
       },
       onClose = { coffeePickerOpen = false },
@@ -228,11 +232,11 @@ fun ScaleScreen(
       brews = brews,
       active = ui.target?.key,
       onSelect = {
-        viewModel.selectTarget(it)
+        session.selectTarget(it)
         pickerOpen = false
       },
       onClear = {
-        viewModel.selectTarget(null)
+        session.selectTarget(null)
         pickerOpen = false
       },
       onManageRecipes = {

@@ -37,15 +37,6 @@ import dev.dotscale.sim.FollowMode
 import dev.dotscale.sim.PourProfile
 import dev.dotscale.sim.SimulatedScaleConnection
 import dev.dotscale.ui.history.formatBrewDateTime
-import dev.dotscale.ui.scale.ActiveTarget
-import dev.dotscale.ui.scale.LastBrew
-import dev.dotscale.ui.scale.NoScaleCoffees
-import dev.dotscale.ui.scale.SavedBrew
-import dev.dotscale.ui.scale.ScaleCoffees
-import dev.dotscale.ui.scale.ScaleError
-import dev.dotscale.ui.scale.ScaleUiState
-import dev.dotscale.ui.scale.SessionFit
-import dev.dotscale.ui.scale.TargetReferences
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -55,6 +46,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -65,9 +57,11 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * La conexión con la báscula y la sesión de preparación. No depende de ningún `ViewModel`: [scope] es el ámbito
- * de sus corrutinas y [close] termina y guarda una sesión activa y libera la conexión.
+ * La conexión con la báscula y la sesión de preparación, a nivel de app (un objeto por proceso). La conexión se
+ * crea al llamar a [connect] con un [ScaleTarget] y se cierra con [disconnect]; cambiar de pestaña no la toca.
+ * La `BrewSession` solo recibe pesos mientras el gestor está armado ([arm] y [disarm]).
  *
+ * @param connections crea la conexión de cada destino.
  * @param scope ámbito de las corrutinas del gestor (colectores, tick y comandos).
  * @param autoFinishSeconds segundos sin verter tras los que la preparación termina; se lee en cada tick,
  * así que un cambio en ajustes se aplica a la sesión en curso.
@@ -75,15 +69,16 @@ import java.util.concurrent.atomic.AtomicLong
  * @param applicationScope ámbito donde se guarda: no se cancela con [scope], así que cerrar el gestor no corta un guardado en curso.
  * @param references dónde se recuerda la referencia (objetivo) activa.
  * @param targets de dónde sale la receta o la preparación elegidas como objetivo.
- * @param notifier avisa de que empieza una etapa; se libera en [close].
+ * @param notifier avisa de que empieza una etapa; se libera en [disconnect].
  * @param coffeeStore dónde se recuerda el último café elegido.
  * @param coffees de dónde salen el café elegido y las altas nuevas (SPEC-004).
+ * @param memory dónde se recuerda la última báscula real que llegó a `Ready` (la simulada nunca).
  * @param clock reloj monotónico en ms; se inyecta para poder probar la sesión sin reloj real.
  * @param wallClock hora de pared en ms desde la época, para fechar las preparaciones.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ScaleSessionManager(
-  private val connection: ScaleConnection,
+  private val connections: ScaleConnectionFactory,
   private val scope: CoroutineScope,
   private val autoFinishSeconds: StateFlow<Int>,
   private val saver: BrewSaver,
@@ -93,6 +88,7 @@ class ScaleSessionManager(
   private val notifier: StageNotifier,
   private val coffeeStore: CoffeeStore = NoCoffeeStore,
   private val coffees: ScaleCoffees = NoScaleCoffees,
+  private val memory: ScaleMemory = NoScaleMemory,
   private val clock: () -> Long = SystemClock::elapsedRealtime,
   private val wallClock: () -> Long = System::currentTimeMillis,
   private val targetConfig: TargetConfig = TargetConfig(),
@@ -101,8 +97,21 @@ class ScaleSessionManager(
   // Solo se toca desde el hilo principal (colectores y tick de `scope`).
   private val session = BrewSession()
 
-  private val _ui = MutableStateFlow(ScaleUiState(isSimulated = connection is SimulatedScaleConnection))
+  private val _ui = MutableStateFlow(ScaleUiState())
   val ui: StateFlow<ScaleUiState> = _ui.asStateFlow()
+
+  /** La conexión activa; `null` sin destino o tras [disconnect]. */
+  private val connection = MutableStateFlow<ScaleConnection?>(null)
+
+  private val _target = MutableStateFlow<ScaleTarget?>(null)
+
+  /** El destino elegido en el último [connect]; se conserva tras [disconnect] para poder reconectar. */
+  val target: StateFlow<ScaleTarget?> = _target.asStateFlow()
+
+  /** Compuerta de la sesión (D16): los pesos, taras y estados del temporizador solo llegan a la `BrewSession` armado. */
+  private var armed = false
+
+  val isArmed: Boolean get() = armed
 
   private val _errors = Channel<ScaleError>(Channel.BUFFERED)
   val errors = _errors.receiveAsFlow()
@@ -141,7 +150,7 @@ class ScaleSessionManager(
   init {
     scope.launch {
       var previous: ConnectionState = ConnectionState.Disconnected
-      connection.state.collect { s ->
+      connection.flatMapLatest { it?.state ?: flowOf(ConnectionState.Disconnected) }.collect { s ->
         val wasReady = previous == ConnectionState.Ready
         previous = s
         val effects = if (wasReady && (s is ConnectionState.Disconnected || s is ConnectionState.Failed)) {
@@ -149,11 +158,12 @@ class ScaleSessionManager(
         } else {
           emptyList()
         }
+        if (s == ConnectionState.Ready) rememberRealScale()
         publish { it.copy(connection = s) }
         handle(effects)
       }
     }
-    scope.launch { connection.messages.collect(::onMessage) }
+    scope.launch { connection.flatMapLatest { it?.messages ?: emptyFlow() }.collect(::onMessage) }
     scope.launch {
       while (isActive) {
         delay(TICK_MS)
@@ -190,18 +200,27 @@ class ScaleSessionManager(
         coffeeStore.setLastCoffeeId(id)
       }
     }
-    connect()
+  }
+
+  /** Solo una conexión real que llega a `Ready` se recuerda (D28). */
+  private fun rememberRealScale() {
+    val real = _target.value as? ScaleTarget.Real ?: return
+    memory.remember(RememberedScale(real.address, real.name))
   }
 
   private fun onMessage(message: ScaleMessage) {
     val now = clock()
     // Cambiar de unidad borra la dosis de la pantalla (ver `reduce`) y también la de la sesión.
     if (message is ScaleMessage.UnitChanged && message.unit != _ui.value.unit) session.setDoseGrams(null)
-    val effects = when (message) {
-      is ScaleMessage.Weight -> session.onWeight(message, now, _ui.value.timer)
-      is ScaleMessage.Timer -> session.onTimer(message.status, now)
-      is ScaleMessage.Tared -> if (message.success) session.onTared(now) else emptyList()
-      else -> emptyList()
+    val effects = if (!armed) {
+      emptyList()
+    } else {
+      when (message) {
+        is ScaleMessage.Weight -> session.onWeight(message, now, _ui.value.timer)
+        is ScaleMessage.Timer -> session.onTimer(message.status, now)
+        is ScaleMessage.Tared -> if (message.success) session.onTared(now) else emptyList()
+        else -> emptyList()
+      }
     }
     publish { it.reduce(message) }
     handle(effects)
@@ -364,16 +383,59 @@ class ScaleSessionManager(
     }
   }
 
-  fun connect() {
+  /**
+   * Conecta a [target]. Si había otra conexión, termina y guarda una sesión `Active` y la cierra antes. El estado
+   * del dispositivo (peso, batería, modelo…) vuelve a su valor inicial; la sesión, el objetivo y el café siguen.
+   */
+  fun connect(target: ScaleTarget) {
+    closeConnection()
+    val created = connections.create(target)
+    _target.value = target
+    connection.value = created
+    publish { it.resetDevice(isSimulated = target is ScaleTarget.Simulated) }
     scope.launch {
       try {
-        connection.connect()
+        created.connect()
       } catch (e: CancellationException) {
         throw e
       } catch (e: Exception) {
         Log.w(TAG, "connect failed", e) // el estado Failed ya lo muestra la UI
       }
     }
+  }
+
+  /** Vuelve a conectar al último destino ("Reintentar"). */
+  fun retry() {
+    _target.value?.let(::connect)
+  }
+
+  /**
+   * Termina y guarda una sesión `Active` (`MANUAL`, como al salir de la pantalla hasta ahora), desarma, cierra la
+   * conexión y libera el notificador. El destino se conserva para [retry].
+   */
+  fun disconnect() {
+    closeConnection()
+    armed = false
+    notifier.release()
+  }
+
+  /** Cierra la conexión actual, si hay; los comandos del temporizador no se envían: la conexión se cierra justo después. */
+  private fun closeConnection() {
+    val current = connection.value ?: return
+    session.finish(clock()).filterIsInstance<BrewEffect.Finished>().forEach { save(it.brew) }
+    connection.value = null
+    current.disconnect()
+    publish { it.copy(connection = ConnectionState.Disconnected) }
+  }
+
+  /** La `BrewSession` empieza a recibir pesos, taras y estados del temporizador. */
+  fun arm() {
+    armed = true
+  }
+
+  /** La `BrewSession` deja de recibir pesos; la pantalla sigue viéndolos. */
+  fun disarm() {
+    armed = false
   }
 
   fun tare() = send(ScaleCommands.tare())
@@ -427,18 +489,18 @@ class ScaleSessionManager(
   }
 
   fun simulateAdd(grams: Double) {
-    val sim = connection as? SimulatedScaleConnection ?: return
+    val sim = connection.value as? SimulatedScaleConnection ?: return
     scope.launch { sim.addWeight(grams) }
   }
 
   fun simulatePour(profile: PourProfile) {
-    val sim = connection as? SimulatedScaleConnection ?: return
+    val sim = connection.value as? SimulatedScaleConnection ?: return
     scope.launch { sim.simulatePour(profile) }
   }
 
   /** Vierte siguiendo el objetivo actual (ya escalado a la dosis). Sin objetivo no hace nada. */
   fun simulateTargetPour(mode: FollowMode) {
-    val sim = connection as? SimulatedScaleConnection ?: return
+    val sim = connection.value as? SimulatedScaleConnection ?: return
     val curve = _ui.value.target?.curve ?: return
     scope.launch { sim.simulatePour(curve, mode) }
   }
@@ -450,7 +512,7 @@ class ScaleSessionManager(
     scope.launch {
       for (frame in frames) {
         try {
-          connection.send(frame)
+          connection.value?.send(frame)
         } catch (e: CancellationException) {
           throw e
         } catch (e: Exception) {
@@ -458,14 +520,6 @@ class ScaleSessionManager(
         }
       }
     }
-  }
-
-  fun close() {
-    // Salir de Scale con la sesión activa la termina y la guarda. Los comandos del temporizador no se
-    // envían: la conexión se cierra justo después.
-    session.finish(clock()).filterIsInstance<BrewEffect.Finished>().forEach { save(it.brew) }
-    connection.disconnect()
-    notifier.release()
   }
 
   /** La referencia resuelta, antes de escalarla por la dosis. */
