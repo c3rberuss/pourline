@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado, pendiente de plan |
+| Estado | Aprobado. Plan aprobado: [`plan-navegacion-modos.md`](plan-navegacion-modos.md) (sus decisiones D1 a D45 completan este spec y se pasarán aquí como §3.8 al terminar) |
 | Fecha | 2026-11-14 |
 | Rama | `feat/navigation-modes`, creada desde `feat/coffee-catalog` (SPEC-004 aún sin fusionar) |
 | Deriva de | Uso real de la app tras SPEC-001 a SPEC-004 |
@@ -188,17 +188,19 @@
   - Al abrir la app, si hay `last_scale_address` y los permisos están dados, el gestor intenta
     conectar a esa MAC.
   - La última báscula solo se recuerda cuando una conexión **real** llega a `Ready`.
-  - La simulada nunca se recuerda ni se reconecta sola.
+  - La simulada nunca se recuerda ni se reconecta sola. Usarla no borra la báscula real recordada,
+    que se sigue reconectando (plan D28).
 - **Tarjeta de báscula en Preparar.** Muestra un estado con su acción:
 
   | Estado | Texto | Acción |
   |---|---|---|
-  | Sin permisos | "Necesitamos permiso de Bluetooth" | "Dar permisos" |
-  | Bluetooth apagado | "Bluetooth apagado" | "Activar" |
+  | Sin permisos | "Necesitamos permiso de Bluetooth" | "Dar permisos" y el enlace "Usar báscula simulada" |
+  | Bluetooth apagado | "Bluetooth apagado" | "Activar" y el enlace "Usar báscula simulada" |
   | Sin báscula recordada | "Conecta tu báscula" | Abre la hoja de conexión |
   | Conectando (`ConnectionState.Connecting`) | "Conectando a {nombre}…" con el paso actual | Ninguna |
   | Conectada (`Ready`) | "{nombre} conectada" con la batería (`BatteryTag`) | Menú: "Desconectar", "Cambiar báscula" |
-  | Falló o se desconectó | "No se pudo conectar a {nombre}" | "Reintentar", "Cambiar báscula" |
+  | Falló | "No se pudo conectar a {nombre}" | "Reintentar", "Cambiar báscula" |
+  | Desconectada (por el usuario o por pérdida) | "{nombre} desconectada" | "Conectar", "Cambiar báscula" |
 
 - **Hoja de conexión:**
   - Es una hoja inferior con el contenido actual de `DevicesCard`: escaneo, "Mostrar todos" y la
@@ -224,19 +226,33 @@
   - **X:** salir (ver más abajo).
   - **Título:** el nombre de la receta, o "Preparación libre".
   - **⋯:** un menú con "Modo experto" (switch), "Unidad" (g/oz, lo que hoy está en `UnitCard`) y
-    "Reiniciar".
+    "Reiniciar". "Reiniciar":
+    - antes de `Active`, vuelve al paso 1 y olvida la dosis capturada;
+    - en `Active`, está deshabilitado (la X ya ofrece terminar o descartar);
+    - en `Finished`, empieza otra sesión con la misma receta y el mismo café.
 - **Pasos previos guiados.** Es una máquina de estados pura y probable sin Android (nombre
   orientativo: `PrepFlow`):
 
   | Paso | Instrucción | Avanza cuando | Acción manual |
   |---|---|---|---|
-  | 1. Tara | "Coloca el filtro y la jarra y tara" | Se recibe la confirmación de tara de la báscula | "Tarar" y "Saltar" |
-  | 2. Dosis | "Añade el café molido" ({dosis objetivo} si hay) | El peso es > 0 y se mantiene estable; se captura como dosis (`captureDose`) | "Capturar ahora" y "Saltar (sin dosis)" |
+  | 1. Tara | "Coloca el filtro y la jarra y tara" | Tara confirmada (ver abajo) | "Tarar" y "Saltar" |
+  | 2. Dosis | "Añade el café molido" ({dosis objetivo} si hay) | El peso es estable (ver abajo); se captura como dosis, sin tarar | "Capturar ahora" y "Saltar (sin dosis)" |
   | 3. Tara para verter | "Tara otra vez y empieza a verter" | Tara confirmada | "Tarar" y "Saltar" |
   | 4. Vertido | La sesión arma la `BrewSession` (`Armed`); el timer arranca solo al detectar agua (`Active`, efecto `StartTimer`), como hoy | — | "Empezar timer" |
 
-  - El criterio de "estable" del paso 2 reutiliza el de la báscula, si lo envía, o el de la
-    estabilidad de peso que ya calcula el código. El plan lo fija.
+  - **Peso estable (paso 2):**
+    - Lo calcula la app, porque el protocolo de la DOT no trae una bandera de peso estable y el
+      código solo calcula la estabilidad del flujo.
+    - Cuenta como estable una ventana de 2 s con una variación de 0,3 g como máximo y un peso de al
+      menos el 50 % de la dosis objetivo.
+    - Antes de la tara del paso 3, una nueva lectura estable de hasta el 150 % de la dosis objetivo
+      sustituye a la anterior.
+    - Los valores exactos están en el plan (D17).
+  - **Tara confirmada (pasos 1 y 3).** Vale cualquiera de estas tres señales, para no depender solo de
+    una trama BLE sin verificar (plan D19):
+    - la trama de tara de la báscula;
+    - el peso que queda en cero tras pulsar "Tarar" en la app;
+    - el peso que pasa de ≥ 1 g a cero sin tara enviada (botón físico).
   - Si la dosis ya estaba capturada antes de abrir la sesión, el paso 2 se da por hecho.
 - **Vertido (fase `Active`):**
   - **Timer grande** arriba (`m:ss`).
@@ -321,7 +337,8 @@
     pasos.
   - Debe haber al menos un paso `POUR`.
   - `targetWaterG` creciente solo entre pasos `POUR`.
-  - Duración de 1 a 120 s para todos los tipos.
+  - Duración de 1 a 120 s para `POUR` y `SWIRL`, y de 1 a 600 s para `WAIT`, porque la migración
+    puede crear esperas de más de 120 s.
   - Instrucción de 200 caracteres como máximo.
 - **Editor de recetas** (`RecipeEditForm`):
   - Cada paso tiene un selector de tipo con icono, inicio, duración, agua (solo en Verter), nombre
@@ -471,17 +488,20 @@
 - [ ] Todas las cadenas nuevas existen en `values` (es) y `values-en`.
 - [ ] El módulo `:app` compila y pasa lint sin avisos nuevos.
 
-## 6. Preguntas abiertas
+## 6. Preguntas abiertas (resueltas en el plan)
 
-- **"Descartar":** ¿se evita el guardado al cerrar la `BrewSession` o se borra la preparación ya
-  guardada? Lo decide el plan; el criterio visible es que no quede en el historial.
-- **`TargetCurveCodec`:** la curva guardada en el historial (SPEC-003) ¿debe guardar el tipo de cada
-  etapa para mostrar los pasos en el detalle, o basta con las etapas de vertido? Si cambia el
-  formato, el codec necesita una versión nueva compatible con lo ya guardado.
-- **Criterio de peso estable** del paso Dosis: ¿basta la bandera de estabilidad de la báscula
-  (pendiente de verificar con la DOT física, ver la memoria del proyecto) o se calcula en la app?
-- **Dial en 1080 × 2400 con 10 o más pasos:** la lista de pasos tiene scroll propio. Se valida en la
-  verificación manual que el paso actual y el siguiente nunca quedan ocultos.
+- **"Descartar":** se evita el guardado. `BrewSession.discard()` cierra la sesión sin emitir
+  `Finished`, así que no hay nada que borrar (plan D22).
+- **`TargetCurveCodec`:** el formato v1 no cambia. Solo se codifican las etapas `POUR`, y la curva de
+  una receta migrada es idéntica (plan D20 y D21).
+- **Criterio de peso estable:** se calcula en la app (§3.4, plan D17).
+- **Dial en 1080 × 2400 con 10 o más pasos:** el paso actual y el siguiente son bloques fijos y la lista
+  tiene scroll propio. Lo comprueba un test de layout con 19 pasos (plan D4).
+- **Ampliaciones del plan que cambian el §3.6:**
+  - en Básico, el detalle oculta también `BrewSummaryCard` y la tarjeta "Cata" (D9);
+  - "Guardar como receta" genera pasos Esperar explícitos (D40);
+  - el primer arranque es una pantalla que se muestra en lugar de las pestañas, no una clave de
+    navegación (D11).
 
 ## 7. Alternativas descartadas
 
