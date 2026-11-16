@@ -2,6 +2,7 @@ package dev.dotscale.ui.recipes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.dotscale.grinder.toGrindSetting
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.recipe.Adjustment
@@ -99,7 +100,7 @@ class RecipeEditViewModel(
           details = BrewDetails(
             method = entity.method,
             methodOther = entity.methodOther,
-            grind = entity.grind,
+            grind = entity.toGrindSetting(),
             waterTempC = entity.waterTempC,
           ).normalized(),
           doseG = entity.doseG,

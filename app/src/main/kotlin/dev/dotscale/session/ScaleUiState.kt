@@ -5,6 +5,7 @@ import dev.dotscale.brew.BrewState
 import dev.dotscale.brew.GuideState
 import dev.dotscale.brew.TargetCurve
 import dev.dotscale.coffee.PickedCoffee
+import dev.dotscale.grinder.GrindSetting
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.ReferenceType
 import dev.dotscale.protocol.ScaleMessage
@@ -55,6 +56,8 @@ data class ActiveTarget(
   val scaledDoseG: Double?,
   /** Datos manuales que se copian de la referencia al guardar (sin nombre ni notas). */
   val prefill: BrewDetails,
+  /** El molino y el ajuste de la receta o de la preparación de referencia (SPEC-006); no se copian a la preparación. */
+  val sourceGrind: GrindSetting? = null,
 )
 
 /** La última sesión guardada: el momento de inicio y el café con el que se hizo (lo necesita la imagen del resumen). */

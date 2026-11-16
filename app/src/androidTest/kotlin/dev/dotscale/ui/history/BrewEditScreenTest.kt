@@ -267,7 +267,6 @@ class BrewEditScreenTest {
   fun savePersistsTheDataAndGoesBack() {
     open()
     rule.onNodeWithTag("brew_edit_name").performTextInput("Prueba")
-    rule.onNodeWithTag("brew_edit_grind").performScrollTo().performTextInput("21 clics")
     rule.onNodeWithTag("brew_edit_temp").performScrollTo().performTextInput("93")
     rule.onNodeWithTag("brew_edit_notes").performScrollTo().performTextInput("Dulce")
     rule.onNodeWithTag("brew_edit_save").performScrollTo().performClick()
@@ -277,7 +276,7 @@ class BrewEditScreenTest {
     assertEquals("Prueba", entity.name)
     assertEquals("Etiopía", entity.coffee)
     assertNull(entity.coffeeId)
-    assertEquals("21 clics", entity.grind)
+    assertNull(entity.grindLabel)
     assertEquals(93.0, entity.waterTempC!!, 0.0)
     assertEquals("Dulce", entity.notes)
   }

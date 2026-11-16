@@ -7,6 +7,8 @@ import dev.dotscale.brew.BrewPhase
 import dev.dotscale.brew.BrewSession
 import dev.dotscale.brew.FinishedBrew
 import dev.dotscale.brew.StageAlertTracker
+import dev.dotscale.grinder.GrindSetting
+import dev.dotscale.grinder.toGrindSetting
 import dev.dotscale.brew.StageNotifier
 import dev.dotscale.brew.TargetConfig
 import dev.dotscale.brew.TargetCurve
@@ -396,6 +398,7 @@ class ScaleSessionManager(
       nominalDoseG = nominal,
       scaledDoseG = doseG.takeIf { factor != 1.0 },
       prefill = base.prefill,
+      sourceGrind = base.sourceGrind,
     )
     memoBase = base
     memoDoseG = doseG
@@ -708,6 +711,8 @@ class ScaleSessionManager(
     /** Dosis con la que se hizo la curva; `null` en una preparación sin dosis. */
     val nominalDoseG: Double?,
     val prefill: BrewDetails,
+    /** El molino y el ajuste de la referencia (D24); no se copian a la preparación. */
+    val sourceGrind: GrindSetting? = null,
   )
 
   private sealed interface Resolution {
@@ -727,11 +732,10 @@ class ScaleSessionManager(
     val prefill = BrewDetails(
       method = recipe.method,
       methodOther = recipe.methodOther,
-      grind = recipe.grind,
       waterTempC = recipe.waterTempC,
     )
     return Resolution.Resolved(
-      TargetBase(key, ReferenceType.RECIPE, recipe.name, TargetCurve.fromRecipe(recipe), recipe.doseG, prefill),
+      TargetBase(key, ReferenceType.RECIPE, recipe.name, TargetCurve.fromRecipe(recipe), recipe.doseG, prefill, recipe.grind),
     )
   }
 
@@ -748,11 +752,10 @@ class ScaleSessionManager(
     val prefill = BrewDetails(
       method = entity.method,
       methodOther = entity.methodOther,
-      grind = entity.grind,
       waterTempC = entity.waterTempC,
     )
     val name = entity.name ?: formatBrewDateTime(entity.startedAtEpochMs)
-    return Resolution.Resolved(TargetBase(key, ReferenceType.BREW, name, curve, entity.doseG, prefill))
+    return Resolution.Resolved(TargetBase(key, ReferenceType.BREW, name, curve, entity.doseG, prefill, entity.toGrindSetting()))
   }
 
   private companion object {

@@ -9,6 +9,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import dev.dotscale.coffee.CoffeeConverters
 import dev.dotscale.coffee.CoffeeDao
 import dev.dotscale.coffee.CoffeeEntity
+import dev.dotscale.grinder.GrinderAnchorEntity
+import dev.dotscale.grinder.GrinderConverters
+import dev.dotscale.grinder.GrinderDao
+import dev.dotscale.grinder.GrinderEntity
+import dev.dotscale.grinder.GrinderMethodRangeEntity
+import dev.dotscale.grinder.GrinderUnitEntity
 import dev.dotscale.recipe.BuiltInRecipeSeeder
 import dev.dotscale.recipe.RecipeDao
 import dev.dotscale.recipe.RecipeEntity
@@ -23,6 +29,8 @@ import dev.dotscale.recipe.ResourcesRecipeTexts
  * Versión 2 (SPEC-003): seis columnas nuevas en `brews`, `brew_targets`, `recipes` y `recipe_stages`.
  * Versión 3 (SPEC-004): la tabla `coffees` y las columnas `coffeeId` y `rating` en `brews`.
  * Versión 4 (SPEC-005): `type` e `instruction` en `recipe_stages` y los huecos de las recetas como pasos `WAIT`.
+ * Versión 5 (SPEC-006): las tablas de molinos y, en `recipes` y `brews`, el ajuste estructurado (`grinderId`,
+ * `grindValue` y `grindLabel`) en lugar del texto `grind`.
  */
 @Database(
   entities = [
@@ -32,17 +40,23 @@ import dev.dotscale.recipe.ResourcesRecipeTexts
     RecipeEntity::class,
     RecipeStageEntity::class,
     CoffeeEntity::class,
+    GrinderEntity::class,
+    GrinderUnitEntity::class,
+    GrinderMethodRangeEntity::class,
+    GrinderAnchorEntity::class,
   ],
-  version = 4,
+  version = 5,
   exportSchema = true,
 )
-@TypeConverters(HistoryConverters::class, CoffeeConverters::class)
+@TypeConverters(HistoryConverters::class, CoffeeConverters::class, GrinderConverters::class)
 abstract class HistoryDatabase : RoomDatabase() {
   abstract fun brewDao(): BrewDao
 
   abstract fun recipeDao(): RecipeDao
 
   abstract fun coffeeDao(): CoffeeDao
+
+  abstract fun grinderDao(): GrinderDao
 
   companion object {
     const val FILE_NAME = "history.db"
@@ -54,7 +68,7 @@ abstract class HistoryDatabase : RoomDatabase() {
       texts: RecipeTexts = ResourcesRecipeTexts(context),
     ): HistoryDatabase =
       Room.databaseBuilder(context.applicationContext, HistoryDatabase::class.java, fileName)
-        .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4)
+        .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
         .addCallback(seedOnCreate(texts))
         .build()
 

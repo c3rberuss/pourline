@@ -131,13 +131,6 @@ fun RecipeEditScreen(viewModel: RecipeEditViewModel, onBack: () -> Unit, onDupli
         )
       }
       LabeledInput(
-        label = stringResource(R.string.recipe_edit_grind),
-        value = form.grind,
-        onValueChange = { v -> viewModel.update { it.copy(grind = v) } },
-        placeholder = stringResource(R.string.recipe_edit_grind_hint),
-        tag = "recipe_edit_grind",
-      )
-      LabeledInput(
         label = stringResource(R.string.recipe_edit_temp),
         value = form.waterTemp,
         onValueChange = { v -> viewModel.update { it.copy(waterTemp = v) } },

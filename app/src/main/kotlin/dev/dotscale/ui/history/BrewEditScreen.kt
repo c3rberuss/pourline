@@ -151,14 +151,6 @@ fun BrewEditScreen(
           placeholder = stringResource(R.string.brew_edit_method_other),
         )
       }
-      Field(stringResource(R.string.brew_edit_grind)) {
-        AntInput(
-          value = form.grind,
-          onValueChange = { v -> viewModel.update { it.copy(grind = v) } },
-          modifier = Modifier.fillMaxWidth().testTag("brew_edit_grind"),
-          placeholder = stringResource(R.string.brew_edit_grind_hint),
-        )
-      }
       Field(stringResource(R.string.brew_edit_temp)) {
         val invalid = !form.isValid
         AntInput(

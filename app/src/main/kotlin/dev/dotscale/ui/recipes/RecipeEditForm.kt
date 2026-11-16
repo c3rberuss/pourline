@@ -1,5 +1,8 @@
 package dev.dotscale.ui.recipes
 
+import dev.dotscale.grinder.GrindChoice
+import dev.dotscale.grinder.toChoice
+import dev.dotscale.grinder.toSettingUnlabeled
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.recipe.Adjustment
 import dev.dotscale.recipe.Recipe
@@ -106,7 +109,7 @@ data class RecipeEditForm(
   val name: String = "",
   val method: BrewMethod? = null,
   val methodOther: String = "",
-  val grind: String = "",
+  val grind: GrindChoice = GrindChoice.None,
   val waterTemp: String = "",
   val notes: String = "",
   val dose: String = "",
@@ -248,7 +251,7 @@ data class RecipeEditForm(
       name = name.trim(),
       method = method,
       methodOther = if (method == BrewMethod.OTHER) methodOther.cleaned() else null,
-      grind = grind.cleaned(),
+      grind = grind.toSettingUnlabeled(),
       waterTempC = (tempResult as? TempResult.Valid)?.celsius,
       notes = notes.cleaned(),
       doseG = dose ?: 0.0,
@@ -265,7 +268,7 @@ data class RecipeEditForm(
       name = recipe.name,
       method = recipe.method,
       methodOther = recipe.methodOther.orEmpty(),
-      grind = recipe.grind.orEmpty(),
+      grind = recipe.grind.toChoice(),
       waterTemp = recipe.waterTempC?.let(::formatNumber).orEmpty(),
       notes = recipe.notes.orEmpty(),
       dose = formatNumber(recipe.doseG),

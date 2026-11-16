@@ -1,5 +1,8 @@
 package dev.dotscale.ui.history
 
+import dev.dotscale.grinder.GrindChoice
+import dev.dotscale.grinder.toChoice
+import dev.dotscale.grinder.toSettingUnlabeled
 import dev.dotscale.coffee.PickedCoffee
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewMethod
@@ -55,7 +58,7 @@ data class BrewEditForm(
   val coffee: CoffeeChoice = CoffeeChoice.None,
   val method: BrewMethod? = null,
   val methodOther: String = "",
-  val grind: String = "",
+  val grind: GrindChoice = GrindChoice.None,
   val waterTemp: String = "",
   val notes: String = "",
   /** Valoración de 1 a 5; `null` sin valorar. */
@@ -72,7 +75,7 @@ data class BrewEditForm(
     // El café no viaja aquí: se escribe con `setCoffee` (D22).
     method = method,
     methodOther = methodOther,
-    grind = grind,
+    grind = grind.toSettingUnlabeled(),
     waterTempC = (tempResult as? TempResult.Valid)?.celsius,
     notes = notes,
     rating = rating,
@@ -84,7 +87,7 @@ data class BrewEditForm(
       coffee = coffee,
       method = details.method,
       methodOther = details.methodOther.orEmpty(),
-      grind = details.grind.orEmpty(),
+      grind = details.grind.toChoice(),
       waterTemp = details.waterTempC?.let(::formatTemp).orEmpty(),
       notes = details.notes.orEmpty(),
       rating = details.rating,

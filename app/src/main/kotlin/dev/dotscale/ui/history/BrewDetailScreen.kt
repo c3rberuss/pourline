@@ -253,7 +253,7 @@ private fun DetailsCard(record: BrewRecord) {
   val method = entity.method?.let { m -> if (m == BrewMethod.OTHER) entity.methodOther ?: m.label() else m.label() }
   val fields = listOfNotNull(
     method?.let { stringResource(R.string.brew_detail_method) to it },
-    entity.grind?.let { stringResource(R.string.brew_detail_grind) to it },
+    entity.grindLabel?.let { stringResource(R.string.brew_detail_grind) to it },
     entity.waterTempC?.let {
       stringResource(R.string.brew_detail_temp) to stringResource(R.string.brew_detail_temp_value, formatTemp(it))
     },

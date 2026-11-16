@@ -1,6 +1,8 @@
 package dev.dotscale.ui.history
 
 import dev.dotscale.coffee.PickedCoffee
+import dev.dotscale.grinder.GrindChoice
+import dev.dotscale.grinder.GrindSetting
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewMethod
 import org.junit.Assert.assertEquals
@@ -47,7 +49,7 @@ class BrewEditFormTest {
       name = " Prueba ",
       method = BrewMethod.OTHER,
       methodOther = " Sifón ",
-      grind = "",
+      grind = GrindChoice.None,
       waterTemp = "92,5",
       notes = " nota\ncon salto ",
     ).toDetails()
@@ -64,10 +66,12 @@ class BrewEditFormTest {
 
   @Test
   fun `from and toDetails round trip`() {
-    val details = BrewDetails("A", null, BrewMethod.V60, null, "21", 92.0, "ok", rating = 4)
+    val details = BrewDetails("A", null, BrewMethod.V60, null, GrindSetting(1, 21.0, "Acme · 21 clics"), 92.0, "ok", rating = 4)
     val form = BrewEditForm.from(details)
     assertEquals("92", form.waterTemp)
-    assertEquals(details, form.toDetails())
+    assertEquals(GrindChoice.Live(1, 21.0), form.grind)
+    // La copia de texto la regenera quien conoce el molino (F6): aquí sale sin ella.
+    assertEquals(details.copy(grind = GrindSetting(1, 21.0, null)), form.toDetails())
     assertEquals("92.5", BrewEditForm.from(details.copy(waterTempC = 92.5)).waterTemp)
   }
 

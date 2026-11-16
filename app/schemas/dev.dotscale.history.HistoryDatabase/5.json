@@ -1,0 +1,928 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 5,
+    "identityHash": "cf592b55b8caa5eb08916f021120bdab",
+    "entities": [
+      {
+        "tableName": "brews",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `startedAtEpochMs` INTEGER NOT NULL, `name` TEXT, `coffee` TEXT, `method` TEXT, `methodOther` TEXT, `waterTempC` REAL, `notes` TEXT, `totalTimeMs` INTEGER NOT NULL, `totalWaterG` REAL NOT NULL, `avgFlowGps` REAL NOT NULL, `maxFlowGps` REAL NOT NULL, `stabilityScore` INTEGER, `stabilityLevel` TEXT, `shareStable` REAL NOT NULL, `shareIrregular` REAL NOT NULL, `shareTurbulent` REAL NOT NULL, `doseG` REAL, `finalRatio` REAL, `finishReason` TEXT NOT NULL, `interrupted` INTEGER NOT NULL, `unit` TEXT NOT NULL, `scaleModel` TEXT, `simulated` INTEGER NOT NULL, `metricVersion` INTEGER NOT NULL, `preview` BLOB NOT NULL, `referenceType` TEXT, `referenceId` INTEGER, `referenceName` TEXT, `targetWaterG` REAL, `targetEndMs` INTEGER, `fitScore` INTEGER, `coffeeId` INTEGER, `rating` INTEGER, `grinderId` INTEGER, `grindValue` REAL, `grindLabel` TEXT, FOREIGN KEY(`coffeeId`) REFERENCES `coffees`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`grinderId`) REFERENCES `grinders`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAtEpochMs",
+            "columnName": "startedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "coffee",
+            "columnName": "coffee",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "method",
+            "columnName": "method",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "methodOther",
+            "columnName": "methodOther",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "waterTempC",
+            "columnName": "waterTempC",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "totalTimeMs",
+            "columnName": "totalTimeMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalWaterG",
+            "columnName": "totalWaterG",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgFlowGps",
+            "columnName": "avgFlowGps",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxFlowGps",
+            "columnName": "maxFlowGps",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stabilityScore",
+            "columnName": "stabilityScore",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "stabilityLevel",
+            "columnName": "stabilityLevel",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "shareStable",
+            "columnName": "shareStable",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shareIrregular",
+            "columnName": "shareIrregular",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shareTurbulent",
+            "columnName": "shareTurbulent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "doseG",
+            "columnName": "doseG",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "finalRatio",
+            "columnName": "finalRatio",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "finishReason",
+            "columnName": "finishReason",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interrupted",
+            "columnName": "interrupted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scaleModel",
+            "columnName": "scaleModel",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "simulated",
+            "columnName": "simulated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metricVersion",
+            "columnName": "metricVersion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preview",
+            "columnName": "preview",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "referenceType",
+            "columnName": "referenceType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "referenceId",
+            "columnName": "referenceId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "referenceName",
+            "columnName": "referenceName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "targetWaterG",
+            "columnName": "targetWaterG",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "targetEndMs",
+            "columnName": "targetEndMs",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fitScore",
+            "columnName": "fitScore",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "coffeeId",
+            "columnName": "coffeeId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "rating",
+            "columnName": "rating",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "grinderId",
+            "columnName": "grinderId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "grindValue",
+            "columnName": "grindValue",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "grindLabel",
+            "columnName": "grindLabel",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_brews_startedAtEpochMs",
+            "unique": false,
+            "columnNames": [
+              "startedAtEpochMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_brews_startedAtEpochMs` ON `${TABLE_NAME}` (`startedAtEpochMs`)"
+          },
+          {
+            "name": "index_brews_coffeeId",
+            "unique": false,
+            "columnNames": [
+              "coffeeId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_brews_coffeeId` ON `${TABLE_NAME}` (`coffeeId`)"
+          },
+          {
+            "name": "index_brews_grinderId",
+            "unique": false,
+            "columnNames": [
+              "grinderId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_brews_grinderId` ON `${TABLE_NAME}` (`grinderId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "coffees",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "coffeeId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "grinders",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "grinderId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "brew_curves",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`brewId` INTEGER NOT NULL, `data` BLOB NOT NULL, PRIMARY KEY(`brewId`), FOREIGN KEY(`brewId`) REFERENCES `brews`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "brewId",
+            "columnName": "brewId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "data",
+            "columnName": "data",
+            "affinity": "BLOB",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "brewId"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "brews",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "brewId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "brew_targets",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`brewId` INTEGER NOT NULL, `data` BLOB NOT NULL, PRIMARY KEY(`brewId`), FOREIGN KEY(`brewId`) REFERENCES `brews`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "brewId",
+            "columnName": "brewId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "data",
+            "columnName": "data",
+            "affinity": "BLOB",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "brewId"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "brews",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "brewId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "recipes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `method` TEXT, `methodOther` TEXT, `waterTempC` REAL, `notes` TEXT, `doseG` REAL NOT NULL, `builtInKey` TEXT, `localizedNames` INTEGER NOT NULL, `updatedAtEpochMs` INTEGER NOT NULL, `grinderId` INTEGER, `grindValue` REAL, `grindLabel` TEXT, FOREIGN KEY(`grinderId`) REFERENCES `grinders`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "method",
+            "columnName": "method",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "methodOther",
+            "columnName": "methodOther",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "waterTempC",
+            "columnName": "waterTempC",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "doseG",
+            "columnName": "doseG",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "builtInKey",
+            "columnName": "builtInKey",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "localizedNames",
+            "columnName": "localizedNames",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updatedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "grinderId",
+            "columnName": "grinderId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "grindValue",
+            "columnName": "grindValue",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "grindLabel",
+            "columnName": "grindLabel",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_recipes_builtInKey",
+            "unique": true,
+            "columnNames": [
+              "builtInKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_recipes_builtInKey` ON `${TABLE_NAME}` (`builtInKey`)"
+          },
+          {
+            "name": "index_recipes_grinderId",
+            "unique": false,
+            "columnNames": [
+              "grinderId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recipes_grinderId` ON `${TABLE_NAME}` (`grinderId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "grinders",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "grinderId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "recipe_stages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`recipeId` INTEGER NOT NULL, `position` INTEGER NOT NULL, `name` TEXT, `startMs` INTEGER NOT NULL, `targetWaterG` REAL NOT NULL, `durationMs` INTEGER NOT NULL, `type` TEXT NOT NULL DEFAULT 'POUR', `instruction` TEXT, PRIMARY KEY(`recipeId`, `position`), FOREIGN KEY(`recipeId`) REFERENCES `recipes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "recipeId",
+            "columnName": "recipeId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "startMs",
+            "columnName": "startMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetWaterG",
+            "columnName": "targetWaterG",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationMs",
+            "columnName": "durationMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'POUR'"
+          },
+          {
+            "fieldPath": "instruction",
+            "columnName": "instruction",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "recipeId",
+            "position"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "recipes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "recipeId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "coffees",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `roaster` TEXT, `originCountry` TEXT, `originRegion` TEXT, `farm` TEXT, `varieties` TEXT NOT NULL, `process` TEXT, `processOther` TEXT, `altitudeMinM` INTEGER, `altitudeMaxM` INTEGER, `roastLevel` TEXT, `roastDate` INTEGER, `roasterNotes` TEXT, `bagWeightG` REAL, `price` REAL, `openedDate` INTEGER, `photo1` TEXT, `photo2` TEXT, `archived` INTEGER NOT NULL, `createdAtEpochMs` INTEGER NOT NULL, `lastUsedAtEpochMs` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roaster",
+            "columnName": "roaster",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "originCountry",
+            "columnName": "originCountry",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "originRegion",
+            "columnName": "originRegion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "farm",
+            "columnName": "farm",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "varieties",
+            "columnName": "varieties",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "process",
+            "columnName": "process",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "processOther",
+            "columnName": "processOther",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "altitudeMinM",
+            "columnName": "altitudeMinM",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "altitudeMaxM",
+            "columnName": "altitudeMaxM",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "roastLevel",
+            "columnName": "roastLevel",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "roastDate",
+            "columnName": "roastDate",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "roasterNotes",
+            "columnName": "roasterNotes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bagWeightG",
+            "columnName": "bagWeightG",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "price",
+            "columnName": "price",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "openedDate",
+            "columnName": "openedDate",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "photo1",
+            "columnName": "photo1",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "photo2",
+            "columnName": "photo2",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "archived",
+            "columnName": "archived",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "createdAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUsedAtEpochMs",
+            "columnName": "lastUsedAtEpochMs",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_coffees_name",
+            "unique": false,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_coffees_name` ON `${TABLE_NAME}` (`name`)"
+          },
+          {
+            "name": "index_coffees_archived",
+            "unique": false,
+            "columnNames": [
+              "archived"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_coffees_archived` ON `${TABLE_NAME}` (`archived`)"
+          }
+        ]
+      },
+      {
+        "tableName": "grinders",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `catalogKey` TEXT, `brand` TEXT NOT NULL, `model` TEXT NOT NULL, `direction` TEXT NOT NULL, `scaleMin` REAL NOT NULL, `scaleMax` REAL NOT NULL, `step` REAL NOT NULL, `owned` INTEGER NOT NULL, `retired` INTEGER NOT NULL, `sourceUrl` TEXT, `duplicatedFromKey` TEXT, `updatedAtEpochMs` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogKey",
+            "columnName": "catalogKey",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "brand",
+            "columnName": "brand",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "model",
+            "columnName": "model",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "direction",
+            "columnName": "direction",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scaleMin",
+            "columnName": "scaleMin",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scaleMax",
+            "columnName": "scaleMax",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "step",
+            "columnName": "step",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "owned",
+            "columnName": "owned",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retired",
+            "columnName": "retired",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceUrl",
+            "columnName": "sourceUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "duplicatedFromKey",
+            "columnName": "duplicatedFromKey",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updatedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_grinders_catalogKey",
+            "unique": true,
+            "columnNames": [
+              "catalogKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_grinders_catalogKey` ON `${TABLE_NAME}` (`catalogKey`)"
+          }
+        ]
+      },
+      {
+        "tableName": "grinder_units",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`grinderId` INTEGER NOT NULL, `position` INTEGER NOT NULL, `unit` TEXT NOT NULL, `perParent` INTEGER, PRIMARY KEY(`grinderId`, `position`), FOREIGN KEY(`grinderId`) REFERENCES `grinders`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "grinderId",
+            "columnName": "grinderId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "perParent",
+            "columnName": "perParent",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "grinderId",
+            "position"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "grinders",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "grinderId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "grinder_method_ranges",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`grinderId` INTEGER NOT NULL, `method` TEXT NOT NULL, `min` REAL NOT NULL, `max` REAL NOT NULL, PRIMARY KEY(`grinderId`, `method`), FOREIGN KEY(`grinderId`) REFERENCES `grinders`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "grinderId",
+            "columnName": "grinderId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "method",
+            "columnName": "method",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "min",
+            "columnName": "min",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "max",
+            "columnName": "max",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "grinderId",
+            "method"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "grinders",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "grinderId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "grinder_anchors",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`grinderId` INTEGER NOT NULL, `level` TEXT NOT NULL, `value` REAL NOT NULL, PRIMARY KEY(`grinderId`, `level`), FOREIGN KEY(`grinderId`) REFERENCES `grinders`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "grinderId",
+            "columnName": "grinderId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "level",
+            "columnName": "level",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "grinderId",
+            "level"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "grinders",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "grinderId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'cf592b55b8caa5eb08916f021120bdab')"
+    ]
+  }
+}

@@ -1,5 +1,6 @@
 package dev.dotscale.history
 
+import dev.dotscale.grinder.GrindSetting
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -31,11 +32,18 @@ class HistoryModelsTest {
       coffee = "",
       method = BrewMethod.V60,
       methodOther = "Otro método",
-      grind = " 21 clics ",
+      grind = GrindSetting(1, 21.0, " Acme · 21 clics "),
       waterTempC = 92.5,
       notes = "   ",
     ).normalized()
-    assertEquals(BrewDetails("Mañana", null, BrewMethod.V60, null, "21 clics", 92.5, null), details)
+    assertEquals(BrewDetails("Mañana", null, BrewMethod.V60, null, GrindSetting(1, 21.0, "Acme · 21 clics"), 92.5, null), details)
+  }
+
+  @Test
+  fun `an empty grind setting normalizes to null`() {
+    assertNull(BrewDetails(grind = GrindSetting(null, null, "  ")).normalized().grind)
+    // Un molino sin ajuste se conserva.
+    assertEquals(GrindSetting(2, null, null), BrewDetails(grind = GrindSetting(2, null, null)).normalized().grind)
   }
 
   @Test

@@ -18,8 +18,8 @@ object BuiltInRecipeSeeder {
     for (recipe in BuiltInRecipes.all(texts)) {
       val key = requireNotNull(recipe.builtInKey)
       db.execSQL(
-        "INSERT INTO `recipes` (`name`, `method`, `methodOther`, `grind`, `waterTempC`, `notes`, `doseG`, " +
-          "`builtInKey`, `localizedNames`, `updatedAtEpochMs`) VALUES (?, ?, NULL, NULL, NULL, NULL, ?, ?, 1, ?)",
+        "INSERT INTO `recipes` (`name`, `method`, `methodOther`, `waterTempC`, `notes`, `doseG`, " +
+          "`builtInKey`, `localizedNames`, `updatedAtEpochMs`) VALUES (?, ?, NULL, NULL, NULL, ?, ?, 1, ?)",
         arrayOf<Any>(recipe.name, requireNotNull(recipe.method).name, recipe.doseG, key, nowMs),
       )
       val id = db.query("SELECT `id` FROM `recipes` WHERE `builtInKey` = ?", arrayOf<Any>(key)).use { cursor ->

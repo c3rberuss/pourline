@@ -1,5 +1,6 @@
 package dev.dotscale.ui.recipes
 
+import dev.dotscale.grinder.GrindChoice
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.recipe.Adjustment
 import dev.dotscale.recipe.Recipe
@@ -186,7 +187,7 @@ class RecipeEditFormTest {
     val initial = filled()
     assertTrue(initial.keepsLocalizedNames(initial, wasLocalized = true))
     // Solo cantidades.
-    val quantities = initial.copy(dose = "16", grind = "Fina").updateStage(0, initial.stages[0].copy(water = "45", start = "0:02"))
+    val quantities = initial.copy(dose = "16", grind = GrindChoice.Live(1, 20.0)).updateStage(0, initial.stages[0].copy(water = "45", start = "0:02"))
     assertTrue(quantities.keepsLocalizedNames(initial, wasLocalized = true))
     // El nombre de la receta.
     assertFalse(initial.copy(name = "Mi V60").keepsLocalizedNames(initial, wasLocalized = true))
@@ -254,7 +255,7 @@ class RecipeEditFormTest {
 
   @Test
   fun `texts are trimmed and empty ones become null, other keeps its text only with method other`() {
-    val form = filled().copy(name = "  Mi receta ", grind = "  ", notes = " Vierte despacio ", method = BrewMethod.V60, methodOther = "x")
+    val form = filled().copy(name = "  Mi receta ", grind = GrindChoice.None, notes = " Vierte despacio ", method = BrewMethod.V60, methodOther = "x")
     val recipe = form.toRecipe()!!
     assertEquals("Mi receta", recipe.name)
     assertNull(recipe.grind)

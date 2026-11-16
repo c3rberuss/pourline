@@ -6,6 +6,7 @@ import dev.dotscale.coffee.CoffeeEntity
 import dev.dotscale.coffee.CoffeeListItem
 import dev.dotscale.coffee.CoffeeRepository
 import dev.dotscale.coffee.PickedCoffee
+import dev.dotscale.grinder.toGrindSetting
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewEntity
 import dev.dotscale.history.BrewRepository
@@ -55,7 +56,7 @@ class BrewEditViewModel(
       val linked = entity.coffeeId?.let { coffees.get(it) }
       val choice = choiceOf(entity, linked)
       val loaded = BrewEditForm.from(
-        BrewDetails(entity.name, null, entity.method, entity.methodOther, entity.grind, entity.waterTempC, entity.notes, entity.rating),
+        BrewDetails(entity.name, null, entity.method, entity.methodOther, entity.toGrindSetting(), entity.waterTempC, entity.notes, entity.rating),
         choice,
       )
       _initial.value = loaded

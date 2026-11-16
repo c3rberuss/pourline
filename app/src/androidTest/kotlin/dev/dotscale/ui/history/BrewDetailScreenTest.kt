@@ -22,6 +22,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
 import dev.dotscale.coffee.CoffeeRepository
 import dev.dotscale.coffee.PhotoFiles
+import dev.dotscale.grinder.GrindSetting
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.history.BrewRepository
@@ -94,7 +95,7 @@ class BrewDetailScreenTest {
   @Test
   fun showsTheChartTheSummaryAndTheDetails() {
     val id = seed(
-      details = BrewDetails(name = "Mañana", method = BrewMethod.V60, grind = "21 clics", waterTempC = 92.5),
+      details = BrewDetails(name = "Mañana", method = BrewMethod.V60, grind = GrindSetting(null, 21.0, "21 clics"), waterTempC = 92.5),
     )
     show(id)
 
@@ -112,7 +113,7 @@ class BrewDetailScreenTest {
   @Test
   fun inBasicModeTheDetailHasNoChartFitCompareOrSaveAsRecipeButShowsTheFacts() {
     val guji = catalogCoffee("Etiopía Guji", LocalDate.of(2026, 11, 5))
-    val id = seedLinked(guji, details = BrewDetails(notes = "Jazmín y durazno", rating = 4, method = BrewMethod.V60, grind = "21 clics"))
+    val id = seedLinked(guji, details = BrewDetails(notes = "Jazmín y durazno", rating = 4, method = BrewMethod.V60, grind = GrindSetting(null, 21.0, "21 clics")))
     mode.value = ExperienceMode.BASIC
     show(id)
 

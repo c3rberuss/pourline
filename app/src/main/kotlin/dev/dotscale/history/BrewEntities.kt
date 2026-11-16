@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import dev.dotscale.coffee.CoffeeEntity
+import dev.dotscale.grinder.GrinderEntity
 import dev.dotscale.brew.BrewSample
 import dev.dotscale.brew.BrewSummary
 import dev.dotscale.brew.FinishReason
@@ -28,8 +29,14 @@ import dev.dotscale.protocol.WeightUnit
       childColumns = ["coffeeId"],
       onDelete = ForeignKey.SET_NULL,
     ),
+    ForeignKey(
+      entity = GrinderEntity::class,
+      parentColumns = ["id"],
+      childColumns = ["grinderId"],
+      onDelete = ForeignKey.SET_NULL,
+    ),
   ],
-  indices = [Index("startedAtEpochMs"), Index("coffeeId")],
+  indices = [Index("startedAtEpochMs"), Index("coffeeId"), Index("grinderId")],
 )
 data class BrewEntity(
   @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -39,7 +46,6 @@ data class BrewEntity(
   val coffee: String? = null,
   val method: BrewMethod? = null,
   val methodOther: String? = null,
-  val grind: String? = null,
   val waterTempC: Double? = null,
   val notes: String? = null,
   // BrewSummary.
@@ -79,6 +85,12 @@ data class BrewEntity(
   val coffeeId: Long? = null,
   /** Valoración de 1 a 5; `null` sin valorar. */
   val rating: Int? = null,
+  // Molino y ajuste de molienda (SPEC-006). `grindLabel` es la copia de texto, con el molino y el ajuste formateados.
+  /** El molino; `null` sin molino o si se borró (`SET NULL`: la preparación conserva [grindValue] y [grindLabel]). */
+  val grinderId: Long? = null,
+  /** El ajuste en unidades base del molino. */
+  val grindValue: Double? = null,
+  val grindLabel: String? = null,
 )
 
 /** Muestras y vertidos codificados con [BrewCurveCodec]. 1:1 con [BrewEntity]. */

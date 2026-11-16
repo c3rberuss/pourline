@@ -2,6 +2,7 @@ package dev.dotscale.recipe
 
 import dev.dotscale.brew.BrewSample
 import dev.dotscale.brew.Pour
+import dev.dotscale.grinder.GrindSetting
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewMethod
 import org.junit.Assert.assertEquals
@@ -10,7 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RecipeFromBrewTest {
-  private val details = BrewDetails(name = "Etiopía", coffee = "Etiopía", method = BrewMethod.V60, grind = "Media", waterTempC = 93.0, notes = "Muy floral")
+  private val details = BrewDetails(name = "Etiopía", coffee = "Etiopía", method = BrewMethod.V60, grind = GrindSetting(3, 12.0, "Acme · 12 clics"), waterTempC = 93.0, notes = "Muy floral")
 
   /** Muestras cada 100 ms; el agua sube 5 g/s dentro de cada vertido y se queda quieta fuera. */
   private fun brew(pours: List<Pour>, totalMs: Long): List<BrewSample> {
@@ -69,7 +70,7 @@ class RecipeFromBrewTest {
     val recipe = draft.recipe
     assertEquals("Etiopía (receta)", recipe.name)
     assertEquals(BrewMethod.V60, recipe.method)
-    assertEquals("Media", recipe.grind)
+    assertEquals(GrindSetting(3, 12.0, "Acme · 12 clics"), recipe.grind)
     assertEquals(93.0, recipe.waterTempC!!, 0.0)
     assertNull(recipe.notes)
     assertEquals(15.0, recipe.doseG, 0.0)

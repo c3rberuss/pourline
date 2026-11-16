@@ -143,7 +143,6 @@
     <string name="brew_edit_method_none">No method</string>
     <string name="brew_edit_method_other">Method name</string>
     <string name="brew_edit_grind">Grind</string>
-    <string name="brew_edit_grind_hint">e.g. 21 clicks</string>
     <string name="brew_edit_temp">Temperature (°C)</string>
     <string name="brew_edit_temp_error">Enter a value from 0 to 100 with at most one decimal</string>
     <string name="brew_edit_notes">Tasting notes</string>
@@ -220,7 +219,6 @@
     <string name="recipe_edit_method_none">No method</string>
     <string name="recipe_edit_method_other">Which one?</string>
     <string name="recipe_edit_grind">Grind</string>
-    <string name="recipe_edit_grind_hint">Medium, 21 clicks…</string>
     <string name="recipe_edit_temp">Water temperature (°C)</string>
     <string name="recipe_edit_notes">Notes (instructions)</string>
     <string name="recipe_edit_dose">Dose (g)</string>
