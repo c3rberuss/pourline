@@ -1,5 +1,7 @@
 package dev.dotscale.brew
 
+import dev.dotscale.recipe.StageGaps
+import dev.dotscale.recipe.StageType
 import dev.dotscale.recipe.recipeOf
 import dev.dotscale.recipe.stage
 import dev.dotscale.recipe.v60Classic
@@ -26,11 +28,65 @@ class TargetCurveTest {
       ),
       curve.points,
     )
-    assertEquals(listOf(0L, 45_000L, 90_000L), curve.stages.map { it.startMs })
-    assertEquals(listOf(10_000L, 65_000L, 115_000L), curve.stages.map { it.endMs })
-    assertEquals(listOf(0, 1, 2), curve.stages.map { it.index })
+    assertEquals(listOf(0L, 10_000L, 45_000L, 65_000L, 90_000L), curve.stages.map { it.startMs })
+    assertEquals(listOf(10_000L, 45_000L, 65_000L, 90_000L, 115_000L), curve.stages.map { it.endMs })
+    assertEquals(listOf(0, 1, 2, 3, 4), curve.stages.map { it.index })
+    assertEquals(
+      listOf(StageType.POUR, StageType.WAIT, StageType.POUR, StageType.WAIT, StageType.POUR),
+      curve.stages.map { it.type },
+    )
+    assertEquals(listOf(40.0, 40.0, 150.0, 150.0, 250.0), curve.stages.map { it.targetWaterG })
     assertEquals(115_000L, curve.endMs)
+    assertEquals(115_000L, curve.lastStepEndMs)
     assertEquals(250.0, curve.finalWaterG, 0.0)
+  }
+
+  @Test
+  fun `the stages carry the type and the instruction of every step`() {
+    val curve = TargetCurve.fromRecipe(
+      recipeOf(
+        stage(0, 40.0, 10, "Bloom", instruction = "Despacio"),
+        stage(10, 40.0, 5, type = StageType.SWIRL, instruction = "Gira"),
+        stage(15, 40.0, 20, type = StageType.WAIT),
+      ),
+    )
+    assertEquals(listOf("Despacio", "Gira", null), curve.stages.map { it.instruction })
+    assertEquals(listOf(StageType.POUR, StageType.SWIRL, StageType.WAIT), curve.stages.map { it.type })
+  }
+
+  @Test
+  fun `a swirl and a wait are plateaus`() {
+    val curve = TargetCurve.fromRecipe(
+      recipeOf(
+        stage(0, 40.0, 10),
+        stage(10, 40.0, 5, type = StageType.SWIRL),
+        stage(15, 40.0, 20, type = StageType.WAIT),
+        stage(35, 100.0, 10),
+      ),
+    )
+    assertEquals(40.0, curve.waterAt(12_000), 0.0)
+    assertEquals(40.0, curve.waterAt(30_000), 0.0)
+    assertEquals(70.0, curve.waterAt(40_000), 1e-9)
+  }
+
+  @Test
+  fun `endMs is the end of the last pour even when the recipe ends with a wait`() {
+    val curve = TargetCurve.fromRecipe(
+      recipeOf(stage(0, 40.0, 10), stage(10, 40.0, 30, type = StageType.WAIT)),
+    )
+    assertEquals(10_000L, curve.endMs)
+    assertEquals(40_000L, curve.lastStepEndMs)
+    assertEquals(40.0, curve.finalWaterG, 0.0)
+  }
+
+  @Test
+  fun `filling the gaps with waits does not change the points`() {
+    val withGaps = recipeOf(stage(5, 40.0, 10), stage(30, 100.0, 10), stage(50, 150.0, 10))
+    val filled = withGaps.copy(stages = StageGaps.fillWaits(withGaps.stages))
+    assertEquals(TargetCurve.fromRecipe(withGaps).points, TargetCurve.fromRecipe(filled).points)
+    val noInitialGap = recipeOf(stage(0, 40.0, 10), stage(30, 100.0, 10))
+    val filled2 = noInitialGap.copy(stages = StageGaps.fillWaits(noInitialGap.stages))
+    assertEquals(TargetCurve.fromRecipe(noInitialGap).points, TargetCurve.fromRecipe(filled2).points)
   }
 
   @Test

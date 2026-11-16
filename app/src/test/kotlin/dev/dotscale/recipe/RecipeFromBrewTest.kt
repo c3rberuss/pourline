@@ -41,9 +41,18 @@ class RecipeFromBrewTest {
   fun `one stage per pour with accumulated water, rounded`() {
     val pours = listOf(Pour(1, 0, 8_000, 40.0), Pour(2, 45_400, 65_300, 100.0), Pour(3, 90_600, 115_000, 120.0))
     val draft = convert(pours, 115_000)
-    val stages = draft.recipe.stages
-    assertEquals(3, stages.size)
+    // Tres vertidos con dos huecos: 5 pasos, y los huecos son esperas con el agua anterior (D40).
+    assertEquals(5, draft.recipe.stages.size)
+    assertEquals(
+      listOf(StageType.POUR, StageType.WAIT, StageType.POUR, StageType.WAIT, StageType.POUR),
+      draft.recipe.stages.map { it.type },
+    )
+    val stages = draft.recipe.stages.filter { it.type == StageType.POUR }
     assertEquals(listOf(0L, 45_000L, 91_000L), stages.map { it.startMs })
+    assertEquals(stages[0].targetWaterG, draft.recipe.stages[1].targetWaterG, 0.0)
+    assertEquals(stages[1].targetWaterG, draft.recipe.stages[3].targetWaterG, 0.0)
+    assertEquals(listOf(8_000L, 37_000L, 20_000L, 26_000L, 24_000L), draft.recipe.stages.map { it.durationMs })
+    assertTrue(RecipeValidator.validate(draft.recipe).isEmpty())
     // Duraciones: 8,0 s → 8; 19,9 s → 20; 24,4 s → 24.
     assertEquals(listOf(8_000L, 20_000L, 24_000L), stages.map { it.durationMs })
     // Acumulada: 40, 139,5 y 261,5 g (5 g/s durante 8, 19,9 y 24,4 s); redondeada a 1 g.
@@ -66,7 +75,17 @@ class RecipeFromBrewTest {
     assertEquals(15.0, recipe.doseG, 0.0)
     assertNull(recipe.builtInKey)
     assertEquals(false, recipe.localizedNames)
-    assertTrue(recipe.stages.all { it.name == null })
+    assertTrue(recipe.stages.all { it.name == null && it.instruction == null })
+  }
+
+  @Test
+  fun `a pour that starts after zero gets a wait from zero`() {
+    val draft = convert(listOf(Pour(1, 5_000, 15_000, 50.0)), 15_000)
+    val stages = draft.recipe.stages
+    assertEquals(listOf(StageType.WAIT, StageType.POUR), stages.map { it.type })
+    assertEquals(0L, stages[0].startMs)
+    assertEquals(5_000L, stages[0].durationMs)
+    assertEquals(0.0, stages[0].targetWaterG, 0.0)
   }
 
   @Test
@@ -76,10 +95,12 @@ class RecipeFromBrewTest {
     val pours = starts.mapIndexed { i, s -> Pour(i + 1, s, s + 5_000, 25.0) }.toMutableList()
     pours[6] = Pour(7, pours[5].endMs + 3_000, pours[5].endMs + 8_000, 25.0)
     val draft = convert(pours, pours.last().endMs)
-    assertEquals(10, draft.recipe.stages.size)
+    val mergedPours = draft.recipe.stages.filter { it.type == StageType.POUR }
+    assertEquals(10, mergedPours.size)
+    assertEquals(19, draft.recipe.stages.size) // 10 vertidos y 9 esperas
     assertTrue(Adjustment.MergedPours(1) in draft.adjustments)
     // La etapa fusionada empieza en el inicio del 6.º y termina en el fin del 7.º.
-    val merged = draft.recipe.stages[5]
+    val merged = mergedPours[5]
     assertEquals(150_000L, merged.startMs)
     assertEquals(13_000L, merged.durationMs) // 5 s + 3 s de pausa + 5 s
     assertTrue(RecipeValidator.validate(draft.recipe).none { it is RecipeError.StageCountInvalid })
@@ -140,6 +161,7 @@ class RecipeFromBrewTest {
   fun `without valid samples the accumulated water comes from the pours`() {
     val pours = listOf(Pour(1, 0, 10_000, 40.0), Pour(2, 30_000, 40_000, 60.0))
     val draft = RecipeFromBrew.convert("x (receta)", details, 15.0, emptyList(), pours, 40_000, 100.0)
-    assertEquals(listOf(40.0, 100.0), draft.recipe.stages.map { it.targetWaterG })
+    assertEquals(listOf(40.0, 40.0, 100.0), draft.recipe.stages.map { it.targetWaterG })
+    assertEquals(listOf(StageType.POUR, StageType.WAIT, StageType.POUR), draft.recipe.stages.map { it.type })
   }
 }

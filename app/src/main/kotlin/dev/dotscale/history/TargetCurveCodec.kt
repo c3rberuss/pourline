@@ -3,6 +3,7 @@ package dev.dotscale.history
 import dev.dotscale.brew.TargetCurve
 import dev.dotscale.brew.TargetPoint
 import dev.dotscale.brew.TargetStage
+import dev.dotscale.recipe.StageType
 import java.io.ByteArrayOutputStream
 
 /** El BLOB de la curva objetivo está corrupto, truncado o tiene una versión de formato desconocida. */
@@ -15,6 +16,9 @@ class TargetCurveFormatException(message: String, cause: Throwable? = null) : Ex
  * - número de puntos y, por cada uno, Δ`tMs` y Δ(`waterG`×100) en zigzag + varint.
  * - número de etapas y, por cada una, `startMs`, `endMs`, `targetWaterG`×100 (zigzag), la longitud del
  *   nombre en UTF-8 (0 = `null`) y sus bytes. Un nombre vacío se guarda como `null`.
+ *
+ * El formato v1 no cambió con los pasos con tipo (D21): `encode` solo escribe las etapas `POUR`, reindexadas, y
+ * `decode` las lee como `POUR`. La meseta de las esperas ya está en los puntos.
  */
 object TargetCurveCodec {
   private const val VERSION = 1
@@ -34,8 +38,9 @@ object TargetCurveCodec {
       prevT = point.tMs
       prevWater = water
     }
-    writeVarint(body, curve.stages.size.toLong())
-    for (stage in curve.stages) {
+    val pours = curve.stages.filter { it.type == StageType.POUR }
+    writeVarint(body, pours.size.toLong())
+    for (stage in pours) {
       writeVarint(body, stage.startMs)
       writeVarint(body, stage.endMs)
       writeSigned(body, quantize(stage.targetWaterG))

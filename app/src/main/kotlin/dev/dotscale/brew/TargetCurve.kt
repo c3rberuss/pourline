@@ -1,6 +1,7 @@
 package dev.dotscale.brew
 
 import dev.dotscale.recipe.Recipe
+import dev.dotscale.recipe.StageType
 
 data class TargetPoint(val tMs: Long, val waterG: Double)
 
@@ -11,8 +12,10 @@ data class TargetStage(
   val startMs: Long,
   /** Fin del vertido de la etapa. */
   val endMs: Long,
-  /** Agua acumulada al terminar la etapa. */
+  /** Agua acumulada al terminar la etapa; en `SWIRL` y `WAIT`, la del vertido anterior. */
   val targetWaterG: Double,
+  val type: StageType = StageType.POUR,
+  val instruction: String? = null,
 )
 
 /**
@@ -25,10 +28,13 @@ data class TargetCurve(
   /** Al menos una. */
   val stages: List<TargetStage>,
 ) {
-  /** Fin del vertido de la última etapa. Es el "tiempo objetivo" de la métrica de ajuste. */
-  val endMs: Long get() = stages.last().endMs
+  /** Fin del último paso `POUR`. Es el "tiempo objetivo" de la métrica de ajuste. */
+  val endMs: Long get() = stages.lastOrNull { it.type == StageType.POUR }?.endMs ?: stages.last().endMs
 
-  /** Agua acumulada de la última etapa. */
+  /** Fin del último paso de cualquier tipo: cuando la guía ya no tiene nada que mostrar. */
+  val lastStepEndMs: Long get() = stages.last().endMs
+
+  /** Agua acumulada de la última etapa (la del último vertido, aunque la receta acabe en una espera). */
   val finalWaterG: Double get() = stages.last().targetWaterG
 
   /** Interpolación lineal entre puntos. Antes del primero vale 0; después del último, el último valor. */
@@ -56,8 +62,8 @@ data class TargetCurve(
 
   companion object {
     /**
-     * Una rampa durante cada vertido y una meseta durante cada espera. Si la primera etapa no empieza en
-     * 0, se añade `(0, 0)`.
+     * Una rampa durante cada vertido y una meseta en los huecos y durante los `SWIRL` y `WAIT`. Los puntos salen
+     * solo de los pasos `POUR`; las etapas, de todos. Si el primer vertido no empieza en 0, se añade `(0, 0)`.
      */
     fun fromRecipe(recipe: Recipe): TargetCurve {
       val points = ArrayList<TargetPoint>()
@@ -68,14 +74,18 @@ data class TargetCurve(
           points += TargetPoint(tMs, waterG)
         }
       }
-      if (recipe.stages.first().startMs > 0) add(0, 0.0)
+      val pours = recipe.stages.filter { it.type == StageType.POUR }
+      if ((pours.firstOrNull()?.startMs ?: 0L) > 0L) add(0, 0.0)
       var previousWater = 0.0
-      val stages = recipe.stages.mapIndexed { i, stage ->
-        val endMs = stage.startMs + stage.durationMs
+      for (stage in pours) {
         add(stage.startMs, previousWater)
-        add(endMs, stage.targetWaterG)
+        add(stage.startMs + stage.durationMs, stage.targetWaterG)
         previousWater = stage.targetWaterG
-        TargetStage(i, stage.name, stage.startMs, endMs, stage.targetWaterG)
+      }
+      var accumulated = 0.0
+      val stages = recipe.stages.mapIndexed { i, stage ->
+        if (stage.type == StageType.POUR) accumulated = stage.targetWaterG
+        TargetStage(i, stage.name, stage.startMs, stage.startMs + stage.durationMs, accumulated, stage.type, stage.instruction)
       }
       return TargetCurve(points, stages)
     }

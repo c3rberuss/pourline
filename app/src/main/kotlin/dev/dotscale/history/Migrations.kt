@@ -3,7 +3,10 @@ package dev.dotscale.history
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import dev.dotscale.recipe.BuiltInRecipeSeeder
+import dev.dotscale.recipe.RecipeStage
 import dev.dotscale.recipe.RecipeTexts
+import dev.dotscale.recipe.SeedSchema
+import dev.dotscale.recipe.StageGaps
 
 /**
  * Migración 1 → 2 (SPEC-003). Corre en la transacción de la migración: el historial existente se
@@ -39,7 +42,7 @@ fun migration1To2(texts: RecipeTexts, clock: () -> Long = System::currentTimeMil
           "ON UPDATE NO ACTION ON DELETE CASCADE )",
       )
 
-      BuiltInRecipeSeeder.seed(db, texts, clock())
+      BuiltInRecipeSeeder.seed(db, texts, clock(), SeedSchema.V2)
     }
   }
 
@@ -66,5 +69,53 @@ val MIGRATION_2_3: Migration = object : Migration(2, 3) {
     )
     db.execSQL("ALTER TABLE `brews` ADD COLUMN `rating` INTEGER")
     db.execSQL("CREATE INDEX IF NOT EXISTS `index_brews_coffeeId` ON `brews` (`coffeeId`)")
+  }
+}
+
+/**
+ * Migración 3 → 4 (SPEC-005, D35): `type` e `instruction` en `recipe_stages`. Los pasos existentes quedan como
+ * `POUR` y sin instrucción, y cada hueco entre pasos (también el inicial) pasa a ser un paso `WAIT` explícito
+ * ([StageGaps.fillWaits]), así que la curva objetivo de cada receta no cambia. Los solapes no generan nada.
+ *
+ * La clave primaria es `(recipeId, position)`, así que, por cada receta que cambia, se borran sus filas y se
+ * vuelven a insertar con `position` renumerada; `recipes` no se toca.
+ */
+val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+  override fun migrate(db: SupportSQLiteDatabase) {
+    db.execSQL("ALTER TABLE `recipe_stages` ADD COLUMN `type` TEXT NOT NULL DEFAULT 'POUR'")
+    db.execSQL("ALTER TABLE `recipe_stages` ADD COLUMN `instruction` TEXT")
+
+    val recipeIds = db.query("SELECT `id` FROM `recipes` ORDER BY `id`").use { cursor ->
+      buildList { while (cursor.moveToNext()) add(cursor.getLong(0)) }
+    }
+    for (recipeId in recipeIds) {
+      val stages = db.query(
+        "SELECT `name`, `startMs`, `targetWaterG`, `durationMs` FROM `recipe_stages` WHERE `recipeId` = ? ORDER BY `position`",
+        arrayOf<Any>(recipeId),
+      ).use { cursor ->
+        buildList {
+          while (cursor.moveToNext()) {
+            add(
+              RecipeStage(
+                name = if (cursor.isNull(0)) null else cursor.getString(0),
+                startMs = cursor.getLong(1),
+                targetWaterG = cursor.getDouble(2),
+                durationMs = cursor.getLong(3),
+              ),
+            )
+          }
+        }
+      }
+      val filled = StageGaps.fillWaits(stages)
+      if (filled.size == stages.size) continue
+      db.execSQL("DELETE FROM `recipe_stages` WHERE `recipeId` = ?", arrayOf<Any>(recipeId))
+      filled.forEachIndexed { position, stage ->
+        db.execSQL(
+          "INSERT INTO `recipe_stages` (`recipeId`, `position`, `name`, `startMs`, `targetWaterG`, `durationMs`, `type`, " +
+            "`instruction`) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)",
+          arrayOf<Any?>(recipeId, position, stage.name, stage.startMs, stage.targetWaterG, stage.durationMs, stage.type.name),
+        )
+      }
+    }
   }
 }

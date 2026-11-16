@@ -22,6 +22,7 @@ import dev.dotscale.recipe.ResourcesRecipeTexts
  *
  * Versión 2 (SPEC-003): seis columnas nuevas en `brews`, `brew_targets`, `recipes` y `recipe_stages`.
  * Versión 3 (SPEC-004): la tabla `coffees` y las columnas `coffeeId` y `rating` en `brews`.
+ * Versión 4 (SPEC-005): `type` e `instruction` en `recipe_stages` y los huecos de las recetas como pasos `WAIT`.
  */
 @Database(
   entities = [
@@ -32,7 +33,7 @@ import dev.dotscale.recipe.ResourcesRecipeTexts
     RecipeStageEntity::class,
     CoffeeEntity::class,
   ],
-  version = 3,
+  version = 4,
   exportSchema = true,
 )
 @TypeConverters(HistoryConverters::class, CoffeeConverters::class)
@@ -53,7 +54,7 @@ abstract class HistoryDatabase : RoomDatabase() {
       texts: RecipeTexts = ResourcesRecipeTexts(context),
     ): HistoryDatabase =
       Room.databaseBuilder(context.applicationContext, HistoryDatabase::class.java, fileName)
-        .addMigrations(migration1To2(texts), MIGRATION_2_3)
+        .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4)
         .addCallback(seedOnCreate(texts))
         .build()
 

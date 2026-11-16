@@ -5,6 +5,7 @@ import dev.dotscale.brew.FinishReason
 import dev.dotscale.brew.StabilityLevel
 import dev.dotscale.protocol.ScaleModel
 import dev.dotscale.protocol.WeightUnit
+import dev.dotscale.recipe.StageType
 
 /**
  * Los enums se guardan por nombre, no por ordinal. Un nombre desconocido (p. ej. tras volver a una
@@ -36,4 +37,8 @@ class HistoryConverters {
   @TypeConverter fun scaleModelToString(value: ScaleModel): String = value.name
 
   @TypeConverter fun stringToScaleModel(value: String): ScaleModel = ScaleModel.entries.firstOrNull { it.name == value } ?: ScaleModel.UNKNOWN
+
+  @TypeConverter fun stageTypeToString(value: StageType): String = value.name
+
+  @TypeConverter fun stringToStageType(value: String): StageType = StageType.entries.firstOrNull { it.name == value } ?: StageType.POUR
 }

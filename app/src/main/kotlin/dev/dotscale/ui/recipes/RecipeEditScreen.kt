@@ -25,12 +25,17 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.brew.TargetCurve
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.recipe.Adjustment
+import dev.dotscale.recipe.RecipeValidator
+import dev.dotscale.recipe.StageType
+import dev.dotscale.settings.ExpertFeature
+import dev.dotscale.settings.LocalExperienceMode
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntButton
 import dev.dotscale.ui.components.AntButtonType
@@ -41,6 +46,8 @@ import dev.dotscale.ui.components.AntIcons
 import dev.dotscale.ui.components.AntInput
 import dev.dotscale.ui.components.AntInputStatus
 import dev.dotscale.ui.components.AntModal
+import dev.dotscale.ui.components.AntSegmented
+import dev.dotscale.ui.components.AntSegmentedOption
 import dev.dotscale.ui.components.AntSelect
 import dev.dotscale.ui.components.AntSelectOption
 import dev.dotscale.ui.components.AntSpin
@@ -50,6 +57,7 @@ import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.components.AntTopBar
 import dev.dotscale.ui.history.label
 import dev.dotscale.ui.scale.BrewChart
+import dev.dotscale.ui.theme.AntSize
 import dev.dotscale.ui.theme.AntTheme
 
 @Composable
@@ -162,6 +170,7 @@ fun RecipeEditScreen(viewModel: RecipeEditViewModel, onBack: () -> Unit, onDupli
           errors = errors.stages.getOrNull(i) ?: StageFieldErrors(),
           canRemove = form.canRemoveStage,
           onChange = { changed -> viewModel.update { it.updateStage(i, changed) } },
+          onTypeChange = { type -> viewModel.update { it.setStageType(i, type) } },
           onRemove = { viewModel.update { it.removeStage(i) } },
         )
       }
@@ -174,7 +183,7 @@ fun RecipeEditScreen(viewModel: RecipeEditViewModel, onBack: () -> Unit, onDupli
       )
 
       Totals(form)
-      Preview(form)
+      if (LocalExperienceMode.current.shows(ExpertFeature.RECIPE_CURVE_PREVIEW)) Preview(form)
 
       AntButton(
         text = stringResource(R.string.recipe_edit_save),
@@ -244,10 +253,23 @@ private fun StageCard(
   errors: StageFieldErrors,
   canRemove: Boolean,
   onChange: (StageForm) -> Unit,
+  onTypeChange: (StageType) -> Unit,
   onRemove: () -> Unit,
 ) {
   val number = index + 1
+  val typeOptions = listOf(
+    AntSegmentedOption(StageType.POUR, stringResource(R.string.step_type_pour), AntIcons.Pour),
+    AntSegmentedOption(StageType.SWIRL, stringResource(R.string.step_type_swirl), AntIcons.Swirl),
+    AntSegmentedOption(StageType.WAIT, stringResource(R.string.step_type_wait), AntIcons.Wait),
+  )
   AntCard(Modifier.fillMaxWidth().testTag("recipe_stage_$index"), size = AntCardSize.Small) {
+    AntSegmented(
+      options = typeOptions,
+      selected = stage.type,
+      onSelect = onTypeChange,
+      modifier = Modifier.fillMaxWidth().testTag("recipe_stage_type_$index"),
+      size = AntSize.Small,
+    )
     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
       Column(Modifier.weight(1f)) {
         AntInput(
@@ -275,16 +297,18 @@ private fun StageCard(
         tag = "recipe_stage_start_$index",
         showError = false,
       )
-      LabeledInput(
-        label = stringResource(R.string.recipe_edit_stage_water),
-        value = stage.water,
-        onValueChange = { onChange(stage.copy(water = it)) },
-        error = errors.water,
-        keyboardType = KeyboardType.Decimal,
-        modifier = Modifier.weight(1f),
-        tag = "recipe_stage_water_$index",
-        showError = false,
-      )
+      if (stage.type == StageType.POUR) {
+        LabeledInput(
+          label = stringResource(R.string.recipe_edit_stage_water),
+          value = stage.water,
+          onValueChange = { onChange(stage.copy(water = it)) },
+          error = errors.water,
+          keyboardType = KeyboardType.Decimal,
+          modifier = Modifier.weight(1f),
+          tag = "recipe_stage_water_$index",
+          showError = false,
+        )
+      }
       LabeledInput(
         label = stringResource(R.string.recipe_edit_stage_duration),
         value = stage.duration,
@@ -296,10 +320,29 @@ private fun StageCard(
         showError = false,
       )
     }
+    Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
+      AntText(stringResource(R.string.recipe_stage_instruction), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
+      AntInput(
+        value = stage.instruction,
+        onValueChange = { onChange(stage.copy(instruction = it)) },
+        modifier = Modifier.fillMaxWidth().testTag("recipe_stage_instruction_$index"),
+        status = if (errors.instruction != null) AntInputStatus.Error else AntInputStatus.Default,
+        singleLine = false,
+        minLines = 2,
+      )
+      AntText(
+        stringResource(R.string.recipe_stage_instruction_counter, stage.instruction.length, RecipeValidator.MAX_INSTRUCTION),
+        Modifier.fillMaxWidth().testTag("recipe_stage_instruction_counter_$index"),
+        type = if (errors.instruction != null) AntTextType.Danger else AntTextType.Secondary,
+        style = AntTheme.typography.textSM,
+        textAlign = TextAlign.End,
+      )
+    }
     // Con tres campos por fila no cabe el texto de cada error: se muestran debajo, uno por campo.
     errors.start?.let { ErrorText(it, "recipe_stage_start_error_$index") }
     errors.water?.let { ErrorText(it, "recipe_stage_water_error_$index") }
     errors.duration?.let { ErrorText(it, "recipe_stage_duration_error_$index") }
+    errors.instruction?.let { ErrorText(it, "recipe_stage_instruction_error_$index") }
   }
 }
 
@@ -378,5 +421,7 @@ private fun fieldErrorText(error: FieldError): String = stringResource(
     FieldError.WATER_NOT_INCREASING -> R.string.recipe_error_water_order
     FieldError.DURATION_INVALID -> R.string.recipe_error_duration
     FieldError.STAGE_COUNT -> R.string.recipe_error_stage_count
+    FieldError.NO_POUR -> R.string.recipe_error_no_pour
+    FieldError.INSTRUCTION_TOO_LONG -> R.string.recipe_error_instruction_long
   },
 )

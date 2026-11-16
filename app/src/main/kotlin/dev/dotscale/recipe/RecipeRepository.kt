@@ -59,8 +59,8 @@ class RecipeRepository(
             method = recipe.method,
             methodOther = recipe.methodOther,
             doseG = recipe.doseG,
-            totalWaterG = with.stages.maxByOrNull { it.position }?.targetWaterG ?: 0.0,
-            stageCount = with.stages.size,
+            totalWaterG = with.stages.filter { it.type == StageType.POUR }.maxByOrNull { it.position }?.targetWaterG ?: 0.0,
+            stageCount = with.stages.count { it.type == StageType.POUR },
             builtIn = recipe.builtInKey != null,
           )
         }
@@ -122,6 +122,7 @@ class RecipeRepository(
     val entity = with.recipe
     val translated = entity.localizedNames && entity.builtInKey != null
     val stageNames = if (translated) texts.builtInStageNames(entity.builtInKey!!) else emptyList()
+    val stageInstructions = if (translated) texts.builtInStageInstructions(entity.builtInKey!!) else emptyList()
     return Recipe(
       id = entity.id,
       name = displayName(with),
@@ -137,6 +138,8 @@ class RecipeRepository(
           startMs = stage.startMs,
           targetWaterG = stage.targetWaterG,
           durationMs = stage.durationMs,
+          type = stage.type,
+          instruction = if (translated) stageInstructions.getOrNull(i) ?: stage.instruction else stage.instruction,
         )
       },
       builtInKey = entity.builtInKey,
@@ -158,7 +161,7 @@ class RecipeRepository(
     updatedAtEpochMs = clock(),
   )
 
-  private fun toStageEntities(recipe: Recipe) = recipe.stages.mapIndexed { i, stage ->
+  private fun toStageEntities(recipe: Recipe) = recipe.stages.withDerivedWater().mapIndexed { i, stage ->
     RecipeStageEntity(
       recipeId = recipe.id,
       position = i,
@@ -166,6 +169,8 @@ class RecipeRepository(
       startMs = stage.startMs,
       targetWaterG = stage.targetWaterG,
       durationMs = stage.durationMs,
+      type = stage.type,
+      instruction = stage.instruction.cleaned(),
     )
   }
 }

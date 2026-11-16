@@ -15,13 +15,21 @@ class ResourcesRecipeTexts(context: Context) : RecipeTexts {
     },
   )
 
-  override fun builtInStageNames(key: String): List<String> = resources.getStringArray(
+  override fun builtInStageNames(key: String): List<String?> = resources.getStringArray(
     when (key) {
       BuiltInRecipes.V60_CLASSIC -> R.array.recipe_builtin_v60_classic_stages
       BuiltInRecipes.FOUR_SIX -> R.array.recipe_builtin_four_six_stages
       else -> error("Unknown built-in recipe $key")
     },
-  ).toList()
+  ).map { it.takeIf(String::isNotBlank) }
+
+  override fun builtInStageInstructions(key: String): List<String?> = resources.getStringArray(
+    when (key) {
+      BuiltInRecipes.V60_CLASSIC -> R.array.recipe_builtin_v60_classic_instructions
+      BuiltInRecipes.FOUR_SIX -> R.array.recipe_builtin_four_six_instructions
+      else -> error("Unknown built-in recipe $key")
+    },
+  ).map { it.takeIf(String::isNotBlank) }
 
   override fun copyName(name: String): String = resources.getString(R.string.recipe_copy_name, name)
 

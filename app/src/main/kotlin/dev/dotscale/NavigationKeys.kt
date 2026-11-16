@@ -3,10 +3,11 @@ package dev.dotscale
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
-@Serializable data object Scan : NavKey
+/** Raíz de la pestaña Preparar: la tarjeta de báscula y la configuración de la preparación. */
+@Serializable data object Prepare : NavKey
 
-/** @property address MAC de la báscula, o `null` para la simulada. */
-@Serializable data class Scale(val address: String?, val name: String) : NavKey
+/** La sesión guiada de preparación: pasos previos, vertido y resumen. Sin barra inferior. */
+@Serializable data object Session : NavKey
 
 @Serializable data object Settings : NavKey
 

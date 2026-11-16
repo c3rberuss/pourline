@@ -62,12 +62,49 @@ class RecipeDaoTest {
     assertEquals(BuiltInRecipes.V60_CLASSIC, v60.builtInKey)
     assertTrue(v60.localizedNames)
     assertEquals(15.0, v60.doseG, 0.0)
-    assertEquals(listOf("Bloom", "2.º vertido", "3.er vertido"), v60.stages.map { it.name })
+    assertEquals(listOf("Bloom", null, "2.º vertido", null, "3.er vertido"), v60.stages.map { it.name })
+    assertEquals(
+      listOf(StageType.POUR, StageType.WAIT, StageType.POUR, StageType.WAIT, StageType.POUR),
+      v60.stages.map { it.type },
+    )
+    assertEquals(listOf("i1", "i2", "i3", "i4", "i5"), v60.stages.map { it.instruction })
     assertEquals(BuiltInRecipes.recipe(BuiltInRecipes.V60_CLASSIC, texts).stages, v60.stages)
     val fourSix = repository.get(builtIn(BuiltInRecipes.FOUR_SIX).id)!!
     assertEquals(20.0, fourSix.doseG, 0.0)
-    assertEquals(5, fourSix.stages.size)
+    assertEquals(9, fourSix.stages.size)
     assertEquals(300.0, fourSix.totalWaterG, 0.0)
+  }
+
+  @Test
+  fun typeAndInstructionAreSavedAndRead() = runTest {
+    val recipe = mine().copy(
+      stages = listOf(
+        RecipeStage("Bloom", 0, 40.0, 10_000, StageType.POUR, "Despacio"),
+        RecipeStage(null, 10_000, 40.0, 5_000, StageType.SWIRL, "Gira el dripper"),
+        RecipeStage(null, 15_000, 40.0, 30_000, StageType.WAIT),
+        RecipeStage("Final", 45_000, 160.0, 20_000, StageType.POUR, null),
+      ),
+    )
+    val id = repository.save(recipe)
+    assertEquals(recipe.copy(id = id), repository.get(id))
+    val item = repository.list().first().single { it.id == id }
+    assertEquals(2, item.stageCount) // solo los vertidos
+    assertEquals(160.0, item.totalWaterG, 0.0)
+  }
+
+  @Test
+  fun theWaterOfASwirlAndAWaitIsDerivedFromThePreviousPourWhenSaving() = runTest {
+    val id = repository.save(
+      mine().copy(
+        stages = listOf(
+          RecipeStage(null, 0, 40.0, 10_000),
+          RecipeStage(null, 10_000, 999.0, 5_000, StageType.SWIRL),
+          RecipeStage(null, 15_000, 0.0, 20_000, StageType.WAIT),
+          RecipeStage(null, 35_000, 100.0, 10_000),
+        ),
+      ),
+    )
+    assertEquals(listOf(40.0, 40.0, 40.0, 100.0), repository.get(id)!!.stages.map { it.targetWaterG })
   }
 
   @Test
@@ -211,8 +248,10 @@ class RecipeDaoTest {
     assertNull(restored.notes)
     assertTrue(restored.localizedNames)
     assertEquals(BuiltInRecipes.recipe(BuiltInRecipes.V60_CLASSIC, texts).stages, restored.stages)
+    assertEquals(2, restored.stages.count { it.type == StageType.WAIT })
     val recreated = repository.get(builtIn(BuiltInRecipes.FOUR_SIX).id)!!
-    assertEquals(5, recreated.stages.size)
+    assertEquals(9, recreated.stages.size)
+    assertEquals(4, recreated.stages.count { it.type == StageType.WAIT })
     assertTrue(recreated.localizedNames)
     assertEquals(mine("Mi receta").copy(id = userId), repository.get(userId))
   }
@@ -231,7 +270,8 @@ class RecipeDaoTest {
     texts.language = "en"
     val english = repository.get(v60.id)!!
     assertEquals("Classic V60", english.name)
-    assertEquals(listOf("Bloom", "2nd pour", "3rd pour"), english.stages.map { it.name })
+    assertEquals(listOf("Bloom", null, "2nd pour", null, "3rd pour"), english.stages.map { it.name })
+    assertEquals(listOf("en-i1", "en-i2", "en-i3", "en-i4", "en-i5"), english.stages.map { it.instruction })
     assertEquals("Classic V60", repository.observe(v60.id).first()!!.name)
     // Una vez renombrada, ya no se traduce.
     texts.language = "es"

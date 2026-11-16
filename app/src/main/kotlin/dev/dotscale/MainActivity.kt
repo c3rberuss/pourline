@@ -13,24 +13,27 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.coffee.photo.LocalCoffeeImages
-import dev.dotscale.settings.LocalThemeSettings
-import dev.dotscale.settings.ThemeSettings
+import dev.dotscale.settings.LocalExperienceMode
 import dev.dotscale.settings.isDark
 import dev.dotscale.ui.theme.AntTheme
 import dev.dotscale.ui.theme.DotScaleTheme
 
 class MainActivity : ComponentActivity() {
-  private val themeSettings by lazy { ThemeSettings(applicationContext) }
+  private val app get() = application as DotScaleApp
+  private val deps get() = app.dependencies
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
     enableEdgeToEdge()
     setContent {
-      val mode by themeSettings.mode.collectAsStateWithLifecycle()
-      val darkTheme = mode.isDark()
+      val themeMode by deps.themeSettings.mode.collectAsStateWithLifecycle()
+      val experienceMode by deps.experienceSettings.mode.collectAsStateWithLifecycle()
+      val darkTheme = themeMode.isDark()
 
       // Los iconos de las barras del sistema siguen al tema de la app, no solo al del teléfono.
       DisposableEffect(darkTheme) {
@@ -41,12 +44,15 @@ class MainActivity : ComponentActivity() {
         onDispose {}
       }
 
+      // El primer ON_START del proceso es el arranque de la app; los siguientes, volver a primer plano (D29).
+      LifecycleEventEffect(Lifecycle.Event.ON_START) { deps.autoReconnect.onForeground() }
+
       CompositionLocalProvider(
-        LocalThemeSettings provides themeSettings,
-        LocalCoffeeImages provides (application as DotScaleApp).coffeeImages,
+        LocalExperienceMode provides experienceMode,
+        LocalCoffeeImages provides deps.coffeeImages,
       ) {
         DotScaleTheme(darkTheme = darkTheme) {
-          Box(Modifier.fillMaxSize().background(AntTheme.colors.bgLayout)) { MainNavigation() }
+          Box(Modifier.fillMaxSize().background(AntTheme.colors.bgLayout)) { MainNavigation(deps) }
         }
       }
     }

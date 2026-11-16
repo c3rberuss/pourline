@@ -174,16 +174,48 @@ private fun AntShowcase() {
     AntCollapse("Datos del café", true, {}, Modifier.fillMaxWidth(), testTag = "preview_collapse_open") {
       AntText("Proceso: Natural")
     }
+
+    AntDivider(text = "TabBar · ProgressCircle · PageIndicator · ChoiceModal", orientation = AntDividerOrientation.Left)
+    AntTabBar(
+      items = listOf(
+        AntTabBarItem("prepare", "Preparar", AntIcons.Dripper, "preview_tab_prepare"),
+        AntTabBarItem("coffees", "Cafés", AntIcons.Coffee, "preview_tab_coffees"),
+        AntTabBarItem("recipes", "Recetas", AntIcons.Recipe, "preview_tab_recipes"),
+        AntTabBarItem("history", "Historial", AntIcons.History, "preview_tab_history"),
+      ),
+      selected = "coffees",
+      onSelect = {},
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(spacing.base)) {
+      listOf(0f, 0.61f, 1f).forEach { fraction ->
+        AntProgressCircle(fraction, Modifier.size(96.dp), strokeWidth = 10.dp, segments = listOf(0.16f, 0.6f)) {
+          AntText("${(fraction * 100).toInt()} %")
+        }
+      }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(spacing.base), verticalAlignment = Alignment.CenterVertically) {
+      AntPageIndicator(count = 2, selected = 0)
+      AntPageIndicator(count = 2, selected = 1)
+      listOf(AntIcons.Pour, AntIcons.Swirl, AntIcons.Wait, AntIcons.Scale, AntIcons.Chart, AntIcons.More).forEach {
+        Icon(it, contentDescription = null, modifier = Modifier.size(24.dp), tint = AntTheme.colors.text)
+      }
+    }
+    AntCard(Modifier.fillMaxWidth(), title = "¿Terminar la preparación?") {
+      AntText("Puedes guardarla o descartarla.", type = AntTextType.Secondary)
+      AntButton("Terminar y guardar", {}, Modifier.fillMaxWidth(), type = AntButtonType.Primary)
+      AntButton("Descartar", {}, Modifier.fillMaxWidth(), danger = true)
+      AntButton("Seguir preparando", {}, Modifier.fillMaxWidth())
+    }
   }
 }
 
-@Preview(name = "Ant · Claro", showBackground = true, heightDp = 3200)
+@Preview(name = "Ant · Claro", showBackground = true, heightDp = 3800)
 @Composable
 private fun AntShowcaseLightPreview() {
   DotScaleTheme(darkTheme = false) { AntShowcase() }
 }
 
-@Preview(name = "Ant · Oscuro", showBackground = true, backgroundColor = 0xFF000000, heightDp = 3200, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Ant · Oscuro", showBackground = true, backgroundColor = 0xFF000000, heightDp = 3800, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun AntShowcaseDarkPreview() {
   DotScaleTheme(darkTheme = true) { AntShowcase() }

@@ -24,8 +24,11 @@ interface ReferenceStore {
  * Referencia activa y avisos de etapa, en el mismo archivo `"settings"` que [BrewSettings]. Hay una sola
  * instancia por proceso (ver `DotScaleApp`).
  */
-class TargetSettings(context: Context) : ReferenceStore {
-  private val prefs = context.applicationContext.getSharedPreferences(BrewSettings.PREFS_NAME, Context.MODE_PRIVATE)
+class TargetSettings(
+  context: Context,
+  prefsName: String = BrewSettings.PREFS_NAME,
+) : ReferenceStore {
+  private val prefs = context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
 
   private val _reference = MutableStateFlow(readReference())
   override val reference: StateFlow<ReferenceKey?> = _reference.asStateFlow()

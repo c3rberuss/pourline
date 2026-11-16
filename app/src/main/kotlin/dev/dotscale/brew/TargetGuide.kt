@@ -14,7 +14,7 @@ data class GuideState(
   /** Agua actual − `waterAt(tMs)`; `null` fuera de `Active` o sin muestra válida reciente. */
   val deviationG: Double?,
   val deviationLevel: DeviationLevel?,
-  /** `tMs ≥ target.endMs`: ya no queda ninguna etapa por hacer. */
+  /** `tMs ≥ target.lastStepEndMs`: ya no queda ningún paso, de ningún tipo, por hacer. */
   val allStagesDone: Boolean = false,
 )
 
@@ -49,7 +49,7 @@ object TargetGuide {
       countdownS = countdown,
       deviationG = deviation,
       deviationLevel = deviation?.let { level(it, target.finalWaterG, config) },
-      allStagesDone = tMs >= target.endMs,
+      allStagesDone = tMs >= target.lastStepEndMs,
     )
   }
 

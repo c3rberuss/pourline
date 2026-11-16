@@ -3,6 +3,8 @@ package dev.dotscale.history
 import dev.dotscale.brew.TargetCurve
 import dev.dotscale.brew.TargetPoint
 import dev.dotscale.brew.TargetStage
+import dev.dotscale.recipe.StageGaps
+import dev.dotscale.recipe.StageType
 import dev.dotscale.recipe.stage
 import dev.dotscale.recipe.recipeOf
 import dev.dotscale.recipe.v60Classic
@@ -23,9 +25,12 @@ class TargetCurveCodecTest {
       assertEquals(a.tMs, b.tMs)
       assertEquals(a.waterG, b.waterG, tolerance)
     }
-    assertEquals(curve.stages.size, decoded.stages.size)
-    curve.stages.zip(decoded.stages).forEach { (a, b) ->
-      assertEquals(a.index, b.index)
+    // El formato guarda solo los vertidos (D21): las esperas ya están en la meseta de los puntos.
+    val pours = curve.stages.filter { it.type == StageType.POUR }
+    assertEquals(pours.size, decoded.stages.size)
+    pours.zip(decoded.stages).forEachIndexed { i, (a, b) ->
+      assertEquals(i, b.index)
+      assertEquals(StageType.POUR, b.type)
       assertEquals(a.name, b.name)
       assertEquals(a.startMs, b.startMs)
       assertEquals(a.endMs, b.endMs)
@@ -68,6 +73,25 @@ class TargetCurveCodecTest {
     val curve = TargetCurve(points, listOf(TargetStage(0, null, 0, 240_000, water)))
     assertRoundTrip(curve)
     assertTrue(TargetCurveCodec.encode(curve).size < 960 * 4)
+  }
+
+  @Test
+  fun `a curve with waits encodes to the same bytes as the one with only the pours`() {
+    val pours = recipeOf(stage(0, 40.0, 10), stage(45, 150.0, 20), stage(90, 250.0, 25))
+    val withWaits = pours.copy(stages = StageGaps.fillWaits(pours.stages))
+    assertEquals(5, withWaits.stages.size)
+    val a = TargetCurveCodec.encode(TargetCurve.fromRecipe(pours))
+    val b = TargetCurveCodec.encode(TargetCurve.fromRecipe(withWaits))
+    assertTrue(a.contentEquals(b))
+  }
+
+  @Test
+  fun `the stored v60 of before the typed steps still decodes the same`() {
+    // La V60 de antes (tres vertidos) y la de ahora (con esperas) producen la misma curva guardada.
+    val old = recipeOf(stage(0, 40.0, 10, "Bloom"), stage(45, 150.0, 20, "2.º vertido"), stage(90, 250.0, 25, "3.er vertido"))
+    val decoded = TargetCurveCodec.decode(TargetCurveCodec.encode(TargetCurve.fromRecipe(v60Classic())))
+    assertEquals(TargetCurve.fromRecipe(old).points.map { it.tMs }, decoded.points.map { it.tMs })
+    assertEquals(listOf("Bloom", "2.º vertido", "3.er vertido"), decoded.stages.map { it.name })
   }
 
   @Test
@@ -119,6 +143,7 @@ class TargetCurveCodecTest {
   fun `the decoded index is the position`() {
     val decoded = TargetCurveCodec.decode(TargetCurveCodec.encode(TargetCurve.fromRecipe(v60Classic())))
     assertEquals(listOf(0, 1, 2), decoded.stages.map { it.index })
+    assertEquals(listOf(0L, 45_000L, 90_000L), decoded.stages.map { it.startMs })
     assertNull(TargetCurveCodec.decode(TargetCurveCodec.encode(TargetCurve.fromRecipe(recipeOf(stage(0, 40.0, 10))))).stages.single().name)
   }
 

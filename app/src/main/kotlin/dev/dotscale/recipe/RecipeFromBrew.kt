@@ -8,7 +8,7 @@ import kotlin.math.roundToLong
 
 /** Lo que se ajustó al convertir una preparación en receta. El editor lo muestra en un aviso. */
 sealed interface Adjustment {
-  /** Se fusionaron [count] pares de vertidos para quedar en 10 etapas. */
+  /** Se fusionaron [count] pares de vertidos para quedar en 10 vertidos. */
   data class MergedPours(val count: Int) : Adjustment
 
   /** Alguna duración de más de 120 s se recortó a 120 s. */
@@ -26,11 +26,15 @@ data class RecipeDraft(val recipe: Recipe, val adjustments: List<Adjustment>)
 
 /** Convierte una preparación en una receta editable (D16 del plan). Función pura. */
 object RecipeFromBrew {
+  /** Máximo de vertidos de la receta; los huecos entre ellos pasan a ser pasos `WAIT` (D40), hasta 19 pasos. */
+  const val MAX_POURS = 10
+
   private class Stage(val startMs: Long, val endMs: Long, val waterG: Double)
 
   /**
-   * Una etapa por vertido, con el agua acumulada de [TargetCurve.fromBrew]. Orden: fusionar (más de
-   * 10), redondear (inicio y duración a segundos, mínimo 1 s; agua a 1 g) y recortar a 120 s.
+   * Un paso `POUR` por vertido, con el agua acumulada de [TargetCurve.fromBrew]. Orden: fusionar (más de
+   * [MAX_POURS]), redondear (inicio y duración a segundos, mínimo 1 s; agua a 1 g), recortar a 120 s y rellenar
+   * los huecos con pasos `WAIT` ([StageGaps.fillWaits]).
    *
    * @param name nombre ya compuesto (el de la preparación o su fecha, más " (receta)").
    */
@@ -47,7 +51,7 @@ object RecipeFromBrew {
     var stages = initialStages(samples, pours, totalTimeMs, totalWaterG)
 
     var merged = 0
-    while (stages.size > RecipeValidator.MAX_STAGES) {
+    while (stages.size > MAX_POURS) {
       val i = (0 until stages.size - 1).minBy { stages[it + 1].startMs - stages[it].endMs }
       val a = stages[i]
       val b = stages[i + 1]
@@ -78,7 +82,7 @@ object RecipeFromBrew {
       grind = details.grind,
       waterTempC = details.waterTempC,
       doseG = dose ?: 0.0,
-      stages = recipeStages,
+      stages = StageGaps.fillWaits(recipeStages),
     )
     return RecipeDraft(recipe, adjustments)
   }

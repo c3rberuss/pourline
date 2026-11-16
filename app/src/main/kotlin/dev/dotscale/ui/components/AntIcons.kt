@@ -151,6 +151,49 @@ object AntIcons {
   }
   /** Chevron a la derecha. */
   val Right: ImageVector by lazy { strokeIcon("Right", "M9 6L15 12L9 18") }
+  /** Gotero V60: cono sobre una jarra. Pestaña Preparar y tarjeta "Básico". */
+  val Dripper: ImageVector by lazy {
+    strokeIcon("Dripper", "M4 4H20L15 12H9Z", "M10 12V16H14V12", "M7 20H17", "M12 18V18.5")
+  }
+  /** Línea con ejes: tarjeta "Experto". */
+  val Chart: ImageVector by lazy { strokeIcon("Chart", "M4 4V20H20", "M7 15L11 11L14 13L19 7") }
+  /** Tres puntos horizontales. */
+  val More: ImageVector by lazy {
+    icon("More") {
+      fill("M7.5 12A1.5 1.5 0 1 1 4.5 12A1.5 1.5 0 1 1 7.5 12Z")
+      fill("M13.5 12A1.5 1.5 0 1 1 10.5 12A1.5 1.5 0 1 1 13.5 12Z")
+      fill("M19.5 12A1.5 1.5 0 1 1 16.5 12A1.5 1.5 0 1 1 19.5 12Z")
+    }
+  }
+  /** Gota: paso Verter. */
+  val Pour: ImageVector by lazy {
+    strokeIcon("Pour", "M12 3C9 7.5 6.5 10.5 6.5 14A5.5 5.5 0 0 0 17.5 14C17.5 10.5 15 7.5 12 3Z")
+  }
+  /** Dos flechas circulares: paso Remover. */
+  val Swirl: ImageVector by lazy {
+    strokeIcon("Swirl", "M4 12A8 8 0 0 1 18.3 7", "M18.3 3V7H14", "M20 12A8 8 0 0 1 5.7 17", "M5.7 21V17H10")
+  }
+  /** Reloj de arena: paso Esperar. */
+  val Wait: ImageVector by lazy {
+    strokeIcon(
+      "Wait",
+      "M6 3H18", "M6 21H18",
+      "M7 3V6A5 5 0 0 0 12 12A5 5 0 0 0 7 18V21",
+      "M17 3V6A5 5 0 0 1 12 12A5 5 0 0 1 17 18V21",
+    )
+  }
+  /** Círculo con una "i": abre una explicación. */
+  val Info: ImageVector by lazy {
+    strokeIcon("Info", "M21 12A9 9 0 1 1 3 12A9 9 0 1 1 21 12Z", "M12 11V16", "M12 8V8.01")
+  }
+  /** Báscula vista de frente con su esfera. */
+  val Scale: ImageVector by lazy {
+    strokeIcon(
+      "Scale",
+      "M5 4H19A1 1 0 0 1 20 5V19A1 1 0 0 1 19 20H5A1 1 0 0 1 4 19V5A1 1 0 0 1 5 4Z",
+      "M8 10A4 4 0 0 1 16 10", "M12 10L13.5 7.5",
+    )
+  }
 }
 
 private const val STAR_PATH = "M12 3L14.8 8.8L21 9.6L16.5 14L17.6 20.3L12 17.3L6.4 20.3L7.5 14L3 9.6L9.2 8.8Z"

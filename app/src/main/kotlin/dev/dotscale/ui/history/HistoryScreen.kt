@@ -23,6 +23,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.history.BrewFilter
+import dev.dotscale.settings.ExpertFeature
+import dev.dotscale.settings.LocalExperienceMode
 import dev.dotscale.ui.components.AntCard
 import dev.dotscale.ui.components.AntEmpty
 import dev.dotscale.ui.components.AntIconButton
@@ -36,7 +38,7 @@ import dev.dotscale.ui.components.showAntMessage
 import dev.dotscale.ui.theme.AntTheme
 
 @Composable
-fun HistoryScreen(viewModel: HistoryViewModel, onBack: () -> Unit, onOpenBrew: (Long) -> Unit) {
+fun HistoryScreen(viewModel: HistoryViewModel, onBack: (() -> Unit)?, onOpenBrew: (Long) -> Unit) {
   val items by viewModel.items.collectAsStateWithLifecycle()
   val progress by viewModel.progress.collectAsStateWithLifecycle()
   val coffees by viewModel.coffees.collectAsStateWithLifecycle()
@@ -57,13 +59,16 @@ fun HistoryScreen(viewModel: HistoryViewModel, onBack: () -> Unit, onOpenBrew: (
   // Salir del historial vacía el deshacer.
   DisposableEffect(viewModel) { onDispose { viewModel.clearPendingUndo() } }
 
+  val mode = LocalExperienceMode.current
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
       AntTopBar(
         title = stringResource(R.string.history_title),
-        navigationIcon = {
-          AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
+        navigationIcon = onBack?.let { back ->
+          {
+            AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = back)
+          }
         },
       )
     },
@@ -77,7 +82,7 @@ fun HistoryScreen(viewModel: HistoryViewModel, onBack: () -> Unit, onOpenBrew: (
       item(key = "filters") {
         HistoryFilters(filter, coffees, methods, onChange = { filter = it })
       }
-      progress?.let { points ->
+      progress?.takeIf { mode.shows(ExpertFeature.HISTORY_STABILITY_PROGRESS) }?.let { points ->
         item(key = "progress") {
           AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.history_progress_title)) {
             if (points.size >= 2) {
@@ -101,7 +106,7 @@ fun HistoryScreen(viewModel: HistoryViewModel, onBack: () -> Unit, onOpenBrew: (
             AntEmpty(stringResource(if (filtered) R.string.history_empty_filtered else R.string.history_empty))
           }
         } else {
-          items(rows, key = { it.id }) { item -> HistoryRow(item, onClick = { onOpenBrew(item.id) }) }
+          items(rows, key = { it.id }) { item -> HistoryRow(item, onClick = { onOpenBrew(item.id) }, showMetrics = mode.shows(ExpertFeature.HISTORY_ROW_METRICS)) }
         }
       }
     }

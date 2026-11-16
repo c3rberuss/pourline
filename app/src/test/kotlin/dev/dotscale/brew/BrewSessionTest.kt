@@ -638,4 +638,94 @@ class BrewSessionTest {
     scale.activePour()
     assertTrue(scale.effects.isEmpty())
   }
+
+  // --- reset, discard y startNow (D23) ---
+
+  @Test
+  fun `startNow goes Active with t0 now and the last valid weight as baseline`() {
+    val scale = FakeScale()
+    scale.sample(0.0, netOverrideG = 14.8)
+    val effects = scale.session.startNow(scale.nowMs)
+
+    assertEquals(listOf(BrewEffect.StartTimer), effects)
+    scale.assertActive(pouring = false)
+    assertEquals(scale.nowMs, scale.state.t0MonoMs)
+    // El agua cuenta desde el peso que había: añadir 10 g da 10 g de agua.
+    scale.sample(0.0, netOverrideG = 24.8)
+    assertEquals(10.0, scale.state.samples.last().waterG, 1e-9)
+  }
+
+  @Test
+  fun `startNow from a paused timer resets and then starts it`() {
+    val scale = FakeScale()
+    scale.timer = TimerStatus.PAUSED
+    scale.idle(200)
+
+    val effects = scale.session.startNow(scale.nowMs)
+
+    assertEquals(listOf(BrewEffect.ResetTimer, BrewEffect.StartTimer), effects)
+  }
+
+  @Test
+  fun `startNow does nothing when a session is already running`() {
+    val scale = FakeScale()
+    scale.simplePour()
+    scale.assertActive(pouring = true)
+
+    assertTrue(scale.session.startNow(scale.nowMs).isEmpty())
+  }
+
+  @Test
+  fun `discard while Active emits no Finished, pauses a running timer and leaves Armed`() {
+    val scale = FakeScale()
+    scale.simplePour()
+    scale.assertActive(pouring = true)
+    scale.clearEffects()
+
+    val effects = scale.session.discard(scale.nowMs)
+
+    assertEquals(listOf(BrewEffect.PauseTimer), effects)
+    assertTrue(effects.none { it is BrewEffect.Finished })
+    assertEquals(BrewPhase.Armed, scale.phase)
+    assertTrue(scale.state.samples.isEmpty())
+    assertEquals(null, scale.state.t0MonoMs)
+  }
+
+  @Test
+  fun `discard with the timer not running pauses nothing`() {
+    val scale = FakeScale()
+    scale.simplePour()
+    scale.timer = TimerStatus.PAUSED
+    scale.session.onTimer(TimerStatus.PAUSED, scale.nowMs) // termina la sesión por pausa
+    scale.clearEffects()
+
+    // Ya `Finished`: descartar solo limpia.
+    assertTrue(scale.session.discard(scale.nowMs).isEmpty())
+    assertEquals(BrewPhase.Armed, scale.phase)
+  }
+
+  @Test
+  fun `after a discard a new pour starts another session`() {
+    val scale = FakeScale()
+    scale.simplePour()
+    scale.session.discard(scale.nowMs)
+    scale.timer = TimerStatus.RESET
+
+    scale.simplePour()
+
+    scale.assertActive(pouring = true)
+  }
+
+  @Test
+  fun `reset from Finished returns to Armed without rearming flags`() {
+    val scale = FakeScale()
+    scale.simplePour()
+    scale.session.finish(scale.nowMs)
+    assertTrue(scale.phase is BrewPhase.Finished)
+
+    scale.session.reset()
+
+    assertEquals(BrewPhase.Armed, scale.phase)
+    assertTrue(scale.state.samples.isEmpty())
+  }
 }

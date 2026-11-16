@@ -3,6 +3,7 @@ package dev.dotscale.history
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.brew.FinishReason
 import dev.dotscale.protocol.WeightUnit
+import dev.dotscale.recipe.StageType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -323,7 +324,8 @@ class BrewDaoTest {
     // La curva guardada es la escalada, con error de 0,005 g como máximo.
     val stored = record.target!!
     assertFalse(record.targetError)
-    assertEquals(target.curve.stages.size, stored.stages.size)
+    // El formato guardado solo lleva los pasos POUR (D21): los SWIRL y WAIT no se persisten.
+    assertEquals(target.curve.stages.count { it.type == StageType.POUR }, stored.stages.size)
     assertEquals(target.curve.finalWaterG, stored.finalWaterG, 0.005)
     assertEquals(target.curve.waterAt(55_000), stored.waterAt(55_000), 0.005)
     assertEquals(86, repository.observe(id).first()!!.entity.fitScore)

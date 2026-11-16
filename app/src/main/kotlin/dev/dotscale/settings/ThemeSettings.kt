@@ -3,7 +3,6 @@ package dev.dotscale.settings
 import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,8 +18,11 @@ fun ThemeMode.isDark(): Boolean = when (this) {
 }
 
 /** Preferencia de apariencia del usuario, guardada en SharedPreferences. */
-class ThemeSettings(context: Context) {
-  private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+class ThemeSettings(
+  context: Context,
+  prefsName: String = BrewSettings.PREFS_NAME,
+) {
+  private val prefs = context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
   private val _mode = MutableStateFlow(readMode())
   val mode: StateFlow<ThemeMode> = _mode.asStateFlow()
 
@@ -32,11 +34,7 @@ class ThemeSettings(context: Context) {
   private fun readMode(): ThemeMode =
     prefs.getString(KEY_MODE, null)?.let { stored -> ThemeMode.entries.firstOrNull { it.name == stored } } ?: ThemeMode.SYSTEM
 
-  private companion object {
-    const val PREFS_NAME = "settings"
+  companion object {
     const val KEY_MODE = "theme_mode"
   }
 }
-
-/** Ajustes de tema de la app; `null` en previews, donde el selector no se muestra. */
-val LocalThemeSettings = staticCompositionLocalOf<ThemeSettings?> { null }

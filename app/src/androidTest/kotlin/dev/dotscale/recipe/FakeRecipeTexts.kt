@@ -7,9 +7,15 @@ class FakeRecipeTexts(@Volatile var language: String = "es") : RecipeTexts {
     else -> if (language == "en") "4:6 method" else "Método 4:6"
   }
 
-  override fun builtInStageNames(key: String): List<String> = when (key) {
-    BuiltInRecipes.V60_CLASSIC -> if (language == "en") listOf("Bloom", "2nd pour", "3rd pour") else listOf("Bloom", "2.º vertido", "3.er vertido")
-    else -> (1..5).map { if (language == "en") "Pour $it" else "Vertido $it" }
+  override fun builtInStageNames(key: String): List<String?> = when (key) {
+    BuiltInRecipes.V60_CLASSIC ->
+      if (language == "en") listOf("Bloom", null, "2nd pour", null, "3rd pour") else listOf("Bloom", null, "2.º vertido", null, "3.er vertido")
+    else -> (1..9).map { if (it % 2 == 0) null else if (language == "en") "Pour ${(it + 1) / 2}" else "Vertido ${(it + 1) / 2}" }
+  }
+
+  override fun builtInStageInstructions(key: String): List<String?> = when (key) {
+    BuiltInRecipes.V60_CLASSIC -> (1..5).map { if (language == "en") "en-i$it" else "i$it" }
+    else -> (1..9).map { if (language == "en") "en-i$it" else "i$it" }
   }
 
   override fun copyName(name: String) = if (language == "en") "$name (copy)" else "$name (copia)"

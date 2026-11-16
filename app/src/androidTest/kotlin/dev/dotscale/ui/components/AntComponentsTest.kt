@@ -3,13 +3,17 @@ package dev.dotscale.ui.components
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -17,6 +21,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.unit.dp
+import androidx.test.espresso.Espresso
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
 import dev.dotscale.ui.theme.DotScaleTheme
@@ -143,5 +149,62 @@ class AntComponentsTest {
     rule.onNodeWithTag("ant_collapse_content").assertIsDisplayed()
     rule.onNodeWithTag("ant_collapse_header")
       .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, context.getString(R.string.collapse_expanded)))
+  }
+  @Test
+  fun tabBarSelectsAndMarksTheActiveTab() {
+    var selected by mutableStateOf("a")
+    rule.setContent {
+      DotScaleTheme(darkTheme = false) {
+        AntTabBar(
+          items = listOf(
+            AntTabBarItem("a", "Preparar", AntIcons.Dripper, "tab_a"),
+            AntTabBarItem("b", "Cafés", AntIcons.Coffee, "tab_b"),
+          ),
+          selected = selected,
+          onSelect = { selected = it },
+        )
+      }
+    }
+    rule.onNodeWithTag("tab_a").assertIsSelected()
+    rule.onNodeWithTag("tab_b").assertIsNotSelected().performClick()
+    rule.runOnIdle { assertEquals("b", selected) }
+    rule.onNodeWithTag("tab_b").assertIsSelected()
+    rule.onNodeWithText("Cafés").assertIsDisplayed()
+  }
+
+  @Test
+  fun choiceModalCallsEachChoiceAndDismissesOutside() {
+    val clicked = mutableListOf<String>()
+    var dismissed = 0
+    rule.setContent {
+      DotScaleTheme(darkTheme = false) {
+        AntChoiceModal(
+          title = "Salir",
+          text = "Texto",
+          choices = listOf(
+            AntModalChoice("Guardar", { clicked += "save" }, "choice_save", AntButtonType.Primary),
+            AntModalChoice("Descartar", { clicked += "discard" }, "choice_discard", danger = true),
+          ),
+          onDismiss = { dismissed++ },
+        )
+      }
+    }
+    rule.onNodeWithTag("choice_save").performClick()
+    rule.onNodeWithTag("choice_discard").performClick()
+    rule.runOnIdle { assertEquals(listOf("save", "discard"), clicked) }
+    Espresso.pressBack()
+    rule.runOnIdle { assertEquals(1, dismissed) }
+  }
+
+  @Test
+  fun progressCircleExposesItsRange() {
+    rule.setContent {
+      DotScaleTheme(darkTheme = false) {
+        AntProgressCircle(0.61f, Modifier.size(120.dp).testTag("circle"), segments = listOf(0.4f)) { AntText("61") }
+      }
+    }
+    rule.onNodeWithTag("circle").assert(
+      SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(0.61f, 0f..1f)),
+    )
   }
 }

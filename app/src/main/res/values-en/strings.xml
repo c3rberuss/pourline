@@ -3,20 +3,12 @@
     <string name="app_name">Dot Scale</string>
 
     <!-- Scan -->
-    <string name="scan_title">Find scale</string>
     <string name="scan_start">Scan</string>
     <string name="scan_stop">Stop</string>
     <string name="scan_show_all">Show all</string>
-    <string name="scan_devices">Nearby devices</string>
     <string name="scan_scanning">Scanning…</string>
     <string name="scan_idle">Scan stopped</string>
-    <string name="scan_permissions_title">Bluetooth permission</string>
-    <string name="scan_bluetooth_off_title">Bluetooth is off</string>
     <string name="scan_empty">Turn the scale on and bring it close to the phone.</string>
-    <string name="scan_simulated">Try with simulated scale</string>
-    <string name="scan_permissions_needed">Bluetooth permission is needed to find the scale.</string>
-    <string name="scan_grant_permissions">Grant permissions</string>
-    <string name="scan_bluetooth_off">Bluetooth is off. Turn it on to find the scale.</string>
     <string name="scan_unknown_device">Unnamed device</string>
     <string name="scan_rssi">%1$d dBm</string>
 
@@ -24,30 +16,15 @@
     <string name="scale_back">Back</string>
     <string name="scale_battery">Battery %1$d%%</string>
     <string name="scale_battery_short">%1$d%%</string>
-    <string name="scale_weight">Weight</string>
-    <string name="scale_flow">Flow</string>
-    <string name="scale_time">Time</string>
     <string name="scale_flow_value">%1$s/s</string>
-    <string name="scale_out_of_range">Out of range</string>
-    <string name="scale_tare">Tare</string>
-    <string name="scale_start">Start</string>
-    <string name="scale_pause">Pause</string>
-    <string name="scale_reset">Reset</string>
-    <string name="scale_unit_label">Unit</string>
-    <string name="scale_capture_dose">Set dose</string>
-    <string name="scale_clear_dose">Clear dose</string>
-    <string name="scale_dose_title">Dose and ratio</string>
     <string name="scale_dose">Dose</string>
     <string name="scale_ratio">Ratio</string>
     <string name="scale_ratio_value">1:%1$.1f</string>
     <string name="scale_ratio_empty">—</string>
-    <string name="scale_dose_hint">Put the coffee on the scale and tap “Set dose”: the weight is saved and the scale is tared so you can start pouring.</string>
     <string name="scale_error_command">Could not send the command</string>
     <string name="scale_error_save">Could not save the brew</string>
-    <string name="scale_retry">Retry</string>
     <string name="scale_simulation">Simulation</string>
     <string name="scale_sim_add">+%1$d g</string>
-    <string name="scale_info">%1$s · firmware %2$s</string>
 
     <!-- Connection state -->
     <string name="conn_disconnected">Disconnected</string>
@@ -60,22 +37,22 @@
 
     <!-- Appearance -->
     <string name="theme_title">Appearance</string>
-    <string name="theme_change">Change appearance</string>
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_hint">“System” follows the light or dark mode of the phone.</string>
+    <string name="mode_title">Mode</string>
+    <string name="mode_basic">Basic</string>
+    <string name="mode_expert">Expert</string>
+    <string name="mode_basic_hint">We guide you step by step. Just the essentials.</string>
+    <string name="mode_expert_hint">Charts, flow stability and brew comparison.</string>
 
     <!-- Common -->
     <string name="action_close">Close</string>
 
     <!-- Pour chart -->
     <string name="brew_chart_title">Pour</string>
-    <string name="brew_chart_empty">Pour water to start</string>
     <string name="brew_chart_description">Pour chart. Water: %1$s %2$s. Flow: %3$s %2$s per second. Stability: %4$s.</string>
-    <string name="brew_chart_finish">Finish</string>
-    <string name="brew_chart_ready">Ready for the next brew</string>
-    <string name="brew_chart_ignored">Tare or reset the timer to start a new brew.</string>
     <string name="brew_level_stable">Stable</string>
     <string name="brew_level_irregular">Irregular</string>
     <string name="brew_level_turbulent">Turbulent</string>
@@ -116,7 +93,6 @@
 
     <!-- History -->
     <string name="history_title">History</string>
-    <string name="history_open">Open history</string>
     <string name="history_filter_coffee">Coffee</string>
     <string name="history_filter_method">Method</string>
     <string name="history_filter_all">All</string>
@@ -143,6 +119,9 @@
     <string name="brew_detail_tasting">Tasting</string>
     <string name="brew_detail_rating">Rating</string>
     <string name="brew_detail_coffee_legacy">Not in the catalog</string>
+    <string name="brew_facts_title">Details</string>
+    <string name="brew_facts_date">Date</string>
+    <string name="brew_facts_recipe">Recipe</string>
     <string name="brew_detail_method">Method</string>
     <string name="brew_detail_grind">Grind</string>
     <string name="brew_detail_temp">Temperature</string>
@@ -179,22 +158,45 @@
     <string name="recipe_builtin_four_six">4:6 method</string>
     <string-array name="recipe_builtin_v60_classic_stages">
         <item>Bloom</item>
+        <item></item>
         <item>2nd pour</item>
+        <item></item>
         <item>3rd pour</item>
     </string-array>
     <string-array name="recipe_builtin_four_six_stages">
         <item>1st pour</item>
+        <item></item>
         <item>2nd pour</item>
+        <item></item>
         <item>3rd pour</item>
+        <item></item>
         <item>4th pour</item>
+        <item></item>
         <item>5th pour</item>
+    </string-array>
+    <string-array name="recipe_builtin_v60_classic_instructions">
+        <item>Pour in a spiral to wet all the grounds.</item>
+        <item>Let the coffee bloom.</item>
+        <item>Pour in slow circles from the center.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Pour in slow circles and finish pouring.</item>
+    </string-array>
+    <string-array name="recipe_builtin_four_six_instructions">
+        <item>Pour slowly and evenly: it sets the sweetness.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Pour slowly and evenly: it sets the acidity.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Pour to start building body.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Pour without rushing.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Last pour: take your time, up to the total water.</item>
     </string-array>
     <string name="recipe_copy_name">%1$s (copy)</string>
     <string name="recipe_from_brew_name">%1$s (recipe)</string>
 
     <!-- Recipes: list -->
     <string name="recipe_title">Recipes</string>
-    <string name="recipe_open">Open recipes</string>
     <string name="recipe_add">Create recipe</string>
     <string name="recipe_empty">No recipes yet</string>
     <string name="recipe_deleted">Recipe deleted</string>
@@ -203,8 +205,8 @@
     <string name="recipe_active_tag">Active</string>
     <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s</string>
     <plurals name="recipe_stage_count">
-        <item quantity="one">%1$d stage</item>
-        <item quantity="other">%1$d stages</item>
+        <item quantity="one">%1$d step</item>
+        <item quantity="other">%1$d steps</item>
     </plurals>
 
     <!-- Recipes: editor -->
@@ -219,13 +221,18 @@
     <string name="recipe_edit_temp">Water temperature (°C)</string>
     <string name="recipe_edit_notes">Notes (instructions)</string>
     <string name="recipe_edit_dose">Dose (g)</string>
-    <string name="recipe_edit_stages">Stages</string>
-    <string name="recipe_edit_stage_name">Stage %1$d (optional name)</string>
+    <string name="recipe_edit_stages">Steps</string>
+    <string name="recipe_edit_stage_name">Step %1$d (optional name)</string>
     <string name="recipe_edit_stage_start">Start (m:ss)</string>
     <string name="recipe_edit_stage_water">Up to (g)</string>
-    <string name="recipe_edit_stage_duration">Pour (s)</string>
-    <string name="recipe_edit_stage_remove">Remove stage %1$d</string>
-    <string name="recipe_edit_add_stage">Add stage</string>
+    <string name="recipe_edit_stage_duration">Duration (s)</string>
+    <string name="step_type_pour">Pour</string>
+    <string name="step_type_swirl">Swirl</string>
+    <string name="step_type_wait">Wait</string>
+    <string name="recipe_stage_instruction">Instruction (optional)</string>
+    <string name="recipe_stage_instruction_counter">%1$d/%2$d</string>
+    <string name="recipe_edit_stage_remove">Remove step %1$d</string>
+    <string name="recipe_edit_add_stage">Add step</string>
     <string name="recipe_edit_totals">Total water %1$s g · Ratio 1:%2$s</string>
     <string name="recipe_edit_totals_water">Total water %1$s g</string>
     <string name="recipe_edit_preview">Curve preview</string>
@@ -234,8 +241,8 @@
     <string name="recipe_edit_delete">Delete</string>
     <string name="recipe_edit_adjusted_title">The brew was adjusted to turn it into a recipe</string>
     <plurals name="recipe_edit_adjusted_merged">
-        <item quantity="one">%1$d pair of pours was merged to end up with 10 stages.</item>
-        <item quantity="other">%1$d pairs of pours were merged to end up with 10 stages.</item>
+        <item quantity="one">%1$d pair of pours was merged to end up with 10 pours.</item>
+        <item quantity="other">%1$d pairs of pours were merged to end up with 10 pours.</item>
     </plurals>
     <string name="recipe_edit_adjusted_clamped">Pours longer than 120 s were cut to 120 s.</string>
     <string name="recipe_edit_adjusted_dose">The brew\'s dose is not between 5 and 60 g: enter it to be able to save.</string>
@@ -247,17 +254,19 @@
     <string name="recipe_error_dose">Between 5 and 60 g, one decimal at most</string>
     <string name="recipe_error_temp">Between 0 and 100 °C, one decimal at most</string>
     <string name="recipe_error_start">Enter m:ss (1:30) or seconds (90)</string>
-    <string name="recipe_error_start_overlaps">Starts before the previous stage ends</string>
-    <string name="recipe_error_start_late">The last stage must start before 10:00</string>
+    <string name="recipe_error_start_overlaps">Starts before the previous step ends</string>
+    <string name="recipe_error_start_late">The last step must start before 10:00</string>
     <string name="recipe_error_water">Between 0 and 1000 g, one decimal at most</string>
-    <string name="recipe_error_water_order">Must be more than the previous stage</string>
+    <string name="recipe_error_water_order">Must be more than the previous pour</string>
     <string name="recipe_error_duration">Between 1 and 120 s</string>
-    <string name="recipe_error_stage_count">Between 1 and 10 stages</string>
+    <string name="recipe_error_stage_count">Between 1 and 20 steps</string>
+    <string name="recipe_error_instruction_long">200 characters at most</string>
+    <string name="recipe_error_no_pour">Add at least one Pour step</string>
 
-    <!-- Settings: stage guide and recipes -->
-    <string name="settings_stage_title">Stage guide</string>
-    <string name="settings_stage_vibration">Vibrate when each stage starts</string>
-    <string name="settings_stage_sound">Beep when each stage starts</string>
+    <!-- Settings: step guide and recipes -->
+    <string name="settings_stage_title">Step guide</string>
+    <string name="settings_stage_vibration">Vibrate when each step starts</string>
+    <string name="settings_stage_sound">Beep when each step starts</string>
     <string name="settings_recipes_title">Recipes</string>
     <string name="settings_recipes_restore">Restore built-in recipes</string>
     <string name="settings_recipes_restore_title">Restore the built-in recipes?</string>
@@ -268,17 +277,7 @@
 
     <string name="target_chip">Target: %1$s</string>
     <string name="target_chip_none">Target: none</string>
-    <string name="target_stage_armed">Stage %1$s: up to %2$s in %3$d s</string>
-    <string name="target_stage_label">%1$d/%2$d</string>
-    <string name="target_stage_label_named">%1$d/%2$d · %3$s</string>
-    <string name="target_scaled">Scaled to %1$s</string>
-    <string name="target_up_to">Up to %1$s</string>
-    <string name="target_next_in">Next in %1$d s</string>
-    <string name="target_before_first">Waiting for stage 1/%1$d</string>
-    <string name="target_all_done">Last stage complete</string>
     <string name="target_description">Target: %1$s in %2$s</string>
-    <string name="target_deviation_description">Deviation: %1$s</string>
-    <string name="target_deviation_none">—</string>
     <string name="target_error_removed">The chosen target no longer exists</string>
     <string name="target_error_unreadable">Couldn\'t read that brew\'s curve</string>
     <string name="target_picker_title">Choose a target</string>
@@ -335,7 +334,6 @@
 
     <!-- Coffees -->
     <string name="coffees_title">Coffees</string>
-    <string name="coffees_open">Open coffees</string>
     <string name="coffees_add">Add coffee</string>
     <string name="coffees_search_hint">Search by name, roaster or origin</string>
     <string name="coffees_search_clear">Clear search</string>
@@ -473,4 +471,100 @@
     <string name="share_error">The image could not be generated</string>
     <string name="share_action">Share</string>
     <string name="share_image_action">Share image</string>
+    <string name="tab_prepare">Brew</string>
+    <string name="tab_coffees">Coffees</string>
+    <string name="tab_recipes">Recipes</string>
+    <string name="tab_history">History</string>
+    <string name="prepare_recipe">Recipe</string>
+    <string name="prepare_dose">Dose</string>
+    <string name="prepare_ratio">Ratio</string>
+    <string name="prepare_water">Water</string>
+    <string name="prepare_grams">g</string>
+    <string name="prepare_ratio_prefix">1:</string>
+    <string name="prepare_ratio_value">1:%1$s</string>
+    <string name="prepare_empty_value">—</string>
+    <string name="prepare_start">Start</string>
+    <string name="prepare_start_disabled">Connect the scale to start.</string>
+    <string name="prepare_range_error">The dose goes from 5 to 60 g and the ratio from 10 to 20.</string>
+    <string name="scale_card_no_permission">We need Bluetooth permission</string>
+    <string name="scale_card_grant">Grant permission</string>
+    <string name="scale_card_bluetooth_off">Bluetooth is off</string>
+    <string name="scale_card_enable">Turn on</string>
+    <string name="scale_card_connect_prompt">Connect your scale</string>
+    <string name="scale_card_connect">Connect</string>
+    <string name="scale_card_connecting">Connecting to %1$s…</string>
+    <string name="scale_card_connected">%1$s connected</string>
+    <string name="scale_card_failed">Could not connect to %1$s</string>
+    <string name="scale_card_retry">Retry</string>
+    <string name="scale_card_change">Change scale</string>
+    <string name="scale_card_disconnected">%1$s disconnected</string>
+    <string name="scale_card_disconnect">Disconnect</string>
+    <string name="scale_card_menu">Scale options</string>
+    <string name="connect_title">Connect scale</string>
+    <string name="connect_simulated">Use simulated scale</string>
+    <string name="onboarding_title">How do you brew your coffee?</string>
+    <string name="onboarding_hint">You can change it any time in Settings.</string>
+    <string name="onboarding_skip">Skip</string>
+    <!-- Guided session -->
+    <string name="session_close">Leave the session</string>
+    <string name="session_options">Options</string>
+    <string name="session_title_free">Free brew</string>
+    <string name="session_retry">Retry</string>
+    <string name="session_dial_description">%1$s of %2$s, %3$d %%</string>
+    <string name="session_dial_description_expected">%1$s of %2$s, %3$d %%; the target says %4$s by now</string>
+    <string name="session_dial_legend">How to read the dial</string>
+    <string name="session_dial_legend_ring">The ring fills with the water poured, up to the target. The gaps split the pours of the recipe.</string>
+    <string name="session_dial_legend_colors">The colour of each stretch is how steady you poured that water:</string>
+    <string name="session_dial_legend_measuring">Measuring: at the start of each pour, while steadiness is worked out</string>
+    <string name="session_dial_legend_marker">The mark is where you should be now on the target curve. If the fill falls short of it you are behind; past it, you are ahead.</string>
+    <string name="session_dial_legend_sparkline">Below the numbers, the flow of the last 30 s, in the same colours. The flat part is a wait.</string>
+    <string name="session_dial_ratio_flow">%1$s · %2$s</string>
+    <string name="session_step_description">Step %1$d of %2$d, %3$s</string>
+    <string name="session_step_title">%1$s · %2$s</string>
+    <string name="session_step_up_to">up to %1$s</string>
+    <string name="session_step_waiting">Wait for the first step</string>
+    <string name="session_steps_done">All steps complete</string>
+    <string name="session_free_step">Pour up to %1$s</string>
+    <string name="session_next">Next: %1$s in %2$s</string>
+    <string name="session_next_seconds">%1$d s</string>
+    <string name="session_deviation">Deviation %1$s</string>
+    <string name="session_finish">Finish</string>
+    <string name="session_options_expert">Expert mode</string>
+    <string name="session_options_unit">Unit</string>
+    <string name="session_options_restart">Restart</string>
+    <string name="session_options_simulation">Simulation</string>
+    <string name="prep_stepper">Step %1$d of 4</string>
+    <string name="prep_step_label">Step %1$d of 4 · %2$s</string>
+    <string name="prep_step_tare">Tare</string>
+    <string name="prep_step_dose">Dose</string>
+    <string name="prep_step_tare_pour">Tare to pour</string>
+    <string name="prep_step_pour">Pour</string>
+    <string name="prep_instruction_tare">Place the filter and the carafe, then tare</string>
+    <string name="prep_instruction_dose">Add the ground coffee</string>
+    <string name="prep_instruction_dose_target">Add the ground coffee (%1$s)</string>
+    <string name="prep_instruction_tare_pour">Tare again and start pouring</string>
+    <string name="prep_instruction_pour">Start pouring</string>
+    <string name="prep_tare">Tare</string>
+    <string name="prep_skip">Skip</string>
+    <string name="prep_capture">Capture now</string>
+    <string name="prep_skip_dose">Skip (no dose)</string>
+    <string name="prep_start_timer">Start timer</string>
+    <string name="prep_waiting_tare">Waiting for the tare…</string>
+    <string name="prep_dose_value">Dose: %1$s</string>
+    <string name="prep_no_dose">No dose</string>
+    <string name="summary_saved">Brew saved</string>
+    <string name="summary_saving">Saving the brew…</string>
+    <string name="summary_failed">The brew could not be saved</string>
+    <string name="summary_dose">Dose</string>
+    <string name="summary_ratio_coffee">Ratio %1$s · Coffee %2$s</string>
+    <string name="summary_ratio">Ratio %1$s</string>
+    <string name="summary_reason">Reason it ended</string>
+    <string name="summary_details">Add details</string>
+    <string name="summary_share">Share</string>
+    <string name="summary_done">Done</string>
+    <string name="exit_title">Finish the brew?</string>
+    <string name="exit_text">You can save it or discard it.</string>
+    <string name="exit_save">Finish and save</string>
+    <string name="exit_discard">Discard</string>
+    <string name="exit_continue">Keep brewing</string>
 </resources>

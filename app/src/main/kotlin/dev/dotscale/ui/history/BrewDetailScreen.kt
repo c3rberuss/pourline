@@ -28,6 +28,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.brew.BrewConfig
 import dev.dotscale.coffee.CoffeeEntity
+import dev.dotscale.coffee.brewDaysSinceRoast
+import dev.dotscale.history.BrewMethod
+import dev.dotscale.history.BrewRecord
+import dev.dotscale.settings.ExpertFeature
+import dev.dotscale.settings.LocalExperienceMode
 import dev.dotscale.share.BrewShareData
 import dev.dotscale.share.FooterCoffee
 import dev.dotscale.share.ShareContent
@@ -36,9 +41,6 @@ import dev.dotscale.share.ShareTarget
 import dev.dotscale.share.footerLines
 import dev.dotscale.share.rememberShareLauncher
 import dev.dotscale.share.rememberShareSender
-import dev.dotscale.coffee.brewDaysSinceRoast
-import dev.dotscale.history.BrewMethod
-import dev.dotscale.history.BrewRecord
 import dev.dotscale.ui.coffees.CoffeeThumbnail
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntButton
@@ -57,9 +59,9 @@ import dev.dotscale.ui.components.AntText
 import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.components.AntTopBar
 import dev.dotscale.ui.scale.BrewSummaryCard
+import dev.dotscale.ui.scale.Chart
 import dev.dotscale.ui.scale.FitBlock
 import dev.dotscale.ui.scale.fitView
-import dev.dotscale.ui.scale.Chart
 import dev.dotscale.ui.scale.summaryStability
 import dev.dotscale.ui.theme.AntTheme
 import java.time.ZoneId
@@ -163,25 +165,32 @@ private fun DetailContent(
   onSaveAsRecipe: () -> Unit,
 ) {
   val entity = record.entity
+  val mode = LocalExperienceMode.current
   if (entity.simulated) {
     Row { AntTag(stringResource(R.string.history_row_simulated), color = AntTagColor.Primary) }
   }
-  if (record.curveError) {
-    AntAlert(message = stringResource(R.string.brew_detail_curve_error), type = AntStatus.Error)
-  } else {
-    AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.brew_chart_title)) {
-      Chart(record.samples, entity.unit, summaryStability(record.summary), target = record.target)
+  if (mode.shows(ExpertFeature.BREW_DETAIL_CHART)) {
+    if (record.curveError) {
+      AntAlert(message = stringResource(R.string.brew_detail_curve_error), type = AntStatus.Error)
+    } else {
+      AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.brew_chart_title)) {
+        Chart(record.samples, entity.unit, summaryStability(record.summary), target = record.target)
+      }
     }
   }
-  BrewSummaryCard(record.summary, entity.unit)
-  if (record.targetError) {
-    AntAlert(message = stringResource(R.string.brew_detail_target_error), type = AntStatus.Warning, modifier = Modifier.testTag("brew_detail_target_error"))
+  if (mode.shows(ExpertFeature.BREW_DETAIL_FIT)) {
+    BrewSummaryCard(record.summary, entity.unit)
+    if (record.targetError) {
+      AntAlert(message = stringResource(R.string.brew_detail_target_error), type = AntStatus.Warning, modifier = Modifier.testTag("brew_detail_target_error"))
+    }
+    FitCard(record)
+    if (entity.metricVersion != BrewConfig.METRIC_VERSION) {
+      AntText(stringResource(R.string.brew_detail_old_metric), type = AntTextType.Secondary)
+    }
+    TastingCard(record, coffee, onOpenCoffee)
+  } else {
+    BrewFactsCard(record, coffee, onOpenCoffee)
   }
-  FitCard(record)
-  if (entity.metricVersion != BrewConfig.METRIC_VERSION) {
-    AntText(stringResource(R.string.brew_detail_old_metric), type = AntTextType.Secondary)
-  }
-  TastingCard(record, coffee, onOpenCoffee)
   DetailsCard(record)
   // Dos filas: cuatro botones no caben en una de 360 dp.
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
@@ -198,18 +207,26 @@ private fun DetailContent(
       danger = true,
     )
   }
-  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
-    AntButton(
-      text = stringResource(R.string.brew_detail_compare),
-      onClick = onCompare,
-      modifier = Modifier.weight(1f).testTag("brew_detail_compare"),
-    )
-    AntButton(
-      text = stringResource(R.string.brew_detail_save_recipe),
-      onClick = onSaveAsRecipe,
-      modifier = Modifier.weight(1f).testTag("brew_detail_save_recipe"),
-      enabled = !record.curveError,
-    )
+  val compare = mode.shows(ExpertFeature.BREW_COMPARE)
+  val saveRecipe = mode.shows(ExpertFeature.BREW_SAVE_AS_RECIPE)
+  if (compare || saveRecipe) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+      if (compare) {
+        AntButton(
+          text = stringResource(R.string.brew_detail_compare),
+          onClick = onCompare,
+          modifier = Modifier.weight(1f).testTag("brew_detail_compare"),
+        )
+      }
+      if (saveRecipe) {
+        AntButton(
+          text = stringResource(R.string.brew_detail_save_recipe),
+          onClick = onSaveAsRecipe,
+          modifier = Modifier.weight(1f).testTag("brew_detail_save_recipe"),
+          enabled = !record.curveError,
+        )
+      }
+    }
   }
 }
 
@@ -281,7 +298,7 @@ private fun TastingCard(record: BrewRecord, coffee: CoffeeEntity?, onOpenCoffee:
 
 /** La fila del café: del catálogo, con miniatura, "Tostador · día N" y chevron; antiguo, solo el texto. */
 @Composable
-private fun TastingCoffee(coffeeId: Long?, name: String, coffee: CoffeeEntity?, startedAtEpochMs: Long, onOpenCoffee: (Long) -> Unit) {
+internal fun TastingCoffee(coffeeId: Long?, name: String, coffee: CoffeeEntity?, startedAtEpochMs: Long, onOpenCoffee: (Long) -> Unit) {
   val linked = coffeeId != null && coffee != null
   val days = coffee?.let { brewDaysSinceRoast(it.roastDate, startedAtEpochMs, ZoneId.systemDefault()) }
   val subtitle = when {

@@ -14,6 +14,7 @@ import dev.dotscale.brew.FinishReason
 import dev.dotscale.brew.StabilityLevel
 import dev.dotscale.brew.fromGrams
 import dev.dotscale.protocol.WeightUnit
+import dev.dotscale.session.SavedBrew
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntButton
 import dev.dotscale.ui.components.AntCard
@@ -134,8 +135,9 @@ fun BrewSummaryCard(
   }
 }
 
+/** La estabilidad de la preparación: la puntuación, el nivel y el reparto del tiempo por nivel. */
 @Composable
-private fun StabilitySection(summary: BrewSummary) {
+internal fun StabilitySection(summary: BrewSummary) {
   val score = summary.stabilityScore
   val level = summary.stabilityLevel
   AntText(stringResource(R.string.brew_summary_stability), type = AntTextType.Secondary)
@@ -158,7 +160,7 @@ private fun StabilitySection(summary: BrewSummary) {
   }
 }
 
-private fun FinishReason.textRes(): Int = when (this) {
+internal fun FinishReason.textRes(): Int = when (this) {
   FinishReason.INACTIVITY -> R.string.brew_reason_inactivity
   FinishReason.TIMER_PAUSED -> R.string.brew_reason_timer_paused
   FinishReason.TIMER_RESET -> R.string.brew_reason_timer_reset

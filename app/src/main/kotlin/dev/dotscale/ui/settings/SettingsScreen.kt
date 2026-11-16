@@ -19,12 +19,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.settings.BrewSettings
+import dev.dotscale.settings.ExperienceMode
+import dev.dotscale.settings.ExpertFeature
+import dev.dotscale.settings.ModeStore
 import dev.dotscale.settings.TargetSettings
+import dev.dotscale.settings.ThemeMode
+import dev.dotscale.settings.ThemeSettings
 import dev.dotscale.ui.components.AntButton
 import dev.dotscale.ui.components.AntCard
 import dev.dotscale.ui.components.AntIconButton
@@ -44,16 +50,21 @@ import kotlinx.coroutines.launch
 
 /**
  * Recibe los ajustes por parámetro (sin `CompositionLocal`) para poder probarla aislada.
- * [onRestoreRecipes] devuelve las recetas predefinidas a fábrica, tras confirmar.
+ * [onRestoreRecipes] devuelve las recetas predefinidas a fábrica, tras confirmar. Con [onBack] `null` (es una
+ * pestaña) no hay flecha de volver.
  */
 @Composable
 fun SettingsScreen(
   settings: BrewSettings,
   targetSettings: TargetSettings,
+  experienceSettings: ModeStore,
+  themeSettings: ThemeSettings,
   onRestoreRecipes: suspend () -> Unit,
-  onBack: () -> Unit,
+  onBack: (() -> Unit)?,
 ) {
   val autoFinish by settings.autoFinishSeconds.collectAsStateWithLifecycle()
+  val experience by experienceSettings.mode.collectAsStateWithLifecycle()
+  val theme by themeSettings.mode.collectAsStateWithLifecycle()
   val vibration by targetSettings.stageVibration.collectAsStateWithLifecycle()
   val sound by targetSettings.stageSound.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
@@ -66,8 +77,10 @@ fun SettingsScreen(
     topBar = {
       AntTopBar(
         title = stringResource(R.string.settings_title),
-        navigationIcon = {
-          AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
+        navigationIcon = onBack?.let { back ->
+          {
+            AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = back)
+          }
         },
       )
     },
@@ -77,6 +90,30 @@ fun SettingsScreen(
       Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(AntTheme.spacing.base),
       verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.base),
     ) {
+      AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.mode_title)) {
+        AntSegmented(
+          options = listOf(
+            AntSegmentedOption(ExperienceMode.BASIC, stringResource(R.string.mode_basic)),
+            AntSegmentedOption(ExperienceMode.EXPERT, stringResource(R.string.mode_expert)),
+          ),
+          selected = experience,
+          onSelect = experienceSettings::setMode,
+          modifier = Modifier.fillMaxWidth().testTag("settings_mode"),
+        )
+        AntText(
+          stringResource(if (experience == ExperienceMode.BASIC) R.string.mode_basic_hint else R.string.mode_expert_hint),
+          type = AntTextType.Secondary,
+        )
+      }
+      AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.theme_title)) {
+        AntSegmented(
+          options = ThemeMode.entries.map { AntSegmentedOption(it, stringResource(it.labelRes), it.icon) },
+          selected = theme,
+          onSelect = themeSettings::setMode,
+          modifier = Modifier.fillMaxWidth().testTag("settings_theme"),
+        )
+        AntText(stringResource(R.string.theme_hint), type = AntTextType.Secondary)
+      }
       AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.settings_auto_finish_title)) {
         AntSegmented(
           options = BrewSettings.ALLOWED.map {
@@ -102,12 +139,14 @@ fun SettingsScreen(
           tag = "settings_stage_sound",
         )
       }
-      AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.settings_recipes_title)) {
-        AntButton(
-          text = stringResource(R.string.settings_recipes_restore),
-          onClick = { confirmRestore = true },
-          modifier = Modifier.fillMaxWidth().testTag("settings_recipes_restore"),
-        )
+      if (experience.shows(ExpertFeature.RESTORE_BUILT_INS)) {
+        AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.settings_recipes_title)) {
+          AntButton(
+            text = stringResource(R.string.settings_recipes_restore),
+            onClick = { confirmRestore = true },
+            modifier = Modifier.fillMaxWidth().testTag("settings_recipes_restore"),
+          )
+        }
       }
     }
   }
@@ -129,6 +168,20 @@ fun SettingsScreen(
     )
   }
 }
+
+private val ThemeMode.labelRes: Int
+  get() = when (this) {
+    ThemeMode.SYSTEM -> R.string.theme_system
+    ThemeMode.LIGHT -> R.string.theme_light
+    ThemeMode.DARK -> R.string.theme_dark
+  }
+
+private val ThemeMode.icon: ImageVector
+  get() = when (this) {
+    ThemeMode.SYSTEM -> AntIcons.Contrast
+    ThemeMode.LIGHT -> AntIcons.Sun
+    ThemeMode.DARK -> AntIcons.Moon
+  }
 
 @Composable
 private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit, tag: String) {

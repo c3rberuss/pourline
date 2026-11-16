@@ -4,6 +4,7 @@ import dev.dotscale.history.BrewMethod
 import dev.dotscale.recipe.Adjustment
 import dev.dotscale.recipe.Recipe
 import dev.dotscale.recipe.RecipeDraft
+import dev.dotscale.recipe.StageType
 import dev.dotscale.recipe.v60Classic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -68,14 +69,14 @@ class RecipeEditFormTest {
   @Test
   fun `field errors are reported where they happen`() {
     val form = filled().copy(name = " ", dose = "4", waterTemp = "120")
-      .updateStage(1, StageForm("", "1:75", "abc", "0"))
+      .updateStage(2, StageForm("", "1:75", "abc", "0"))
     val errors = form.errors()
     assertEquals(FieldError.NAME_REQUIRED, errors.name)
     assertEquals(FieldError.DOSE_INVALID, errors.dose)
     assertEquals(FieldError.TEMP_INVALID, errors.temp)
-    assertEquals(FieldError.START_INVALID, errors.stages[1].start)
-    assertEquals(FieldError.WATER_INVALID, errors.stages[1].water)
-    assertEquals(FieldError.DURATION_INVALID, errors.stages[1].duration)
+    assertEquals(FieldError.START_INVALID, errors.stages[2].start)
+    assertEquals(FieldError.WATER_INVALID, errors.stages[2].water)
+    assertEquals(FieldError.DURATION_INVALID, errors.stages[2].duration)
     assertFalse(errors.stages[0].any)
     assertNull(form.toRecipe())
     assertFalse(form.isValid)
@@ -83,38 +84,88 @@ class RecipeEditFormTest {
 
   @Test
   fun `an unreadable field does not cause spurious errors in its neighbours`() {
-    val form = filled().updateStage(1, StageForm("", "abc", "abc", "abc"))
+    val form = filled().updateStage(2, StageForm("", "abc", "abc", "abc"))
     val errors = form.errors()
-    assertFalse(errors.stages[2].any)
+    assertFalse(errors.stages[3].any)
     assertFalse(errors.stages[0].any)
   }
 
   @Test
   fun `the rules of the validator show on the right field`() {
-    val overlapping = filled().updateStage(1, StageForm("", "0:05", "150", "20"))
-    assertEquals(FieldError.START_OVERLAPS, overlapping.errors().stages[1].start)
-    val flat = filled().updateStage(1, StageForm("", "0:45", "40", "20"))
-    assertEquals(FieldError.WATER_NOT_INCREASING, flat.errors().stages[1].water)
-    val late = filled().updateStage(2, StageForm("", "10:00", "250", "25"))
-    assertEquals(FieldError.START_TOO_LATE, late.errors().stages[2].start)
-    val tooHigh = filled().updateStage(2, StageForm("", "1:30", "1001", "25"))
-    assertEquals(FieldError.WATER_INVALID, tooHigh.errors().stages[2].water)
+    // La V60 tiene 5 pasos: vertido, espera, vertido, espera, vertido.
+    val overlapping = filled().updateStage(2, StageForm("", "0:05", "150", "20"))
+    assertEquals(FieldError.START_OVERLAPS, overlapping.errors().stages[2].start)
+    val flat = filled().updateStage(2, StageForm("", "0:45", "40", "20"))
+    assertEquals(FieldError.WATER_NOT_INCREASING, flat.errors().stages[2].water)
+    val late = filled().updateStage(4, StageForm("", "10:00", "250", "25"))
+    assertEquals(FieldError.START_TOO_LATE, late.errors().stages[4].start)
+    val tooHigh = filled().updateStage(4, StageForm("", "1:30", "1001", "25"))
+    assertEquals(FieldError.WATER_INVALID, tooHigh.errors().stages[4].water)
   }
 
   @Test
-  fun `add stage proposes the end of the previous plus 30 s, plus 50 g and 10 s`() {
+  fun `add stage starts where the previous step ends, with the last pour plus 50 g and 10 s`() {
     val added = filled().addStage()
-    assertEquals(4, added.stages.size)
-    // La 3.ª termina a 1:30 + 25 s = 1:55; +30 s → 2:25. Agua 250 + 50.
-    assertEquals(StageForm("", "2:25", "300", "10"), added.stages.last())
+    assertEquals(6, added.stages.size)
+    // El último paso termina a 1:30 + 25 s = 1:55. Agua 250 + 50.
+    assertEquals(StageForm("", "1:55", "300", "10"), added.stages.last())
     assertTrue(added.isValid)
   }
 
   @Test
-  fun `add stage is disabled with ten stages`() {
+  fun `add stage after a wait takes the water of the last pour`() {
+    val form = RecipeEditForm(dose = "15", name = "x").copy(
+      stages = listOf(
+        StageForm(start = "0:00", water = "40", duration = "10"),
+        StageForm(start = "0:10", duration = "30", type = StageType.WAIT),
+      ),
+    )
+    assertEquals(StageForm("", "0:40", "90", "10"), form.addStage().stages.last())
+  }
+
+  @Test
+  fun `changing a step to a wait or a swirl empties the water and back to a pour proposes the last pour plus 50 g`() {
+    val form = filled() // vertido 40, espera, vertido 150, espera, vertido 250
+    val asWait = form.setStageType(2, StageType.WAIT)
+    assertEquals(StageType.WAIT, asWait.stages[2].type)
+    assertEquals("", asWait.stages[2].water)
+    assertNull(asWait.errors().stages[2].water)
+    val asSwirl = form.setStageType(2, StageType.SWIRL)
+    assertEquals("", asSwirl.stages[2].water)
+    // De vuelta a vertido: el último vertido anterior (40 g) más 50 g.
+    assertEquals("90", asWait.setStageType(2, StageType.POUR).stages[2].water)
+    assertEquals(StageType.POUR, asWait.setStageType(2, StageType.POUR).stages[2].type)
+  }
+
+  @Test
+  fun `changing the type keeps the other fields and an unchanged type touches nothing`() {
+    val form = filled()
+    val changed = form.setStageType(0, StageType.SWIRL)
+    assertEquals(form.stages[0].copy(type = StageType.SWIRL, water = ""), changed.stages[0])
+    assertEquals(form, form.setStageType(0, StageType.POUR))
+    assertEquals(form, form.setStageType(99, StageType.WAIT))
+  }
+
+  @Test
+  fun `turning the first step into a pour proposes 50 g when no pour precedes it`() {
+    val form = RecipeEditForm(dose = "15", name = "x").copy(
+      stages = listOf(StageForm(start = "0:00", duration = "5", type = StageType.SWIRL), StageForm(start = "0:05", water = "40", duration = "10")),
+    )
+    assertEquals("50", form.setStageType(0, StageType.POUR).stages[0].water)
+  }
+
+  @Test
+  fun `turning the only pour into a wait reports NO_POUR`() {
+    val form = RecipeEditForm(dose = "15", name = "x").setStageType(0, StageType.WAIT)
+    assertEquals(FieldError.NO_POUR, form.errors().general)
+    assertFalse(form.isValid)
+  }
+
+  @Test
+  fun `add stage is disabled with twenty stages`() {
     var form = RecipeEditForm()
-    repeat(9) { form = form.addStage() }
-    assertEquals(10, form.stages.size)
+    repeat(19) { form = form.addStage() }
+    assertEquals(20, form.stages.size)
     assertFalse(form.canAddStage)
     assertEquals(form, form.addStage())
     assertEquals(FieldError.STAGE_COUNT.takeIf { false }, form.errors().general)
@@ -125,9 +176,9 @@ class RecipeEditFormTest {
     val one = RecipeEditForm()
     assertFalse(one.canRemoveStage)
     assertEquals(one, one.removeStage(0))
-    val three = filled()
-    assertEquals(2, three.removeStage(1).stages.size)
-    assertEquals(listOf("Bloom", "3.er vertido"), three.removeStage(1).stages.map { it.name })
+    val five = filled()
+    assertEquals(4, five.removeStage(1).stages.size)
+    assertEquals(listOf("Bloom", "2.º vertido", "", "3.er vertido"), five.removeStage(1).stages.map { it.name })
   }
 
   @Test
@@ -144,8 +195,54 @@ class RecipeEditFormTest {
     // Una etapa de más o de menos.
     assertFalse(initial.addStage().keepsLocalizedNames(initial, wasLocalized = true))
     assertFalse(initial.removeStage(2).keepsLocalizedNames(initial, wasLocalized = true))
+    // El tipo y la instrucción de un paso.
+    assertFalse(initial.updateStage(0, initial.stages[0].copy(type = StageType.SWIRL)).keepsLocalizedNames(initial, wasLocalized = true))
+    assertFalse(initial.updateStage(0, initial.stages[0].copy(instruction = "Otra")).keepsLocalizedNames(initial, wasLocalized = true))
     // Si ya no lo era, no vuelve a serlo.
     assertFalse(initial.keepsLocalizedNames(initial, wasLocalized = false))
+  }
+
+  @Test
+  fun `type and instruction survive the round trip and a wait leaves the water empty`() {
+    val form = filled()
+    assertEquals(listOf(StageType.POUR, StageType.WAIT, StageType.POUR, StageType.WAIT, StageType.POUR), form.stages.map { it.type })
+    assertEquals(listOf("40", "", "150", "", "250"), form.stages.map { it.water })
+    assertEquals(listOf("i1", "i2", "i3", "i4", "i5"), form.stages.map { it.instruction })
+    val recipe = form.toRecipe()!!
+    assertEquals(listOf("i1", "i2", "i3", "i4", "i5"), recipe.stages.map { it.instruction })
+    assertEquals(listOf(40.0, 40.0, 150.0, 150.0, 250.0), recipe.stages.map { it.targetWaterG })
+  }
+
+  @Test
+  fun `a wait with the water field empty is valid and the water is not asked`() {
+    val form = RecipeEditForm(dose = "15", name = "x").let {
+      it.copy(stages = listOf(StageForm(start = "0:00", water = "40", duration = "10"), StageForm(start = "0:10", water = "", duration = "30", type = StageType.WAIT)))
+    }
+    assertNull(form.errors().stages[1].water)
+    assertTrue(form.isValid)
+    assertEquals(40.0, form.toRecipe()!!.stages[1].targetWaterG, 0.0)
+  }
+
+  @Test
+  fun `changing a pour to a swirl derives its water from the previous pour`() {
+    val form = RecipeEditForm(dose = "15", name = "x").let {
+      it.copy(stages = listOf(StageForm(start = "0:00", water = "40", duration = "10"), StageForm(start = "0:10", water = "999", duration = "5", type = StageType.SWIRL)))
+    }
+    assertNull(form.errors().stages[1].water)
+    assertEquals(40.0, form.toRecipe()!!.stages[1].targetWaterG, 0.0)
+  }
+
+  @Test
+  fun `a form with no pour reports NO_POUR and an instruction of 201 characters reports its field`() {
+    val noPour = RecipeEditForm(dose = "15", name = "x").copy(
+      stages = listOf(StageForm(start = "0:00", duration = "10", type = StageType.WAIT)),
+    )
+    assertEquals(FieldError.NO_POUR, noPour.errors().general)
+    assertNull(noPour.toRecipe())
+    val long = filled().let { it.updateStage(0, it.stages[0].copy(instruction = "a".repeat(201))) }
+    assertEquals(FieldError.INSTRUCTION_TOO_LONG, long.errors().stages[0].instruction)
+    val ok = filled().let { it.updateStage(0, it.stages[0].copy(instruction = "a".repeat(200))) }
+    assertNull(ok.errors().stages[0].instruction)
   }
 
   @Test
@@ -173,7 +270,10 @@ class RecipeEditFormTest {
     assertEquals(250.0, form.totalWaterG()!!, 0.0)
     assertEquals(250.0 / 15, form.ratio()!!, 1e-9)
     assertNull(form.copy(dose = "").ratio())
-    assertNull(form.updateStage(2, form.stages[2].copy(water = "x")).ratio())
+    assertNull(form.updateStage(4, form.stages[4].copy(water = "x")).ratio())
+    // Un paso de espera al final no cuenta: el total es el del último vertido.
+    val endsInWait = form.addStage().let { it.updateStage(5, it.stages[5].copy(type = StageType.WAIT, water = "")) }
+    assertEquals(250.0, endsInWait.totalWaterG()!!, 0.0)
   }
 
   @Test

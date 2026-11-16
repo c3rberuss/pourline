@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -59,6 +60,7 @@ class TargetPickerTest {
     recipes: List<RecipeListItem> = this.recipes,
     brews: List<BrewListItem> = this.brews,
     active: ReferenceKey? = null,
+    showBrews: Boolean = true,
   ) = rule.setContent {
     DotScaleTheme(darkTheme = false) {
       TargetPicker(
@@ -69,11 +71,23 @@ class TargetPickerTest {
         onClear = { cleared++ },
         onManageRecipes = { managed++ },
         onClose = { closed++ },
+        showBrews = showBrews,
       )
     }
   }
 
   private fun tab(label: Int) = rule.onNodeWithText(context.getString(label))
+
+  @Test
+  fun withoutBrewsThereAreOnlyRecipesAndNoTabs() {
+    show(showBrews = false)
+    rule.onAllNodesWithTag("target_picker_tabs").assertCountEquals(0)
+    rule.onNodeWithText("V60 clásica").assertIsDisplayed()
+    rule.onNodeWithText("Mi receta").assertIsDisplayed()
+    rule.onAllNodesWithText("Mañana").assertCountEquals(0)
+    rule.onNodeWithText("Mi receta").performClick()
+    assertEquals(listOf<ReferenceKey>(ReferenceKey.Recipe(2)), selected)
+  }
 
   @Test
   fun opensOnRecipesAndShowsBothTabs() {

@@ -1,6 +1,9 @@
 package dev.dotscale.ui.history
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -26,6 +29,8 @@ import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
 import dev.dotscale.history.UsedCoffee
 import dev.dotscale.protocol.WeightUnit
+import dev.dotscale.settings.ExperienceMode
+import dev.dotscale.settings.LocalExperienceMode
 import dev.dotscale.ui.theme.DotScaleTheme
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -50,6 +55,7 @@ class BrewDetailScreenTest {
   private var savedAsRecipe: Long? = null
   private var openedCoffee: Long? = null
   private lateinit var coffees: CoffeeRepository
+  private val mode = mutableStateOf(ExperienceMode.EXPERT)
 
   @Before
   fun setUp() {
@@ -64,15 +70,17 @@ class BrewDetailScreenTest {
   private fun show(id: Long) {
     val viewModel = BrewDetailViewModel(repository, coffees, id)
     rule.setContent {
-      DotScaleTheme(darkTheme = false) {
-        BrewDetailScreen(
-          viewModel,
-          onBack = { backCount++ },
-          onEdit = { edited = it },
-          onCompare = { compared = it },
-          onSaveAsRecipe = { savedAsRecipe = it },
-          onOpenCoffee = { openedCoffee = it },
-        )
+      CompositionLocalProvider(LocalExperienceMode provides mode.value) {
+        DotScaleTheme(darkTheme = false) {
+          BrewDetailScreen(
+            viewModel,
+            onBack = { backCount++ },
+            onEdit = { edited = it },
+            onCompare = { compared = it },
+            onSaveAsRecipe = { savedAsRecipe = it },
+            onOpenCoffee = { openedCoffee = it },
+          )
+        }
       }
     }
   }
@@ -97,6 +105,52 @@ class BrewDetailScreenTest {
     for (text in listOf("V60", "21 clics")) {
       rule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty().let { assertEquals(text, true, it) }
     }
+  }
+
+  // --- Modo Básico (SPEC-005) ---
+
+  @Test
+  fun inBasicModeTheDetailHasNoChartFitCompareOrSaveAsRecipeButShowsTheFacts() {
+    val guji = catalogCoffee("Etiopía Guji", LocalDate.of(2026, 11, 5))
+    val id = seedLinked(guji, details = BrewDetails(notes = "Jazmín y durazno", rating = 4, method = BrewMethod.V60, grind = "21 clics"))
+    mode.value = ExperienceMode.BASIC
+    show(id)
+
+    rule.waitUntil(5_000) { rule.onAllNodesWithTag("brew_detail_facts").fetchSemanticsNodes().isNotEmpty() }
+    for (tag in listOf("brew_chart", "brew_summary", "brew_detail_fit", "brew_detail_compare", "brew_detail_save_recipe", "brew_detail_tasting")) {
+      rule.onAllNodesWithTag(tag).assertCountEquals(0)
+    }
+    rule.onNodeWithTag("brew_detail_facts").performScrollTo().assertIsDisplayed()
+    for (key in listOf("date", "dose", "water", "ratio", "time")) {
+      rule.onNodeWithTag("brew_detail_facts_$key").performScrollTo().assertIsDisplayed()
+    }
+    rule.onNodeWithTag("brew_detail_rating").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithTag("brew_detail_notes").performScrollTo().assertTextEquals("Jazmín y durazno")
+    // Los detalles manuales y las acciones de editar y borrar siguen.
+    rule.onNodeWithTag("brew_detail_details").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithTag("brew_detail_edit").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithTag("brew_detail_delete").performScrollTo().assertIsDisplayed()
+    // El café es un enlace.
+    rule.onNodeWithTag("brew_detail_coffee").performScrollTo().performClick()
+    assertEquals(guji, openedCoffee)
+  }
+
+  @Test
+  fun switchingToExpertInTheSameCompositionShowsTheChartTheStabilityAndTheFit() {
+    val id = seed()
+    mode.value = ExperienceMode.BASIC
+    show(id)
+    rule.waitUntil(5_000) { rule.onAllNodesWithTag("brew_detail_facts").fetchSemanticsNodes().isNotEmpty() }
+    rule.onAllNodesWithTag("brew_chart").assertCountEquals(0)
+
+    rule.runOnUiThread { mode.value = ExperienceMode.EXPERT }
+
+    rule.waitUntil(5_000) { rule.onAllNodesWithTag("brew_chart").fetchSemanticsNodes().isNotEmpty() }
+    rule.onNodeWithTag("brew_chart").assertIsDisplayed()
+    rule.onNodeWithTag("brew_summary").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithTag("brew_detail_compare").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithTag("brew_detail_save_recipe").performScrollTo().assertIsDisplayed()
+    rule.onAllNodesWithTag("brew_detail_facts").assertCountEquals(0)
   }
 
   // --- Cata (SPEC-004) ---
