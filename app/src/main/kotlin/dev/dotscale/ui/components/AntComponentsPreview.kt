@@ -200,6 +200,22 @@ private fun AntShowcase() {
         Icon(it, contentDescription = null, modifier = Modifier.size(24.dp), tint = AntTheme.colors.text)
       }
     }
+    AntDivider(text = "Stepper y Tabs", orientation = AntDividerOrientation.Left)
+    Row(horizontalArrangement = Arrangement.spacedBy(spacing.lg)) {
+      AntStepper("2", "Rotaciones", {}, {}, "Aumentar", "Disminuir")
+      AntStepper("0", "Clics", {}, {}, "Aumentar", "Disminuir", decrementEnabled = false)
+    }
+    var tab by remember { mutableStateOf("a") }
+    AntTabs(
+      listOf(AntTabItem("a", "Descripción", "tab_a"), AntTabItem("b", "Rangos", "tab_b")),
+      selected = tab,
+      onSelect = { tab = it },
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(spacing.base)) {
+      listOf(AntIcons.Minus, AntIcons.Grinder, AntIcons.Convert).forEach {
+        Icon(it, contentDescription = null, modifier = Modifier.size(24.dp), tint = AntTheme.colors.text)
+      }
+    }
     AntCard(Modifier.fillMaxWidth(), title = "¿Terminar la preparación?") {
       AntText("Puedes guardarla o descartarla.", type = AntTextType.Secondary)
       AntButton("Terminar y guardar", {}, Modifier.fillMaxWidth(), type = AntButtonType.Primary)
@@ -209,13 +225,13 @@ private fun AntShowcase() {
   }
 }
 
-@Preview(name = "Ant · Claro", showBackground = true, heightDp = 3800)
+@Preview(name = "Ant · Claro", showBackground = true, heightDp = 4300)
 @Composable
 private fun AntShowcaseLightPreview() {
   DotScaleTheme(darkTheme = false) { AntShowcase() }
 }
 
-@Preview(name = "Ant · Oscuro", showBackground = true, backgroundColor = 0xFF000000, heightDp = 3800, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Ant · Oscuro", showBackground = true, backgroundColor = 0xFF000000, heightDp = 4300, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun AntShowcaseDarkPreview() {
   DotScaleTheme(darkTheme = true) { AntShowcase() }

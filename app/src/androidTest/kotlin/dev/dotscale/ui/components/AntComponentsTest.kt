@@ -21,6 +21,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.test.espresso.Espresso
 import androidx.test.platform.app.InstrumentationRegistry
@@ -28,6 +29,7 @@ import dev.dotscale.R
 import dev.dotscale.ui.theme.DotScaleTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
@@ -206,5 +208,55 @@ class AntComponentsTest {
     rule.onNodeWithTag("circle").assert(
       SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(0.61f, 0f..1f)),
     )
+  }
+
+  @Test
+  fun stepperCallsEachActionAndNotWhenDisabled() {
+    var up = 0
+    var down = 0
+    rule.setContent {
+      DotScaleTheme(darkTheme = false) {
+        AntStepper("5", "Clics", { up++ }, { down++ }, "Subir", "Bajar", decrementEnabled = false, testTag = "st")
+      }
+    }
+    rule.onNodeWithTag("st_value").assertTextEquals("5")
+    rule.onNodeWithTag("st_inc").performClick()
+    rule.onNodeWithTag("st_dec").performClick()
+    rule.runOnIdle {
+      assertEquals(1, up)
+      assertEquals(0, down)
+    }
+  }
+
+  @Test
+  fun stepperRepeatsWhileHeld() {
+    var up = 0
+    rule.setContent {
+      DotScaleTheme(darkTheme = false) {
+        AntStepper("5", "Clics", { up++ }, {}, "Subir", "Bajar", testTag = "st")
+      }
+    }
+    rule.onNodeWithTag("st_inc").performTouchInput { down(center) }
+    rule.mainClock.advanceTimeBy(1_000)
+    rule.onNodeWithTag("st_inc").performTouchInput { up() }
+    rule.runOnIdle { assertTrue("sumó $up veces", up >= 4) }
+  }
+
+  @Test
+  fun tabsSelectAndMarkTheSelectedOne() {
+    var selected by mutableStateOf("a")
+    rule.setContent {
+      DotScaleTheme(darkTheme = false) {
+        AntTabs(
+          listOf(AntTabItem("a", "Primera", "tab_a"), AntTabItem("b", "Segunda", "tab_b")),
+          selected = selected,
+          onSelect = { selected = it },
+        )
+      }
+    }
+    rule.onNodeWithTag("tab_a").assertIsSelected()
+    rule.onNodeWithTag("tab_b").assertIsNotSelected().performClick()
+    rule.runOnIdle { assertEquals("b", selected) }
+    rule.onNodeWithTag("tab_b").assertIsSelected()
   }
 }
