@@ -13,4 +13,7 @@ interface GrindTexts {
 
   /** Un número con [decimals] decimales y el separador del idioma. */
   fun number(value: Double, decimals: Int): String
+
+  /** El modelo de una copia para personalizar: "Chestnut S3 (copia)". */
+  fun copyName(model: String): String
 }

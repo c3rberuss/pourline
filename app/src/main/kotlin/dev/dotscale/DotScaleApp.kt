@@ -7,6 +7,10 @@ import dev.dotscale.coffee.CoffeeRepository
 import dev.dotscale.coffee.label.MlKitLabelOcr
 import dev.dotscale.coffee.photo.CoffeeImages
 import dev.dotscale.coffee.photo.CoffeePhotoStore
+import dev.dotscale.grinder.AssetCatalogSource
+import dev.dotscale.grinder.GrinderCatalogSeeder
+import dev.dotscale.grinder.GrinderRepository
+import dev.dotscale.grinder.ResourcesGrindTexts
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.recipe.RecipeRepository
@@ -19,6 +23,7 @@ import dev.dotscale.session.ScaleSessionManager
 import dev.dotscale.settings.BrewSettings
 import dev.dotscale.settings.ConnectionSettings
 import dev.dotscale.settings.ExperienceSettings
+import dev.dotscale.settings.GrinderSettings
 import dev.dotscale.settings.TargetSettings
 import dev.dotscale.settings.ThemeSettings
 import dev.dotscale.ui.scale.AndroidStageNotifier
@@ -42,6 +47,11 @@ class DotScaleApp : Application() {
 
   /** Modo Básico/Experto y primer arranque; una sola instancia, como [brewSettings]. */
   val experienceSettings by lazy { ExperienceSettings(this) }
+
+  /** Molino predeterminado y versión del catálogo; una sola instancia, como [brewSettings]. */
+  val grinderSettings by lazy { GrinderSettings(this) }
+
+  val grindTexts by lazy { ResourcesGrindTexts(this) }
 
   override fun onCreate() {
     super.onCreate()
@@ -70,6 +80,13 @@ class DotScaleApp : Application() {
   val coffeeRepository by lazy { CoffeeRepository(historyDatabase, coffeePhotoStore) }
 
   val recipeRepository by lazy { RecipeRepository(historyDatabase, ResourcesRecipeTexts(this)) }
+
+  val grinderRepository by lazy { GrinderRepository(historyDatabase, grinderSettings, grindTexts) }
+
+  /** Sincroniza el catálogo de molinos con la base. Todavía no se invoca al arrancar: se activa con los datos aprobados. */
+  val grinderCatalogSeeder by lazy {
+    GrinderCatalogSeeder(historyDatabase.grinderDao(), AssetCatalogSource(this), grinderSettings, grinderSettings)
+  }
 
   /** La última báscula real que llegó a `Ready`; una sola instancia, como [brewSettings]. */
   val connectionSettings by lazy { ConnectionSettings(this) }
@@ -115,6 +132,9 @@ class DotScaleApp : Application() {
       coffeeRepository = coffeeRepository,
       recipeRepository = recipeRepository,
       recipeTexts = ResourcesRecipeTexts(this),
+      grinderSettings = grinderSettings,
+      grinderRepository = grinderRepository,
+      grindTexts = grindTexts,
       coffeePhotoStore = coffeePhotoStore,
       coffeeImages = coffeeImages,
       labelOcr = labelOcr,

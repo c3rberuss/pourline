@@ -568,4 +568,37 @@
     <string name="exit_save">Finish and save</string>
     <string name="exit_discard">Discard</string>
     <string name="exit_continue">Keep brewing</string>
+
+    <!-- Molinos (SPEC-006): unidades de ajuste -->
+    <plurals name="grind_unit_clicks">
+        <item quantity="one">%s click</item>
+        <item quantity="other">%s clicks</item>
+    </plurals>
+    <string name="grind_unit_name_clicks">Clicks</string>
+    <plurals name="grind_unit_points">
+        <item quantity="one">%s point</item>
+        <item quantity="other">%s points</item>
+    </plurals>
+    <string name="grind_unit_name_points">Points</string>
+    <plurals name="grind_unit_notches">
+        <item quantity="one">%s notch</item>
+        <item quantity="other">%s notches</item>
+    </plurals>
+    <string name="grind_unit_name_notches">Notches</string>
+    <plurals name="grind_unit_numbers">
+        <item quantity="one">%s number</item>
+        <item quantity="other">%s numbers</item>
+    </plurals>
+    <string name="grind_unit_name_numbers">Numbers</string>
+    <plurals name="grind_unit_rotations">
+        <item quantity="one">%s rotation</item>
+        <item quantity="other">%s rotations</item>
+    </plurals>
+    <string name="grind_unit_name_rotations">Rotations</string>
+    <plurals name="grind_unit_steps">
+        <item quantity="one">%s step</item>
+        <item quantity="other">%s steps</item>
+    </plurals>
+    <string name="grind_unit_name_steps">Steps</string>
+    <string name="grinder_copy_name">%1$s (copy)</string>
 </resources>

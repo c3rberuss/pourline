@@ -116,5 +116,7 @@ object FakeGrindTexts : GrindTexts {
 
   override fun number(value: Double, decimals: Int): String = "%.${decimals}f".format(java.util.Locale.forLanguageTag("es"), value)
 
+  override fun copyName(model: String): String = "$model (copia)"
+
   private fun decimalsFor(value: Double) = if (Math.abs(value * 10 - Math.rint(value * 10)) < 1e-9) 1 else 2
 }
