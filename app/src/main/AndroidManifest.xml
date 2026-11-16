@@ -27,6 +27,12 @@
     <!-- Vibración al empezar cada etapa de la guía (permiso normal, sin diálogo) -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!--
+      ML Kit (OCR de etiquetas) añade INTERNET para su telemetría. El modelo va incluido en el APK y la app
+      no usa la red: fotos y datos no salen del teléfono. ACCESS_NETWORK_STATE no da acceso a datos y se deja.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+
     <application
         android:name=".DotScaleApp"
         android:allowBackup="true"
@@ -44,6 +50,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Destino de la cámara del sistema y de las imágenes para compartir -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

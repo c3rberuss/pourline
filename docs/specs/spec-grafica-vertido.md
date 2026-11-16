@@ -6,7 +6,7 @@
 | Fecha | 2026-11-12 |
 | Plan | [`plan-grafica-vertido.md`](plan-grafica-vertido.md) |
 | Módulos afectados | `:app` (nuevo paquete `dev.dotscale.brew`, `ui/scale`, `settings`, `sim`) |
-| Specs relacionados | [SPEC-002 Historial](spec-historial.md), [SPEC-003 Curva objetivo](spec-curva-objetivo.md), SPEC-004 Compartir imagen (pendiente) |
+| Specs relacionados | [SPEC-002 Historial](spec-historial.md), [SPEC-003 Curva objetivo](spec-curva-objetivo.md), [SPEC-004 Catálogo de cafés y compartir imagen](spec-catalogo-cafes.md) |
 
 ## 1. Resumen y Contexto
 
@@ -30,7 +30,7 @@
 - **Alcance (Out):**
   - Historial de preparaciones (SPEC-002).
   - Curva objetivo superpuesta, desde el historial o desde recetas editables (SPEC-003).
-  - Compartir la gráfica como imagen (SPEC-004).
+  - Compartir la gráfica como imagen ([SPEC-004](spec-catalogo-cafes.md)).
   - Modo espresso y etapas de preparación (`ScaleMessage.BrewModeStage`).
   - Reconexión BLE automática.
   - Validación con la báscula DOT física (seguimiento, ver §6).
@@ -552,4 +552,4 @@ Se registran aquí para no tener que volver a entrevistar:
 - **SPEC-003 Curva objetivo:** la referencia puede salir del historial o de recetas editables
   (vertidos por etapas en gramos y tiempo). *Desde SPEC-002 también incluye comparar o superponer
   las curvas de dos preparaciones guardadas.*
-- **SPEC-004 Compartir:** exportar la gráfica como imagen.
+- **SPEC-004 Catálogo de cafés y compartir imagen:** exportar la gráfica como imagen, junto con el catálogo de cafés ([spec](spec-catalogo-cafes.md)).

@@ -8,6 +8,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.test.platform.app.InstrumentationRegistry
+import dev.dotscale.coffee.CoffeeRepository
+import dev.dotscale.coffee.PhotoFiles
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
@@ -63,7 +65,7 @@ class ComparePerformanceTest {
       DotScaleTheme(darkTheme = false) {
         if (open) {
           // Un ViewModel nuevo por apertura: así se mide también la carga y la decodificación de las dos curvas.
-          val viewModel = remember { BrewCompareViewModel(repository, aId, bId) }
+          val viewModel = remember { BrewCompareViewModel(repository, CoffeeRepository(db, PhotoFiles { }), aId, bId) }
           BrewCompareScreen(viewModel, onBack = {})
         }
       }

@@ -14,6 +14,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.dotscale.coffee.photo.LocalCoffeeImages
 import dev.dotscale.settings.LocalThemeSettings
 import dev.dotscale.settings.ThemeSettings
 import dev.dotscale.settings.isDark
@@ -40,7 +41,10 @@ class MainActivity : ComponentActivity() {
         onDispose {}
       }
 
-      CompositionLocalProvider(LocalThemeSettings provides themeSettings) {
+      CompositionLocalProvider(
+        LocalThemeSettings provides themeSettings,
+        LocalCoffeeImages provides (application as DotScaleApp).coffeeImages,
+      ) {
         DotScaleTheme(darkTheme = darkTheme) {
           Box(Modifier.fillMaxSize().background(AntTheme.colors.bgLayout)) { MainNavigation() }
         }

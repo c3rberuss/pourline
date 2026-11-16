@@ -43,4 +43,14 @@ class HistoryModelsTest {
     assertEquals("Sifón", BrewDetails(method = BrewMethod.OTHER, methodOther = " Sifón ").normalized().methodOther)
     assertNull(BrewDetails(method = null, methodOther = "Sifón").normalized().methodOther)
   }
+
+  @Test
+  fun `normalized keeps a rating between 1 and 5 and drops any other`() {
+    assertEquals(1, BrewDetails(rating = 1).normalized().rating)
+    assertEquals(5, BrewDetails(rating = 5).normalized().rating)
+    assertNull(BrewDetails(rating = 0).normalized().rating)
+    assertNull(BrewDetails(rating = 6).normalized().rating)
+    assertNull(BrewDetails(rating = -3).normalized().rating)
+    assertNull(BrewDetails(rating = null).normalized().rating)
+  }
 }

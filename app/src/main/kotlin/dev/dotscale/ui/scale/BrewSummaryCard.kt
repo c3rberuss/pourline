@@ -18,6 +18,7 @@ import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntButton
 import dev.dotscale.ui.components.AntCard
 import dev.dotscale.ui.components.AntDivider
+import dev.dotscale.ui.components.AntIcons
 import dev.dotscale.ui.components.AntStatistic
 import dev.dotscale.ui.components.AntStatus
 import dev.dotscale.ui.components.AntTag
@@ -30,7 +31,8 @@ import kotlin.math.roundToInt
 /**
  * Resumen de una preparación terminada. En Scale, [savedBrew] controla el botón "Añadir detalles": deshabilitado
  * mientras guarda, habilitado al guardar y oculto si falla o no hay guardado (el detalle del historial). Con [fit]
- * añade el bloque "Ajuste al objetivo".
+ * añade el bloque "Ajuste al objetivo". Con [onShare] añade el botón "Compartir" (imagen del resumen), junto a "Añadir
+ * detalles" o, si ese no se muestra, a todo el ancho.
  */
 @Composable
 fun BrewSummaryCard(
@@ -40,6 +42,7 @@ fun BrewSummaryCard(
   savedBrew: SavedBrew? = null,
   fit: FitView? = null,
   onAddDetails: (Long) -> Unit = {},
+  onShare: (() -> Unit)? = null,
 ) {
   AntCard(
     modifier.fillMaxWidth().testTag("brew_summary"),
@@ -106,17 +109,27 @@ fun BrewSummaryCard(
       AntDivider()
       FitBlock(fit, unit)
     }
-    when (savedBrew) {
-      SavedBrew.Saving, is SavedBrew.Saved -> {
-        AntDivider()
-        AntButton(
-          text = stringResource(R.string.brew_summary_add_details),
-          onClick = { (savedBrew as? SavedBrew.Saved)?.let { onAddDetails(it.id) } },
-          modifier = Modifier.fillMaxWidth().testTag("brew_add_details"),
-          enabled = savedBrew is SavedBrew.Saved,
-        )
+    val canAddDetails = savedBrew == SavedBrew.Saving || savedBrew is SavedBrew.Saved
+    if (canAddDetails || onShare != null) {
+      AntDivider()
+      Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+        if (canAddDetails) {
+          AntButton(
+            text = stringResource(R.string.brew_summary_add_details),
+            onClick = { (savedBrew as? SavedBrew.Saved)?.let { onAddDetails(it.id) } },
+            modifier = Modifier.weight(1f).testTag("brew_add_details"),
+            enabled = savedBrew is SavedBrew.Saved,
+          )
+        }
+        if (onShare != null) {
+          AntButton(
+            text = stringResource(R.string.share_action),
+            onClick = onShare,
+            modifier = Modifier.weight(1f).testTag("brew_summary_share_image"),
+            icon = AntIcons.Share,
+          )
+        }
       }
-      SavedBrew.Failed, null -> Unit
     }
   }
 }

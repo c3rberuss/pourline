@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -27,6 +28,7 @@ import dev.dotscale.brew.BrewState
 import dev.dotscale.brew.DeviationLevel
 import dev.dotscale.brew.GuideState
 import dev.dotscale.brew.TargetCurve
+import dev.dotscale.coffee.PickedCoffee
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.ReferenceType
 import dev.dotscale.protocol.WeightUnit
@@ -40,6 +42,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.time.LocalDate
 import java.util.Locale
 
 /** La tarjeta de la gráfica con objetivo, a 360 dp (el ancho en el que deben caber las cifras de la guía). */
@@ -94,10 +97,21 @@ class BrewChartCardTargetTest {
     target: ActiveTarget? = null,
     guide: GuideState? = null,
     onPick: (() -> Unit)? = null,
+    coffee: PickedCoffee? = null,
+    onPickCoffee: (() -> Unit)? = null,
   ) = rule.setContent {
     DotScaleTheme(darkTheme = false) {
       Box(Modifier.width(360.dp)) {
-        BrewChartCard(brew, WeightUnit.GRAMS, onFinish = {}, target = target, guide = guide, onPickTarget = onPick)
+        BrewChartCard(
+          brew,
+          WeightUnit.GRAMS,
+          onFinish = {},
+          target = target,
+          guide = guide,
+          onPickTarget = onPick,
+          coffee = coffee,
+          onPickCoffee = onPickCoffee,
+        )
       }
     }
   }
@@ -218,23 +232,64 @@ class BrewChartCardTargetTest {
   }
 
   @Test
-  fun theChipShowsTheNameOrNoneAndOpensThePicker() {
+  fun theTargetRowShowsTheNameOrNoneAndOpensThePicker() {
     var opened = 0
     show(target = target(), onPick = { opened++ })
-    rule.onNodeWithText(context.getString(R.string.target_chip, "V60 clásica")).assertIsDisplayed()
+    rule.onNodeWithText(context.getString(R.string.brew_setup_target)).assertIsDisplayed()
+    rule.onNodeWithText("V60 clásica").assertIsDisplayed()
+    rule.onNodeWithTag("target_chip").assertContentDescriptionEquals(context.getString(R.string.target_chip, "V60 clásica"))
     rule.onNodeWithTag("target_chip").assertIsEnabled().performClick()
     assertEquals(1, opened)
   }
 
   @Test
-  fun theChipSaysNoneWithoutATarget() {
+  fun theTargetRowSaysNoneWithoutATarget() {
     show(onPick = {})
-    rule.onNodeWithText(context.getString(R.string.target_chip_none)).assertIsDisplayed()
+    rule.onNodeWithText(context.getString(R.string.brew_setup_target_none)).assertIsDisplayed()
+    rule.onNodeWithTag("target_chip").assertContentDescriptionEquals(context.getString(R.string.target_chip_none))
   }
 
   @Test
-  fun theChipIsDisabledWhileActive() {
+  fun theTargetRowIsDisabledWhileActive() {
     show(brew = active, target = target(), guide = guide(), onPick = {})
     rule.onNodeWithTag("target_chip").assertIsNotEnabled()
+  }
+
+  @Test
+  fun theCoffeeRowShowsNameAndDayAndOpensThePicker() {
+    var opened = 0
+    val roast = LocalDate.now().minusDays(9)
+    show(coffee = PickedCoffee(1, "Etiopía Guji", null, roast), onPickCoffee = { opened++ })
+    rule.onNodeWithText(context.getString(R.string.brew_setup_coffee)).assertIsDisplayed()
+    rule.onNodeWithText(context.getString(R.string.brew_setup_coffee_value, "Etiopía Guji", 9)).assertIsDisplayed()
+    rule.onNodeWithTag("coffee_trigger")
+      .assertContentDescriptionEquals(context.resources.getQuantityString(R.plurals.brew_setup_coffee_description, 9, "Etiopía Guji", 9))
+    rule.onNodeWithTag("coffee_trigger").assertIsEnabled().performClick()
+    assertEquals(1, opened)
+  }
+
+  @Test
+  fun theCoffeeRowWithoutRoastDateShowsOnlyTheNameAndNoneSaysSo() {
+    show(coffee = PickedCoffee(1, "Sin fecha", null, null), onPickCoffee = {})
+    rule.onNodeWithText("Sin fecha").assertIsDisplayed()
+  }
+
+  @Test
+  fun theCoffeeRowSaysNoCoffeeWhenNothingIsPicked() {
+    show(onPickCoffee = {})
+    rule.onNodeWithText(context.getString(R.string.brew_setup_coffee_none)).assertIsDisplayed()
+  }
+
+  @Test
+  fun theCoffeeRowIsDisabledWhileActive() {
+    show(brew = active, coffee = PickedCoffee(1, "Etiopía Guji", null, null), onPickCoffee = {})
+    rule.onNodeWithTag("coffee_trigger").assertIsNotEnabled()
+  }
+
+  @Test
+  fun theRowsOnlyAppearWithTheirCallbacks() {
+    show()
+    assertTrue(!exists("target_chip"))
+    assertTrue(!exists("coffee_trigger"))
   }
 }

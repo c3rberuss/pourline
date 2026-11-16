@@ -61,7 +61,33 @@ object TestBrews {
     model: ScaleModel? = ScaleModel.DOT,
     target: UsedTarget? = null,
     details: BrewDetails? = null,
-  ) = BrewContext(startedAtEpochMs, unit, model, simulated, target, details)
+    coffee: UsedCoffee? = null,
+  ) = BrewContext(startedAtEpochMs, unit, model, simulated, target, details, coffee)
+
+  /** Un café determinista para los tests de catálogo. */
+  fun coffeeDraft(
+    name: String = "Etiopía Guji",
+    roaster: String? = "Café de Altura",
+    roastDate: java.time.LocalDate? = java.time.LocalDate.of(2026, 11, 4),
+    bagWeightG: Double? = 250.0,
+    photo1: String? = null,
+    photo2: String? = null,
+  ) = dev.dotscale.coffee.CoffeeDraft(
+    name = name,
+    roaster = roaster,
+    originCountry = "Etiopía",
+    originRegion = "Guji",
+    varieties = listOf("Heirloom"),
+    process = dev.dotscale.coffee.CoffeeProcess.NATURAL,
+    altitudeMinM = 1800,
+    altitudeMaxM = 2000,
+    roastLevel = dev.dotscale.coffee.RoastLevel.LIGHT,
+    roastDate = roastDate,
+    bagWeightG = bagWeightG,
+    price = 18.5,
+    photo1 = photo1,
+    photo2 = photo2,
+  )
 
   /** Una referencia determinista: la "V60 clásica" de fábrica, con el ajuste que se indique. */
   fun usedTarget(

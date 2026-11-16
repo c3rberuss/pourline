@@ -406,6 +406,6 @@ Commit sugerido: `test(history): add compare performance test and verify the tar
 
 ## 6. Seguimiento fuera de este plan
 
-- SPEC-004 (compartir imagen) reutilizará `CompareChart` y `BrewChart` con `target`.
+- SPEC-004 ([catálogo de cafés y compartir imagen](spec-catalogo-cafes.md)) reutilizará `CompareChart` y `BrewChart` con `target`.
 - Calibración con la DOT física (SPEC-001 §6 y §6.7 de este spec).
 - Fusionar en orden en `develop`: `feat/brew-chart`, `feat/brew-history` y `feat/target-curve`.

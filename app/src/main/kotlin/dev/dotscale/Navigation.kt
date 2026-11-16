@@ -12,6 +12,13 @@ import androidx.navigation3.ui.NavDisplay
 import dev.dotscale.ble.BleScaleConnection
 import dev.dotscale.recipe.ResourcesRecipeTexts
 import dev.dotscale.sim.SimulatedScaleConnection
+import dev.dotscale.ui.coffees.CoffeeDetailScreen
+import dev.dotscale.ui.coffees.CoffeeDetailViewModel
+import dev.dotscale.ui.coffees.CoffeeEditScreen
+import dev.dotscale.ui.coffees.CoffeeEditViewModel
+import dev.dotscale.ui.coffees.CoffeePickerViewModel
+import dev.dotscale.ui.coffees.CoffeesScreen
+import dev.dotscale.ui.coffees.CoffeesViewModel
 import dev.dotscale.ui.history.BrewDetailScreen
 import dev.dotscale.ui.history.BrewCompareScreen
 import dev.dotscale.ui.history.BrewCompareViewModel
@@ -27,6 +34,7 @@ import dev.dotscale.ui.recipes.RecipeEditViewModel
 import dev.dotscale.ui.recipes.RecipesScreen
 import dev.dotscale.ui.recipes.RecipesViewModel
 import dev.dotscale.ui.scale.AndroidStageNotifier
+import dev.dotscale.ui.scale.RepositoryScaleCoffees
 import dev.dotscale.ui.scale.RepositoryTargetReferences
 import dev.dotscale.ui.scale.ScaleScreen
 import dev.dotscale.ui.scale.ScaleViewModel
@@ -55,6 +63,7 @@ fun MainNavigation() {
           onOpenSettings = { backStack.add(Settings) },
           onOpenHistory = { backStack.add(History) },
           onOpenRecipes = { backStack.add(Recipes) },
+          onOpenCoffees = { backStack.add(Coffees) },
         )
       }
       entry<Scale> { key ->
@@ -68,9 +77,12 @@ fun MainNavigation() {
             references = app.targetSettings,
             targets = RepositoryTargetReferences(app.recipeRepository, app.brewRepository),
             notifier = AndroidStageNotifier(appContext, app.targetSettings),
+            coffeeStore = app.brewSettings,
+            coffees = RepositoryScaleCoffees(app.coffeeRepository),
           )
         }
         val pickerViewModel = viewModel { TargetPickerViewModel(app.recipeRepository, app.brewRepository) }
+        val coffeePickerViewModel = viewModel { CoffeePickerViewModel(app.coffeeRepository) }
         ScaleScreen(
           viewModel,
           pickerViewModel,
@@ -78,8 +90,44 @@ fun MainNavigation() {
           onBack = { backStack.removeLastOrNull() },
           onOpenSettings = { backStack.add(Settings) },
           onOpenHistory = { backStack.add(History) },
+          onOpenCoffees = { backStack.add(Coffees) },
           onAddDetails = { id -> backStack.add(BrewEdit(id)) },
           onManageRecipes = { backStack.add(Recipes) },
+          coffeePickerViewModel = coffeePickerViewModel,
+          onNewCoffee = { backStack.add(CoffeeEdit()) },
+        )
+      }
+      entry<Coffees> {
+        val repository = (appContext as DotScaleApp).coffeeRepository
+        CoffeesScreen(
+          viewModel { CoffeesViewModel(repository) },
+          onBack = { backStack.removeLastOrNull() },
+          onOpenCoffee = { id -> backStack.add(CoffeeDetail(id)) },
+          onAddCoffee = { backStack.add(CoffeeEdit()) },
+        )
+      }
+      entry<CoffeeDetail> { key ->
+        val repository = (appContext as DotScaleApp).coffeeRepository
+        CoffeeDetailScreen(
+          viewModel { CoffeeDetailViewModel(repository, key.id) },
+          onBack = { backStack.removeLastOrNull() },
+          onEdit = { id -> backStack.add(CoffeeEdit(id = id)) },
+          onNewBag = { id -> backStack.add(CoffeeEdit(fromCoffeeId = id)) },
+          onOpenBrew = { id -> backStack.add(BrewDetail(id)) },
+        )
+      }
+      entry<CoffeeEdit> { key ->
+        val app = appContext as DotScaleApp
+        CoffeeEditScreen(
+          viewModel { CoffeeEditViewModel(app.coffeeRepository, app.coffeePhotoStore, app.labelOcr, key.id, key.fromCoffeeId) },
+          newCameraTarget = app.coffeePhotoStore::newCameraTarget,
+          onBack = { backStack.removeLastOrNull() },
+          // Una bolsa nueva se abre en su detalle (atrás vuelve al café original); en los demás casos, la pantalla
+          // de origen ya muestra el resultado.
+          onSaved = { savedId ->
+            if (key.fromCoffeeId != null) backStack[backStack.lastIndex] = CoffeeDetail(savedId) else backStack.removeLastOrNull()
+          },
+          isEdit = key.id != null,
         )
       }
       entry<Settings> {
@@ -118,10 +166,11 @@ fun MainNavigation() {
         )
       }
       entry<BrewDetail> { key ->
-        val repository = (appContext as DotScaleApp).brewRepository
+        val app = appContext as DotScaleApp
         BrewDetailScreen(
-          viewModel { BrewDetailViewModel(repository, key.id) },
+          viewModel { BrewDetailViewModel(app.brewRepository, app.coffeeRepository, key.id) },
           onBack = { backStack.removeLastOrNull() },
+          onOpenCoffee = { id -> backStack.add(CoffeeDetail(id)) },
           onEdit = { id -> backStack.add(BrewEdit(id)) },
           onCompare = { id -> backStack.add(ComparePick(id)) },
           onSaveAsRecipe = { id -> backStack.add(RecipeEdit(fromBrewId = id)) },
@@ -137,17 +186,19 @@ fun MainNavigation() {
         )
       }
       entry<BrewCompare> { key ->
-        val repository = (appContext as DotScaleApp).brewRepository
+        val app = appContext as DotScaleApp
         BrewCompareScreen(
-          viewModel { BrewCompareViewModel(repository, key.aId, key.bId) },
+          viewModel { BrewCompareViewModel(app.brewRepository, app.coffeeRepository, key.aId, key.bId) },
           onBack = { backStack.removeLastOrNull() },
         )
       }
       entry<BrewEdit> { key ->
-        val repository = (appContext as DotScaleApp).brewRepository
+        val app = appContext as DotScaleApp
         BrewEditScreen(
-          viewModel { BrewEditViewModel(repository, key.id) },
+          viewModel { BrewEditViewModel(app.brewRepository, app.coffeeRepository, key.id) },
           onBack = { backStack.removeLastOrNull() },
+          coffeePickerViewModel = viewModel { CoffeePickerViewModel(app.coffeeRepository) },
+          onNewCoffee = { backStack.add(CoffeeEdit()) },
         )
       }
     },

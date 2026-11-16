@@ -18,7 +18,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.room.testing.MigrationTestHelper
 
-/** Migración 1 → 2 sobre una base creada con el esquema exportado de la versión 1. */
+/** Migraciones 1 → 2 y 2 → 3 sobre bases creadas con los esquemas exportados. */
 @RunWith(AndroidJUnit4::class)
 class HistoryMigrationTest {
   private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -123,7 +123,7 @@ class HistoryMigrationTest {
 
     // Y la base se abre con Room y se lee por los DAO.
     val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
-      .addMigrations(migration1To2(texts))
+      .addMigrations(migration1To2(texts), MIGRATION_2_3)
       .build()
     try {
       runBlocking {
@@ -158,16 +158,93 @@ class HistoryMigrationTest {
   }
 
   @Test
-  fun aFreshInstallIsCreatedAtVersion2WithTheBuiltIns() = runBlocking {
+  fun aFreshInstallIsCreatedAtVersion3WithTheBuiltIns() = runBlocking {
     val context = instrumentation.targetContext
     context.deleteDatabase(NAME)
     val fresh = HistoryDatabase.create(context, NAME, texts)
     try {
       assertEquals(2, fresh.recipeDao().observeAll().first().size)
-      assertEquals(2, fresh.openHelper.readableDatabase.version)
+      assertEquals(3, fresh.openHelper.readableDatabase.version)
       assertFalse(fresh.brewDao().list(null, null).first().isNotEmpty())
     } finally {
       fresh.close()
+    }
+  }
+
+  @Test
+  fun migrates2To3KeepingTheBrewsAndLeavingTheCoffeeTextUnlinked() {
+    helper.createDatabase(NAME, 2).use { db ->
+      insertV1Brew(db, 1, "Etiopía", "Etiopía Guji", 1_700_000_000_000)
+      insertV1Brew(db, 2, null, null, 1_700_000_100_000)
+    }
+
+    val db = helper.runMigrationsAndValidate(NAME, 3, true, MIGRATION_2_3)
+
+    db.query("SELECT id, name, coffee, notes, totalWaterG, coffeeId, rating FROM brews ORDER BY id").use { c ->
+      assertEquals(2, c.count)
+      c.moveToFirst()
+      assertEquals(1L, c.getLong(0))
+      assertEquals("Etiopía", c.getString(1))
+      assertEquals("Etiopía Guji", c.getString(2))
+      assertEquals("Notas de cata", c.getString(3))
+      assertEquals(300.5, c.getDouble(4), 0.0)
+      assertTrue(c.isNull(5))
+      assertTrue(c.isNull(6))
+      c.moveToNext()
+      assertTrue(c.isNull(2))
+      assertTrue(c.isNull(5))
+    }
+    db.query("SELECT COUNT(*) FROM coffees").use {
+      it.moveToFirst()
+      assertEquals(0, it.getInt(0))
+    }
+    db.query("SELECT brewId, data FROM brew_curves ORDER BY brewId").use { c ->
+      assertEquals(2, c.count)
+      c.moveToFirst()
+      assertArrayEquals(byteArrayOf(1, 2, 3, 1), c.getBlob(1))
+    }
+    db.query("SELECT COUNT(*) FROM brew_targets").use {
+      it.moveToFirst()
+      assertEquals(0, it.getInt(0))
+    }
+    db.close()
+
+    // En la base migrada la clave foránea funciona: vincular un café y borrarlo deja `coffeeId = null` y el nombre.
+    val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3)
+      .build()
+    try {
+      runBlocking {
+        val coffees = dev.dotscale.coffee.CoffeeRepository(room, dev.dotscale.coffee.PhotoFiles { })
+        val brews = BrewRepository(room)
+        val coffeeId = coffees.save(TestBrews.coffeeDraft(name = "Kenia AA"))
+        brews.setCoffee(1, coffeeId)
+        assertEquals(coffeeId, room.brewDao().brew(1)!!.coffeeId)
+        coffees.delete(coffeeId)
+        val brew = room.brewDao().brew(1)!!
+        assertEquals(null, brew.coffeeId)
+        assertEquals("Kenia AA", brew.coffee)
+      }
+    } finally {
+      room.close()
+    }
+  }
+
+  @Test
+  fun migrates1To2To3InAChain() {
+    helper.createDatabase(NAME, 1).use { db -> insertV1Brew(db, 1, "Etiopía", "Etiopía Guji", 1_700_000_000_000) }
+    helper.runMigrationsAndValidate(NAME, 3, true, migration1To2(texts), MIGRATION_2_3).use { db ->
+      db.query("SELECT coffee, coffeeId, rating, fitScore FROM brews").use { c ->
+        c.moveToFirst()
+        assertEquals("Etiopía Guji", c.getString(0))
+        assertTrue(c.isNull(1))
+        assertTrue(c.isNull(2))
+        assertTrue(c.isNull(3))
+      }
+      db.query("SELECT COUNT(*) FROM recipes").use {
+        it.moveToFirst()
+        assertEquals(2, it.getInt(0))
+      }
     }
   }
 

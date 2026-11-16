@@ -7,6 +7,7 @@ import dev.dotscale.brew.FinishedBrew
 import dev.dotscale.brew.Pour
 import dev.dotscale.brew.StageNotifier
 import dev.dotscale.brew.TargetStage
+import dev.dotscale.coffee.PickedCoffee
 import dev.dotscale.history.BrewContext
 import dev.dotscale.history.BrewEntity
 import dev.dotscale.history.BrewMethod
@@ -18,6 +19,7 @@ import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.recipe.Recipe
 import dev.dotscale.scale.ConnectionState
 import dev.dotscale.scale.ScaleConnection
+import dev.dotscale.settings.CoffeeStore
 import dev.dotscale.settings.ReferenceKey
 import dev.dotscale.settings.ReferenceStore
 import kotlinx.coroutines.CompletableDeferred
@@ -26,6 +28,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 class FakeScaleConnection : ScaleConnection {
   override val state = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
@@ -93,6 +97,39 @@ class FakeTargetReferences : TargetReferences {
   override fun recipe(id: Long): Flow<Recipe?> = recipes.getOrPut(id) { MutableStateFlow(null) }
 
   override fun brew(id: Long): Flow<BrewRecord?> = brews.getOrPut(id) { MutableStateFlow(null) }
+}
+
+/** Recuerda el último café; [sets] registra las llamadas a `setLastCoffeeId`. */
+class FakeCoffeeStore(initial: Long? = null) : CoffeeStore {
+  private val _lastCoffeeId = MutableStateFlow(initial)
+  override val lastCoffeeId: StateFlow<Long?> = _lastCoffeeId.asStateFlow()
+  val sets = mutableListOf<Long?>()
+
+  override fun setLastCoffeeId(id: Long?) {
+    sets += id
+    _lastCoffeeId.value = id
+  }
+}
+
+/** Cafés que se pueden poner o quitar durante el test; un id sin café (o archivado) emite `null`. */
+class FakeScaleCoffees : ScaleCoffees {
+  private val coffees = MutableStateFlow<Map<Long, PickedCoffee>>(emptyMap())
+  private val _created = MutableSharedFlow<Long>(extraBufferCapacity = 8)
+  override val created: Flow<Long> = _created
+
+  fun put(coffee: PickedCoffee) {
+    coffees.value = coffees.value + (coffee.id to coffee)
+  }
+
+  fun remove(id: Long) {
+    coffees.value = coffees.value - id
+  }
+
+  fun emitCreated(id: Long) {
+    _created.tryEmit(id)
+  }
+
+  override fun coffee(id: Long?): Flow<PickedCoffee?> = coffees.map { map -> id?.let(map::get) }.distinctUntilChanged()
 }
 
 class FakeNotifier : StageNotifier {

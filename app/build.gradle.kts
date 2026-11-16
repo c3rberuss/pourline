@@ -38,6 +38,8 @@ android {
   testOptions {
     // Los tests JVM del ViewModel llaman a `Log`; los métodos de Android devuelven valores por defecto.
     unitTests.isReturnDefaultValues = true
+    // `-PlabelsExpected=<ruta>` activa la prueba de aciertos con las etiquetas reales (F4); sin ella se salta.
+    unitTests.all { it.systemProperty("dotscale.labelsExpected", providers.gradleProperty("labelsExpected").getOrElse("")) }
   }
 
   packaging {
@@ -85,6 +87,8 @@ dependencies {
   // Local tests: jUnit, coroutines, Android runner
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
+  // Lee los fixtures JSON del OCR (las etiquetas reales)
+  testImplementation(libs.kotlinx.serialization.json)
 
   // Instrumented tests: jUnit rules and runners
   androidTestImplementation(libs.androidx.test.core)
@@ -100,6 +104,9 @@ dependencies {
   // `room-migration` (de room-testing) necesita kotlinx-serialization 1.8+, pero el classpath de debug
   // resuelve 1.7.3 por lifecycle y AGP alinea androidTest con él. Solo afecta a debug, no a release.
   debugImplementation(libs.kotlinx.serialization.core)
+
+  // OCR de las etiquetas: reconocimiento de texto latino con el modelo incluido en el APK (sin red)
+  implementation(libs.mlkit.text.recognition)
 
   // Navigation
   implementation(libs.androidx.navigation3.ui)

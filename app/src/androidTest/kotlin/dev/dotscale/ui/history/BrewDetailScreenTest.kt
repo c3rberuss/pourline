@@ -1,8 +1,14 @@
 package dev.dotscale.ui.history
 
+import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -11,11 +17,14 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
+import dev.dotscale.coffee.CoffeeRepository
+import dev.dotscale.coffee.PhotoFiles
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
+import dev.dotscale.history.UsedCoffee
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.ui.theme.DotScaleTheme
 import kotlinx.coroutines.runBlocking
@@ -25,6 +34,8 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.time.LocalDate
+import java.time.ZoneId
 
 class BrewDetailScreenTest {
   @get:Rule
@@ -37,18 +48,21 @@ class BrewDetailScreenTest {
   private var edited: Long? = null
   private var compared: Long? = null
   private var savedAsRecipe: Long? = null
+  private var openedCoffee: Long? = null
+  private lateinit var coffees: CoffeeRepository
 
   @Before
   fun setUp() {
     db = HistoryDatabase.inMemory(context)
     repository = BrewRepository(db)
+    coffees = CoffeeRepository(db, PhotoFiles { })
   }
 
   @After
   fun tearDown() = db.close()
 
   private fun show(id: Long) {
-    val viewModel = BrewDetailViewModel(repository, id)
+    val viewModel = BrewDetailViewModel(repository, coffees, id)
     rule.setContent {
       DotScaleTheme(darkTheme = false) {
         BrewDetailScreen(
@@ -57,6 +71,7 @@ class BrewDetailScreenTest {
           onEdit = { edited = it },
           onCompare = { compared = it },
           onSaveAsRecipe = { savedAsRecipe = it },
+          onOpenCoffee = { openedCoffee = it },
         )
       }
     }
@@ -71,7 +86,7 @@ class BrewDetailScreenTest {
   @Test
   fun showsTheChartTheSummaryAndTheDetails() {
     val id = seed(
-      details = BrewDetails(name = "Mañana", coffee = "Etiopía", method = BrewMethod.V60, grind = "21 clics", waterTempC = 92.5, notes = "Dulce"),
+      details = BrewDetails(name = "Mañana", method = BrewMethod.V60, grind = "21 clics", waterTempC = 92.5),
     )
     show(id)
 
@@ -79,9 +94,98 @@ class BrewDetailScreenTest {
     rule.onNodeWithTag("brew_chart").assertIsDisplayed()
     rule.onNodeWithTag("brew_summary").performScrollTo().assertIsDisplayed()
     rule.onNodeWithTag("brew_detail_details").performScrollTo().assertIsDisplayed()
-    for (text in listOf("Etiopía", "V60", "21 clics", "Dulce")) {
+    for (text in listOf("V60", "21 clics")) {
       rule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty().let { assertEquals(text, true, it) }
     }
+  }
+
+  // --- Cata (SPEC-004) ---
+
+  private fun catalogCoffee(name: String, roastDate: LocalDate? = null, roaster: String? = "Café de Altura"): Long =
+    runBlocking { coffees.save(TestBrews.coffeeDraft(name = name, roaster = roaster).copy(roastDate = roastDate)) }
+
+  private fun seedLinked(coffeeId: Long, startedAt: Long = 1_700_000_000_000, details: BrewDetails? = null): Long = runBlocking {
+    val id = repository.save(
+      TestBrews.finished(totalMs = 60_000),
+      TestBrews.context(startedAtEpochMs = startedAt, coffee = UsedCoffee(coffeeId, "x")),
+    )
+    if (details != null) repository.updateDetails(id, details)
+    id
+  }
+
+  @Test
+  fun theTastingCardShowsTheCoffeeTheDayTheRatingAndTheNotes() {
+    val brewStart = LocalDate.of(2026, 11, 14).atTime(8, 30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    val guji = catalogCoffee("Etiopía Guji", LocalDate.of(2026, 11, 5))
+    val id = seedLinked(guji, brewStart, BrewDetails(notes = "Jazmín y durazno", rating = 4))
+    show(id)
+    waitForDetail()
+
+    rule.onNodeWithTag("brew_detail_tasting").performScrollTo().assertIsDisplayed()
+    rule.onNode(hasText("Etiopía Guji") and hasAnyAncestor(hasTestTag("brew_detail_coffee")), useUnmergedTree = true).assertExists()
+    rule.onNode(
+      hasText("Café de Altura · " + context.getString(R.string.coffee_log_day, 9)) and hasAnyAncestor(hasTestTag("brew_detail_coffee")),
+      useUnmergedTree = true,
+    ).assertExists()
+    rule.onNodeWithTag("brew_detail_rating", useUnmergedTree = true).assertContentDescriptionEquals(context.getString(R.string.rate_description, 4, 5))
+    rule.onNodeWithTag("brew_detail_notes").assertTextEquals("Jazmín y durazno")
+  }
+
+  @Test
+  fun tappingTheCoffeeOpensItsDetail() {
+    val guji = catalogCoffee("Guji")
+    show(seedLinked(guji))
+    waitForDetail()
+
+    rule.onNodeWithTag("brew_detail_coffee").performScrollTo().performClick()
+    assertEquals(guji, openedCoffee)
+  }
+
+  @Test
+  fun detailsNoLongerRepeatTheCoffeeNorTheNotes() {
+    val guji = catalogCoffee("Guji")
+    val id = seedLinked(guji, details = BrewDetails(method = BrewMethod.V60, notes = "Notas únicas", rating = 3))
+    show(id)
+    waitForDetail()
+
+    val details = hasAnyAncestor(hasTestTag("brew_detail_details"))
+    rule.onNodeWithTag("brew_detail_details").performScrollTo().assertIsDisplayed()
+    assertEquals(0, rule.onAllNodes(hasText("Guji") and details, useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertEquals(0, rule.onAllNodes(hasText("Notas únicas") and details, useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertEquals(1, rule.onAllNodes(hasText("Notas únicas"), useUnmergedTree = true).fetchSemanticsNodes().size)
+  }
+
+  @Test
+  fun anOldCoffeeTextIsShownWithoutThumbnailOrLinkAndIsNotClickable() {
+    val id = seed()
+    db.openHelper.writableDatabase.execSQL("UPDATE brews SET coffee = 'Etiopía antigua' WHERE id = $id")
+    show(id)
+    waitForDetail()
+
+    rule.onNodeWithTag("brew_detail_tasting").performScrollTo().assertIsDisplayed()
+    rule.onNode(hasText("Etiopía antigua") and hasAnyAncestor(hasTestTag("brew_detail_coffee")), useUnmergedTree = true).assertExists()
+    rule.onNode(hasText(context.getString(R.string.brew_detail_coffee_legacy)), useUnmergedTree = true).assertExists()
+    rule.onNodeWithTag("brew_detail_coffee").assertHasNoClickAction()
+    rule.onNodeWithTag("brew_detail_coffee").performClick()
+    assertNull(openedCoffee)
+  }
+
+  @Test
+  fun theTastingCardIsOmittedWithoutCoffeeRatingOrNotes() {
+    show(seed())
+    waitForDetail()
+    assertEquals(false, exists("brew_detail_tasting"))
+  }
+
+  @Test
+  fun aRatingAloneIsEnoughForTheCardAndTheOtherPartsAreOmitted() {
+    show(seed(details = BrewDetails(rating = 5)))
+    waitForDetail()
+
+    rule.onNodeWithTag("brew_detail_tasting").performScrollTo().assertIsDisplayed()
+    assertEquals(false, exists("brew_detail_coffee"))
+    assertEquals(false, exists("brew_detail_notes"))
+    assertEquals(true, rule.onAllNodesWithTag("brew_detail_rating", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
   }
 
   @Test

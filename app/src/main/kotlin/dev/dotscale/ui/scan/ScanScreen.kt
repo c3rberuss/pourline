@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -80,6 +81,7 @@ fun ScanScreen(
   onOpenSettings: () -> Unit,
   onOpenHistory: () -> Unit,
   onOpenRecipes: () -> Unit,
+  onOpenCoffees: () -> Unit,
 ) {
   val context = LocalContext.current
   val appContext = context.applicationContext
@@ -102,6 +104,12 @@ fun ScanScreen(
       AntTopBar(
         title = stringResource(R.string.scan_title),
         actions = {
+          AntIconButton(
+            AntIcons.Coffee,
+            contentDescription = stringResource(R.string.coffees_open),
+            onClick = onOpenCoffees,
+            modifier = Modifier.testTag("scan_open_coffees"),
+          )
           AntIconButton(AntIcons.Recipe, contentDescription = stringResource(R.string.recipe_open), onClick = onOpenRecipes)
           AntIconButton(AntIcons.History, contentDescription = stringResource(R.string.history_open), onClick = onOpenHistory)
           AntIconButton(AntIcons.Settings, contentDescription = stringResource(R.string.settings_open), onClick = onOpenSettings)

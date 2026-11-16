@@ -7,11 +7,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,10 +31,14 @@ import dev.dotscale.brew.TargetCurve
 import dev.dotscale.brew.Pour
 import dev.dotscale.brew.StabilityLevel
 import dev.dotscale.brew.fromGrams
+import dev.dotscale.coffee.PickedCoffee
+import dev.dotscale.coffee.daysSinceRoast
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.ui.components.AntAlert
 import dev.dotscale.ui.components.AntButton
 import dev.dotscale.ui.components.AntCard
+import dev.dotscale.ui.components.AntIcons
+import dev.dotscale.ui.components.AntSelectTrigger
 import dev.dotscale.ui.components.AntStatus
 import dev.dotscale.ui.components.AntTag
 import dev.dotscale.ui.components.AntTagColor
@@ -40,6 +47,7 @@ import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.theme.AntSize
 import dev.dotscale.ui.theme.AntTheme
 import dev.dotscale.ui.theme.DotScaleTheme
+import java.time.LocalDate
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
@@ -63,13 +71,18 @@ fun BrewChartCard(
   guide: GuideState? = null,
   lastFit: SessionFit? = null,
   onPickTarget: (() -> Unit)? = null,
+  coffee: PickedCoffee? = null,
+  onPickCoffee: (() -> Unit)? = null,
 ) {
   val phase = brew.phase
-  AntCard(
-    modifier.fillMaxWidth(),
-    title = stringResource(R.string.brew_chart_title),
-    extra = onPickTarget?.let { pick -> { TargetChip(target, enabled = phase !is BrewPhase.Active, onClick = pick) } },
-  ) {
+  AntCard(modifier.fillMaxWidth(), title = stringResource(R.string.brew_chart_title)) {
+    val editable = phase !is BrewPhase.Active
+    if (onPickTarget != null || onPickCoffee != null) {
+      Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+        if (onPickTarget != null) TargetRow(target, enabled = editable, onClick = onPickTarget)
+        if (onPickCoffee != null) CoffeeRow(coffee, enabled = editable, onClick = onPickCoffee)
+      }
+    }
     when (phase) {
       BrewPhase.Armed -> if (target != null) {
         Chart(brew.samples, unit, stability = stringResource(R.string.brew_summary_stability_none), target = target.curve)
@@ -86,7 +99,7 @@ fun BrewChartCard(
       is BrewPhase.Active -> {
         val indicator = activeIndicator(brew, phase)
         if (target != null && guide != null) TargetGuideBlock(target.curve, guide, unit)
-        Chart(brew.samples, unit, indicator.text, target?.curve)
+        Chart(brew.samples, unit, indicator.text, target = target?.curve)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
           AntTag(indicator.text, Modifier.testTag("brew_level"), color = indicator.color)
           Spacer(Modifier.weight(1f))
@@ -100,7 +113,7 @@ fun BrewChartCard(
       }
       is BrewPhase.Finished -> {
         val summary = phase.summary
-        Chart(brew.samples, unit, summaryStability(summary), lastFit?.curve)
+        Chart(brew.samples, unit, summaryStability(summary), target = lastFit?.curve)
         if (phase.rearmed) AntText(stringResource(R.string.brew_chart_ready), type = AntTextType.Secondary)
         if (phase.pourIgnored) AntAlert(message = stringResource(R.string.brew_chart_ignored), type = AntStatus.Info)
       }
@@ -108,15 +121,57 @@ fun BrewChartCard(
   }
 }
 
+private val SetupLabelWidth = 72.dp
+private val SetupIconSize = 16.dp
+
+/** Una fila de preparación (D5): la etiqueta a la izquierda y un disparador con el valor elegido. */
 @Composable
-private fun RowScope.TargetChip(target: ActiveTarget?, enabled: Boolean, onClick: () -> Unit) {
-  AntButton(
-    text = target?.let { stringResource(R.string.target_chip, it.name) } ?: stringResource(R.string.target_chip_none),
-    onClick = onClick,
-    modifier = Modifier.testTag("target_chip"),
-    size = AntSize.Small,
-    enabled = enabled,
-  )
+private fun BrewSetupRow(label: String, trigger: @Composable (Modifier) -> Unit) {
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs), verticalAlignment = Alignment.CenterVertically) {
+    AntText(label, Modifier.width(SetupLabelWidth), type = AntTextType.Secondary)
+    trigger(Modifier.weight(1f))
+  }
+}
+
+@Composable
+private fun TargetRow(target: ActiveTarget?, enabled: Boolean, onClick: () -> Unit) {
+  BrewSetupRow(stringResource(R.string.brew_setup_target)) { modifier ->
+    AntSelectTrigger(
+      value = target?.name ?: stringResource(R.string.brew_setup_target_none),
+      onClick = onClick,
+      modifier = modifier,
+      leading = { Icon(AntIcons.Recipe, contentDescription = null, modifier = Modifier.size(SetupIconSize), tint = AntTheme.colors.textTertiary) },
+      enabled = enabled,
+      description = target?.let { stringResource(R.string.target_chip, it.name) } ?: stringResource(R.string.target_chip_none),
+      testTag = "target_chip",
+    )
+  }
+}
+
+@Composable
+private fun CoffeeRow(coffee: PickedCoffee?, enabled: Boolean, onClick: () -> Unit) {
+  val days = coffee?.let { daysSinceRoast(it.roastDate, LocalDate.now()) }
+  val value = when {
+    coffee == null -> stringResource(R.string.brew_setup_coffee_none)
+    days != null -> stringResource(R.string.brew_setup_coffee_value, coffee.name, days)
+    else -> coffee.name
+  }
+  val description = when {
+    coffee == null -> stringResource(R.string.brew_setup_coffee_description_none)
+    days != null -> pluralStringResource(R.plurals.brew_setup_coffee_description, days, coffee.name, days)
+    else -> stringResource(R.string.brew_setup_coffee_description_plain, coffee.name)
+  }
+  BrewSetupRow(stringResource(R.string.brew_setup_coffee)) { modifier ->
+    AntSelectTrigger(
+      value = value,
+      onClick = onClick,
+      modifier = modifier,
+      leading = { Icon(AntIcons.Coffee, contentDescription = null, modifier = Modifier.size(SetupIconSize), tint = AntTheme.colors.textTertiary) },
+      enabled = enabled,
+      description = description,
+      testTag = "coffee_trigger",
+    )
+  }
 }
 
 /** "Etapa 1/3 · Bloom: hasta 50 g en 10 s" y, si la dosis cambió el objetivo, "Escalada a 16,4 g". */
@@ -143,7 +198,14 @@ private fun ArmedTargetText(target: ActiveTarget, unit: WeightUnit) {
 
 /** La gráfica con su descripción accesible; con [target] añade "Objetivo: X g en mm:ss". */
 @Composable
-internal fun Chart(samples: List<BrewSample>, unit: WeightUnit, stability: String, target: TargetCurve? = null) {
+internal fun Chart(
+  samples: List<BrewSample>,
+  unit: WeightUnit,
+  stability: String,
+  modifier: Modifier = Modifier,
+  target: TargetCurve? = null,
+  fillHeight: Boolean = false,
+) {
   val last = samples.lastOrNull { it.valid }
   val base = stringResource(
     R.string.brew_chart_description,
@@ -164,7 +226,9 @@ internal fun Chart(samples: List<BrewSample>, unit: WeightUnit, stability: Strin
     waterUnitLabel = unit.symbol,
     flowUnitLabel = stringResource(R.string.scale_flow_value, unit.symbol),
     description = description,
+    modifier = modifier,
     target = target,
+    fillHeight = fillHeight,
   )
 }
 

@@ -1,6 +1,7 @@
 package dev.dotscale.ui.scale
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
@@ -53,6 +54,8 @@ private fun chartScale(samples: List<BrewSample>, unit: WeightUnit, target: Targ
  * de estabilidad). Los topes salen de [ChartAxis] y las series se reducen con [downsample] según el
  * ancho disponible.
  *
+ * Con [fillHeight] ocupa todo el alto que le da el padre en lugar de [ChartHeight] (las imágenes para compartir).
+ *
  * Con [target] (en gramos) dibuja además la curva objetivo, discontinua, sobre el eje del agua, y los
  * topes incluyen su agua máxima y su `endMs`. Con [samples] vacío solo se ve el objetivo.
  */
@@ -65,6 +68,7 @@ fun BrewChart(
   description: String,
   modifier: Modifier = Modifier,
   target: TargetCurve? = null,
+  fillHeight: Boolean = false,
 ) {
   val colors = brewChartColors(AntTheme.colors)
   val labelStyle = AntTheme.typography.textSM.copy(color = colors.axisLabel)
@@ -92,7 +96,7 @@ fun BrewChart(
   Canvas(
     modifier
       .fillMaxWidth()
-      .height(ChartHeight)
+      .then(if (fillHeight) Modifier.fillMaxHeight() else Modifier.height(ChartHeight))
       .onSizeChanged { widthPx = it.width }
       .testTag("brew_chart")
       .semantics { contentDescription = description },

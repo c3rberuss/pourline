@@ -32,6 +32,7 @@ class ScaleTopBarTest {
 
   @Test
   fun aLongTitleIsEllipsizedAndTheActionsStayVisibleAndClickable() {
+    var coffees = 0
     var history = 0
     var settings = 0
     var back = 0
@@ -45,6 +46,7 @@ class ScaleTopBarTest {
               batteryPercent = 80,
               onBack = { back++ },
               onOpenHistory = { history++ },
+              onOpenCoffees = { coffees++ },
               onOpenSettings = { settings++ },
             )
           }
@@ -59,9 +61,11 @@ class ScaleTopBarTest {
 
     rule.onNodeWithContentDescription(context.getString(R.string.scale_battery, 80)).assertIsDisplayed()
     rule.onNodeWithContentDescription(context.getString(R.string.theme_change)).assertIsDisplayed()
+    rule.onNodeWithContentDescription(context.getString(R.string.coffees_open)).assertIsDisplayed().performClick()
     rule.onNodeWithContentDescription(context.getString(R.string.history_open)).assertIsDisplayed().performClick()
     rule.onNodeWithContentDescription(context.getString(R.string.settings_open)).assertIsDisplayed().performClick()
     rule.onNodeWithContentDescription(context.getString(R.string.scale_back)).assertIsDisplayed().performClick()
+    assertEquals(1, coffees)
     assertEquals(1, history)
     assertEquals(1, settings)
     assertEquals(1, back)

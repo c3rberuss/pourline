@@ -181,7 +181,7 @@ class ScaleViewModelTargetTest {
     assertEquals(ReferenceType.BREW, target.type)
     assertEquals("Mañana", target.name)
     assertEquals(250.0, target.curve.finalWaterG, 1e-9)
-    assertEquals("Etiopía", target.prefill.coffee)
+    assertNull(target.prefill.coffee) // el café sale solo del selector (D21)
     assertEquals(BrewMethod.V60, target.prefill.method)
     assertEquals("Media", target.prefill.grind)
     assertEquals(94.0, target.prefill.waterTempC!!, 0.0)

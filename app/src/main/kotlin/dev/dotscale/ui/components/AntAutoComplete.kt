@@ -2,6 +2,7 @@ package dev.dotscale.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +29,9 @@ internal fun autoCompleteMatches(text: String, suggestions: List<String>): List<
 /**
  * `AutoComplete` de Ant Design: un [AntInput] editable con un desplegable de [suggestions] filtradas por
  * prefijo. El menú se oculta si no hay coincidencias o si el texto ya coincide con una sugerencia.
+ *
+ * @param onSelect si no es `null`, elegir una sugerencia la entrega aquí en vez de a [onValueChange] (la usan
+ * los campos de varias entradas, como las variedades, que "añaden" la sugerencia).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +42,10 @@ fun AntAutoComplete(
   modifier: Modifier = Modifier,
   placeholder: String? = null,
   enabled: Boolean = true,
+  status: AntInputStatus = AntInputStatus.Default,
+  keyboardOptions: KeyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+  keyboardActions: KeyboardActions = KeyboardActions.Default,
+  onSelect: ((String) -> Unit)? = null,
 ) {
   val colors = AntTheme.colors
   var expanded by remember { mutableStateOf(false) }
@@ -54,7 +62,9 @@ fun AntAutoComplete(
       modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, enabled),
       placeholder = placeholder,
       enabled = enabled,
-      keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+      status = status,
+      keyboardOptions = keyboardOptions,
+      keyboardActions = keyboardActions,
     )
     ExposedDropdownMenu(
       expanded = showMenu,
@@ -66,7 +76,7 @@ fun AntAutoComplete(
         DropdownMenuItem(
           text = { Text(suggestion, color = colors.text, style = AntTheme.typography.text) },
           onClick = {
-            onValueChange(suggestion)
+            (onSelect ?: onValueChange)(suggestion)
             expanded = false
           },
           modifier = Modifier.background(colors.bgElevated),

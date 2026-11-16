@@ -91,7 +91,69 @@ object AntIcons {
       "M5.45 5.11L2 12V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V12L18.55 5.11A2 2 0 0 0 16.76 4H7.24A2 2 0 0 0 5.45 5.11Z",
     )
   }
+  /** Taza con vapor. */
+  val Coffee: ImageVector by lazy {
+    strokeIcon(
+      "Coffee",
+      "M5 10H17V15A4 4 0 0 1 13 19H9A4 4 0 0 1 5 15Z",
+      "M17 11H18.5A2.5 2.5 0 0 1 18.5 16H16.6",
+      "M8 3V6", "M11 3V6", "M14 3V6",
+    )
+  }
+  val Camera: ImageVector by lazy {
+    strokeIcon(
+      "Camera",
+      "M4 8H7L9 5H15L17 8H20A1 1 0 0 1 21 9V18A1 1 0 0 1 20 19H4A1 1 0 0 1 3 18V9A1 1 0 0 1 4 8Z",
+      "M15.5 13A3.5 3.5 0 1 1 8.5 13A3.5 3.5 0 1 1 15.5 13Z",
+    )
+  }
+  /** Galería de imágenes. */
+  val Image: ImageVector by lazy {
+    strokeIcon(
+      "Image",
+      "M5 4H19A1 1 0 0 1 20 5V19A1 1 0 0 1 19 20H5A1 1 0 0 1 4 19V5A1 1 0 0 1 5 4Z",
+      "M9.5 9A1.5 1.5 0 1 1 6.5 9A1.5 1.5 0 1 1 9.5 9Z",
+      "M4 17L9 12L13 16L15 14L20 19",
+    )
+  }
+  /** Tres nodos unidos. */
+  val Share: ImageVector by lazy {
+    strokeIcon(
+      "Share",
+      "M21 5A3 3 0 1 1 15 5A3 3 0 1 1 21 5Z",
+      "M9 12A3 3 0 1 1 3 12A3 3 0 1 1 9 12Z",
+      "M21 19A3 3 0 1 1 15 19A3 3 0 1 1 21 19Z",
+      "M8.6 10.5L15.4 6.5", "M8.6 13.5L15.4 17.5",
+    )
+  }
+  val Search: ImageVector by lazy {
+    strokeIcon("Search", "M17 11A6 6 0 1 1 5 11A6 6 0 1 1 17 11Z", "M21 21L15.5 15.5")
+  }
+  /** Estrella de contorno. */
+  val Star: ImageVector by lazy { strokeIcon("Star", STAR_PATH) }
+  /** Estrella rellena, para la valoración. */
+  val StarFilled: ImageVector by lazy { icon("StarFilled") { fill(STAR_PATH); stroke(STAR_PATH) } }
+  /** Esquinas de visor con dos líneas de texto: leer la etiqueta. */
+  val ScanText: ImageVector by lazy {
+    strokeIcon(
+      "ScanText",
+      "M4 8V5A1 1 0 0 1 5 4H8", "M16 4H19A1 1 0 0 1 20 5V8",
+      "M20 16V19A1 1 0 0 1 19 20H16", "M8 20H5A1 1 0 0 1 4 19V16",
+      "M8 10H16", "M8 14H13",
+    )
+  }
+  val Calendar: ImageVector by lazy {
+    strokeIcon(
+      "Calendar",
+      "M5 5H19A1 1 0 0 1 20 6V19A1 1 0 0 1 19 20H5A1 1 0 0 1 4 19V6A1 1 0 0 1 5 5Z",
+      "M4 10H20", "M8 3V7", "M16 3V7",
+    )
+  }
+  /** Chevron a la derecha. */
+  val Right: ImageVector by lazy { strokeIcon("Right", "M9 6L15 12L9 18") }
 }
+
+private const val STAR_PATH = "M12 3L14.8 8.8L21 9.6L16.5 14L17.6 20.3L12 17.3L6.4 20.3L7.5 14L3 9.6L9.2 8.8Z"
 
 private const val STROKE_WIDTH = 1.75f
 

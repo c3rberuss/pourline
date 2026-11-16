@@ -45,6 +45,7 @@ class TargetPickerTest {
     simulated = false,
     preview = List(48) { 0f },
     fitScore = null,
+    rating = null,
   )
 
   private val brews = listOf(brew(10, "Mañana", 250.0), brew(11, "Vacía", 0.0))

@@ -10,10 +10,13 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
+import dev.dotscale.coffee.CoffeeRepository
+import dev.dotscale.coffee.PhotoFiles
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
+import dev.dotscale.history.UsedCoffee
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.ui.theme.DotScaleTheme
 import kotlinx.coroutines.runBlocking
@@ -49,9 +52,11 @@ class BrewCompareScreenTest {
     doseG: Double? = 20.0,
     unit: WeightUnit = WeightUnit.GRAMS,
   ): Long = runBlocking {
+    // El café sale del catálogo: la preparación lo vincula y copia su nombre.
+    val used = coffee?.let { UsedCoffee(CoffeeRepository(db, PhotoFiles { }).save(TestBrews.coffeeDraft(name = it)), it) }
     repository.save(
       TestBrews.finished(totalMs = totalMs, doseG = doseG),
-      TestBrews.context(startedAtEpochMs = totalMs, unit = unit, details = BrewDetails(name = name, coffee = coffee)),
+      TestBrews.context(startedAtEpochMs = totalMs, unit = unit, details = BrewDetails(name = name), coffee = used),
     )
   }
 
@@ -60,7 +65,7 @@ class BrewCompareScreenTest {
   }
 
   private fun show(aId: Long, bId: Long) {
-    val viewModel = BrewCompareViewModel(repository, aId, bId)
+    val viewModel = BrewCompareViewModel(repository, CoffeeRepository(db, PhotoFiles { }), aId, bId)
     rule.setContent {
       DotScaleTheme(darkTheme = false) { BrewCompareScreen(viewModel, onBack = { backCount++ }) }
     }

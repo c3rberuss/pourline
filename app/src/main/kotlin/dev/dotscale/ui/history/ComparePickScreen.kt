@@ -46,19 +46,19 @@ fun ComparePickScreen(viewModel: ComparePickViewModel, onBack: () -> Unit, onPic
     },
   ) { padding ->
     when (val current = a) {
-      is ComparePickA.Loaded -> PickContent(viewModel, current.coffee, onPick, Modifier.padding(padding))
+      is ComparePickA.Loaded -> PickContent(viewModel, current.coffeeId, onPick, Modifier.padding(padding))
       ComparePickA.Loading, ComparePickA.Gone -> AntSpin(Modifier.padding(padding).padding(AntTheme.spacing.xl))
     }
   }
 }
 
 @Composable
-private fun PickContent(viewModel: ComparePickViewModel, aCoffee: String?, onPick: (Long) -> Unit, modifier: Modifier) {
+private fun PickContent(viewModel: ComparePickViewModel, aCoffeeId: Long?, onPick: (Long) -> Unit, modifier: Modifier) {
   val items by viewModel.items.collectAsStateWithLifecycle()
   val coffees by viewModel.coffees.collectAsStateWithLifecycle()
   val methods by viewModel.methods.collectAsStateWithLifecycle()
   val hasOthers by viewModel.hasOthers.collectAsStateWithLifecycle()
-  var filter by rememberHistoryFilter(BrewFilter(coffee = aCoffee), coffees, methods)
+  var filter by rememberHistoryFilter(BrewFilter(coffeeId = aCoffeeId), coffees, methods)
   LaunchedEffect(filter) { viewModel.setFilter(filter) }
 
   LazyColumn(

@@ -12,10 +12,14 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
+import dev.dotscale.coffee.CoffeeRepository
+import dev.dotscale.coffee.PhotoFiles
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
+import dev.dotscale.history.UsedCoffee
+import dev.dotscale.ui.coffees.formatCoffeeDate
 import dev.dotscale.ui.theme.DotScaleTheme
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -23,6 +27,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.time.LocalDate
 
 class ComparePickScreenTest {
   @get:Rule
@@ -43,10 +48,18 @@ class ComparePickScreenTest {
   @After
   fun tearDown() = db.close()
 
-  private fun seed(startedAt: Long, name: String? = null, coffee: String? = null): Long = runBlocking {
+  private fun coffee(name: String, roastDate: LocalDate? = null): Long = runBlocking {
+    CoffeeRepository(db, PhotoFiles { }).save(TestBrews.coffeeDraft(name = name).copy(roastDate = roastDate))
+  }
+
+  private fun seed(startedAt: Long, name: String? = null, coffeeId: Long? = null): Long = runBlocking {
     repository.save(
       TestBrews.finished(totalMs = 60_000),
-      TestBrews.context(startedAtEpochMs = startedAt, details = BrewDetails(name = name, coffee = coffee)),
+      TestBrews.context(
+        startedAtEpochMs = startedAt,
+        details = BrewDetails(name = name),
+        coffee = coffeeId?.let { UsedCoffee(it, "x") },
+      ),
     )
   }
 
@@ -69,9 +82,10 @@ class ComparePickScreenTest {
 
   @Test
   fun startsFilteredByTheCoffeeOfAAndLeavesAOut() {
-    val a = seed(1_000, name = "A", coffee = "Etiopía")
-    seed(2_000, name = "B", coffee = "Etiopía")
-    seed(3_000, name = "C", coffee = "Kenia")
+    val etiopia = coffee("Etiopía")
+    val a = seed(1_000, name = "A", coffeeId = etiopia)
+    seed(2_000, name = "B", coffeeId = etiopia)
+    seed(3_000, name = "C", coffeeId = coffee("Kenia"))
     show(a)
 
     waitForRows(1)
@@ -80,10 +94,25 @@ class ComparePickScreenTest {
   }
 
   @Test
+  fun twoBagsOfTheSameCoffeeStartInTheBagOfA() {
+    val first = coffee("Guji", LocalDate.of(2026, 10, 12))
+    val second = coffee("Guji", LocalDate.of(2026, 11, 2))
+    val a = seed(1_000, name = "A", coffeeId = first)
+    seed(2_000, name = "B", coffeeId = first)
+    seed(3_000, name = "C", coffeeId = second)
+    show(a)
+
+    waitForRows(1)
+    rows()[0].assertTextContains("B", substring = true)
+    val label = context.getString(R.string.history_filter_coffee_roasted, "Guji", formatCoffeeDate(LocalDate.of(2026, 10, 12)))
+    rule.onNodeWithTag("history_filter_coffee").assertTextContains(label)
+  }
+
+  @Test
   fun withoutACoffeeItStartsInAll() {
     val a = seed(1_000, name = "A")
-    seed(2_000, name = "B", coffee = "Etiopía")
-    seed(3_000, name = "C", coffee = "Kenia")
+    seed(2_000, name = "B", coffeeId = coffee("Etiopía"))
+    seed(3_000, name = "C", coffeeId = coffee("Kenia"))
     show(a)
 
     waitForRows(2)
@@ -114,8 +143,8 @@ class ComparePickScreenTest {
 
   @Test
   fun ifTheCoffeeOfAHasNoOtherBrewsTheFilterEmptyStateAppearsAndAllFixesIt() {
-    val a = seed(1_000, name = "A", coffee = "Etiopía")
-    seed(2_000, name = "B", coffee = "Kenia")
+    val a = seed(1_000, name = "A", coffeeId = coffee("Etiopía"))
+    seed(2_000, name = "B", coffeeId = coffee("Kenia"))
     show(a)
 
     rule.waitUntil(5_000) { exists("compare_pick_empty_filtered") }

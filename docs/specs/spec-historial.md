@@ -6,7 +6,7 @@
 | Fecha | 2026-11-12 |
 | Deriva de | [SPEC-001 Gráfica de vertido](spec-grafica-vertido.md) (Anexo y punto P1 de su [plan](plan-grafica-vertido.md)) |
 | Módulos afectados | `:app` (nuevo paquete `dev.dotscale.history`, nuevo `ui/history`, `brew`, `ui/scale`, `ui/components`, navegación) |
-| Specs relacionados | [SPEC-003 Curva objetivo](spec-curva-objetivo.md), SPEC-004 Compartir imagen (pendiente) |
+| Specs relacionados | [SPEC-003 Curva objetivo](spec-curva-objetivo.md), [SPEC-004 Catálogo de cafés y compartir imagen](spec-catalogo-cafes.md) |
 
 ## 1. Resumen y Contexto
 
@@ -46,7 +46,7 @@
   - Catálogo de cafés con pantalla propia.
   - Recalcular resúmenes guardados con constantes nuevas (§3.3, versión de la métrica).
   - Recuperar una sesión activa tras la muerte del proceso.
-  - Compartir como imagen (SPEC-004).
+  - Compartir como imagen ([SPEC-004](spec-catalogo-cafes.md)).
 
 ## 2. Historias de Usuario y Casos de Uso
 

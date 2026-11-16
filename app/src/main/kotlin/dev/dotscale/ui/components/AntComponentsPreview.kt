@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,9 +20,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import dev.dotscale.ui.theme.AntSize
 import dev.dotscale.ui.theme.AntTheme
 import dev.dotscale.ui.theme.DotScaleTheme
+import java.time.LocalDate
 
 /** Catálogo de los componentes Ant para revisarlos en claro y oscuro desde el panel de previews. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -133,16 +137,53 @@ private fun AntShowcase() {
     var coffee by remember { mutableStateOf("Et") }
     AntAutoComplete(coffee, { coffee = it }, listOf("Etiopía", "Kenia"), Modifier.fillMaxWidth(), placeholder = "Café")
     AntMessage("Preparación borrada", AntStatus.Success, action = { AntButton("Deshacer", {}, type = AntButtonType.Link, size = AntSize.Small) })
+
+    AntDivider(text = "Rate · FormItem · SelectTrigger", orientation = AntDividerOrientation.Left)
+    var stars by remember { mutableStateOf<Int?>(3) }
+    Row(horizontalArrangement = Arrangement.spacedBy(spacing.base), verticalAlignment = Alignment.CenterVertically) {
+      AntRate(null, { stars = it }, starSize = 32.dp, testTag = "preview_rate_empty")
+    }
+    AntRate(stars, { stars = it }, starSize = 32.dp)
+    AntRate(4, null, starSize = 16.dp)
+    AntFormItem("Nombre", Modifier.fillMaxWidth(), required = true, error = "El nombre es obligatorio") {
+      AntInput("", {}, Modifier.fillMaxWidth(), status = AntInputStatus.Error)
+    }
+    AntFormItem("Tostador", Modifier.fillMaxWidth(), help = "Se sugieren los que ya registraste") {
+      AntInput("Café de Altura", {}, Modifier.fillMaxWidth())
+    }
+    AntFormItem(
+      "Variedades",
+      Modifier.fillMaxWidth(),
+      extra = { AntTag("Leído de la etiqueta", color = AntTagColor.Primary, icon = AntIcons.ScanText) },
+    ) {
+      AntInput("Heirloom", {}, Modifier.fillMaxWidth())
+    }
+    AntSelectTrigger("Etiopía Guji · día 9", {}, Modifier.fillMaxWidth(), label = "Café", leading = {
+      Icon(AntIcons.Coffee, contentDescription = null, modifier = Modifier.size(16.dp), tint = AntTheme.colors.textTertiary)
+    })
+    AntSelectTrigger("Etiopía Guji · día 9", {}, Modifier.fillMaxWidth(), label = "Café", enabled = false)
+
+    AntDivider(text = "DatePicker · Collapse", orientation = AntDividerOrientation.Left)
+    AntDatePicker(null, {}, Modifier.fillMaxWidth(), placeholder = "Fecha de tueste")
+    AntDatePicker(LocalDate.of(2026, 10, 12), {}, Modifier.fillMaxWidth(), testTag = "preview_date")
+    var folded by remember { mutableStateOf(false) }
+    AntCollapse("Datos del café", folded, { folded = it }, Modifier.fillMaxWidth(), extra = "Natural · Claro") {
+      AntText("Tostador: Café de Altura")
+      AntText("Origen: Etiopía · Guji", type = AntTextType.Secondary)
+    }
+    AntCollapse("Datos del café", true, {}, Modifier.fillMaxWidth(), testTag = "preview_collapse_open") {
+      AntText("Proceso: Natural")
+    }
   }
 }
 
-@Preview(name = "Ant · Claro", showBackground = true, heightDp = 2200)
+@Preview(name = "Ant · Claro", showBackground = true, heightDp = 3200)
 @Composable
 private fun AntShowcaseLightPreview() {
   DotScaleTheme(darkTheme = false) { AntShowcase() }
 }
 
-@Preview(name = "Ant · Oscuro", showBackground = true, backgroundColor = 0xFF000000, heightDp = 2200, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Ant · Oscuro", showBackground = true, backgroundColor = 0xFF000000, heightDp = 3200, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun AntShowcaseDarkPreview() {
   DotScaleTheme(darkTheme = true) { AntShowcase() }

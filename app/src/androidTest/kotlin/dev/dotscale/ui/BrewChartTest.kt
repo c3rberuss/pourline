@@ -1,5 +1,6 @@
 package dev.dotscale.ui
 
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -68,6 +69,7 @@ class BrewChartTest {
           onBack = {},
           onOpenSettings = {},
           onOpenHistory = {},
+          onOpenCoffees = {},
           onAddDetails = {},
           onManageRecipes = { managed++ },
         )
@@ -127,7 +129,7 @@ class BrewChartTest {
 
   @Test
   fun withoutATargetTheChipSaysSoAndTheSimulatorButtonsAreDisabled() {
-    rule.onNodeWithText(context.getString(R.string.target_chip_none)).assertIsDisplayed()
+    rule.onNodeWithTag("target_chip").performScrollTo().assertContentDescriptionEquals(context.getString(R.string.target_chip_none))
     rule.onNodeWithTag("sim_follow_target").performScrollTo().assertIsNotEnabled()
     rule.onNodeWithTag("sim_follow_deviated").assertIsNotEnabled()
     assert(!exists("target_armed_stage"))
@@ -139,7 +141,7 @@ class BrewChartTest {
 
     val name = texts.builtInName(BuiltInRecipes.V60_CLASSIC)
     rule.onNodeWithTag("target_chip").performScrollTo()
-    rule.onNodeWithText(context.getString(R.string.target_chip, name)).assertIsDisplayed()
+    rule.onNodeWithTag("target_chip").assertContentDescriptionEquals(context.getString(R.string.target_chip, name))
     rule.onNodeWithTag("target_armed_stage").performScrollTo().assertIsDisplayed()
     // El selector se cierra al elegir.
     rule.waitUntil(5_000) { !exists("target_picker") }
