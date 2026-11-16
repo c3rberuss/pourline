@@ -5,6 +5,8 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.isPopup
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -22,6 +24,7 @@ import dev.dotscale.R
 import dev.dotscale.coffee.CoffeeRepository
 import dev.dotscale.coffee.PhotoFiles
 import dev.dotscale.history.BrewDetails
+import dev.dotscale.history.BrewMethod
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
@@ -102,6 +105,24 @@ class BrewEditScreenTest {
     assertEquals("Etiopía", saved.coffee)
     assertNull(saved.coffeeId)
     assertEquals("Solo el nombre", saved.name)
+  }
+
+  @Test
+  fun theMethodSelectorOffersTheNewMethodsAndSavesTheChosenOne() {
+    open()
+    val names = listOf(
+      "Espresso" to BrewMethod.ESPRESSO,
+      context.getString(R.string.brew_method_french_press) to BrewMethod.FRENCH_PRESS,
+      context.getString(R.string.brew_method_cold_brew) to BrewMethod.COLD_BREW,
+      context.getString(R.string.brew_method_moka) to BrewMethod.MOKA,
+    )
+    for ((name, _) in names) {
+      rule.onNodeWithTag("brew_edit_method").performScrollTo().performClick()
+      rule.onNode(hasText(name) and hasAnyAncestor(isPopup())).performClick()
+      rule.onNodeWithTag("brew_edit_method").assertTextContains(name, substring = true)
+    }
+    saveAndWait()
+    assertEquals(BrewMethod.MOKA, entity().method)
   }
 
   @Test

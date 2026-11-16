@@ -130,6 +130,9 @@
     <string name="brew_detail_curve_error">This brew\'s curve could not be read</string>
     <string name="brew_detail_old_metric">Score calculated with an earlier version of the metric</string>
     <string name="brew_method_other">Other</string>
+    <string name="brew_method_french_press">French press</string>
+    <string name="brew_method_cold_brew">Cold brew</string>
+    <string name="brew_method_moka">Moka pot</string>
 
     <!-- Brew edit -->
     <string name="brew_summary_add_details">Add details</string>

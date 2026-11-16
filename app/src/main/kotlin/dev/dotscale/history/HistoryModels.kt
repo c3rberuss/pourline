@@ -6,7 +6,7 @@ import dev.dotscale.brew.TargetCurve
 import dev.dotscale.protocol.ScaleModel
 import dev.dotscale.protocol.WeightUnit
 
-enum class BrewMethod { V60, KALITA_WAVE, CHEMEX, ORIGAMI, AEROPRESS, OTHER }
+enum class BrewMethod { V60, KALITA_WAVE, CHEMEX, ORIGAMI, AEROPRESS, FRENCH_PRESS, ESPRESSO, COLD_BREW, MOKA, OTHER }
 
 /** [coffeeId] es el café del catálogo; las preparaciones antiguas sin vínculo solo salen con "Todos" (D33). */
 data class BrewFilter(val coffeeId: Long? = null, val method: BrewMethod? = null)

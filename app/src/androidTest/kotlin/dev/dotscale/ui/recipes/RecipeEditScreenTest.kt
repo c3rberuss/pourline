@@ -2,6 +2,8 @@ package dev.dotscale.ui.recipes
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -89,6 +91,27 @@ class RecipeEditScreenTest {
     rule.onNode(hasText(context.getString(labelRes)) and hasAnyAncestor(hasTestTag("recipe_stage_type_$index")))
       .performScrollTo()
       .performClick()
+  }
+
+  @Test
+  fun theMethodSelectorOffersTheNewMethodsAndSavesTheChosenOne() {
+    show()
+    val names = listOf(
+      "Espresso" to BrewMethod.ESPRESSO,
+      context.getString(R.string.brew_method_french_press) to BrewMethod.FRENCH_PRESS,
+      context.getString(R.string.brew_method_cold_brew) to BrewMethod.COLD_BREW,
+      context.getString(R.string.brew_method_moka) to BrewMethod.MOKA,
+    )
+    for ((name, _) in names) {
+      rule.onNodeWithTag("recipe_edit_method").performScrollTo().performClick()
+      rule.onNode(hasText(name) and hasAnyAncestor(isPopup())).performClick()
+      rule.onNodeWithTag("recipe_edit_method").assertTextContains(name, substring = true)
+    }
+    type("recipe_edit_name", "Mi prensa")
+    type("recipe_edit_dose", "30")
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitUntil(5_000) { runBlocking { recipes.list().first().any { it.name == "Mi prensa" } } }
+    assertEquals(BrewMethod.MOKA, runBlocking { recipes.list().first().single { it.name == "Mi prensa" }.method })
   }
 
   @Test

@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import dev.dotscale.R
+import dev.dotscale.history.BrewMethod
 import dev.dotscale.recipe.RecipeListItem
 import dev.dotscale.ui.components.AntCard
 import dev.dotscale.ui.components.AntCardSize
@@ -18,7 +19,7 @@ import dev.dotscale.ui.components.AntTag
 import dev.dotscale.ui.components.AntTagColor
 import dev.dotscale.ui.components.AntText
 import dev.dotscale.ui.components.AntTextType
-import dev.dotscale.ui.history.fixedName
+import dev.dotscale.ui.history.label
 import dev.dotscale.ui.theme.AntTheme
 
 /**
@@ -31,7 +32,7 @@ fun RecipeRow(item: RecipeListItem, onClick: () -> Unit, modifier: Modifier = Mo
   AntCard(modifier.testTag("recipe_row"), size = AntCardSize.Small, onClick = onClick) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
       AntText(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-      val method = item.method?.let { it.fixedName ?: item.methodOther ?: stringResource(R.string.brew_method_other) }
+      val method = item.method?.let { if (it == BrewMethod.OTHER) item.methodOther ?: it.label() else it.label() }
       method?.let { AntText(it, type = AntTextType.Secondary, maxLines = 1, overflow = TextOverflow.Ellipsis) }
       AntText(recipeSummary(item.doseG, item.totalWaterG, item.stageCount), type = AntTextType.Secondary)
       if (item.builtIn || active) {
