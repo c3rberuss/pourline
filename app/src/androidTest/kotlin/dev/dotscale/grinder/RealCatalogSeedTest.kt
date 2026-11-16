@@ -65,6 +65,7 @@ class RealCatalogSeedTest {
       "kingrinder-k6",
       "baratza-encore",
       "fellow-ode-gen-2",
+      "femobook-a2",
     )
   }
 }

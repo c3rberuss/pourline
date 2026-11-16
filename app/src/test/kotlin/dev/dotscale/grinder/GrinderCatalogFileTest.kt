@@ -1,5 +1,6 @@
 package dev.dotscale.grinder
 
+import dev.dotscale.history.BrewMethod
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -24,6 +25,7 @@ class GrinderCatalogFileTest {
       "kingrinder-k6",
       "baratza-encore",
       "fellow-ode-gen-2",
+      "femobook-a2",
     )
   }
 
@@ -45,6 +47,28 @@ class GrinderCatalogFileTest {
     val data = load()
     assertEquals(1, data.version)
     assertEquals(APPROVED_KEYS, data.grinders.map { it.catalogKey })
+  }
+
+  @Test
+  fun theFemobookA2HasTheApprovedScaleRangesAndNoAnchors() {
+    val a2 = load().grinders.single { it.catalogKey == "femobook-a2" }
+    assertEquals(listOf(GrindUnitLevel(GrindUnit.ROTATIONS, null), GrindUnitLevel(GrindUnit.CLICKS, 40)), a2.units)
+    assertEquals(0.0, a2.scaleMin, 0.0)
+    assertEquals(120.0, a2.scaleMax, 0.0)
+    assertEquals(GrindDirection.HIGHER_IS_COARSER, a2.direction)
+    val expected = mapOf(
+      BrewMethod.V60 to GrindRange(50.0, 80.0),
+      BrewMethod.KALITA_WAVE to GrindRange(50.0, 80.0),
+      BrewMethod.CHEMEX to GrindRange(50.0, 80.0),
+      BrewMethod.ORIGAMI to GrindRange(50.0, 80.0),
+      BrewMethod.AEROPRESS to GrindRange(40.0, 50.0),
+      BrewMethod.MOKA to GrindRange(10.0, 18.0),
+      BrewMethod.FRENCH_PRESS to GrindRange(80.0, 120.0),
+    )
+    assertEquals(expected, a2.ranges)
+    assertTrue(a2.anchors.isEmpty())
+    assertEquals(listOf(1.0, 10.0), GrindFormat.decompose(50.0, a2.units))
+    assertEquals("Femobook, The Way to Coffee y Earl Coffee", a2.sourceName)
   }
 
   @Test
