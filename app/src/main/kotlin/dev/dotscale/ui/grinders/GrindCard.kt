@@ -158,21 +158,32 @@ private fun SourceLine(state: GrindCardState) {
 
 @Composable
 private fun Marks(outcome: GrindOutcome.Value) {
+  ConversionTags(outcome.reasons, outcome.suggested, Modifier.fillMaxWidth().testTag("grind_card_marks"), centered = true)
+}
+
+/** Las marcas de un resultado: "sugerido", "aproximado" (por anclas) y "al límite del molino". No dibuja nada sin marcas. */
+@Composable
+internal fun ConversionTags(
+  reasons: Set<ConversionReason>,
+  suggested: Boolean,
+  modifier: Modifier = Modifier,
+  centered: Boolean = false,
+) {
   val marks = buildList {
-    if (outcome.suggested) add(stringResource(R.string.grind_card_suggested) to AntTagColor.Primary)
-    if (ConversionReason.ANCHORS in outcome.reasons) add(stringResource(R.string.grind_card_approximate) to AntTagColor.Default)
-    if (ConversionReason.AT_LIMIT in outcome.reasons) add(stringResource(R.string.grind_card_at_limit) to AntTagColor.Warning)
+    if (suggested) add(stringResource(R.string.grind_card_suggested) to AntTagColor.Primary)
+    if (ConversionReason.ANCHORS in reasons) add(stringResource(R.string.grind_card_approximate) to AntTagColor.Default)
+    if (ConversionReason.AT_LIMIT in reasons) add(stringResource(R.string.grind_card_at_limit) to AntTagColor.Warning)
   }
   if (marks.isEmpty()) return
   FlowRow(
-    Modifier.fillMaxWidth().testTag("grind_card_marks"),
-    horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs, Alignment.CenterHorizontally),
+    modifier,
+    horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs, if (centered) Alignment.CenterHorizontally else Alignment.Start),
   ) {
     marks.forEach { (text, color) -> AntTag(text, color = color) }
   }
 }
 
-/** El atajo "Ver en mis otros molinos"; lo activa F8. */
+/** El atajo "Ver en mis otros molinos" (§3.7). */
 @Composable
 private fun ConverterLink(args: ConverterArgs, onOpen: (ConverterArgs) -> Unit) {
   AntButton(

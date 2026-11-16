@@ -36,6 +36,8 @@ import dev.dotscale.ui.coffees.CoffeesScreen
 import dev.dotscale.ui.coffees.CoffeesViewModel
 import dev.dotscale.ui.components.AntTabBar
 import dev.dotscale.ui.components.AntTabBarItem
+import dev.dotscale.ui.grinders.GrindConverterScreen
+import dev.dotscale.ui.grinders.GrindConverterViewModel
 import dev.dotscale.ui.grinders.GrinderCatalogScreen
 import dev.dotscale.ui.grinders.GrinderCatalogViewModel
 import dev.dotscale.ui.grinders.GrinderDetailScreen
@@ -154,6 +156,7 @@ private fun tabEntryProvider(
       onNewCoffee = { stack.add(CoffeeEdit()) },
       onAddGrinder = { stack.add(Grinders) },
       onFixGrinder = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
+      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
     )
   }
   tabEntry<Session>(tab) {
@@ -173,6 +176,7 @@ private fun tabEntryProvider(
       grind = deps.grindSelection,
       onAddGrinder = { stack.add(Grinders) },
       onFixGrinder = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
+      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
     )
   }
   tabEntry<Coffees>(tab) {
@@ -224,6 +228,15 @@ private fun tabEntryProvider(
       onBack = ::back,
       onOpenGrinder = { id -> stack.add(GrinderDetail(id)) },
       onAddGrinder = { stack.add(GrinderCatalog) },
+      onOpenConverter = { stack.add(GrindConverter()) },
+    )
+  }
+  tabEntry<GrindConverter>(tab) { key ->
+    GrindConverterScreen(
+      viewModel { GrindConverterViewModel(deps.grinderRepository, key.sourceId, key.method, key.value) },
+      onBack = ::back,
+      onOpenGrinders = { stack.add(Grinders) },
+      onFix = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
     )
   }
   tabEntry<GrinderCatalog>(tab) {
@@ -265,6 +278,7 @@ private fun tabEntryProvider(
       onBack = ::back,
       // Duplicar abre la copia en lugar de la original: atrás vuelve a la lista.
       onDuplicated = { copyId -> stack[stack.lastIndex] = RecipeEdit(id = copyId) },
+      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
     )
   }
   tabEntry<History>(tab) {

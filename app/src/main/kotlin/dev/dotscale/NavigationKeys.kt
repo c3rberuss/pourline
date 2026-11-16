@@ -1,6 +1,7 @@
 package dev.dotscale
 
 import androidx.navigation3.runtime.NavKey
+import dev.dotscale.history.BrewMethod
 import kotlinx.serialization.Serializable
 
 /** Raíz de la pestaña Preparar: la tarjeta de báscula y la configuración de la preparación. */
@@ -47,3 +48,6 @@ import kotlinx.serialization.Serializable
  * `openRanges` abre la pestaña de rangos.
  */
 @Serializable data class GrinderEdit(val id: Long? = null, val fromId: Long? = null, val openRanges: Boolean = false) : NavKey
+
+/** El convertidor suelto (SPEC-006); los argumentos lo abren ya relleno con el origen, el método y el ajuste. */
+@Serializable data class GrindConverter(val sourceId: Long? = null, val method: BrewMethod? = null, val value: Double? = null) : NavKey

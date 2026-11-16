@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.brew.TargetCurve
+import dev.dotscale.grinder.ConverterArgs
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.recipe.Adjustment
@@ -62,7 +63,12 @@ import dev.dotscale.ui.theme.AntSize
 import dev.dotscale.ui.theme.AntTheme
 
 @Composable
-fun RecipeEditScreen(viewModel: RecipeEditViewModel, onBack: () -> Unit, onDuplicated: (Long) -> Unit) {
+fun RecipeEditScreen(
+  viewModel: RecipeEditViewModel,
+  onBack: () -> Unit,
+  onDuplicated: (Long) -> Unit,
+  onOpenConverter: ((ConverterArgs) -> Unit)? = null,
+) {
   val status by viewModel.status.collectAsStateWithLifecycle()
   val form by viewModel.form.collectAsStateWithLifecycle()
   val initial by viewModel.initial.collectAsStateWithLifecycle()
@@ -141,6 +147,7 @@ fun RecipeEditScreen(viewModel: RecipeEditViewModel, onBack: () -> Unit, onDupli
         onChange = { choice -> viewModel.update { it.copy(grind = choice) } },
         tagPrefix = "recipe_edit",
         modifier = Modifier.fillMaxWidth(),
+        onOpenConverter = onOpenConverter,
       )
       LabeledInput(
         label = stringResource(R.string.recipe_edit_temp),

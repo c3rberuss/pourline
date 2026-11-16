@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import dev.dotscale.R
+import dev.dotscale.grinder.ConverterArgs
 import dev.dotscale.grinder.GrindChoice
 import dev.dotscale.grinder.GrindConverter
 import dev.dotscale.grinder.Grinder
@@ -17,6 +18,8 @@ import dev.dotscale.grinder.snap
 import dev.dotscale.grinder.withGrinder
 import dev.dotscale.grinder.withValue
 import dev.dotscale.history.BrewMethod
+import dev.dotscale.ui.components.AntButton
+import dev.dotscale.ui.components.AntButtonType
 import dev.dotscale.ui.components.AntFormItem
 import dev.dotscale.ui.components.AntSelect
 import dev.dotscale.ui.components.AntSelectOption
@@ -35,7 +38,8 @@ fun startValue(grinder: Grinder, method: BrewMethod?): Double =
  * El campo de molienda de una receta o una preparación (§3.7): el selector de molino ("Sin molino", mis molinos y,
  * si ya no es de ellos, el actual) y el ajuste con [GrindInput]. Un molino eliminado ([GrindChoice.Orphan]) muestra su
  * copia de texto con "molino eliminado" y el selector en "Elige un molino". Los tags son `<tagPrefix>_grinder` y
- * `<tagPrefix>_grind_value`.
+ * `<tagPrefix>_grind_value`. Con [onOpenConverter] y un molino vivo con ajuste, añade el atajo "Ver en mis otros
+ * molinos" (`<tagPrefix>_grind_converter`).
  *
  * @param options mis molinos; [current] es el molino vivo de la elección (aunque no esté en [options]).
  */
@@ -48,6 +52,7 @@ fun GrindSettingField(
   onChange: (GrindChoice) -> Unit,
   tagPrefix: String,
   modifier: Modifier = Modifier,
+  onOpenConverter: ((ConverterArgs) -> Unit)? = null,
 ) {
   val noGrinder = stringResource(R.string.grind_none)
   val choices = buildList {
@@ -88,6 +93,14 @@ fun GrindSettingField(
             }
             if (isOutOfScale(choice.value, current)) {
               GrindSettingText(dev.dotscale.grinder.GrindSetting(current.id, choice.value, null), current, testTag = "${tagPrefix}_grind_text")
+            }
+            if (onOpenConverter != null && choice.value != null) {
+              AntButton(
+                text = stringResource(R.string.grind_card_converter),
+                onClick = { onOpenConverter(ConverterArgs(current.id, method, choice.value)) },
+                modifier = Modifier.testTag("${tagPrefix}_grind_converter"),
+                type = AntButtonType.Link,
+              )
             }
           }
         }

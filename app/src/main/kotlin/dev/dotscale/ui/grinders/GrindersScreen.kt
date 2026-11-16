@@ -42,6 +42,7 @@ fun GrindersScreen(
   onBack: () -> Unit,
   onOpenGrinder: (Long) -> Unit,
   onAddGrinder: () -> Unit,
+  onOpenConverter: () -> Unit,
 ) {
   val state by viewModel.state.collectAsStateWithLifecycle()
   val texts = rememberGrindTexts()
@@ -52,6 +53,14 @@ fun GrindersScreen(
         title = stringResource(R.string.grinders_title),
         navigationIcon = {
           AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
+        },
+        actions = {
+          AntIconButton(
+            AntIcons.Convert,
+            contentDescription = stringResource(R.string.converter_title),
+            onClick = onOpenConverter,
+            modifier = Modifier.testTag("grinders_converter"),
+          )
         },
       )
     },

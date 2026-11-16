@@ -736,4 +736,21 @@
     <string name="grind_card_no_reference">Sin receta: no hay ajuste que convertir</string>
     <string name="grind_card_add">Añade tu molino para ver el equivalente</string>
     <string name="grind_card_converter">Ver en mis otros molinos</string>
+    <string name="converter_title">Convertidor</string>
+    <string name="converter_source">Molino de origen</string>
+    <string name="converter_source_placeholder">Elige un molino</string>
+    <string name="converter_method">Método</string>
+    <string name="converter_no_method">Sin método</string>
+    <string name="converter_value">Ajuste</string>
+    <string name="converter_results">En mis molinos</string>
+    <string name="converter_pick_source">Elige un molino de origen para empezar</string>
+    <string name="converter_pick_value">Elige el ajuste con + o −</string>
+    <string name="converter_no_others">No tienes otros molinos</string>
+    <string name="converter_empty">Añade tus molinos para ver el equivalente en cada uno</string>
+    <string name="converter_empty_action">Ir a Mis molinos</string>
+    <string name="converter_picker_title">Molino de origen</string>
+    <string name="converter_picker_search">Buscar marca o modelo</string>
+    <string name="converter_picker_owned">Mis molinos</string>
+    <string name="converter_picker_catalog">Catálogo</string>
+    <string name="converter_picker_empty">Sin resultados</string>
 </resources>

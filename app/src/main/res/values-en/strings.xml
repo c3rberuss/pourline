@@ -737,4 +737,21 @@
     <string name="grind_card_no_reference">No recipe: no setting to convert</string>
     <string name="grind_card_add">Add your grinder to see the equivalent</string>
     <string name="grind_card_converter">See in my other grinders</string>
+    <string name="converter_title">Converter</string>
+    <string name="converter_source">Source grinder</string>
+    <string name="converter_source_placeholder">Choose a grinder</string>
+    <string name="converter_method">Method</string>
+    <string name="converter_no_method">No method</string>
+    <string name="converter_value">Setting</string>
+    <string name="converter_results">In my grinders</string>
+    <string name="converter_pick_source">Choose a source grinder to start</string>
+    <string name="converter_pick_value">Choose the setting with + or −</string>
+    <string name="converter_no_others">You have no other grinders</string>
+    <string name="converter_empty">Add your grinders to see the equivalent in each one</string>
+    <string name="converter_empty_action">Go to My grinders</string>
+    <string name="converter_picker_title">Source grinder</string>
+    <string name="converter_picker_search">Search brand or model</string>
+    <string name="converter_picker_owned">My grinders</string>
+    <string name="converter_picker_catalog">Catalog</string>
+    <string name="converter_picker_empty">No results</string>
 </resources>

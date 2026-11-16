@@ -9,7 +9,7 @@ import androidx.navigation3.runtime.NavKey
 fun showsBottomBar(stack: List<NavKey>): Boolean {
   if (stack.any { it is Session }) return false
   val top = stack.lastOrNull()
-  return top !is CoffeeEdit && top !is RecipeEdit && top !is BrewEdit && top !is GrinderEdit
+  return top !is CoffeeEdit && top !is RecipeEdit && top !is BrewEdit && top !is GrinderEdit && top !is GrindConverter
 }
 
 /** Qué hace "Atrás" en la pestaña [Tab] con una pila de [backAction] entradas. */
