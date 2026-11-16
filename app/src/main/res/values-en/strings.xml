@@ -504,6 +504,11 @@
     <string name="onboarding_title">How do you brew your coffee?</string>
     <string name="onboarding_hint">You can change it any time in Settings.</string>
     <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_grinder_title">Which grinder do you use?</string>
+    <string name="onboarding_grinder_hint">We will use it to convert recipe settings to your grinder.</string>
+    <string name="onboarding_grinder_skip">Skip</string>
+    <string name="onboarding_grinder_empty">There are no grinders in the catalog yet. You can add yours in Settings → Grinders.</string>
+    <string name="onboarding_grinder_footer">If yours is not listed, create it in Settings → Grinders.</string>
     <!-- Guided session -->
     <string name="session_close">Leave the session</string>
     <string name="session_options">Options</string>

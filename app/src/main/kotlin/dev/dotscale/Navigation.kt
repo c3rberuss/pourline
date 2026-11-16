@@ -57,6 +57,7 @@ import dev.dotscale.ui.history.ComparePickViewModel
 import dev.dotscale.ui.history.HistoryScreen
 import dev.dotscale.ui.history.HistoryViewModel
 import dev.dotscale.ui.onboarding.OnboardingScreen
+import dev.dotscale.ui.onboarding.OnboardingViewModel
 import dev.dotscale.ui.prepare.PrepareScreen
 import dev.dotscale.ui.prepare.PrepareViewModel
 import dev.dotscale.ui.recipes.RecipeEditScreen
@@ -79,7 +80,9 @@ fun MainNavigation(deps: AppDependencies) {
   if (onboardingDone) {
     TabsNavigation(deps)
   } else {
-    OnboardingScreen(onChoose = deps.experienceSettings::completeOnboarding)
+    val viewModel = viewModel { OnboardingViewModel(deps.grinderRepository, deps.grinderSettings, deps.experienceSettings) }
+    val catalog by viewModel.catalog.collectAsStateWithLifecycle()
+    OnboardingScreen(catalog = catalog, onFinish = viewModel::finish)
   }
 }
 
