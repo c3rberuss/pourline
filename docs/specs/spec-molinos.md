@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado, pendiente de plan |
+| Estado | Aprobado. Plan aprobado: [`plan-molinos.md`](plan-molinos.md) (sus decisiones D-n se citan en el texto) |
 | Fecha | 2026-11-16 |
 | Deriva de | La molienda en texto libre (`grind: String?`) de [SPEC-002 Historial](spec-historial.md) y [SPEC-003 Curva objetivo](spec-curva-objetivo.md) |
 | Módulos afectados | `:app` (nuevo paquete `dev.dotscale.grinder`, nuevo `ui/grinders`, `history`, `recipe`, `settings`, `ui/recipes`, `ui/history`, `ui/prepare`, `ui/session`, `ui/onboarding`, `ui/settings`, navegación) |
@@ -86,8 +86,9 @@
   más fina:
   - La posición 0 es la **unidad primaria**.
   - Cada unidad secundaria declara `perParent`, el número de unidades suyas que forman una de la
-    anterior. Por ejemplo: rotaciones; números con `perParent = 4`; clics con `perParent = 10`.
-    La jerarquía real de cada predefinido se confirma en la revisión del catálogo (§6).
+    anterior. Por ejemplo, en un molino de prueba: rotaciones; números con `perParent = 4`; clics
+    con `perParent = 10`. La jerarquía real de cada predefinido sale del formato de la fuente (por
+    ejemplo, `rotation.number.tick` en el JX-Pro) y se confirma en la revisión del catálogo (§6).
   - La última unidad es la **unidad base**.
   - Un molino con una sola unidad (por ejemplo, solo clics) es el caso simple.
 - **Valor de un ajuste.** Es un único `Double` en unidades base (`grindValue`). Para mostrarlo se
@@ -122,7 +123,8 @@
 - **Funciones puras**, sin Android, en `dev.dotscale.grinder`:
   - `GrindFormat.decompose(value, units): List<Int|Double>`.
   - `GrindFormat.compose(parts, units): Double`.
-  - `GrindFormat.format(value, grinder): String`.
+  - `GrindFormat.format(value, grinder, texts): String`. `texts` (`GrindTexts`) aporta los nombres
+    de unidad con plurales por idioma, para que el dominio no dependa de Android (plan D12).
 - **En pantalla:**
   - Forma corta con las partes separadas por " · ", por ejemplo "1 · 2 · 3".
   - Etiquetas de unidad bajo cada parte, como en los steppers de las imágenes de referencia.
@@ -219,11 +221,15 @@
 - `GrindFormat` y `GrindConverter` son Kotlin puro (§3.2 y §3.3).
 - `GrinderValidator` valida un molino:
   - `scaleMin < scaleMax`, `step > 0`;
-  - cada `perParent ≥ 2`;
+  - la escala es múltiplo del paso (plan D15);
+  - un molino compuesto no admite escala negativa (plan D15);
+  - la unidad primaria no lleva `perParent` y cada secundaria tiene `perParent ≥ 2`;
   - unidades sin repetir;
   - rangos con `min < max` y dentro de la escala;
-  - anclas dentro de la escala y monótonas según la dirección;
+  - anclas dentro de la escala y estrictamente monótonas según la dirección;
   - marca y modelo no vacíos.
+- **Escrituras con molino.** Toda escritura que vincule un molino a una receta o preparación
+  comprueba que el molino exista, como con el café en SPEC-004 (plan D18).
 - `GrinderDao` y `GrinderRepository` exponen, como `Flow`:
   - los molinos propios;
   - el catálogo completo;
@@ -326,8 +332,10 @@
   - El campo de texto "Molienda" se sustituye por un selector de molino (mis molinos más "Sin
     molino") y la introducción compuesta del ajuste.
   - En una receta nueva, el molino preseleccionado es el predeterminado.
+  - Se admite **molino sin ajuste** (plan D16).
 - **Detalle de receta y de preparación.** Muestran "Molino · ajuste" (o la copia con "molino
-  eliminado").
+  eliminado"). No existe una pantalla de detalle de receta aparte: el "detalle de receta" es
+  `RecipeEditScreen` (plan D8).
 - **Tarjeta de molienda en Preparar y en el paso 2 (Dosis) de `PrepFlow`:**
   - **Básico:**
     - Molino de la receta y su ajuste.
@@ -344,9 +352,12 @@
   - **Sin equivalencia:** "Sin equivalencia" y un enlace para completar los rangos (molino propio) o
     duplicarlo (predefinido).
   - **Sin receta o receta sin método:** se aplica la regla de anclas o "Sin equivalencia" (§3.3).
+  - **Origen de la tarjeta:** la receta elegida o, si el objetivo de la sesión es una preparación
+    guardada, esa preparación (plan D24).
 - **Al terminar la preparación.** Se guardan en la preparación el molino elegido en "Moler con" y el
-  ajuste mostrado (convertido o sugerido), con su `grindLabel`. Si no hay molino elegido, los campos
-  quedan a `null`.
+  ajuste mostrado (convertido o sugerido), con su `grindLabel`. Si no hay ajuste que mostrar (sin
+  receta, o receta sin molienda con un molino sin rango), se guarda **el molino sin ajuste** y se
+  completa en "Editar preparación" (plan D16). Si no hay molino elegido, los campos quedan a `null`.
 - **Convertidor suelto:**
   - Está en Ajustes → Molinos → "Convertidor".
   - **Atajo "Ver en mis otros molinos"** en la tarjeta de molienda y en el detalle de la receta.
@@ -364,8 +375,10 @@
   - Elegir un molino lo marca como "Lo tengo" y como predeterminado. "Omitir" sigue sin elegir.
   - `onboarding_done` se marca al terminar o al omitir ese paso.
   - Las instalaciones con `onboarding_done = true` no lo ven.
-- **Métodos nuevos.** Aparecen en los selectores de método de recetas y preparaciones, en el filtro
-  de método del historial y en las tarjetas para compartir.
+  - "Saltar" en el primer paso (el modo) termina el onboarding en Básico sin preguntar por el
+    molino (plan D6).
+- **Métodos nuevos.** Aparecen en los selectores de método de recetas y preparaciones y en el filtro
+  de método del historial. Las tarjetas para compartir no muestran el método, así que no cambian.
 
 ### 3.8 Flujo de ejecución (camino principal)
 
@@ -384,6 +397,8 @@
 ## 4. Casos Límite y Manejo de Errores
 
 - **Borrar un molino propio usado en recetas.** Aviso "Se usa en N recetas". Al confirmar:
+  - antes de borrar, se regenera `grindLabel` en las recetas y preparaciones que lo usan, para que
+    la copia lleve el nombre actual (plan D17);
   - las recetas y preparaciones quedan con `grinderId = null` y conservan `grindValue` y
     `grindLabel`, que se muestran con "molino eliminado";
   - si era el predeterminado, `default_grinder_id` pasa a `null`.
