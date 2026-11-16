@@ -111,6 +111,7 @@ data class GrinderEditForm(
       owned = base?.owned ?: true,
       retired = base?.retired ?: false,
       sourceUrl = base?.sourceUrl,
+      sourceName = base?.sourceName,
       duplicatedFromKey = base?.duplicatedFromKey,
     )
   }

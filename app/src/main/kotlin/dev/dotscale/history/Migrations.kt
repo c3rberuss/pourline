@@ -142,7 +142,7 @@ val MIGRATION_4_5: Migration = object : Migration(4, 5) {
       "CREATE TABLE IF NOT EXISTS `grinders` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `catalogKey` TEXT, " +
         "`brand` TEXT NOT NULL, `model` TEXT NOT NULL, `direction` TEXT NOT NULL, `scaleMin` REAL NOT NULL, " +
         "`scaleMax` REAL NOT NULL, `step` REAL NOT NULL, `owned` INTEGER NOT NULL, `retired` INTEGER NOT NULL, " +
-        "`sourceUrl` TEXT, `duplicatedFromKey` TEXT, `updatedAtEpochMs` INTEGER NOT NULL)",
+        "`sourceUrl` TEXT, `sourceName` TEXT, `duplicatedFromKey` TEXT, `updatedAtEpochMs` INTEGER NOT NULL)",
     )
     db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_grinders_catalogKey` ON `grinders` (`catalogKey`)")
     db.execSQL(

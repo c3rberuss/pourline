@@ -30,6 +30,7 @@ data class GrinderEntity(
   /** Un predefinido que desapareció del catálogo y sigue en uso. */
   val retired: Boolean,
   val sourceUrl: String? = null,
+  val sourceName: String? = null,
   val duplicatedFromKey: String? = null,
   val updatedAtEpochMs: Long,
 )
@@ -106,6 +107,7 @@ fun GrinderWithDetails.toGrinder(): Grinder = Grinder(
   owned = grinder.owned,
   retired = grinder.retired,
   sourceUrl = grinder.sourceUrl,
+  sourceName = grinder.sourceName,
   duplicatedFromKey = grinder.duplicatedFromKey,
 )
 
@@ -123,6 +125,7 @@ fun Grinder.toRows(nowMs: Long): GrinderRows = GrinderRows(
     owned = owned,
     retired = retired,
     sourceUrl = sourceUrl,
+    sourceName = sourceName,
     duplicatedFromKey = duplicatedFromKey,
     updatedAtEpochMs = nowMs,
   ),

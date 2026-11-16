@@ -68,6 +68,7 @@ class GrinderDetailScreenTest {
     assertFalse(ui.exists("grinder_detail_edit"))
     assertFalse(ui.exists("grinder_detail_delete"))
     assertTrue(ui.exists("grinder_attribution"))
+    ui.node("grinder_attribution").assertTextContains("Acme Guide", substring = true)
     assertTrue(ui.exists("grinder_attribution_link_acme-uno"))
     assertTrue(ui.exists("grinder_detail_duplicate"))
     assertTrue(ui.exists("grinder_detail_unown"))

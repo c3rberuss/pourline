@@ -32,6 +32,7 @@ data class CatalogGrinderDto(
   val anchors: Map<String, Double> = emptyMap(),
   val anchorsManual: Boolean = false,
   val sourceUrl: String = "",
+  val sourceName: String = "",
   val missing: List<String> = emptyList(),
   val notes: String? = null,
 )
@@ -56,6 +57,10 @@ sealed interface CatalogError {
 
   data class MissingSource(val id: String) : CatalogError {
     override val message: String get() = "$id: sin sourceUrl"
+  }
+
+  data class MissingSourceName(val id: String) : CatalogError {
+    override val message: String get() = "$id: sin sourceName"
   }
 }
 
@@ -118,6 +123,7 @@ object GrinderCatalogFile {
       level?.let { it to value }
     }.toMap()
     if (dto.sourceUrl.isBlank()) errors += CatalogError.MissingSource(id)
+    if (dto.sourceName.isBlank()) errors += CatalogError.MissingSourceName(id)
     val grinder = Grinder(
       catalogKey = dto.key,
       brand = dto.brand,
@@ -130,6 +136,7 @@ object GrinderCatalogFile {
       ranges = ranges,
       anchors = anchors,
       sourceUrl = dto.sourceUrl.ifBlank { null },
+      sourceName = dto.sourceName.trim().ifBlank { null },
     )
     val invalid = GrinderValidator.validate(grinder)
     if (invalid.isNotEmpty()) errors += CatalogError.Invalid(id, invalid)

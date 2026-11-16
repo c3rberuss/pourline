@@ -11,12 +11,13 @@ class GrinderCatalogParserTest {
     scale: String = """{"min": 0, "max": 40}""",
     ranges: String = """{"V60": {"min": 16, "max": 24, "source": "16 – 24"}}""",
     sourceUrl: String = "https://honestcoffeeguide.com/acme-uno-grind-settings/",
+    sourceName: String = "Honest Coffee Guide",
     units: String = """[{"unit": "CLICKS"}]""",
     anchors: String = """{"FINE": 8.0, "MEDIUM": 20.0}""",
   ) = """
     {"key": "$key", "brand": "Acme", "model": "Uno", "units": $units, "scale": $scale, "step": 1.0,
      "direction": "HIGHER_IS_COARSER", "micronRange": {"min": 0, "max": 950}, "ranges": $ranges,
-     "anchors": $anchors, "anchorsManual": false, "sourceUrl": "$sourceUrl", "missing": ["COLD_BREW"], "notes": "n"}
+     "anchors": $anchors, "anchorsManual": false, "sourceUrl": "$sourceUrl", "sourceName": "$sourceName", "missing": ["COLD_BREW"], "notes": "n"}
   """
 
   private fun file(vararg grinders: String) = """{"version": 3, "grinders": [${grinders.joinToString(",")}]}"""
@@ -35,6 +36,7 @@ class GrinderCatalogParserTest {
     assertEquals(GrindRange(0.0, 950.0), entry.micronRange)
     assertEquals(listOf("COLD_BREW"), entry.missing)
     assertEquals("https://honestcoffeeguide.com/acme-uno-grind-settings/", g.sourceUrl)
+    assertEquals("Honest Coffee Guide", g.sourceName)
   }
 
   @Test
@@ -78,6 +80,12 @@ class GrinderCatalogParserTest {
   fun anEmptySourceUrlIsRejected() {
     val result = GrinderCatalogFile.parse(file(grinderJson(sourceUrl = "")))
     assertTrue((result.exceptionOrNull() as CatalogException).errors.any { it is CatalogError.MissingSource })
+  }
+
+  @Test
+  fun aBlankSourceNameIsRejected() {
+    val result = GrinderCatalogFile.parse(file(grinderJson(sourceName = " ")))
+    assertTrue((result.exceptionOrNull() as CatalogException).errors.any { it is CatalogError.MissingSourceName })
   }
 
   @Test

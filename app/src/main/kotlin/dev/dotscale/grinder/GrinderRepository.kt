@@ -69,6 +69,7 @@ class GrinderRepository(
       owned = true,
       retired = false,
       sourceUrl = null,
+      sourceName = null,
       duplicatedFromKey = original.catalogKey ?: original.duplicatedFromKey,
     )
   }

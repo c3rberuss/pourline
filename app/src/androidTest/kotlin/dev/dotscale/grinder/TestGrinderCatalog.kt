@@ -58,7 +58,7 @@ object TestGrinderCatalog {
     ranges: String = "{}",
     anchors: String = "{}",
   ): String = """{"key":"$key","brand":"$brand","model":"$model","units":$units,"scale":{"min":$min,"max":$max},""" +
-    """"step":$step,"direction":"$direction","ranges":$ranges,"anchors":$anchors,"sourceUrl":"https://example.test/$key"}"""
+    """"step":$step,"direction":"$direction","ranges":$ranges,"anchors":$anchors,"sourceUrl":"https://example.test/$key","sourceName":"Acme Guide"}"""
 
   val JSON: String = catalog(VERSION, listOf(uno(), dos(), tres(), inverso()))
 }

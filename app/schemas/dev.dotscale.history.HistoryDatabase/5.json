@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 5,
-    "identityHash": "cf592b55b8caa5eb08916f021120bdab",
+    "identityHash": "4e312241107ca5d0933e53816f2099cc",
     "entities": [
       {
         "tableName": "brews",
@@ -680,7 +680,7 @@
       },
       {
         "tableName": "grinders",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `catalogKey` TEXT, `brand` TEXT NOT NULL, `model` TEXT NOT NULL, `direction` TEXT NOT NULL, `scaleMin` REAL NOT NULL, `scaleMax` REAL NOT NULL, `step` REAL NOT NULL, `owned` INTEGER NOT NULL, `retired` INTEGER NOT NULL, `sourceUrl` TEXT, `duplicatedFromKey` TEXT, `updatedAtEpochMs` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `catalogKey` TEXT, `brand` TEXT NOT NULL, `model` TEXT NOT NULL, `direction` TEXT NOT NULL, `scaleMin` REAL NOT NULL, `scaleMax` REAL NOT NULL, `step` REAL NOT NULL, `owned` INTEGER NOT NULL, `retired` INTEGER NOT NULL, `sourceUrl` TEXT, `sourceName` TEXT, `duplicatedFromKey` TEXT, `updatedAtEpochMs` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -744,6 +744,11 @@
           {
             "fieldPath": "sourceUrl",
             "columnName": "sourceUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceName",
+            "columnName": "sourceName",
             "affinity": "TEXT"
           },
           {
@@ -922,7 +927,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'cf592b55b8caa5eb08916f021120bdab')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4e312241107ca5d0933e53816f2099cc')"
     ]
   }
 }

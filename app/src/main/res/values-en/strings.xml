@@ -654,7 +654,8 @@
     <string name="grinder_delete_unused">It is not used in any recipe.</string>
     <string name="grinder_delete_confirm">Delete</string>
     <string name="grinder_delete_cancel">Cancel</string>
-    <string name="grinder_attribution">Source: Honest Coffee Guide · approximate values</string>
+    <string name="grinder_source_unknown">catalog</string>
+    <string name="grinder_attribution">Source: %1$s · approximate values</string>
     <string name="grind_ruler_coarse">Coarse</string>
     <string name="grind_ruler_fine">Fine</string>
     <string name="grind_ruler_description">Grind ruler, from coarse to fine.</string>

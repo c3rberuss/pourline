@@ -653,7 +653,8 @@
     <string name="grinder_delete_unused">No se usa en ninguna receta.</string>
     <string name="grinder_delete_confirm">Borrar</string>
     <string name="grinder_delete_cancel">Cancelar</string>
-    <string name="grinder_attribution">Fuente: Honest Coffee Guide · valores orientativos</string>
+    <string name="grinder_source_unknown">catálogo</string>
+    <string name="grinder_attribution">Fuente: %1$s · valores orientativos</string>
     <string name="grind_ruler_coarse">Grueso</string>
     <string name="grind_ruler_fine">Fino</string>
     <string name="grind_ruler_description">Regla de molienda, de grueso a fino.</string>

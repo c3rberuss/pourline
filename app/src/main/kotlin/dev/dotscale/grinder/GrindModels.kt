@@ -41,6 +41,8 @@ data class Grinder(
   val owned: Boolean = false,
   val retired: Boolean = false,
   val sourceUrl: String? = null,
+  /** Nombre de la fuente de los valores ("Honest Coffee Guide"); la tarjeta lo muestra en la atribución. */
+  val sourceName: String? = null,
   val duplicatedFromKey: String? = null,
 ) {
   val isPredefined: Boolean get() = catalogKey != null
