@@ -64,6 +64,9 @@ enum class ExpertFeature {
 
   /** "Restaurar recetas predefinidas" en Ajustes. */
   RESTORE_BUILT_INS,
+
+  /** La regla de molienda de la tarjeta de Preparar y del paso 2 (SPEC-006). */
+  GRIND_RULER,
 }
 
 /**

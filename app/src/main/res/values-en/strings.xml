@@ -723,4 +723,18 @@
     <string name="grind_value_hint">Tap + or − to start from the suggested value</string>
     <string name="grind_out_of_scale">Outside the scale</string>
     <string name="grinder_tag_deleted">grinder deleted</string>
+    <string name="grind_card_title">Grind</string>
+    <string name="grind_card_recipe">Recipe: %s</string>
+    <string name="grind_card_recipe_none">The recipe has no grind setting</string>
+    <string name="grind_card_grind_with">Grind with</string>
+    <string name="grind_card_approximate">approximate</string>
+    <string name="grind_card_suggested">suggested</string>
+    <string name="grind_card_at_limit">at the grinder\'s limit</string>
+    <string name="grind_card_no_equivalent">No equivalent</string>
+    <string name="grind_card_fix_complete">Complete the ranges</string>
+    <string name="grind_card_fix_duplicate">Duplicate to customize</string>
+    <string name="grind_card_orphan">Assign a grinder to the recipe to convert</string>
+    <string name="grind_card_no_reference">No recipe: no setting to convert</string>
+    <string name="grind_card_add">Add your grinder to see the equivalent</string>
+    <string name="grind_card_converter">See in my other grinders</string>
 </resources>

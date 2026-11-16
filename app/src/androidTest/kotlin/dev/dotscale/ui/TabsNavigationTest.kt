@@ -9,6 +9,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
 import dev.dotscale.Tab
@@ -16,6 +17,8 @@ import dev.dotscale.coffee.CoffeeDraft
 import dev.dotscale.history.TestBrews
 import dev.dotscale.history.UsedCoffee
 import dev.dotscale.scale.ConnectionState
+import dev.dotscale.session.PrepStep
+import dev.dotscale.ui.session.SessionDriver
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -207,5 +210,24 @@ class TabsNavigationTest {
     assertEquals(1, env.connectionsMade.size)
     rule.onNodeWithTag("scale_card")
       .assert(hasAnyDescendant(hasText(context.getString(R.string.scale_card_connected, env.scaleSession.target.value!!.name))))
+  }
+
+  @Test
+  fun fromTheDoseStepAddYourGrinderOpensGrindersWithoutTheBarAndBackReturnsToTheSession() {
+    show()
+    val driver = SessionDriver(rule, env)
+    driver.connect()
+    driver.start()
+    driver.tare()
+    driver.waitStep(PrepStep.DOSE)
+    driver.waitFor("grind_card_add")
+    rule.onNodeWithTag("grind_card_add").performScrollTo().performClick()
+
+    waitFor("grinders_empty")
+    assertTrue(!exists(Tab.PREPARE.testTag))
+    back()
+    waitFor("session_prep")
+    assertEquals(PrepStep.DOSE, env.scaleSession.ui.value.prep?.step)
+    assertTrue(!exists(Tab.PREPARE.testTag))
   }
 }

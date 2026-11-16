@@ -31,6 +31,9 @@ import dev.dotscale.scale.ConnectionState
 import dev.dotscale.scale.ConnectionStep
 import dev.dotscale.scale.ScaleConnection
 import dev.dotscale.session.AutoReconnect
+import dev.dotscale.session.GrindSelection
+import dev.dotscale.session.RepositorySessionGrinders
+import dev.dotscale.session.SessionGrind
 import dev.dotscale.session.RepositoryScaleCoffees
 import dev.dotscale.session.RepositoryTargetReferences
 import dev.dotscale.session.ScaleConnectionFactory
@@ -61,6 +64,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import java.io.File
 
 /** Permisos y Bluetooth a voluntad del test. */
@@ -163,7 +167,7 @@ class TestAppDependencies(
   @Volatile var connectionFor: (ScaleTarget) -> ScaleConnection = { SimulatedScaleConnection() }
   val connectionsMade = java.util.Collections.synchronizedList(mutableListOf<ScaleTarget>())
 
-  val scaleSession = ScaleSessionManager(
+  val scaleSession: ScaleSessionManager = ScaleSessionManager(
     connections = ScaleConnectionFactory { target ->
       connectionsMade += target
       connectionFor(target)
@@ -177,7 +181,16 @@ class TestAppDependencies(
     notifier = notifier,
     coffeeStore = brewSettings,
     coffees = RepositoryScaleCoffees(coffees),
+    grind = SessionGrind { grindSelection.current() },
     memory = connectionSettings,
+  )
+
+  val grindSelection = GrindSelection(
+    targets = scaleSession.ui.map { it.target },
+    grinders = RepositorySessionGrinders(grinders),
+    defaults = grinderSettings,
+    texts = grindTexts,
+    scope = appScope,
   )
 
   val autoReconnect = AutoReconnect(scaleSession, connectionSettings, bluetooth, MainScope())
@@ -196,6 +209,7 @@ class TestAppDependencies(
     grinderSettings = grinderSettings,
     grinderRepository = grinders,
     grindTexts = grindTexts,
+    grindSelection = grindSelection,
     coffeePhotoStore = photoStore,
     coffeeImages = CoffeeImages(photoStore, maxBytes = 1024 * 1024),
     labelOcr = FakeLabelOcr(),

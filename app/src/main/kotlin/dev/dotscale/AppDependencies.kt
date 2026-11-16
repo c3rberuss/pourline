@@ -12,6 +12,7 @@ import dev.dotscale.history.BrewRepository
 import dev.dotscale.recipe.RecipeRepository
 import dev.dotscale.recipe.RecipeTexts
 import dev.dotscale.session.AutoReconnect
+import dev.dotscale.session.GrindSelection
 import dev.dotscale.session.ScaleMemory
 import dev.dotscale.session.ScaleSessionManager
 import dev.dotscale.settings.BrewSettings
@@ -40,6 +41,7 @@ class AppDependencies(
   val grinderSettings: GrinderSettings,
   val grinderRepository: GrinderRepository,
   val grindTexts: GrindTexts,
+  val grindSelection: GrindSelection,
   val coffeePhotoStore: CoffeePhotoStore,
   val coffeeImages: CoffeeImages,
   val labelOcr: LabelOcr,

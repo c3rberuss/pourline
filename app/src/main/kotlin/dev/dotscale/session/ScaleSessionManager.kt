@@ -75,6 +75,7 @@ import java.util.concurrent.atomic.AtomicLong
  * @param notifier avisa de que empieza una etapa; se libera en [disconnect].
  * @param coffeeStore dónde se recuerda el último café elegido.
  * @param coffees de dónde salen el café elegido y las altas nuevas (SPEC-004).
+ * @param grind el ajuste de molienda de la tarjeta de Preparar; se congela al pasar a `Active` y es el que se guarda (SPEC-006).
  * @param memory dónde se recuerda la última báscula real que llegó a `Ready` (la simulada nunca).
  * @param clock reloj monotónico en ms; se inyecta para poder probar la sesión sin reloj real.
  * @param wallClock hora de pared en ms desde la época, para fechar las preparaciones.
@@ -91,6 +92,7 @@ class ScaleSessionManager(
   private val notifier: StageNotifier,
   private val coffeeStore: CoffeeStore = NoCoffeeStore,
   private val coffees: ScaleCoffees = NoScaleCoffees,
+  private val grind: SessionGrind = NoSessionGrind,
   private val memory: ScaleMemory = NoScaleMemory,
   private val clock: () -> Long = SystemClock::elapsedRealtime,
   private val wallClock: () -> Long = System::currentTimeMillis,
@@ -159,6 +161,10 @@ class ScaleSessionManager(
   /** El café congelado al empezar la sesión cuyo t0 es [coffeeFrozenFor]; es el que se guarda. */
   private var sessionCoffee: PickedCoffee? = null
   private var coffeeFrozenFor: Long? = null
+
+  /** El ajuste de molienda congelado al empezar la sesión cuyo t0 es [grindFrozenFor]; es el que se guarda (D23). */
+  private var sessionGrind: GrindSetting? = null
+  private var grindFrozenFor: Long? = null
 
   /** `true` entre "Nuevo café" y el alta que se elige sola (D23). */
   private var awaitingNewCoffee = false
@@ -375,6 +381,10 @@ class ScaleSessionManager(
         coffeeFrozenFor = t0
         sessionCoffee = previous.coffee
       }
+      if (grindFrozenFor != t0) {
+        grindFrozenFor = t0
+        sessionGrind = grind.current()
+      }
       sessionCoffee
     } else {
       selectedCoffee
@@ -442,6 +452,7 @@ class ScaleSessionManager(
       UsedTarget(it.type, it.key.id, it.name, it.curve, brewFit(brew.samples, brew.summary.totalTimeMs, it.curve, targetConfig))
     }
     val usedCoffee = sessionCoffee?.takeIf { coffeeFrozenFor == brew.t0MonoMs }
+    val usedGrind = sessionGrind?.takeIf { grindFrozenFor == brew.t0MonoMs }
     val startedAt = wallClock() - (clock() - brew.t0MonoMs)
     val context = BrewContext(
       startedAtEpochMs = startedAt,
@@ -449,7 +460,8 @@ class ScaleSessionManager(
       scaleModel = ui.model,
       simulated = ui.isSimulated,
       target = used,
-      details = frozen?.prefill,
+      // La molienda es la de "Moler con", no la de la referencia (D24).
+      details = if (frozen == null && usedGrind == null) null else (frozen?.prefill ?: BrewDetails()).copy(grind = usedGrind),
       coffee = usedCoffee?.let { UsedCoffee(it.id, it.name) },
     )
     val generation = saveGeneration.incrementAndGet()
@@ -601,6 +613,8 @@ class ScaleSessionManager(
     frozenFor = null
     sessionCoffee = null
     coffeeFrozenFor = null
+    sessionGrind = null
+    grindFrozenFor = null
   }
 
   /** "Tarar" de los pasos previos: envía la tara y espera su confirmación. */

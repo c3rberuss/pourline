@@ -1,0 +1,174 @@
+package dev.dotscale.ui.grinders
+
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.test.platform.app.InstrumentationRegistry
+import dev.dotscale.R
+import dev.dotscale.grinder.Grinder
+import dev.dotscale.grinder.GrindSetting
+import dev.dotscale.grinder.GrindUnit
+import dev.dotscale.grinder.GrindUnitLevel
+import dev.dotscale.grinder.TestGrinders
+import dev.dotscale.grinder.addGrinder
+import dev.dotscale.history.BrewMethod
+import dev.dotscale.recipe.Recipe
+import dev.dotscale.recipe.RecipeStage
+import dev.dotscale.settings.ExperienceMode
+import dev.dotscale.settings.ReferenceKey
+import dev.dotscale.ui.TestApp
+import dev.dotscale.ui.TestAppDependencies
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+
+/** La tarjeta de molienda de Preparar con Room en memoria: Básico y Experto, "Moler con", la fuente y los casos sin ajuste. */
+class GrindCardTest {
+  @get:Rule
+  val rule = createAndroidComposeRule<ComponentActivity>()
+
+  private val context = InstrumentationRegistry.getInstrumentation().targetContext
+  private val env = TestAppDependencies(context)
+  private val ui = GrindersUi(rule, env)
+
+  @After
+  fun tearDown() = env.close()
+
+  private fun recipe(grind: GrindSetting?, method: BrewMethod = BrewMethod.V60, name: String = "Mi V60") = runBlocking {
+    env.recipes.save(Recipe(name = name, method = method, grind = grind, doseG = 15.0, stages = listOf(RecipeStage("Bloom", 0, 40.0, 10_000))))
+  }
+
+  private fun show(recipeId: Long?, mode: ExperienceMode = ExperienceMode.BASIC) {
+    env.skipOnboarding(mode)
+    rule.setContent { TestApp(env) }
+    if (recipeId != null) {
+      rule.runOnUiThread { env.scaleSession.selectTarget(ReferenceKey.Recipe(recipeId)) }
+    }
+    ui.waitFor("grind_card")
+  }
+
+  private fun text(tag: String) = ui.node(tag, unmerged = true)
+
+  @Test
+  fun basicHasNoRulerAndExpertHasIt() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val id = recipe(GrindSetting(uno, 20.0, "x"))
+    show(id, ExperienceMode.BASIC)
+    ui.waitFor("grind_card_value")
+    assertFalse(ui.exists("grind_card_ruler"))
+  }
+
+  @Test
+  fun expertShowsTheRulerOfTheChosenGrinder() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val id = recipe(GrindSetting(uno, 20.0, "x"))
+    show(id, ExperienceMode.EXPERT)
+    ui.waitFor("grind_card_ruler")
+  }
+
+  @Test
+  fun theRecipeGrinderIsPreselectedAndShownAsIs() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    runBlocking { env.db.addGrinder(TestGrinders.dos, 2_000L) }
+    val id = recipe(GrindSetting(uno, 20.0, "x"))
+    show(id)
+    ui.waitFor("grind_card_value")
+    ui.node("grind_card_source").assertTextContains("Uno · 20", substring = true)
+    ui.node("grind_card_grinder").assertTextContains("Acme Uno", substring = true)
+    text("grind_card_value").assertTextContains("20", substring = true)
+  }
+
+  @Test
+  fun changingGrindWithShowsTheConvertedSetting() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    runBlocking { env.db.addGrinder(TestGrinders.dos, 2_000L) }
+    val id = recipe(GrindSetting(uno, 20.0, "x"))
+    show(id)
+    ui.waitFor("grind_card_value")
+
+    ui.choose("grind_card_grinder", "Acme Dos")
+    // Uno V60 16–24 en 20 es el 50 %; Dos V60 20–36 → 28.
+    rule.waitUntil(5_000) { runCatching { text("grind_card_value").assertTextContains("28", substring = true) }.isSuccess }
+    assertFalse(ui.exists("grind_card_ruler"))
+    assertEquals(28.0, env.grindSelection.current()!!.value!!, 0.0)
+  }
+
+  @Test
+  fun withoutOwnedGrindersItShowsTheLinkAndNoSelector() {
+    val foreign = runBlocking { env.db.addGrinder(TestGrinders.uno.copy(owned = false)) }
+    val id = recipe(GrindSetting(foreign, 20.0, "x"))
+    show(id)
+    ui.waitFor("grind_card_add")
+    assertFalse(ui.exists("grind_card_grinder"))
+    assertTrue(ui.exists("grind_card_source"))
+  }
+
+  @Test
+  fun theLinkOpensMyGrinders() {
+    val id = recipe(null)
+    show(id)
+    ui.waitFor("grind_card_add")
+    ui.click("grind_card_add")
+    ui.waitFor("grinders_empty")
+  }
+
+  @Test
+  fun aRecipeWithoutGrindSuggestsTheMiddleOfTheRangeOrSaysNothing() {
+    runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val id = recipe(null)
+    show(id)
+    ui.waitFor("grind_card_value")
+    // Uno V60 16–24 → 20, "sugerido".
+    text("grind_card_value").assertTextContains("20", substring = true)
+    assertTrue(rule.onAllNodesWithText(context.getString(R.string.grind_card_suggested)).fetchSemanticsNodes().isNotEmpty())
+    rule.onAllNodesWithText(context.getString(R.string.grind_card_recipe_none)).fetchSemanticsNodes().let { assertTrue(it.isNotEmpty()) }
+  }
+
+  @Test
+  fun noEquivalenceOffersToCompleteTheRangesOfMyGrinder() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val bare = Grinder(
+      brand = "Acme",
+      model = "Vacío",
+      units = listOf(GrindUnitLevel(GrindUnit.CLICKS)),
+      scaleMin = 0.0,
+      scaleMax = 40.0,
+      owned = true,
+    )
+    runBlocking { env.db.addGrinder(bare, 2_000L) }
+    val id = recipe(GrindSetting(uno, 20.0, "x"))
+    show(id)
+    ui.waitFor("grind_card_value")
+    ui.choose("grind_card_grinder", "Acme Vacío")
+    ui.waitFor("grind_card_fix")
+    text("grind_card_value").assertTextContains(context.getString(R.string.grind_card_no_equivalent), substring = true)
+    ui.click("grind_card_fix")
+    ui.waitFor("grinder_edit_save")
+  }
+
+  @Test
+  fun aDeletedGrinderOnTheRecipeCannotBeConverted() {
+    runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val id = recipe(GrindSetting(null, 30.0, "Chestnut S3 · 30 clics"))
+    show(id)
+    ui.waitFor("grind_card_orphan")
+    assertTrue(ui.exists("grind_card_source"))
+  }
+
+  @Test
+  fun aPredefinedGrinderShowsItsSource() {
+    env.seedGrinders()
+    val uno = runBlocking { env.grinders.catalog().first().single { it.model == "Uno" }.id }
+    runBlocking { env.grinders.setOwned(uno, true) }
+    val id = recipe(GrindSetting(uno, 20.0, "x"))
+    show(id)
+    ui.waitFor("grind_card_attribution")
+    assertTrue(ui.exists("grind_card_attribution_link_acme-uno"))
+  }
+}

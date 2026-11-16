@@ -26,6 +26,7 @@ import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import dev.dotscale.grinder.GrindFix
 import dev.dotscale.ui.coffees.CoffeeDetailScreen
 import dev.dotscale.ui.coffees.CoffeeDetailViewModel
 import dev.dotscale.ui.coffees.CoffeeEditScreen
@@ -141,7 +142,7 @@ private fun tabEntryProvider(
   }
 
   tabEntry<Prepare>(tab) {
-    val viewModel = viewModel { PrepareViewModel(deps.scaleSession, deps.scaleMemory, deps.freeBrewDefaults, deps.bluetooth) }
+    val viewModel = viewModel { PrepareViewModel(deps.scaleSession, deps.scaleMemory, deps.freeBrewDefaults, deps.bluetooth, deps.grindSelection) }
     PrepareScreen(
       viewModel = viewModel,
       scanner = deps.scanner,
@@ -151,6 +152,8 @@ private fun tabEntryProvider(
       onStart = { stack.add(Session) },
       onManageRecipes = { selectTab(Tab.RECIPES) },
       onNewCoffee = { stack.add(CoffeeEdit()) },
+      onAddGrinder = { stack.add(Grinders) },
+      onFixGrinder = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
     )
   }
   tabEntry<Session>(tab) {
@@ -167,6 +170,9 @@ private fun tabEntryProvider(
       brews = deps.brewRepository,
       onAddDetails = { id -> stack.add(BrewEdit(id)) },
       onDone = { stack.popToRoot() },
+      grind = deps.grindSelection,
+      onAddGrinder = { stack.add(Grinders) },
+      onFixGrinder = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
     )
   }
   tabEntry<Coffees>(tab) {
@@ -301,3 +307,7 @@ private fun tabEntryProvider(
     )
   }
 }
+
+/** Completar los rangos abre el editor del molino propio; en un predefinido, una copia suya con los rangos abiertos. */
+private fun fixGrinderKey(fix: GrindFix, id: Long): NavKey =
+  if (fix == GrindFix.COMPLETE_RANGES) GrinderEdit(id = id, openRanges = true) else GrinderEdit(fromId = id, openRanges = true)

@@ -17,6 +17,9 @@ import dev.dotscale.recipe.RecipeRepository
 import dev.dotscale.recipe.ResourcesRecipeTexts
 import dev.dotscale.session.AndroidScaleConnections
 import dev.dotscale.session.AutoReconnect
+import dev.dotscale.session.GrindSelection
+import dev.dotscale.session.RepositorySessionGrinders
+import dev.dotscale.session.SessionGrind
 import dev.dotscale.session.RepositoryScaleCoffees
 import dev.dotscale.session.RepositoryTargetReferences
 import dev.dotscale.session.ScaleSessionManager
@@ -31,6 +34,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -95,7 +99,7 @@ class DotScaleApp : Application() {
    * La conexión con la báscula y la sesión de preparación: un objeto por proceso. Su ámbito es el hilo principal
    * del proceso, así que cambiar de pestaña o rotar no la toca.
    */
-  val scaleSession by lazy {
+  val scaleSession: ScaleSessionManager by lazy {
     ScaleSessionManager(
       connections = AndroidScaleConnections(this),
       scope = MainScope(),
@@ -107,7 +111,19 @@ class DotScaleApp : Application() {
       notifier = AndroidStageNotifier(this, targetSettings),
       coffeeStore = brewSettings,
       coffees = RepositoryScaleCoffees(coffeeRepository),
+      grind = SessionGrind { grindSelection.current() },
       memory = connectionSettings,
+    )
+  }
+
+  /** "Moler con" y el estado de la tarjeta de molienda; el gestor congela su ajuste al empezar la sesión (D23). */
+  val grindSelection: GrindSelection by lazy {
+    GrindSelection(
+      targets = scaleSession.ui.map { it.target },
+      grinders = RepositorySessionGrinders(grinderRepository),
+      defaults = grinderSettings,
+      texts = grindTexts,
+      scope = applicationScope,
     )
   }
 
@@ -135,6 +151,7 @@ class DotScaleApp : Application() {
       grinderSettings = grinderSettings,
       grinderRepository = grinderRepository,
       grindTexts = grindTexts,
+      grindSelection = grindSelection,
       coffeePhotoStore = coffeePhotoStore,
       coffeeImages = coffeeImages,
       labelOcr = labelOcr,

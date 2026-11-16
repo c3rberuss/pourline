@@ -722,4 +722,18 @@
     <string name="grind_value_hint">Toca + o − para empezar desde el valor sugerido</string>
     <string name="grind_out_of_scale">Fuera de la escala</string>
     <string name="grinder_tag_deleted">molino eliminado</string>
+    <string name="grind_card_title">Molienda</string>
+    <string name="grind_card_recipe">Receta: %s</string>
+    <string name="grind_card_recipe_none">La receta no indica molienda</string>
+    <string name="grind_card_grind_with">Moler con</string>
+    <string name="grind_card_approximate">aproximado</string>
+    <string name="grind_card_suggested">sugerido</string>
+    <string name="grind_card_at_limit">al límite del molino</string>
+    <string name="grind_card_no_equivalent">Sin equivalencia</string>
+    <string name="grind_card_fix_complete">Completar los rangos</string>
+    <string name="grind_card_fix_duplicate">Duplicar para personalizar</string>
+    <string name="grind_card_orphan">Asigna un molino a la receta para convertir</string>
+    <string name="grind_card_no_reference">Sin receta: no hay ajuste que convertir</string>
+    <string name="grind_card_add">Añade tu molino para ver el equivalente</string>
+    <string name="grind_card_converter">Ver en mis otros molinos</string>
 </resources>
