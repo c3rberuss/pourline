@@ -35,6 +35,14 @@ import dev.dotscale.ui.coffees.CoffeesScreen
 import dev.dotscale.ui.coffees.CoffeesViewModel
 import dev.dotscale.ui.components.AntTabBar
 import dev.dotscale.ui.components.AntTabBarItem
+import dev.dotscale.ui.grinders.GrinderCatalogScreen
+import dev.dotscale.ui.grinders.GrinderCatalogViewModel
+import dev.dotscale.ui.grinders.GrinderDetailScreen
+import dev.dotscale.ui.grinders.GrinderDetailViewModel
+import dev.dotscale.ui.grinders.GrinderEditScreen
+import dev.dotscale.ui.grinders.GrinderEditViewModel
+import dev.dotscale.ui.grinders.GrindersScreen
+import dev.dotscale.ui.grinders.GrindersViewModel
 import dev.dotscale.ui.history.BrewCompareScreen
 import dev.dotscale.ui.history.BrewCompareViewModel
 import dev.dotscale.ui.history.BrewDetailScreen
@@ -86,7 +94,7 @@ private fun TabsNavigation(deps: AppDependencies) {
     )
   }
   val activeStack = stacks.getValue(tab)
-  val showBar = showsBottomBar(activeStack.lastOrNull())
+  val showBar = showsBottomBar(activeStack)
 
   Column(Modifier.fillMaxSize()) {
     NavDisplay(
@@ -197,7 +205,41 @@ private fun tabEntryProvider(
       deps.targetSettings,
       deps.experienceSettings,
       deps.themeSettings,
+      grinderRepository = deps.grinderRepository,
+      grinderDefaults = deps.grinderSettings,
       onRestoreRecipes = { deps.recipeRepository.restoreBuiltIns() },
+      onOpenGrinders = { stack.add(Grinders) },
+      onBack = ::back,
+    )
+  }
+  tabEntry<Grinders>(tab) {
+    GrindersScreen(
+      viewModel { GrindersViewModel(deps.grinderRepository, deps.grinderSettings) },
+      onBack = ::back,
+      onOpenGrinder = { id -> stack.add(GrinderDetail(id)) },
+      onAddGrinder = { stack.add(GrinderCatalog) },
+    )
+  }
+  tabEntry<GrinderCatalog>(tab) {
+    GrinderCatalogScreen(
+      viewModel { GrinderCatalogViewModel(deps.grinderRepository) },
+      onBack = ::back,
+      onOpenGrinder = { id -> stack.add(GrinderDetail(id)) },
+      onCreate = { stack.add(GrinderEdit()) },
+    )
+  }
+  tabEntry<GrinderDetail>(tab) { key ->
+    GrinderDetailScreen(
+      viewModel { GrinderDetailViewModel(deps.grinderRepository, deps.grinderSettings, key.id) },
+      onBack = ::back,
+      onEdit = { id -> stack.add(GrinderEdit(id = id)) },
+      onDuplicate = { id -> stack.add(GrinderEdit(fromId = id)) },
+    )
+  }
+  tabEntry<GrinderEdit>(tab) { key ->
+    GrinderEditScreen(
+      viewModel { GrinderEditViewModel(deps.grinderRepository, key.id, key.fromId) },
+      openRanges = key.openRanges,
       onBack = ::back,
     )
   }

@@ -38,6 +38,9 @@ sealed interface GrinderError {
 
   /** El ancla [level] rompe el orden de fino a grueso (tiene que ser estrictamente monótona según la dirección). */
   data class AnchorsNotMonotonic(val level: GrindLevel) : GrinderError
+
+  /** Solo lo produce el formulario de edición: falta un valor por escribir. */
+  data object MissingValue : GrinderError
 }
 
 /** Valida un molino con las reglas del §3.5 del spec y las de la D15 del plan. */

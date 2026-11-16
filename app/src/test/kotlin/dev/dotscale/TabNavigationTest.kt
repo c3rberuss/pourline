@@ -21,18 +21,30 @@ class TabNavigationTest {
       BrewDetail(1),
       ComparePick(1),
       BrewCompare(1, 2),
-    ).forEach { assertTrue("$it debería llevar barra", showsBottomBar(it)) }
+      Grinders,
+      GrinderCatalog,
+      GrinderDetail(1),
+    ).forEach { assertTrue("$it debería llevar barra", showsBottomBar(listOf(Prepare, it))) }
   }
 
   @Test
   fun theBottomBarHidesInTheSessionAndFullScreenEditors() {
-    listOf<NavKey>(Session, CoffeeEdit(), CoffeeEdit(id = 3), RecipeEdit(), RecipeEdit(id = 2), BrewEdit(4))
-      .forEach { assertFalse("$it no debería llevar barra", showsBottomBar(it)) }
+    listOf<NavKey>(Session, CoffeeEdit(), CoffeeEdit(id = 3), RecipeEdit(), RecipeEdit(id = 2), BrewEdit(4), GrinderEdit(), GrinderEdit(id = 2, openRanges = true))
+      .forEach { assertFalse("$it no debería llevar barra", showsBottomBar(listOf(Prepare, it))) }
+  }
+
+  @Test
+  fun theBottomBarHidesWhenASessionIsAnywhereInTheStack() {
+    assertFalse(showsBottomBar(listOf(Prepare, Session)))
+    // Desde el paso 2 se abre Molinos (o su detalle) encima de la sesión: la barra sigue oculta.
+    assertFalse(showsBottomBar(listOf(Prepare, Session, Settings, Grinders)))
+    assertFalse(showsBottomBar(listOf(Prepare, Session, Settings, Grinders, GrinderDetail(1))))
+    assertTrue(showsBottomBar(listOf(Prepare, Settings, Grinders)))
   }
 
   @Test
   fun anEmptyStackKeepsTheBar() {
-    assertTrue(showsBottomBar(null))
+    assertTrue(showsBottomBar(emptyList()))
   }
 
   @Test

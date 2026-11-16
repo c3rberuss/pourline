@@ -33,3 +33,17 @@ import kotlinx.serialization.Serializable
 
 /** `id == null` crea un café; `fromCoffeeId` prellena una bolsa nueva a partir de otro ("Nueva bolsa"). */
 @Serializable data class CoffeeEdit(val id: Long? = null, val fromCoffeeId: Long? = null) : NavKey
+
+/** Ajustes → Molinos: mis molinos. */
+@Serializable data object Grinders : NavKey
+
+/** Ajustes → Molinos → Añadir molino: el catálogo con búsqueda. */
+@Serializable data object GrinderCatalog : NavKey
+
+@Serializable data class GrinderDetail(val id: Long) : NavKey
+
+/**
+ * `id == null` crea un molino propio; `fromId` abre una copia para personalizar ("Duplicar", D22);
+ * `openRanges` abre la pestaña de rangos.
+ */
+@Serializable data class GrinderEdit(val id: Long? = null, val fromId: Long? = null, val openRanges: Boolean = false) : NavKey

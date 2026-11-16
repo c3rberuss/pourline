@@ -65,6 +65,14 @@ class SettingsNavigationTest {
   }
 
   @Test
+  fun theGrindersRowOpensTheGrindersList() {
+    compose.onNodeWithTag("prepare_settings").performClick()
+    compose.onNodeWithTag("settings_grinders").performClick()
+    compose.waitUntil(5_000) { exists("grinders_list") }
+    compose.onNodeWithText(context.getString(R.string.grinders_title)).assertIsDisplayed()
+  }
+
+  @Test
   fun noTopBarHasSectionIcons() {
     Tab.entries.forEach { tab ->
       compose.onNodeWithTag(tab.testTag).performClick()
