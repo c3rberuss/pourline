@@ -1,6 +1,7 @@
 package dev.dotscale
 
 import android.app.Application
+import android.util.Log
 import dev.dotscale.ble.AndroidBluetoothEnvironment
 import dev.dotscale.ble.ScaleScanner
 import dev.dotscale.coffee.CoffeeRepository
@@ -11,6 +12,7 @@ import dev.dotscale.grinder.AssetCatalogSource
 import dev.dotscale.grinder.GrinderCatalogSeeder
 import dev.dotscale.grinder.GrinderRepository
 import dev.dotscale.grinder.ResourcesGrindTexts
+import dev.dotscale.grinder.SyncResult
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.recipe.RecipeRepository
@@ -39,6 +41,8 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.util.concurrent.TimeUnit
 
+private const val SEEDER_TAG = "GrinderCatalogSeeder"
+
 class DotScaleApp : Application() {
   /** Una sola instancia por proceso: sobrevive a la rotación y comparte el flujo con el ViewModel. */
   val brewSettings by lazy { BrewSettings(this) }
@@ -62,6 +66,13 @@ class DotScaleApp : Application() {
     // Borra las fotos que ningún café referencia (p. ej. si el proceso murió a mitad de una edición).
     applicationScope.launch(Dispatchers.IO) {
       coffeePhotoStore.sweepOrphans(coffeeRepository.referencedPhotos(), TimeUnit.HOURS.toMillis(24))
+    }
+    // Sincroniza el catálogo de molinos con la base (idempotente); un archivo inválido no cambia nada y solo se registra.
+    applicationScope.launch(Dispatchers.IO) {
+      when (val result = grinderCatalogSeeder.sync()) {
+        is SyncResult.Failed -> Log.w(SEEDER_TAG, "Catalog sync failed: ${result.reason}")
+        else -> Log.i(SEEDER_TAG, "Catalog sync: $result")
+      }
     }
   }
 
@@ -87,7 +98,7 @@ class DotScaleApp : Application() {
 
   val grinderRepository by lazy { GrinderRepository(historyDatabase, grinderSettings, grindTexts) }
 
-  /** Sincroniza el catálogo de molinos con la base. Todavía no se invoca al arrancar: se activa con los datos aprobados. */
+  /** Sincroniza el catálogo de molinos con la base; se invoca al arrancar ([onCreate]). */
   val grinderCatalogSeeder by lazy {
     GrinderCatalogSeeder(historyDatabase.grinderDao(), AssetCatalogSource(this), grinderSettings, grinderSettings)
   }
