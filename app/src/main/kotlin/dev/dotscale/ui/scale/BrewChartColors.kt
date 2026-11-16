@@ -25,11 +25,13 @@ data class BrewChartColors(
   val axisLabel: Color,
 ) {
   /** Color de un tramo de la curva de flujo; sin puntuación, el neutro. */
-  fun flowColor(stability: Int?): Color = when (stability?.let(LEVELS::levelOf)) {
+  fun flowColor(stability: Int?): Color = stability?.let { levelColor(LEVELS.levelOf(it)) } ?: neutral
+
+  /** Color de un nivel de estabilidad. */
+  fun levelColor(level: StabilityLevel): Color = when (level) {
     StabilityLevel.STABLE -> stable
     StabilityLevel.IRREGULAR -> irregular
     StabilityLevel.TURBULENT -> turbulent
-    null -> neutral
   }
 
   private companion object {

@@ -3,10 +3,12 @@ package dev.dotscale.ui.session
 import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.test.platform.app.InstrumentationRegistry
+import dev.dotscale.R
 import dev.dotscale.session.PrepStep
 import dev.dotscale.settings.ExperienceMode
 import dev.dotscale.settings.ThemeMode
@@ -67,6 +69,11 @@ class SessionScreenshotCapture {
     runFor(55_000)
     shot("$prefix-5-pouring")
     if (mode == ExperienceMode.EXPERT) {
+      driver.node("session_dial_legend").performClick()
+      runFor(800)
+      shot("$prefix-5b-legend")
+      rule.onNodeWithContentDescription(context.getString(R.string.action_close)).performClick()
+      runFor(800)
       driver.node("session_dial").performTouchInput { swipeLeft() }
       runFor(500)
       shot("$prefix-6-chart")

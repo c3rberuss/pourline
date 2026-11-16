@@ -160,7 +160,7 @@
 
   | Área | Básico | Experto (además) |
   |---|---|---|
-  | Sesión | Dial con el agua vertida y el aro de progreso; timer; ratio en vivo; flujo en g/s solo como número; pasos previos guiados; paso actual con su instrucción, cuenta atrás del siguiente y lista de pasos | Segunda página del dial con la gráfica en vivo (`BrewChart`, con curva objetivo); indicador de estabilidad; desvío en gramos contra la curva; elegir una preparación guardada como objetivo (pestaña Historial de `TargetPicker`) |
+  | Sesión | Dial con el agua vertida y el aro de progreso; timer; ratio en vivo; flujo en g/s solo como número; pasos previos guiados; paso actual con su instrucción, cuenta atrás del siguiente y lista de pasos | Dial enriquecido: el aro se colorea por la estabilidad de cada tramo vertido, una marca indica dónde debería ir el agua según la curva objetivo y, bajo los números, una minigráfica del flujo de los últimos 30 s; segunda página del dial con la gráfica en vivo (`BrewChart`, con curva objetivo); indicador de estabilidad; desvío en gramos contra la curva; elegir una preparación guardada como objetivo (pestaña Historial de `TargetPicker`) |
   | Resumen final | Tiempo total, agua, dosis, ratio, café, valoración, notas y compartir | Flujo medio y máximo, estabilidad (`StabilitySection`), ajuste a la curva (`FitBlock`) y motivo de fin |
   | Historial | Lista y detalle sin gráfica: fecha, receta, café, dosis, agua, ratio, tiempo, valoración y notas | Gráfica del detalle, tarjeta de ajuste, gráfica de progreso de estabilidad (`StabilityProgressChart`), "Comparar" y "Guardar como receta" |
   | Recetas | Elegir, seguir, crear y editar pasos (tipo, agua, tiempo, instrucción) | Vista previa de la curva objetivo en el editor |

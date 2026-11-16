@@ -1,6 +1,8 @@
 package dev.dotscale.ui.session
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -9,6 +11,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
@@ -191,6 +194,8 @@ class SessionScreenTest {
     pouring()
 
     assertTrue(!driver.exists("session_metrics"))
+    assertTrue(!driver.exists("session_flow_sparkline"))
+    assertTrue(!driver.exists("session_dial_legend"))
     driver.node("session_dial").performTouchInput { swipeLeft() }
     rule.waitForIdle()
     assertTrue(!driver.exists("session_chart"))
@@ -211,6 +216,14 @@ class SessionScreenTest {
 
     driver.node("session_metrics").assertIsDisplayed()
     driver.node("session_dial").assertIsDisplayed()
+    // El dial reúne lo de la gráfica: la minigráfica del flujo va dentro del aro.
+    driver.node("session_flow_sparkline").assertIsDisplayed()
+    // El ⓘ de las métricas abre la leyenda del dial.
+    driver.node("session_dial_legend").performClick()
+    driver.waitFor("session_dial_legend_sheet")
+    driver.node("session_dial_legend_sheet").assertIsDisplayed()
+    rule.onNodeWithContentDescription(context.getString(R.string.action_close)).performClick()
+    rule.waitUntil(5_000) { !driver.exists("session_dial_legend_sheet") }
     driver.node("session_dial").performTouchInput { swipeLeft() }
     driver.waitFor("session_chart")
     driver.node("session_chart").assertIsDisplayed()
@@ -395,5 +408,11 @@ class SessionScreenTest {
 
     driver.waitFor("session_deviation", 30_000)
     driver.node("session_deviation").assertIsDisplayed()
+    // La marca de la curva objetivo en el aro se anuncia en la descripción del dial.
+    val expected = context.getString(R.string.session_dial_description_expected, "", "", 0, "X").substringAfter("%").substringBefore("X")
+    rule.waitUntil(5_000) {
+      driver.node("session_dial").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
+        ?.any { expected in it } == true
+    }
   }
 }

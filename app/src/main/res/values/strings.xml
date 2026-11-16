@@ -510,6 +510,13 @@
     <string name="session_title_free">Preparación libre</string>
     <string name="session_retry">Reintentar</string>
     <string name="session_dial_description">%1$s de %2$s, %3$d %%</string>
+    <string name="session_dial_description_expected">%1$s de %2$s, %3$d %%; según el objetivo, ahora %4$s</string>
+    <string name="session_dial_legend">Cómo leer el dial</string>
+    <string name="session_dial_legend_ring">El aro se llena con el agua vertida hasta el objetivo. Los huecos separan los vertidos de la receta.</string>
+    <string name="session_dial_legend_colors">El color de cada tramo es la estabilidad con la que vertiste esa agua:</string>
+    <string name="session_dial_legend_measuring">Midiendo: al empezar cada vertido, mientras se calcula la estabilidad</string>
+    <string name="session_dial_legend_marker">La marca es dónde deberías ir ahora según la curva objetivo. Si el relleno no llega a ella, vas por detrás; si la pasa, vas por delante.</string>
+    <string name="session_dial_legend_sparkline">Debajo de los números, el flujo de los últimos 30 s, con los mismos colores. La parte plana es una espera.</string>
     <string name="session_dial_ratio_flow">%1$s · %2$s</string>
     <string name="session_step_description">Paso %1$d de %2$d, %3$s</string>
     <string name="session_step_title">%1$s · %2$s</string>

@@ -182,6 +182,10 @@ object AntIcons {
       "M17 3V6A5 5 0 0 1 12 12A5 5 0 0 1 17 18V21",
     )
   }
+  /** Círculo con una "i": abre una explicación. */
+  val Info: ImageVector by lazy {
+    strokeIcon("Info", "M21 12A9 9 0 1 1 3 12A9 9 0 1 1 21 12Z", "M12 11V16", "M12 8V8.01")
+  }
   /** Báscula vista de frente con su esfera. */
   val Scale: ImageVector by lazy {
     strokeIcon(

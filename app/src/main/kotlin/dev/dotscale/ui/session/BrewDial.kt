@@ -3,6 +3,8 @@ package dev.dotscale.ui.session
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -12,15 +14,21 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.dotscale.R
+import dev.dotscale.brew.BrewConfig
+import dev.dotscale.brew.BrewSample
+import dev.dotscale.brew.StabilityLevel
 import dev.dotscale.brew.TargetCurve
 import dev.dotscale.brew.fromGrams
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.recipe.StageType
 import dev.dotscale.ui.components.AntProgressCircle
+import dev.dotscale.ui.components.AntProgressStop
 import dev.dotscale.ui.components.AntText
 import dev.dotscale.ui.components.AntTextType
+import dev.dotscale.ui.scale.brewChartColors
 import dev.dotscale.ui.scale.formatNumber
 import dev.dotscale.ui.theme.AntTheme
 import kotlin.math.roundToInt
@@ -39,6 +47,30 @@ internal fun dialSegments(curve: TargetCurve): List<Float> {
     .distinct()
 }
 
+/** Un tramo del aro relleno, hasta [end] (0..1), vertido con el nivel de estabilidad [level]; `null` sin puntuación. */
+data class DialStretch(val end: Float, val level: StabilityLevel?)
+
+/**
+ * Los tramos del aro coloreados por estabilidad: el agua que cada muestra válida añade sobre el máximo alcanzado hasta
+ * entonces se pinta con el nivel de esa muestra, y los tramos seguidos del mismo nivel se juntan. El agua que baja
+ * (goteo, ruido) no pinta nada, y el aro se satura al 100 % como [dialFraction].
+ */
+internal fun dialStretches(samples: List<BrewSample>, targetWaterG: Double?, config: BrewConfig = BrewConfig()): List<DialStretch> {
+  if (targetWaterG == null || targetWaterG <= 0.0) return emptyList()
+  val out = ArrayList<DialStretch>()
+  var reached = 0f
+  for (sample in samples) {
+    if (!sample.valid) continue
+    val fraction = dialFraction(sample.waterG, targetWaterG)
+    if (fraction <= reached) continue
+    val level = sample.stability?.let(config::levelOf)
+    val last = out.lastOrNull()
+    if (last != null && last.level == level) out[out.lastIndex] = DialStretch(fraction, level) else out += DialStretch(fraction, level)
+    reached = fraction
+  }
+  return out
+}
+
 /** `agua / agua objetivo`, saturado en 0..1 (el aro se satura al 100 %). */
 internal fun dialFraction(waterG: Double, targetWaterG: Double?): Float =
   if (targetWaterG == null || targetWaterG <= 0.0) 0f else (waterG / targetWaterG).coerceIn(0.0, 1.0).toFloat()
@@ -51,8 +83,14 @@ internal fun dialPercent(waterG: Double, targetWaterG: Double?): Int =
  * El dial del vertido: el aro marca el progreso `agua / agua objetivo` (con receta, dividido en segmentos por paso) y
  * dentro van el agua vertida en grande y, debajo, el ratio en vivo y el flujo (solo números, en los dos modos).
  *
+ * En Experto el dial reúne además lo de la gráfica: el relleno se colorea por [stretches] con los colores de
+ * estabilidad de la gráfica (sin puntuación, el color de siempre), una marca indica [expectedWaterG] (dónde debería
+ * ir el agua según la curva objetivo) y, bajo los números, la minigráfica del flujo de [flowSamples].
+ *
  * @param ratio el ratio agua:café en vivo; `null` sin dosis ("—").
  * @param flowGps el flujo, en la unidad de la báscula por segundo (el mismo valor que ve el usuario).
+ * @param expectedWaterG el agua que marca la curva objetivo ahora; `null` sin marca.
+ * @param flowSamples las muestras para la minigráfica del flujo; `null` sin minigráfica.
  */
 @Composable
 fun BrewDial(
@@ -63,10 +101,23 @@ fun BrewDial(
   flowGps: Double,
   unit: WeightUnit,
   modifier: Modifier = Modifier,
+  stretches: List<DialStretch> = emptyList(),
+  expectedWaterG: Double? = null,
+  flowSamples: List<BrewSample>? = null,
 ) {
   val water = "${formatNumber(fromGrams(waterG, unit), unit)} ${unit.symbol}"
   val goal = targetWaterG?.let { "${formatNumber(fromGrams(it, unit), unit)} ${unit.symbol}" }.orEmpty()
-  val description = stringResource(R.string.session_dial_description, water, goal, dialPercent(waterG, targetWaterG))
+  val percent = dialPercent(waterG, targetWaterG)
+  val marker = expectedWaterG?.takeIf { targetWaterG != null && targetWaterG > 0.0 }
+  val description = if (marker == null) {
+    stringResource(R.string.session_dial_description, water, goal, percent)
+  } else {
+    val expected = "${formatNumber(fromGrams(marker, unit), unit)} ${unit.symbol}"
+    stringResource(R.string.session_dial_description_expected, water, goal, percent, expected)
+  }
+  val chartColors = brewChartColors(AntTheme.colors)
+  val primary = AntTheme.colors.primary.base
+  val stops = stretches.map { AntProgressStop(it.end, it.level?.let(chartColors::levelColor) ?: primary) }
   val ratioText = ratio?.let { stringResource(R.string.scale_ratio_value, it) } ?: stringResource(R.string.scale_ratio_empty)
   val flowText = stringResource(R.string.scale_flow_value, "${formatNumber(flowGps, unit)} ${unit.symbol}")
 
@@ -74,6 +125,8 @@ fun BrewDial(
     fraction = dialFraction(waterG, targetWaterG),
     modifier = modifier.testTag("session_dial").semantics { contentDescription = description },
     segments = segments,
+    stops = stops,
+    marker = marker?.let { dialFraction(it, targetWaterG) },
   ) {
     Column(
       horizontalAlignment = Alignment.CenterHorizontally,
@@ -93,6 +146,17 @@ fun BrewDial(
         textAlign = TextAlign.Center,
         maxLines = 1,
       )
+      if (flowSamples != null) {
+        FlowSparkline(
+          flowSamples,
+          unit,
+          Modifier.padding(top = AntTheme.spacing.xxs).fillMaxWidth(SPARKLINE_WIDTH).height(SparklineHeight),
+        )
+      }
     }
   }
 }
+
+/** La minigráfica no llega al ancho del texto: a esa altura del dial el círculo ya se estrecha. */
+private const val SPARKLINE_WIDTH = 0.6f
+private val SparklineHeight = 24.dp

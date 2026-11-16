@@ -55,4 +55,21 @@ class AntProgressCircleTest {
     assertEquals(1, spans.size)
     assertSpan(0f, 89f, spans.single())
   }
+
+  @Test
+  fun clippingKeepsOnlyThePartOfEachSpanInsideTheRange() {
+    val spans = sweepAngles(1f, listOf(0.25f), 2f)
+    val clipped = clipSpans(spans, 45f, 180f)
+    assertEquals(2, clipped.size)
+    assertSpan(45f, 44f, clipped[0])
+    assertSpan(91f, 89f, clipped[1])
+  }
+
+  @Test
+  fun clippingToARangeInsideAGapOrOutsideTheArcGivesNothing() {
+    val spans = sweepAngles(0.5f, listOf(0.25f), 2f)
+    assertTrue(clipSpans(spans, 89.5f, 90.5f).isEmpty())
+    assertTrue(clipSpans(spans, 200f, 360f).isEmpty())
+    assertTrue(clipSpans(spans, 100f, 100f).isEmpty())
+  }
 }

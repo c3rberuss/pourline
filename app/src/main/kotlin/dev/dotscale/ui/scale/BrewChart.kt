@@ -155,7 +155,7 @@ private fun DrawScope.drawWater(plot: PlotArea, scale: ChartScale, points: List<
  * El flujo se dibuja en tramos de un mismo nivel de estabilidad: un `Path` por tramo en lugar de un `drawLine` por
  * punto (hasta uno por píxel del ancho).
  */
-private fun DrawScope.drawFlow(plot: PlotArea, scale: ChartScale, points: List<ChartPoint>, colors: BrewChartColors) {
+internal fun DrawScope.drawFlow(plot: PlotArea, scale: ChartScale, points: List<ChartPoint>, colors: BrewChartColors) {
   val width = LineWidth.toPx()
   val stroke = Stroke(width, cap = StrokeCap.Round, join = StrokeJoin.Round)
   for (segment in points.segments()) {

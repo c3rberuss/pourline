@@ -511,6 +511,13 @@
     <string name="session_title_free">Free brew</string>
     <string name="session_retry">Retry</string>
     <string name="session_dial_description">%1$s of %2$s, %3$d %%</string>
+    <string name="session_dial_description_expected">%1$s of %2$s, %3$d %%; the target says %4$s by now</string>
+    <string name="session_dial_legend">How to read the dial</string>
+    <string name="session_dial_legend_ring">The ring fills with the water poured, up to the target. The gaps split the pours of the recipe.</string>
+    <string name="session_dial_legend_colors">The colour of each stretch is how steady you poured that water:</string>
+    <string name="session_dial_legend_measuring">Measuring: at the start of each pour, while steadiness is worked out</string>
+    <string name="session_dial_legend_marker">The mark is where you should be now on the target curve. If the fill falls short of it you are behind; past it, you are ahead.</string>
+    <string name="session_dial_legend_sparkline">Below the numbers, the flow of the last 30 s, in the same colours. The flat part is a wait.</string>
     <string name="session_dial_ratio_flow">%1$s · %2$s</string>
     <string name="session_step_description">Step %1$d of %2$d, %3$s</string>
     <string name="session_step_title">%1$s · %2$s</string>

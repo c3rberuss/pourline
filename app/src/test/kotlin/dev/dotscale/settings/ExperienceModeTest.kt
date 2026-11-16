@@ -16,11 +16,11 @@ class ExperienceModeTest {
   }
 
   @Test
-  fun `the table covers the sixteen features of the spec`() {
-    assertEquals(16, ExpertFeature.entries.size)
+  fun `the table covers the seventeen features of the spec`() {
+    assertEquals(17, ExpertFeature.entries.size)
     assertEquals(
       setOf(
-        "SESSION_CHART_PAGE", "SESSION_STABILITY", "SESSION_DEVIATION", "TARGET_FROM_BREW", "SUMMARY_FLOW",
+        "SESSION_CHART_PAGE", "SESSION_DIAL_INSIGHTS", "SESSION_STABILITY", "SESSION_DEVIATION", "TARGET_FROM_BREW", "SUMMARY_FLOW",
         "SUMMARY_STABILITY", "SUMMARY_FIT", "SUMMARY_FINISH_REASON", "BREW_DETAIL_CHART", "BREW_DETAIL_FIT",
         "BREW_COMPARE", "BREW_SAVE_AS_RECIPE", "HISTORY_STABILITY_PROGRESS", "HISTORY_ROW_METRICS",
         "RECIPE_CURVE_PREVIEW", "RESTORE_BUILT_INS",

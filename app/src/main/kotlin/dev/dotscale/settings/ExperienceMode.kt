@@ -17,6 +17,9 @@ enum class ExpertFeature {
   /** Segunda página del dial de la sesión, con la gráfica en vivo. */
   SESSION_CHART_PAGE,
 
+  /** El dial de la sesión con el aro coloreado por estabilidad, la marca de la curva objetivo y la minigráfica del flujo. */
+  SESSION_DIAL_INSIGHTS,
+
   /** Indicador de estabilidad en la sesión. */
   SESSION_STABILITY,
 

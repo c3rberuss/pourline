@@ -472,8 +472,15 @@ private fun ActivePanel(ui: ScaleUiState, mode: ExperienceMode, onFinish: () -> 
   val doseG = ui.dose?.let { toGrams(it, unit) }
   val ratio = doseG?.takeIf { it > 0 }?.let { waterG / it }
   val showChart = mode.shows(ExpertFeature.SESSION_CHART_PAGE)
+  val insights = mode.shows(ExpertFeature.SESSION_DIAL_INSIGHTS)
   val elapsed = ui.elapsedMs ?: 0L
   val segments = remember(target?.curve) { target?.curve?.let(::dialSegments).orEmpty() }
+  val stretches = remember(insights, brew.samples, ui.targetWaterG) {
+    if (insights) dialStretches(brew.samples, ui.targetWaterG) else emptyList()
+  }
+  // El agua de la curva objetivo ahora: la del dial menos el desvío (los dos salen de la última muestra válida).
+  val expectedWaterG = guide?.deviationG?.takeIf { insights && target != null }?.let { waterG - it }
+  var showLegend by remember { mutableStateOf(false) }
   val pagerState = rememberPagerState { if (showChart) 2 else 1 }
   // Pasar a Básico en la página de la gráfica devuelve el dial (§4).
   LaunchedEffect(showChart) { if (!showChart) pagerState.scrollToPage(0) }
@@ -501,6 +508,9 @@ private fun ActivePanel(ui: ScaleUiState, mode: ExperienceMode, onFinish: () -> 
               flowGps = ui.flowRate,
               unit = unit,
               modifier = Modifier.size(dialSize),
+              stretches = stretches,
+              expectedWaterG = expectedWaterG,
+              flowSamples = brew.samples.takeIf { insights },
             )
           }
         } else {
@@ -510,7 +520,7 @@ private fun ActivePanel(ui: ScaleUiState, mode: ExperienceMode, onFinish: () -> 
         }
       }
       if (showChart) AntPageIndicator(count = 2, selected = pagerState.currentPage)
-      Metrics(ui, mode)
+      Metrics(ui, mode, onLegend = { showLegend = true }.takeIf { insights })
       CurrentStep(ui)
       NextStep(ui, elapsed)
       val stages = target?.curve?.stages
@@ -533,6 +543,8 @@ private fun ActivePanel(ui: ScaleUiState, mode: ExperienceMode, onFinish: () -> 
       )
     }
   }
+  // Pasar a Básico con la leyenda abierta la cierra: el dial ya no tiene nada que explicar.
+  if (showLegend && insights) DialLegendSheet(onClose = { showLegend = false })
 }
 
 /** El texto de la estabilidad en vivo: sin vertido, midiendo o el nivel con su puntuación. */
@@ -548,9 +560,12 @@ private fun stabilityLabel(brew: BrewState): String {
   }
 }
 
-/** Solo en Experto: la estabilidad en vivo y el desvío en gramos contra la curva objetivo. */
+/**
+ * Solo en Experto: la estabilidad en vivo, el desvío en gramos contra la curva objetivo y, con [onLegend], el botón ⓘ
+ * que abre la leyenda del dial.
+ */
 @Composable
-private fun Metrics(ui: ScaleUiState, mode: ExperienceMode) {
+private fun Metrics(ui: ScaleUiState, mode: ExperienceMode, onLegend: (() -> Unit)?) {
   val showStability = mode.shows(ExpertFeature.SESSION_STABILITY)
   val deviationG = ui.guide?.deviationG?.takeIf { ui.target != null && mode.shows(ExpertFeature.SESSION_DEVIATION) }
   if (!showStability && deviationG == null) return
@@ -574,6 +589,15 @@ private fun Metrics(ui: ScaleUiState, mode: ExperienceMode) {
         null -> AntTextType.Secondary
       }
       AntText(deviation, Modifier.testTag("session_deviation"), type = type, strong = true)
+    }
+    if (onLegend != null) {
+      AntIconButton(
+        AntIcons.Info,
+        contentDescription = stringResource(R.string.session_dial_legend),
+        onClick = onLegend,
+        modifier = Modifier.testTag("session_dial_legend"),
+        size = AntSize.Small,
+      )
     }
   }
 }
