@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-molinos.md`](spec-molinos.md) (SPEC-006) |
-| Estado | Aprobado el 2026-11-16, con las propuestas de P1 a P6 (§6) aceptadas. Además, F10 (sembrado del catálogo) queda bloqueada por la puerta de F2 hasta que el usuario apruebe o corrija la tabla de molinos. |
+| Estado | **Completado el 2026-11-16** (F0 a F11, en `feat/grinders`, sin fusionar). Aprobado el mismo día con las propuestas de P1 a P6 (§6) aceptadas; el usuario aprobó la tabla de F2 (10 molinos, sin cambios) y aportó los datos del Femobook A2 (D39). Resultados de la verificación en [«Resultado»](#resultado-de-la-verificación-f11). |
 | Fecha | 2026-11-16 |
 | Rama | `feat/grinders`, creada desde `develop` (`1a5512e`), con el commit del spec (`e392772`) |
 | Módulos | `:app` (`:protocol` no cambia) |
@@ -25,6 +25,36 @@ reales de los molinos del que sí depende:
 
 Antes de las fases están las decisiones que el spec deja abiertas (§2). Varias concretan o amplían el spec:
 D8, D12, D15, D16, D17, D18, D23 y D37. Conviene revisarlas, y las preguntas del §6, antes de empezar F1.
+
+## Resultado de la verificación (F11)
+
+Rama `feat/grinders`, emulador `emulator-5556` (AVD `SG_API34`, `en-US`), 2026-11-16.
+
+| Comprobación | Resultado |
+|---|---|
+| `:app:testDebugUnitTest` | 718 tests, 0 fallos, 0 errores, 1 omitido (`LabelParserTest.real labels reach the target`, sin `-PlabelsExpected`; ya estaba). Línea base de F0: 715. |
+| `:app:connectedDebugAndroidTest` | 430 tests, 2 fallos, 5 omitidos (4 capturas `SessionScreenshotCapture` y `LabelFixtureCaptureTest`). Los 2 fallos son los conocidos: `CoffeeDetailScreenTest.theFactsAreFoldedByDefaultAndOpenOnTap` (idioma) y `SessionPerformanceTest.expertPourWithTheChartKeepsTheFrameTimeUnderTheLimit` (p95 de Experto 33,9 ms dentro de la suite). Línea base: 429 tests. |
+| `:app:lintDebug` | 0 errores, 21 avisos (igual que la línea base: versiones de dependencias y de AGP, `ObsoleteSdkInt`, y `UnusedResources` de `backup_rules` y `data_extraction_rules`, anteriores). Sin `MissingTranslation` ni `ExtraTranslation`. |
+| `grep` de pureza | Ningún `import android` ni `androidx` en los 12 archivos puros de D10; ningún resto de `recipe_edit_grind_hint`, `brew_edit_grind_hint` ni `grind: String`. El manifiesto no cambia respecto a `develop`. |
+| E2E por adb (§7.3) | Los 12 pasos, con el catálogo real (11 molinos) y la báscula simulada; `logcat -s GrinderCatalogSeeder`: `Synced(version=1, added=11…)` al primer arranque y `UpToDate` tras `force-stop`. Conversiones comprobadas a mano: S3 V60 30 → C40 ≈ 21; JX-Pro 3.1.2 V60 → A2 ≈ 1 · 28; Chestnut C2 V60 17 → A2 ≈ 1 · 23; A2 1 · 25 → C40 20 (exacto). |
+| Capturas (§7.4) | 24 archivos (claro y oscuro) en `~/Downloads/grinders-spec006-captures/`. |
+
+**Rendimiento (`SessionPerformanceTest`, p95 en ms, tres pasadas por caso; D32).** Línea base sin código de molinos
+(F0, medida en la rama antes de tocar código, y de nuevo en F11 sobre `develop` en un worktree temporal) frente a `feat/grinders`:
+
+| Caso | Línea base F0 | Línea base F11 | Rama F11 | Rama, A/B intercalado | Línea base, A/B intercalado |
+|---|---|---|---|---|---|
+| Básico | 22,0 · 21,1 · 19,0 (mediana 21,1) | 18,0 · 21,7 · 22,2 (21,7) | 23,1 · 18,1 · 21,8 (21,8) | n/a | n/a |
+| Experto con gráfico | 34,5 · 34,0 · 33,7 (34,0) | 20,0 · 34,2 · 34,2 (34,2) | 36,4 · 34,4 · 35,4 (35,4) | 34,1 · 34,0 · 34,7 (34,1) | 34,2 · 34,7 · 35,1 (34,7) |
+
+Básico cumple (+0,1 ms frente a la línea base de F11). Experto: la primera comparación dio +1,2 ms (por encima del
+criterio de 1 ms), pero la línea base ya supera los 32 ms del umbral en 8 de 9 pasadas (oscila entre 20 y 35 ms según
+la pasada), así que se repitió intercalando pasadas de `develop` y de la rama, solo del caso Experto: mediana 34,1 ms
+en la rama y 34,7 ms en `develop` (la rama no empeora). El p50 fue de 17,4 a 18,0 ms en todas las pasadas.
+
+**Pendiente** (no bloquea): "Femobook, The Way to Coffee y Earl Coffee" lleva una "y" en español también con la
+interfaz en inglés, porque `sourceName` no se traduce; el revisor de código (`/code-review`) y el contraste de los
+predefinidos con molinos reales (§8).
 
 ## 1. Punto de partida
 
@@ -142,6 +172,8 @@ Se aprueban junto con el plan. Al terminar se pasan al spec como §3.9, como en 
 | D35 | Borrador y puerta | El borrador de F2 se escribe ya en la ruta final, pero **nada lo lee en la app** hasta F10 (el sembrador no se invoca al arrancar). `GrinderCatalogFileTest` lo valida desde F2. F10 solo empieza con la tabla aprobada. | La tabla vive solo en el JSON y en el informe (§3.6). Así el borrador se valida con el mismo test que el final y no se siembra nada antes de tiempo. |
 | D36 | Catálogo de prueba | `androidTest/.../grinder/TestGrinderCatalog.kt` y `test/.../grinder/GrinderFixtures.kt` con marcas ficticias ("Acme Uno" de clics, "Acme Dos" de clics con medio paso, "Acme Tres" compuesto de rotaciones, números y clics y "Acme Inverso" `HIGHER_IS_FINER`), con rangos y anclas inventados a propósito. `TestAppDependencies.seedGrinders(json = TestGrinderCatalog.JSON)` lo siembra con el sembrador real. | F5 a F9 avanzan sin los datos reales, y nadie confunde un dato de prueba con uno de la fuente. |
 | D37 | Escala, jerarquía y anclas de los predefinidos **(concreta)** | La fuente no da el total de clics ni la jerarquía. Regla: la **escala** es la del gráfico de la fuente, cuyo máximo corresponde al máximo en micras (el C2: 0–30 clics para 0–950 µm); si el fabricante publica otra, se anota en `notes` y en la tabla de la puerta para que decida el usuario (P3). La **jerarquía** sale del formato de la tabla de la fuente y de los máximos que aparecen en sus rangos, y se confirma con el manual del fabricante, citado en `notes`. Un dial que empieza en 1 (Fellow Ode) se modela con `scaleMin` > 0 y la descomposición absoluta (D11), y los pasos intermedios del Ode como unidad base `STEPS` con `perParent = 3`, sin fracciones de un tercio. Las **anclas** se calculan con `scaleMin + (µ − µmin) / (µmax − µmin) × (scaleMax − scaleMin)` sobre los puntos medios del §3.6, redondeadas a 1 decimal, y se omiten fuera del rango en micras; con `anchorsManual: true` se pueden ajustar a mano (§6 del spec). Nada se inventa: lo que falta va a `missing`. | Las anclas del §3.6 suponen un molino lineal entre su rango en micras y su escala: usar otra escala que la del gráfico de la fuente rompería esa correspondencia. |
+| D38 | Nombre de la fuente por molino **(amplía D9)** | El catálogo y el modelo llevan `sourceName` (obligatorio en el archivo; `grinders.sourceName TEXT`, nulo en los propios y en los duplicados). La atribución es "Fuente: <nombres> · valores orientativos", con los `sourceName` distintos de los predefinidos que intervienen, y los enlaces por modelo siguen abriendo cada `sourceUrl`. La BD sigue en v5: la v5 solo existe en esta rama (ni `develop` ni `main` tienen `5.json`), así que se amplió `5.json` y `MIGRATION_4_5` en lugar de crear una v6. Una build de depuración con la v5 anterior necesita `pm clear`. | Con el Femobook A2 hay predefinidos cuya fuente no es Honest Coffee Guide. |
+| D39 | Femobook A2 | Datos aprobados por el usuario: Rotaciones › Clics (40 por rotación), escala 0–120, paso 1, `HIGHER_IS_COARSER`; V60, Kalita Wave, Chemex y Origami 50–80, AeroPress 40–50, Moka 10–18 y Prensa francesa 80–120; sin rango para Espresso ni Cold brew; sin anclas (los 18 µm por clic del fabricante no cuadran con los rangos). `sourceName` "Femobook, The Way to Coffee y Earl Coffee" y `sourceUrl` de The Way to Coffee; los respaldos (FAQ de Femobook y Earl Coffee) van en `notes`. Con el A2 de origen o destino, Cold brew, Espresso y `OTHER` dan "Sin equivalencia". | No hay página del A2 en Honest Coffee Guide. |
 
 ## 3. Fases
 
@@ -150,20 +182,20 @@ F9 → F10 (solo con la tabla aprobada) → F11. F2 solo toca el JSON del catál
 a F9 (otra sesión en un worktree, o el usuario indica "sigue con F3 mientras reviso"). F8 y F9 no dependen entre sí.
 F10 necesita F2 aprobada, F4 y F9.
 
-| Fase | Contenido | Tamaño |
-|---|---|---|
-| F0 | Diseño visual, componentes nuevos y línea base (tests, lint y rendimiento) | M |
-| F1 | Dominio puro: modelo, formato, acarreo, conversión, validador, lector del catálogo y métodos nuevos | L |
-| F2 | Investigación del catálogo en Honest Coffee Guide y **puerta** de revisión | M |
-| F3 | Base de datos v5: tablas de molinos, migración 4 → 5 y ajuste estructurado en recetas y preparaciones | L |
-| F4 | `GrinderDao`, `GrinderRepository`, `GrinderSettings` y `GrinderCatalogSeeder` (con el catálogo de prueba) | M |
-| F5 | Ajustes → Molinos: lista, catálogo, detalle, editor con dos pestañas, regla e introducción compuesta | L |
-| F6 | Molino y ajuste en el editor de recetas, "Editar preparación" y los detalles; borrado con aviso | M |
-| F7 | Tarjeta de molienda en Preparar y en el paso 2, "Moler con" y el ajuste guardado en la preparación | L |
-| F8 | Convertidor suelto, atajos "Ver en mis otros molinos" y fuente visible | M |
-| F9 | Onboarding: "¿Qué molino usas?" | S |
-| F10 | Sembrar el catálogo aprobado | S |
-| F11 | Verificación: rendimiento, E2E y capturas por adb, lint y cierre | M |
+| Fase | Contenido | Tamaño | Estado |
+|---|---|---|---|
+| F0 | Diseño visual, componentes nuevos y línea base (tests, lint y rendimiento) | M | Hecha: 06a5f47 |
+| F1 | Dominio puro: modelo, formato, acarreo, conversión, validador, lector del catálogo y métodos nuevos | L | Hecha: 6c911f8 |
+| F2 | Investigación del catálogo en Honest Coffee Guide y **puerta** de revisión | M | Hecha: borrador validado; aprobada 2026-11-16 (datos en `5c575a1`) |
+| F3 | Base de datos v5: tablas de molinos, migración 4 → 5 y ajuste estructurado en recetas y preparaciones | L | Hecha: 227d015 |
+| F4 | `GrinderDao`, `GrinderRepository`, `GrinderSettings` y `GrinderCatalogSeeder` (con el catálogo de prueba) | M | Hecha: 00cb09b |
+| F5 | Ajustes → Molinos: lista, catálogo, detalle, editor con dos pestañas, regla e introducción compuesta | L | Hecha: 433a551 |
+| F6 | Molino y ajuste en el editor de recetas, "Editar preparación" y los detalles; borrado con aviso | M | Hecha: c3ce395 |
+| F7 | Tarjeta de molienda en Preparar y en el paso 2, "Moler con" y el ajuste guardado en la preparación | L | Hecha: 37ed6fb |
+| F8 | Convertidor suelto, atajos "Ver en mis otros molinos" y fuente visible | M | Hecha: f300cac |
+| F9 | Onboarding: "¿Qué molino usas?" | S | Hecha: 8ee3426 |
+| F10 | Sembrar el catálogo aprobado | S | Hecha: 5c575a1, `34232fa` (D38) y `8f47d65` (A2, D39) |
+| F11 | Verificación: rendimiento, E2E y capturas por adb, lint y cierre | M | Hecha: ver «Resultado» |
 
 Cada fase deja `:app` compilando y sus tests en verde. Se compila y se prueba solo `:app` (nunca `./gradlew build`
 ni builds limpios). Los tests instrumentados se lanzan siempre con `ANDROID_SERIAL=emulator-5556` (AVD headless
