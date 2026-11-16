@@ -1,7 +1,11 @@
 package dev.dotscale.grinder
 
 import dev.dotscale.history.BrewMethod
+import android.content.Context
 import dev.dotscale.history.HistoryDatabase
+import dev.dotscale.settings.DefaultGrinderStore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 /** Molinos de prueba con marcas ficticias (D36): sus datos no son los de la fuente. */
 object TestGrinders {
@@ -60,3 +64,17 @@ object TestGrinders {
 
 /** Inserta [grinder] y devuelve su id. */
 suspend fun HistoryDatabase.addGrinder(grinder: Grinder, nowMs: Long = 1_000L): Long = grinderDao().save(grinder.copy(id = 0).toRows(nowMs))
+
+/** Un molino predeterminado en memoria, para los tests que no necesitan las preferencias. */
+class FakeDefaultGrinderStore(initial: Long? = null) : DefaultGrinderStore {
+  private val _id = MutableStateFlow(initial)
+  override val defaultGrinderId: StateFlow<Long?> = _id
+
+  override fun setDefaultGrinderId(id: Long?) {
+    _id.value = id
+  }
+}
+
+/** El repositorio de molinos de [this] con el predeterminado en memoria y los textos reales. */
+fun HistoryDatabase.grinderRepository(context: Context, defaults: DefaultGrinderStore = FakeDefaultGrinderStore()): GrinderRepository =
+  GrinderRepository(this, defaults, ResourcesGrindTexts(context))

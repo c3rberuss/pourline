@@ -141,7 +141,6 @@
     <string name="brew_edit_method">Método</string>
     <string name="brew_edit_method_none">Sin método</string>
     <string name="brew_edit_method_other">Nombre del método</string>
-    <string name="brew_edit_grind">Molienda</string>
     <string name="brew_edit_temp">Temperatura (°C)</string>
     <string name="brew_edit_temp_error">Escribe un valor de 0 a 100 con un decimal como máximo</string>
     <string name="brew_edit_notes">Notas de cata</string>
@@ -217,7 +216,6 @@
     <string name="recipe_edit_method">Método</string>
     <string name="recipe_edit_method_none">Sin método</string>
     <string name="recipe_edit_method_other">¿Cuál?</string>
-    <string name="recipe_edit_grind">Molienda</string>
     <string name="recipe_edit_temp">Temperatura del agua (°C)</string>
     <string name="recipe_edit_notes">Notas (instrucciones)</string>
     <string name="recipe_edit_dose">Dosis (g)</string>
@@ -715,4 +713,13 @@
     <string name="grinder_error_range_order">El mínimo debe ser menor que el máximo</string>
     <string name="grinder_error_outside_scale">Fuera de la escala</string>
     <string name="grinder_error_anchors_order">Las anclas deben ir de fino a grueso</string>
+
+    <!-- Molinos (SPEC-006): molienda en recetas y preparaciones -->
+    <string name="grind_none">Sin molino</string>
+    <string name="grind_choose">Elige un molino</string>
+    <string name="grind_grinder">Molino</string>
+    <string name="grind_value">Ajuste</string>
+    <string name="grind_value_hint">Toca + o − para empezar desde el valor sugerido</string>
+    <string name="grind_out_of_scale">Fuera de la escala</string>
+    <string name="grinder_tag_deleted">molino eliminado</string>
 </resources>

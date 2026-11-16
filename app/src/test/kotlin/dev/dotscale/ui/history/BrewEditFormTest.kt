@@ -118,4 +118,31 @@ class BrewEditFormTest {
   }
 
   private fun picked(id: Long, name: String = "Café $id") = PickedCoffee(id, name, roaster = null, roastDate = null)
+
+  // --- Molienda (SPEC-006) ---
+
+  @Test
+  fun `choosing a grinder leaves the setting null and no grinder clears it`() {
+    val form = BrewEditForm(grind = GrindChoice.Live(1, 21.0))
+    assertEquals(GrindChoice.Live(2, null), form.withGrinder(2).grind)
+    assertEquals(GrindChoice.Live(1, 21.0), form.withGrinder(1).grind)
+    assertEquals(GrindChoice.None, form.withGrinder(null).grind)
+    assertNull(BrewEditForm(grind = GrindChoice.Live(1, 21.0)).withGrinder(null).toDetails().grind)
+  }
+
+  @Test
+  fun `an orphan is kept as is until a grinder is chosen`() {
+    val orphan = GrindSetting(null, 30.0, "Chestnut S3 · 30 clics")
+    val form = BrewEditForm.from(BrewDetails(grind = orphan))
+    assertEquals(GrindChoice.Orphan(orphan), form.grind)
+    assertEquals(orphan, form.toDetails().grind)
+    assertEquals(GrindChoice.Live(3, null), form.withGrinder(3).grind)
+    assertEquals(form, form.withGrindValue(5.0))
+  }
+
+  @Test
+  fun `setting a grind value on a live grinder and saving without a label`() {
+    val form = BrewEditForm().withGrinder(7).withGrindValue(12.5)
+    assertEquals(GrindSetting(7, 12.5, null), form.toDetails().grind)
+  }
 }

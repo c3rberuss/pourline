@@ -253,7 +253,9 @@ private fun tabEntryProvider(
   }
   tabEntry<RecipeEdit>(tab) { key ->
     RecipeEditScreen(
-      viewModel { RecipeEditViewModel(deps.recipeRepository, deps.brewRepository, deps.recipeTexts, key.id, key.fromBrewId) },
+      viewModel { RecipeEditViewModel(
+          deps.recipeRepository, deps.brewRepository, deps.recipeTexts, deps.grinderRepository, deps.grinderSettings, deps.grindTexts, key.id, key.fromBrewId,
+        ) },
       onBack = ::back,
       // Duplicar abre la copia en lugar de la original: atrás vuelve a la lista.
       onDuplicated = { copyId -> stack[stack.lastIndex] = RecipeEdit(id = copyId) },
@@ -268,7 +270,7 @@ private fun tabEntryProvider(
   }
   tabEntry<BrewDetail>(tab) { key ->
     BrewDetailScreen(
-      viewModel { BrewDetailViewModel(deps.brewRepository, deps.coffeeRepository, key.id) },
+      viewModel { BrewDetailViewModel(deps.brewRepository, deps.coffeeRepository, deps.grinderRepository, key.id) },
       onBack = ::back,
       onOpenCoffee = { id -> stack.add(CoffeeDetail(id)) },
       onEdit = { id -> stack.add(BrewEdit(id)) },
@@ -292,7 +294,7 @@ private fun tabEntryProvider(
   }
   tabEntry<BrewEdit>(tab) { key ->
     BrewEditScreen(
-      viewModel { BrewEditViewModel(deps.brewRepository, deps.coffeeRepository, key.id) },
+      viewModel { BrewEditViewModel(deps.brewRepository, deps.coffeeRepository, deps.grinderRepository, deps.grindTexts, key.id) },
       onBack = ::back,
       coffeePickerViewModel = viewModel { CoffeePickerViewModel(deps.coffeeRepository) },
       onNewCoffee = { stack.add(CoffeeEdit()) },

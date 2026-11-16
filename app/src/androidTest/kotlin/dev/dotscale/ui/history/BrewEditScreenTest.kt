@@ -23,6 +23,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
 import dev.dotscale.coffee.CoffeeRepository
 import dev.dotscale.coffee.PhotoFiles
+import dev.dotscale.grinder.GrinderRepository
+import dev.dotscale.grinder.ResourcesGrindTexts
+import dev.dotscale.grinder.TestGrinders
+import dev.dotscale.grinder.addGrinder
+import dev.dotscale.grinder.grinderRepository
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.history.BrewRepository
@@ -33,6 +38,7 @@ import dev.dotscale.ui.theme.DotScaleTheme
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -48,6 +54,7 @@ class BrewEditScreenTest {
   private lateinit var db: HistoryDatabase
   private lateinit var repository: BrewRepository
   private lateinit var coffees: CoffeeRepository
+  private lateinit var grinders: GrinderRepository
   private var backCount = 0
   private var newCoffeeRequests = 0
   private var id = 0L
@@ -58,12 +65,13 @@ class BrewEditScreenTest {
     db = HistoryDatabase.inMemory(context)
     repository = BrewRepository(db)
     coffees = CoffeeRepository(db, PhotoFiles { })
+    grinders = db.grinderRepository(context)
     id = runBlocking { repository.save(TestBrews.finished(totalMs = 60_000), TestBrews.context()) }
     db.openHelper.writableDatabase.execSQL("UPDATE brews SET coffee = 'Etiopía' WHERE id = $id")
   }
 
   private fun open(brewId: Long = id) {
-    val viewModel = BrewEditViewModel(repository, coffees, brewId)
+    val viewModel = BrewEditViewModel(repository, coffees, grinders, ResourcesGrindTexts(context), brewId)
     val picker = CoffeePickerViewModel(coffees)
     rule.setContent {
       DotScaleTheme(darkTheme = false) {
@@ -314,5 +322,38 @@ class BrewEditScreenTest {
     rule.onNodeWithContentDescription(context.getString(R.string.scale_back)).performClick()
     rule.waitUntil(5_000) { backCount == 1 }
     assertEquals(false, modalShown())
+  }
+
+  // --- Molienda (SPEC-006) ---
+
+  @Test
+  fun chooseAGrinderSetTheValueAndSaveItsIdAndLabel() {
+    val unoId = runBlocking { db.addGrinder(TestGrinders.uno) }
+    open()
+    rule.onNodeWithTag("brew_edit_grinder").performScrollTo().performClick()
+    rule.onNode(hasText("Acme Uno") and hasAnyAncestor(isPopup())).performClick()
+    rule.waitUntil(5_000) { rule.onAllNodesWithTag("brew_edit_grind_value_0_inc").fetchSemanticsNodes().isNotEmpty() }
+    rule.onNodeWithTag("brew_edit_grind_value_0_inc").performScrollTo().performClick()
+    saveAndWait()
+    val saved = entity()
+    assertEquals(unoId, saved.grinderId)
+    assertNotNull(saved.grindValue)
+    assertTrue(saved.grindLabel!!.contains("Uno"))
+  }
+
+  @Test
+  fun anOrphanGrindIsKeptWhenSavingWithoutTouchingIt() {
+    runBlocking {
+      db.openHelper.writableDatabase.execSQL("UPDATE brews SET grinderId = NULL, grindValue = 30, grindLabel = 'Chestnut S3 · 30 clics' WHERE id = $id")
+    }
+    open()
+    rule.onNodeWithTag("brew_edit_grind_orphan", useUnmergedTree = true).performScrollTo().assertTextContains("Chestnut S3", substring = true)
+    rule.onNodeWithTag("brew_edit_grind_orphan_deleted", useUnmergedTree = true).assertExists()
+    rule.onNodeWithTag("brew_edit_name").performTextInput("Sin tocar")
+    saveAndWait()
+    val saved = entity()
+    assertNull(saved.grinderId)
+    assertEquals(30.0, saved.grindValue!!, 0.0)
+    assertEquals("Chestnut S3 · 30 clics", saved.grindLabel)
   }
 }

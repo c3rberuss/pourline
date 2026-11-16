@@ -43,3 +43,19 @@ fun GrindSetting?.toChoice(): GrindChoice = when {
   grinderId != null -> GrindChoice.Live(grinderId, value)
   else -> GrindChoice.Orphan(this)
 }
+
+/**
+ * Elegir otro molino (D16): deja el ajuste en `null`; elegir el mismo no cambia nada, y `null` ("Sin molino") deja la
+ * elección vacía. Un [GrindChoice.Orphan] desaparece al elegir.
+ */
+fun GrindChoice.withGrinder(grinderId: Long?): GrindChoice = when {
+  grinderId == null -> GrindChoice.None
+  this is GrindChoice.Live && this.grinderId == grinderId -> this
+  else -> GrindChoice.Live(grinderId, null)
+}
+
+/** Fija el ajuste del molino elegido; sin molino vivo no hace nada. */
+fun GrindChoice.withValue(value: Double): GrindChoice = if (this is GrindChoice.Live) copy(value = value) else this
+
+/** El id del molino vivo de la elección, o `null`. */
+val GrindChoice.liveGrinderId: Long? get() = (this as? GrindChoice.Live)?.grinderId

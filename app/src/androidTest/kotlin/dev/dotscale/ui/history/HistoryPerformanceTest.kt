@@ -14,6 +14,7 @@ import dev.dotscale.brew.TargetCurve
 import dev.dotscale.brew.brewFit
 import dev.dotscale.coffee.CoffeeRepository
 import dev.dotscale.coffee.PhotoFiles
+import dev.dotscale.grinder.grinderRepository
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.ReferenceType
@@ -86,7 +87,7 @@ class HistoryPerformanceTest {
             })
           }
           Screen.Detail -> {
-            val viewModel = remember(openId) { BrewDetailViewModel(repository, CoffeeRepository(db, PhotoFiles { }), openId) }
+            val viewModel = remember(openId) { BrewDetailViewModel(repository, CoffeeRepository(db, PhotoFiles { }), db.grinderRepository(context), openId) }
             BrewDetailScreen(viewModel, onBack = { screen = Screen.List }, onEdit = {}, onCompare = {}, onSaveAsRecipe = {})
           }
         }

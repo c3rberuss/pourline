@@ -3,6 +3,8 @@ package dev.dotscale.ui.history
 import dev.dotscale.grinder.GrindChoice
 import dev.dotscale.grinder.toChoice
 import dev.dotscale.grinder.toSettingUnlabeled
+import dev.dotscale.grinder.withGrinder
+import dev.dotscale.grinder.withValue
 import dev.dotscale.coffee.PickedCoffee
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewMethod
@@ -69,6 +71,11 @@ data class BrewEditForm(
   val isValid: Boolean get() = tempResult != TempResult.Invalid
 
   fun isDirty(initial: BrewEditForm): Boolean = this != initial
+
+  /** Elegir otro molino deja el ajuste en `null` (D16); `null` es "Sin molino". */
+  fun withGrinder(grinderId: Long?): BrewEditForm = copy(grind = grind.withGrinder(grinderId))
+
+  fun withGrindValue(value: Double): BrewEditForm = copy(grind = grind.withValue(value))
 
   fun toDetails(): BrewDetails = BrewDetails(
     name = name,

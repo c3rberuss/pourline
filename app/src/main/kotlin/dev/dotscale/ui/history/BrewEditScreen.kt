@@ -47,6 +47,7 @@ import dev.dotscale.ui.components.AntSpin
 import dev.dotscale.ui.components.AntText
 import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.components.AntTopBar
+import dev.dotscale.ui.grinders.GrindSettingField
 import dev.dotscale.ui.theme.AntSize
 import dev.dotscale.ui.theme.AntTheme
 import java.time.ZoneId
@@ -66,6 +67,8 @@ fun BrewEditScreen(
   val initial by viewModel.initial.collectAsStateWithLifecycle()
   val startedAt by viewModel.startedAtEpochMs.collectAsStateWithLifecycle()
   val linkedArchived by viewModel.linkedArchived.collectAsStateWithLifecycle()
+  val grinders by viewModel.grinders.collectAsStateWithLifecycle()
+  val currentGrinder by viewModel.currentGrinder.collectAsStateWithLifecycle()
   var confirmDiscard by rememberSaveable { mutableStateOf(false) }
   var coffeePickerOpen by rememberSaveable { mutableStateOf(false) }
 
@@ -151,6 +154,15 @@ fun BrewEditScreen(
           placeholder = stringResource(R.string.brew_edit_method_other),
         )
       }
+      GrindSettingField(
+        choice = form.grind,
+        options = grinders,
+        current = currentGrinder,
+        method = form.method,
+        onChange = { choice -> viewModel.update { it.copy(grind = choice) } },
+        tagPrefix = "brew_edit",
+        modifier = Modifier.fillMaxWidth(),
+      )
       Field(stringResource(R.string.brew_edit_temp)) {
         val invalid = !form.isValid
         AntInput(

@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
@@ -23,6 +24,10 @@ import dev.dotscale.R
 import dev.dotscale.coffee.CoffeeRepository
 import dev.dotscale.coffee.PhotoFiles
 import dev.dotscale.grinder.GrindSetting
+import dev.dotscale.grinder.TestGrinders
+import dev.dotscale.grinder.addGrinder
+import dev.dotscale.grinder.grinderRepository
+import dev.dotscale.grinder.toRows
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.history.BrewRepository
@@ -69,7 +74,7 @@ class BrewDetailScreenTest {
   fun tearDown() = db.close()
 
   private fun show(id: Long) {
-    val viewModel = BrewDetailViewModel(repository, coffees, id)
+    val viewModel = BrewDetailViewModel(repository, coffees, db.grinderRepository(context), id)
     rule.setContent {
       CompositionLocalProvider(LocalExperienceMode provides mode.value) {
         DotScaleTheme(darkTheme = false) {
@@ -351,5 +356,30 @@ class BrewDetailScreenTest {
 
     rule.onNodeWithTag("brew_detail_save_recipe").performScrollTo().assertIsNotEnabled()
     rule.onNodeWithTag("brew_detail_compare").assertIsEnabled()
+  }
+
+  // --- Molienda (SPEC-006) ---
+
+  @Test
+  fun aLiveGrinderShowsItsNameAndSettingAndAnOutOfScaleValueIsFlagged() {
+    val unoId = runBlocking { db.addGrinder(TestGrinders.uno) }
+    val id = seed(details = BrewDetails(method = BrewMethod.V60, grind = GrindSetting(unoId, 21.0, "Acme Uno · 21 clics")))
+    show(id)
+    rule.waitUntil(5_000) { rule.onAllNodesWithTag("brew_detail_grind", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+    rule.onNodeWithTag("brew_detail_grind", useUnmergedTree = true).performScrollTo().assertTextContains("Uno · 21", substring = true)
+    assertEquals(0, rule.onAllNodesWithTag("brew_detail_grind_deleted", useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertEquals(0, rule.onAllNodesWithTag("brew_detail_grind_out_of_scale", useUnmergedTree = true).fetchSemanticsNodes().size)
+    // El molino cambia de escala: el 21 queda fuera y se avisa (D30).
+    runBlocking { db.grinderDao().save(TestGrinders.uno.copy(id = unoId, scaleMax = 20.0).toRows(2_000L)) }
+    rule.waitUntil(5_000) { rule.onAllNodesWithTag("brew_detail_grind_out_of_scale", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+  }
+
+  @Test
+  fun aDeletedGrinderShowsTheTextCopyWithTheDeletedTag() {
+    val id = seed(details = BrewDetails(method = BrewMethod.V60, grind = GrindSetting(null, 30.0, "Chestnut S3 · 30 clics")))
+    show(id)
+    rule.waitUntil(5_000) { rule.onAllNodesWithTag("brew_detail_grind", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+    rule.onNodeWithTag("brew_detail_grind", useUnmergedTree = true).performScrollTo().assertTextContains("Chestnut S3", substring = true)
+    rule.onNodeWithTag("brew_detail_grind_deleted", useUnmergedTree = true).assertExists()
   }
 }

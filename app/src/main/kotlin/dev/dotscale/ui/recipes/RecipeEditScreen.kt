@@ -55,6 +55,7 @@ import dev.dotscale.ui.components.AntStatus
 import dev.dotscale.ui.components.AntText
 import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.components.AntTopBar
+import dev.dotscale.ui.grinders.GrindSettingField
 import dev.dotscale.ui.history.label
 import dev.dotscale.ui.scale.BrewChart
 import dev.dotscale.ui.theme.AntSize
@@ -66,6 +67,8 @@ fun RecipeEditScreen(viewModel: RecipeEditViewModel, onBack: () -> Unit, onDupli
   val form by viewModel.form.collectAsStateWithLifecycle()
   val initial by viewModel.initial.collectAsStateWithLifecycle()
   val adjustments by viewModel.adjustments.collectAsStateWithLifecycle()
+  val grinders by viewModel.grinders.collectAsStateWithLifecycle()
+  val currentGrinder by viewModel.currentGrinder.collectAsStateWithLifecycle()
   var confirmDiscard by rememberSaveable { mutableStateOf(false) }
 
   // `Saved` y `Gone` vuelven atrás; `Duplicated` abre la copia.
@@ -130,6 +133,15 @@ fun RecipeEditScreen(viewModel: RecipeEditViewModel, onBack: () -> Unit, onDupli
           placeholder = stringResource(R.string.recipe_edit_method_other),
         )
       }
+      GrindSettingField(
+        choice = form.grind,
+        options = grinders,
+        current = currentGrinder,
+        method = form.method,
+        onChange = { choice -> viewModel.update { it.copy(grind = choice) } },
+        tagPrefix = "recipe_edit",
+        modifier = Modifier.fillMaxWidth(),
+      )
       LabeledInput(
         label = stringResource(R.string.recipe_edit_temp),
         value = form.waterTemp,

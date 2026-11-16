@@ -6,14 +6,25 @@ import dev.dotscale.coffee.CoffeeEntity
 import dev.dotscale.coffee.CoffeeListItem
 import dev.dotscale.coffee.CoffeeRepository
 import dev.dotscale.coffee.PickedCoffee
+import dev.dotscale.grinder.GrindTexts
+import dev.dotscale.grinder.Grinder
+import dev.dotscale.grinder.GrinderRepository
+import dev.dotscale.grinder.liveGrinderId
 import dev.dotscale.grinder.toGrindSetting
+import dev.dotscale.grinder.toSetting
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewEntity
 import dev.dotscale.history.BrewRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -22,6 +33,8 @@ enum class BrewEditStatus { Loading, Ready, Saving, Saved, Gone }
 class BrewEditViewModel(
   private val repository: BrewRepository,
   private val coffees: CoffeeRepository,
+  private val grinderRepository: GrinderRepository,
+  private val grindTexts: GrindTexts,
   private val id: Long,
 ) : ViewModel() {
   private val _status = MutableStateFlow(BrewEditStatus.Loading)
@@ -37,6 +50,16 @@ class BrewEditViewModel(
   /** Hora de inicio de la preparación: es el placeholder del nombre y el día de tueste se cuenta hasta ella. */
   private val _startedAtEpochMs = MutableStateFlow(0L)
   val startedAtEpochMs: StateFlow<Long> = _startedAtEpochMs.asStateFlow()
+
+  /** Mis molinos, para el selector. */
+  val grinders: StateFlow<List<Grinder>> = grinderRepository.owned()
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+  /** El molino vivo de la elección, aunque ya no sea de mis molinos; `null` sin molino o si se borró. */
+  @OptIn(ExperimentalCoroutinesApi::class)
+  val currentGrinder: StateFlow<Grinder?> = _form.map { it.grind.liveGrinderId }.distinctUntilChanged()
+    .flatMapLatest { grinderRepository.grinder(it) }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
   private val _linkedArchived = MutableStateFlow<CoffeeListItem?>(null)
 
@@ -100,7 +123,9 @@ class BrewEditViewModel(
     _status.value = BrewEditStatus.Saving
     val initialChoice = _initial.value.coffee
     viewModelScope.launch {
-      repository.updateDetails(id, current.toDetails())
+      // La copia de texto del ajuste se regenera con el molino vivo (D17).
+      val grinder = current.grind.liveGrinderId?.let { grinderRepository.get(it) }
+      repository.updateDetails(id, current.toDetails().copy(grind = current.grind.toSetting(grinder, grindTexts)).normalized())
       if (current.coffee.needsLinkWrite(initialChoice)) repository.setCoffee(id, current.coffee.linkedId)
       _status.value = BrewEditStatus.Saved
     }

@@ -142,7 +142,6 @@
     <string name="brew_edit_method">Method</string>
     <string name="brew_edit_method_none">No method</string>
     <string name="brew_edit_method_other">Method name</string>
-    <string name="brew_edit_grind">Grind</string>
     <string name="brew_edit_temp">Temperature (°C)</string>
     <string name="brew_edit_temp_error">Enter a value from 0 to 100 with at most one decimal</string>
     <string name="brew_edit_notes">Tasting notes</string>
@@ -218,7 +217,6 @@
     <string name="recipe_edit_method">Method</string>
     <string name="recipe_edit_method_none">No method</string>
     <string name="recipe_edit_method_other">Which one?</string>
-    <string name="recipe_edit_grind">Grind</string>
     <string name="recipe_edit_temp">Water temperature (°C)</string>
     <string name="recipe_edit_notes">Notes (instructions)</string>
     <string name="recipe_edit_dose">Dose (g)</string>
@@ -716,4 +714,13 @@
     <string name="grinder_error_range_order">The minimum must be lower than the maximum</string>
     <string name="grinder_error_outside_scale">Outside the scale</string>
     <string name="grinder_error_anchors_order">Anchors must go from fine to coarse</string>
+
+    <!-- Molinos (SPEC-006): molienda en recetas y preparaciones -->
+    <string name="grind_none">No grinder</string>
+    <string name="grind_choose">Choose a grinder</string>
+    <string name="grind_grinder">Grinder</string>
+    <string name="grind_value">Setting</string>
+    <string name="grind_value_hint">Tap + or − to start from the suggested value</string>
+    <string name="grind_out_of_scale">Outside the scale</string>
+    <string name="grinder_tag_deleted">grinder deleted</string>
 </resources>

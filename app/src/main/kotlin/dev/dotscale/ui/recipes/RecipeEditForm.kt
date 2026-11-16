@@ -3,6 +3,8 @@ package dev.dotscale.ui.recipes
 import dev.dotscale.grinder.GrindChoice
 import dev.dotscale.grinder.toChoice
 import dev.dotscale.grinder.toSettingUnlabeled
+import dev.dotscale.grinder.withGrinder
+import dev.dotscale.grinder.withValue
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.recipe.Adjustment
 import dev.dotscale.recipe.Recipe
@@ -119,6 +121,11 @@ data class RecipeEditForm(
   val canRemoveStage: Boolean get() = stages.size > 1
 
   fun isDirty(initial: RecipeEditForm): Boolean = this != initial
+
+  /** Elegir otro molino deja el ajuste en `null` (D16); `null` es "Sin molino". */
+  fun withGrinder(grinderId: Long?): RecipeEditForm = copy(grind = grind.withGrinder(grinderId))
+
+  fun withGrindValue(value: Double): RecipeEditForm = copy(grind = grind.withValue(value))
 
   /** Un `POUR` que empieza donde acaba el paso anterior, con el agua del último `POUR` más 50 g y 10 s. */
   fun addStage(): RecipeEditForm {

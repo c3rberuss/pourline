@@ -13,6 +13,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
@@ -20,6 +21,13 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
+import dev.dotscale.grinder.FakeDefaultGrinderStore
+import dev.dotscale.grinder.GrindSetting
+import dev.dotscale.grinder.GrinderRepository
+import dev.dotscale.grinder.ResourcesGrindTexts
+import dev.dotscale.grinder.TestGrinders
+import dev.dotscale.grinder.addGrinder
+import dev.dotscale.grinder.grinderRepository
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
@@ -52,6 +60,8 @@ class RecipeEditScreenTest {
   private lateinit var db: HistoryDatabase
   private lateinit var recipes: RecipeRepository
   private lateinit var brews: BrewRepository
+  private lateinit var grinders: GrinderRepository
+  private val defaults = FakeDefaultGrinderStore()
   private var backCount = 0
   private var duplicatedId: Long? = null
 
@@ -60,13 +70,14 @@ class RecipeEditScreenTest {
     db = HistoryDatabase.inMemory(context, texts)
     recipes = RecipeRepository(db, texts)
     brews = BrewRepository(db)
+    grinders = db.grinderRepository(context, defaults)
   }
 
   @After
   fun tearDown() = db.close()
 
   private fun show(id: Long? = null, fromBrewId: Long? = null, mode: ExperienceMode = ExperienceMode.EXPERT): RecipeEditViewModel {
-    val viewModel = RecipeEditViewModel(recipes, brews, texts, id, fromBrewId)
+    val viewModel = RecipeEditViewModel(recipes, brews, texts, grinders, defaults, ResourcesGrindTexts(context), id, fromBrewId)
     rule.setContent {
       CompositionLocalProvider(LocalExperienceMode provides mode) {
         DotScaleTheme(darkTheme = false) {
@@ -429,5 +440,68 @@ class RecipeEditScreenTest {
     rule.onNodeWithTag("recipe_edit_dose").performScrollTo().performTextClearance()
     rule.onNodeWithTag("recipe_edit_dose_error").performScrollTo()
     rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsNotEnabled()
+  }
+
+  // --- Molienda (SPEC-006) ---
+
+  private fun grinderUno() = runBlocking { db.addGrinder(TestGrinders.uno) }
+
+  @Test
+  fun choosingAGrinderShowsTheSettingWithoutValueAndSavesItsIdAndLabel() {
+    val unoId = grinderUno()
+    show()
+    type("recipe_edit_name", "Con molino")
+    type("recipe_edit_dose", "16")
+    assertFalse(exists("recipe_edit_grind_value_0_value"))
+    rule.onNodeWithTag("recipe_edit_grinder").performScrollTo().performClick()
+    rule.onNode(hasText("Acme Uno") and hasAnyAncestor(isPopup())).performClick()
+    rule.waitUntil(5_000) { exists("recipe_edit_grind_value_0_inc") }
+    rule.onNodeWithText(context.getString(R.string.grind_value_hint)).performScrollTo().assertExists()
+    // Sin valor todavía: guardar no guarda ajuste, pero sí el molino.
+    rule.onNodeWithTag("recipe_edit_grind_value_0_inc").performScrollTo().performClick()
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitUntil(5_000) { runBlocking { recipes.list().first().any { it.name == "Con molino" } } }
+    val saved = runBlocking { recipes.get(recipes.list().first().single { it.name == "Con molino" }.id)!! }
+    assertEquals(unoId, saved.grind?.grinderId)
+    assertNotNull(saved.grind?.value)
+    assertTrue(saved.grind!!.label!!.contains("Uno"))
+  }
+
+  @Test
+  fun aDeletedGrinderShowsItsTextCopyWithTheDeletedTagAndChoosingReplacesIt() {
+    grinderUno()
+    val id = runBlocking {
+      recipes.save(
+        Recipe(name = "Huérfana", method = BrewMethod.V60, grind = GrindSetting(null, 30.0, "Chestnut S3 · 30 clics"), doseG = 15.0, stages = listOf(RecipeStage("Bloom", 0, 40.0, 10_000))),
+      )
+    }
+    show(id = id)
+    rule.onNodeWithTag("recipe_edit_grind_orphan", useUnmergedTree = true).performScrollTo().assertTextContains("Chestnut S3", substring = true)
+    rule.onNodeWithTag("recipe_edit_grind_orphan_deleted", useUnmergedTree = true).assertExists()
+    rule.onNodeWithTag("recipe_edit_grinder").assertTextContains(context.getString(R.string.grind_choose), substring = true)
+
+    rule.onNodeWithTag("recipe_edit_grinder").performClick()
+    rule.onNode(hasText("Acme Uno") and hasAnyAncestor(isPopup())).performClick()
+    rule.waitUntil(5_000) { !exists("recipe_edit_grind_orphan") }
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitUntil(5_000) { backCount > 0 }
+    assertEquals(null, runBlocking { recipes.get(id) }!!.grind?.value)
+  }
+
+  @Test
+  fun noGrinderClearsTheGrindOfTheRecipe() {
+    val unoId = grinderUno()
+    val id = runBlocking {
+      recipes.save(
+        Recipe(name = "Con molino", method = BrewMethod.V60, grind = GrindSetting(unoId, 20.0, "Acme Uno · 20 clics"), doseG = 15.0, stages = listOf(RecipeStage("Bloom", 0, 40.0, 10_000))),
+      )
+    }
+    show(id = id)
+    rule.onNodeWithTag("recipe_edit_grinder").performScrollTo().performClick()
+    rule.onNode(hasText(context.getString(R.string.grind_none)) and hasAnyAncestor(isPopup())).performClick()
+    assertFalse(exists("recipe_edit_grind_value_0_inc"))
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitUntil(5_000) { backCount > 0 }
+    assertEquals(null, runBlocking { recipes.get(id) }!!.grind)
   }
 }
