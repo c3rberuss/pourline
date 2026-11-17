@@ -48,6 +48,25 @@ internal fun Chart(
   )
 }
 
+/**
+ * Solo la curva objetivo, en gramos y sin eje de flujo: el detalle de una preparación sin báscula (SPEC-007), que no tiene
+ * muestras. Su descripción accesible es la del objetivo ("Objetivo: X g en mm:ss").
+ */
+@Composable
+internal fun TargetChart(target: TargetCurve, modifier: Modifier = Modifier) {
+  val unit = WeightUnit.GRAMS
+  val goal = "${formatNumber(target.finalWaterG, unit)} ${unit.symbol}"
+  BrewChart(
+    samples = emptyList(),
+    unit = unit,
+    waterUnitLabel = unit.symbol,
+    flowUnitLabel = null,
+    description = stringResource(R.string.target_description, goal, formatDuration(target.endMs)),
+    modifier = modifier,
+    target = target,
+  )
+}
+
 @Composable
 internal fun levelLabel(level: StabilityLevel): String = stringResource(
   when (level) {

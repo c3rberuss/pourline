@@ -210,6 +210,16 @@ val MIGRATION_4_5: Migration = object : Migration(4, 5) {
   }
 }
 
+/**
+ * Migración 5 → 6 (SPEC-007): la columna `scaleless` en `brews`. Las preparaciones existentes valen 0 (con báscula).
+ * El `DEFAULT 0` coincide con el `defaultValue` de [BrewEntity.scaleless], para que el esquema validado sea idéntico.
+ */
+val MIGRATION_5_6: Migration = object : Migration(5, 6) {
+  override fun migrate(db: SupportSQLiteDatabase) {
+    db.execSQL("ALTER TABLE `brews` ADD COLUMN `scaleless` INTEGER NOT NULL DEFAULT 0")
+  }
+}
+
 // Copiados de `app/schemas/.../5.json` (con `${TABLE_NAME}` sustituido).
 private const val RECIPES_V5_SQL =
   "CREATE TABLE IF NOT EXISTS `recipes` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +

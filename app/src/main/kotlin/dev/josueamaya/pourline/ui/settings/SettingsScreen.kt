@@ -74,6 +74,7 @@ fun SettingsScreen(
   onBack: (() -> Unit)?,
 ) {
   val autoFinish by settings.autoFinishSeconds.collectAsStateWithLifecycle()
+  val countdown by settings.countdownSeconds.collectAsStateWithLifecycle()
   val experience by experienceSettings.mode.collectAsStateWithLifecycle()
   val theme by themeSettings.mode.collectAsStateWithLifecycle()
   val vibration by targetSettings.stageVibration.collectAsStateWithLifecycle()
@@ -136,6 +137,20 @@ fun SettingsScreen(
           modifier = Modifier.fillMaxWidth(),
         )
         AntText(stringResource(R.string.settings_auto_finish_hint), type = AntTextType.Secondary)
+      }
+      AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.settings_countdown_title)) {
+        AntSegmented(
+          options = BrewSettings.COUNTDOWN_ALLOWED.map {
+            AntSegmentedOption(
+              it,
+              if (it == 0) stringResource(R.string.settings_countdown_off) else stringResource(R.string.settings_countdown_value, it),
+            )
+          },
+          selected = countdown,
+          onSelect = settings::setCountdownSeconds,
+          modifier = Modifier.fillMaxWidth().testTag("settings_countdown"),
+        )
+        AntText(stringResource(R.string.settings_countdown_hint), type = AntTextType.Secondary)
       }
       AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.settings_stage_title)) {
         SwitchRow(

@@ -88,6 +88,10 @@ fun footerLines(a: FooterCoffee?, b: FooterCoffee?): List<ShareFooterLine> = whe
 /**
  * El resumen en Scale y el detalle de una preparación. [subtitle] y [fitScore] van solo si hay dato; [notes] solo en
  * el detalle. [curveError] es una curva ilegible: en el hueco de la gráfica va el texto de error.
+ *
+ * Con [scaleless] (SPEC-007) no hay curva real ni estabilidad: la imagen lleva la marca "Sin báscula" y, en lugar de la
+ * gráfica, la dosis, el agua, el ratio y el tiempo de lo planeado. [doseG] es la dosis del plan, en gramos (`null` si no
+ * la había); [summary] aporta el agua, el ratio y el tiempo.
  */
 data class BrewShareData(
   val samples: List<BrewSample>,
@@ -101,6 +105,8 @@ data class BrewShareData(
   val notes: String?,
   val footer: List<ShareFooterLine>,
   val curveError: Boolean = false,
+  val scaleless: Boolean = false,
+  val doseG: Double? = null,
 )
 
 /** La comparación de A y B. [titleA] y [titleB] son "nombre · fecha y hora" (o solo la fecha y hora). */

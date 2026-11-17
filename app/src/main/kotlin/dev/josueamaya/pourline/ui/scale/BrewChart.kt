@@ -60,14 +60,15 @@ private fun chartScale(samples: List<BrewSample>, unit: WeightUnit, target: Targ
  * Con [fillHeight] ocupa todo el alto que le da el padre en lugar de [ChartHeight] (las imágenes para compartir).
  *
  * Con [target] (en gramos) dibuja además la curva objetivo, discontinua, sobre el eje del agua, y los
- * topes incluyen su agua máxima y su `endMs`. Con [samples] vacío solo se ve el objetivo.
+ * topes incluyen su agua máxima y su `endMs`. Con [samples] vacío solo se ve el objetivo. Con [flowUnitLabel] `null` no se
+ * dibuja el eje del flujo.
  */
 @Composable
 fun BrewChart(
   samples: List<BrewSample>,
   unit: WeightUnit,
   waterUnitLabel: String,
-  flowUnitLabel: String,
+  flowUnitLabel: String?,
   description: String,
   modifier: Modifier = Modifier,
   target: TargetCurve? = null,
@@ -116,7 +117,7 @@ fun BrewChart(
     // La rejilla y las etiquetas solo cambian con los topes de los ejes: van en su propia capa, que no se vuelve a
     // grabar con cada muestra (con la gráfica en vivo en la sesión, el p95 de fotograma bajó de 35 a 21 ms).
     Canvas(Modifier.fillMaxSize().graphicsLayer()) {
-      drawGridAndLabels(plotOf(size, this), scale, colors, measurer, labelStyle, waterUnitLabel, flowUnitLabel)
+      drawGridAndLabels(plotOf(size, this), scale, colors, measurer, labelStyle, waterUnitLabel, flowUnitLabel.orEmpty(), showFlowAxis = flowUnitLabel != null)
     }
     Canvas(Modifier.fillMaxSize()) {
       val plot = plotOf(size, this)

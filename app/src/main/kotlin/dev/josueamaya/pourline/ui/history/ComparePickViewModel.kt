@@ -45,10 +45,10 @@ class ComparePickViewModel(repository: BrewRepository, private val aId: Long) : 
     .map { if (it == null) ComparePickA.Gone else ComparePickA.Loaded(it.entity.coffeeId) }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ComparePickA.Loading)
 
-  /** La lista filtrada, sin A. */
+  /** La lista filtrada, sin A ni las preparaciones sin báscula (no tienen curva real que comparar). */
   val items: StateFlow<List<BrewListItem>?> = filter
     .flatMapLatest { repository.list(it) }
-    .map { rows -> rows.filter { it.id != aId } }
+    .map { rows -> rows.filter { it.id != aId && !it.scaleless } }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
   val coffees: StateFlow<List<CoffeeOption>?> =
@@ -57,8 +57,8 @@ class ComparePickViewModel(repository: BrewRepository, private val aId: Long) : 
   val methods: StateFlow<List<BrewMethod>?> =
     repository.methods().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
-  /** Hay alguna preparación además de A. `null` mientras carga. */
-  val hasOthers: StateFlow<Boolean?> = repository.count()
+  /** Hay alguna preparación comparable además de A (las hechas sin báscula no cuentan). `null` mientras carga. */
+  val hasOthers: StateFlow<Boolean?> = repository.comparableCount()
     .map { it > 1 }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 

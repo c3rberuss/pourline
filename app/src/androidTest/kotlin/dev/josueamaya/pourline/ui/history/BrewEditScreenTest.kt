@@ -21,6 +21,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.test.espresso.Espresso
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.R
+import dev.josueamaya.pourline.brew.PlannedAmounts
 import dev.josueamaya.pourline.coffee.CoffeeRepository
 import dev.josueamaya.pourline.coffee.PhotoFiles
 import dev.josueamaya.pourline.grinder.GrinderRepository
@@ -355,5 +356,84 @@ class BrewEditScreenTest {
     assertNull(saved.grinderId)
     assertEquals(30.0, saved.grindValue!!, 0.0)
     assertEquals("Chestnut S3 · 30 clics", saved.grindLabel)
+  }
+
+  // --- Sin báscula (SPEC-007) ---
+
+  private fun seedScaleless(amounts: PlannedAmounts = PlannedAmounts(15.0, 250.0)): Long =
+    runBlocking { repository.save(TestBrews.scalelessFinished(amounts = amounts), TestBrews.scalelessContext()) }
+
+  @Test
+  fun scalelessBrewsEditDoseAndWaterAndTheRatioIsRecomputed() {
+    id = seedScaleless()
+    open()
+    rule.onNodeWithTag("brew_edit_dose").performScrollTo().assertTextContains("15")
+    rule.onNodeWithTag("brew_edit_water").performScrollTo().assertTextContains("250")
+
+    rule.onNodeWithTag("brew_edit_dose").performTextReplacement("16")
+    rule.onNodeWithTag("brew_edit_water").performTextReplacement("260")
+    saveAndWait()
+
+    val saved = entity()
+    assertEquals(16.0, saved.doseG!!, 1e-9)
+    assertEquals(260.0, saved.totalWaterG, 1e-9)
+    assertEquals(16.25, saved.finalRatio!!, 1e-9)
+  }
+
+  @Test
+  fun anEmptyDoseOnAScalelessBrewSavesNoDoseAndNoRatio() {
+    id = seedScaleless()
+    open()
+    rule.onNodeWithTag("brew_edit_dose").performScrollTo().performTextReplacement("")
+    saveAndWait()
+
+    val saved = entity()
+    assertNull(saved.doseG)
+    assertNull(saved.finalRatio)
+    assertEquals(250.0, saved.totalWaterG, 1e-9)
+  }
+
+  @Test
+  fun savingOtherDetailsLeavesTheAmountsAlone() {
+    id = seedScaleless()
+    open()
+    rule.onNodeWithTag("brew_edit_name").performTextInput("Solo el nombre")
+    saveAndWait()
+
+    val saved = entity()
+    assertEquals("Solo el nombre", saved.name)
+    assertEquals(15.0, saved.doseG!!, 1e-9)
+    assertEquals(250.0, saved.totalWaterG, 1e-9)
+  }
+
+  @Test
+  fun anOutOfRangeDoseShowsTheErrorAndDisablesSave() {
+    id = seedScaleless()
+    open()
+    rule.onNodeWithTag("brew_edit_dose").performScrollTo().performTextReplacement("61")
+    rule.onNodeWithTag("brew_edit_dose_error").performScrollTo().assertExists()
+    rule.onNodeWithTag("brew_edit_save").performScrollTo().assertIsNotEnabled()
+
+    rule.onNodeWithTag("brew_edit_dose").performTextReplacement("0")
+    rule.onNodeWithTag("brew_edit_dose_error").assertExists()
+    rule.onNodeWithTag("brew_edit_dose").performTextReplacement("16")
+    rule.onAllNodesWithTag("brew_edit_dose_error").assertCountEquals(0)
+    rule.onNodeWithTag("brew_edit_save").assertIsEnabled()
+  }
+
+  @Test
+  fun anInvalidWaterShowsTheErrorAndDisablesSave() {
+    id = seedScaleless()
+    open()
+    rule.onNodeWithTag("brew_edit_water").performScrollTo().performTextReplacement("1000,5")
+    rule.onNodeWithTag("brew_edit_water_error").performScrollTo().assertExists()
+    rule.onNodeWithTag("brew_edit_save").assertIsNotEnabled()
+  }
+
+  @Test
+  fun scaleBrewsDoNotShowDoseOrWater() {
+    open()
+    rule.onAllNodesWithTag("brew_edit_dose").assertCountEquals(0)
+    rule.onAllNodesWithTag("brew_edit_water").assertCountEquals(0)
   }
 }

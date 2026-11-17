@@ -59,4 +59,12 @@ class BrewPreviewTest {
     val decoded = BrewPreview.decode(byteArrayOf(0, 51, 255.toByte()))
     assertEquals(listOf(0f, 0.2f, 1f), decoded)
   }
+
+  @Test
+  fun `no samples give zeros even with water`() {
+    val preview = BrewPreview.compute(emptyList(), 115_000, 250.0)
+
+    assertEquals(BrewPreview.SIZE, preview.size)
+    assertArrayEquals(ByteArray(BrewPreview.SIZE), preview)
+  }
 }

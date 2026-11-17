@@ -31,6 +31,7 @@ import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
  * Versión 4 (SPEC-005): `type` e `instruction` en `recipe_stages` y los huecos de las recetas como pasos `WAIT`.
  * Versión 5 (SPEC-006): las tablas de molinos y, en `recipes` y `brews`, el ajuste estructurado (`grinderId`,
  * `grindValue` y `grindLabel`) en lugar del texto `grind`.
+ * Versión 6 (SPEC-007): la columna `scaleless` en `brews`, para las preparaciones hechas sin báscula.
  */
 @Database(
   entities = [
@@ -45,7 +46,7 @@ import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
     GrinderMethodRangeEntity::class,
     GrinderAnchorEntity::class,
   ],
-  version = 5,
+  version = 6,
   exportSchema = true,
 )
 @TypeConverters(HistoryConverters::class, CoffeeConverters::class, GrinderConverters::class)
@@ -68,7 +69,7 @@ abstract class HistoryDatabase : RoomDatabase() {
       texts: RecipeTexts = ResourcesRecipeTexts(context),
     ): HistoryDatabase =
       Room.databaseBuilder(context.applicationContext, HistoryDatabase::class.java, fileName)
-        .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+        .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
         .addCallback(seedOnCreate(texts))
         .build()
 

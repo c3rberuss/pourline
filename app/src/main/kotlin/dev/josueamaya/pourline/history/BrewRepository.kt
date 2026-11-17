@@ -4,6 +4,7 @@ import dev.josueamaya.pourline.brew.BrewConfig
 import dev.josueamaya.pourline.brew.BrewSample
 import dev.josueamaya.pourline.brew.BrewSummary
 import dev.josueamaya.pourline.brew.FinishedBrew
+import dev.josueamaya.pourline.brew.PlannedAmounts
 import dev.josueamaya.pourline.brew.Pour
 import dev.josueamaya.pourline.brew.StabilityLevel
 import dev.josueamaya.pourline.brew.TargetCurve
@@ -33,7 +34,6 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
   override suspend fun save(finished: FinishedBrew, context: BrewContext): Long {
     val summary = finished.summary
     val target = context.target
-    val details = context.details?.normalized()
     val (curve, preview, targetData) = withContext(Dispatchers.Default) {
       Triple(
         BrewCurveCodec.encode(finished.samples, summary.pours),
@@ -41,44 +41,7 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
         target?.let { TargetCurveCodec.encode(it.curve) },
       )
     }
-    val entity = BrewEntity(
-      startedAtEpochMs = context.startedAtEpochMs,
-      // Prellenado desde la referencia. El café ya es una grafía existente, así que no pasa por `canonicalCoffee`.
-      name = details?.name,
-      coffee = details?.coffee,
-      method = details?.method,
-      methodOther = details?.methodOther,
-      grinderId = details?.grind?.grinderId,
-      grindValue = details?.grind?.value,
-      grindLabel = details?.grind?.label,
-      waterTempC = details?.waterTempC,
-      notes = details?.notes,
-      rating = details?.rating,
-      totalTimeMs = summary.totalTimeMs,
-      totalWaterG = summary.totalWaterG,
-      avgFlowGps = summary.avgFlowGps,
-      maxFlowGps = summary.maxFlowGps,
-      stabilityScore = summary.stabilityScore,
-      stabilityLevel = summary.stabilityLevel,
-      shareStable = summary.levelShare[StabilityLevel.STABLE] ?: 0.0,
-      shareIrregular = summary.levelShare[StabilityLevel.IRREGULAR] ?: 0.0,
-      shareTurbulent = summary.levelShare[StabilityLevel.TURBULENT] ?: 0.0,
-      doseG = finished.doseG,
-      finalRatio = summary.finalRatio,
-      finishReason = summary.reason,
-      interrupted = summary.interrupted,
-      unit = context.unit,
-      scaleModel = context.scaleModel,
-      simulated = context.simulated,
-      metricVersion = BrewConfig.METRIC_VERSION,
-      preview = preview,
-      referenceType = target?.type,
-      referenceId = target?.id,
-      referenceName = target?.name,
-      targetWaterG = target?.fit?.targetWaterG,
-      targetEndMs = target?.fit?.targetEndMs,
-      fitScore = target?.fit?.score,
-    )
+    val entity = brewEntity(finished, context, preview)
     return withContext(Dispatchers.IO) { dao.insertBrew(entity, curve, targetData, context.coffee) }
   }
 
@@ -123,10 +86,17 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
   /** Número de preparaciones guardadas. */
   fun count(): Flow<Int> = dao.count()
 
+  /** Las que se pueden comparar: todas menos las hechas sin báscula, que no tienen curva (SPEC-007). */
+  fun comparableCount(): Flow<Int> = dao.comparableCount()
+
   // Las escrituras siguientes no se cancelan: salir de la pantalla no puede cortarlas.
 
-  suspend fun updateDetails(id: Long, details: BrewDetails) {
-    withContext(Dispatchers.IO + NonCancellable) { dao.applyDetails(id, details) }
+  /**
+   * Guarda los datos manuales. Con [amounts] (solo en una preparación sin báscula), reescribe también la dosis, el agua
+   * y el ratio en la misma transacción.
+   */
+  suspend fun updateDetails(id: Long, details: BrewDetails, amounts: PlannedAmounts? = null) {
+    withContext(Dispatchers.IO + NonCancellable) { dao.applyDetails(id, details, amounts) }
   }
 
   /** Vincula la preparación a un café, o la desvincula con `null` (quita también el nombre). Actualiza `lastUsedAtEpochMs`. */
@@ -206,6 +176,7 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
     preview = BrewPreview.decode(row.preview),
     fitScore = row.fitScore,
     rating = row.rating,
+    scaleless = row.scaleless,
   )
 
   private fun toRecord(entity: BrewEntity, curve: Curve, target: Target) = BrewRecord(
@@ -231,5 +202,54 @@ class BrewRepository(db: HistoryDatabase) : BrewSaver {
     curveError = curve.error,
     target = target.curve,
     targetError = target.error,
+  )
+}
+
+/**
+ * La fila de `brews` de una preparación terminada. Es una función pura para poder probar en la JVM qué se guarda
+ * (SPEC-007 §3.5): con `context.scaleless`, la marca va a `true` y el resto sale del resumen sin muestras.
+ */
+internal fun brewEntity(finished: FinishedBrew, context: BrewContext, preview: ByteArray): BrewEntity {
+  val summary = finished.summary
+  val target = context.target
+  val details = context.details?.normalized()
+  return BrewEntity(
+    startedAtEpochMs = context.startedAtEpochMs,
+    // Prellenado desde la referencia. El café ya es una grafía existente, así que no pasa por `canonicalCoffee`.
+    name = details?.name,
+    coffee = details?.coffee,
+    method = details?.method,
+    methodOther = details?.methodOther,
+    grinderId = details?.grind?.grinderId,
+    grindValue = details?.grind?.value,
+    grindLabel = details?.grind?.label,
+    waterTempC = details?.waterTempC,
+    notes = details?.notes,
+    rating = details?.rating,
+    totalTimeMs = summary.totalTimeMs,
+    totalWaterG = summary.totalWaterG,
+    avgFlowGps = summary.avgFlowGps,
+    maxFlowGps = summary.maxFlowGps,
+    stabilityScore = summary.stabilityScore,
+    stabilityLevel = summary.stabilityLevel,
+    shareStable = summary.levelShare[StabilityLevel.STABLE] ?: 0.0,
+    shareIrregular = summary.levelShare[StabilityLevel.IRREGULAR] ?: 0.0,
+    shareTurbulent = summary.levelShare[StabilityLevel.TURBULENT] ?: 0.0,
+    doseG = finished.doseG,
+    finalRatio = summary.finalRatio,
+    finishReason = summary.reason,
+    interrupted = summary.interrupted,
+    unit = context.unit,
+    scaleModel = context.scaleModel,
+    simulated = context.simulated,
+    metricVersion = BrewConfig.METRIC_VERSION,
+    preview = preview,
+    referenceType = target?.type,
+    referenceId = target?.id,
+    referenceName = target?.name,
+    targetWaterG = target?.fit?.targetWaterG,
+    targetEndMs = target?.fit?.targetEndMs,
+    fitScore = target?.fit?.score,
+    scaleless = context.scaleless,
   )
 }

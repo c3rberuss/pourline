@@ -33,6 +33,7 @@ import dev.josueamaya.pourline.ui.components.AntRate
 import dev.josueamaya.pourline.ui.components.AntStatistic
 import dev.josueamaya.pourline.ui.components.AntStatus
 import dev.josueamaya.pourline.ui.components.AntTag
+import dev.josueamaya.pourline.ui.components.AntTagColor
 import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.scale.FitBlock
@@ -60,10 +61,18 @@ internal fun SessionSummary(
   onDone: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  val unit = ui.unit
-  val grams = { value: Double -> "${formatNumber(fromGrams(value, unit), unit)} ${unit.symbol}" }
-  val doseG = ui.dose?.let { toGrams(it, unit) }
-  val ratio = summary.finalRatio?.let { stringResource(R.string.scale_ratio_value, it) }
+  val unit = ui.sessionUnit
+  val scaleless = ui.scaleless
+  val entity = record?.entity
+  // Sin báscula, la dosis, el agua y el ratio son los del plan, o los corregidos en "Añadir detalles" una vez guardada.
+  val doseG = if (scaleless) {
+    if (entity != null) entity.doseG else ui.plannedDoseG
+  } else {
+    ui.dose?.let { toGrams(it, unit) }
+  }
+  val waterG = if (scaleless && entity != null) entity.totalWaterG else summary.totalWaterG
+  val finalRatio = if (scaleless && entity != null) entity.finalRatio else summary.finalRatio
+  val ratio = finalRatio?.let { stringResource(R.string.scale_ratio_value, it) }
   val coffee = ui.lastBrew?.coffee?.name ?: ui.coffee?.name
   val saved = ui.savedBrew
 
@@ -77,6 +86,9 @@ internal fun SessionSummary(
   ) {
     SaveBanner(saved)
     if (summary.interrupted) AntAlert(message = stringResource(R.string.brew_summary_interrupted), type = AntStatus.Warning)
+    if (scaleless) {
+      AntTag(stringResource(R.string.history_row_scaleless), Modifier.testTag("summary_scaleless"), color = AntTagColor.Primary)
+    }
     AntCard(Modifier.fillMaxWidth()) {
       Row(Modifier.fillMaxWidth()) {
         AntStatistic(
@@ -85,7 +97,7 @@ internal fun SessionSummary(
           modifier = Modifier.weight(1f).testTag("summary_time"),
         )
         AntStatistic(
-          value = formatNumber(fromGrams(summary.totalWaterG, unit), unit),
+          value = formatNumber(fromGrams(waterG, unit), unit),
           title = stringResource(R.string.brew_summary_total_water),
           suffix = unit.symbol,
           modifier = Modifier.weight(1f).testTag("summary_water"),
@@ -104,7 +116,6 @@ internal fun SessionSummary(
         else -> null
       }
       line?.let { AntText(it, Modifier.testTag("summary_ratio"), type = AntTextType.Secondary) }
-      val entity = record?.entity
       entity?.rating?.let { rating ->
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
           AntText(stringResource(R.string.brew_detail_rating), Modifier.weight(1f), type = AntTextType.Secondary)
@@ -149,10 +160,11 @@ internal fun SessionSummary(
 /** Lo que solo se ve en Experto: flujo medio y máximo, estabilidad, ajuste al objetivo y motivo de fin (§3.2). */
 @Composable
 private fun ExpertSummary(ui: ScaleUiState, summary: BrewSummary, mode: ExperienceMode) {
-  val unit = ui.unit
-  val showFlow = mode.shows(ExpertFeature.SUMMARY_FLOW)
-  val showStability = mode.shows(ExpertFeature.SUMMARY_STABILITY)
-  val fit = ui.lastFit?.takeIf { mode.shows(ExpertFeature.SUMMARY_FIT) }?.let {
+  val unit = ui.sessionUnit
+  // Sin báscula no hay flujo, estabilidad ni ajuste que mostrar: solo el motivo de fin.
+  val showFlow = !ui.scaleless && mode.shows(ExpertFeature.SUMMARY_FLOW)
+  val showStability = !ui.scaleless && mode.shows(ExpertFeature.SUMMARY_STABILITY)
+  val fit = ui.lastFit?.takeIf { !ui.scaleless && mode.shows(ExpertFeature.SUMMARY_FIT) }?.let {
     fitView(it.fit.score, it.name, it.fit.targetWaterG, it.fit.targetEndMs, summary.totalWaterG, summary.totalTimeMs)
   }
   val showReason = mode.shows(ExpertFeature.SUMMARY_FINISH_REASON)

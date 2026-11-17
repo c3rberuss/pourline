@@ -36,19 +36,26 @@ class AndroidStageNotifier(context: Context, private val settings: TargetSetting
     if (settings.stageSound.value) beep()
   }
 
-  private fun vibrate() {
+  /** Los tics de la cuenta regresiva son cortos; la salida suena y vibra como un aviso de etapa. */
+  override fun countdownTick(remainingS: Int) {
+    val go = remainingS <= 0
+    if (settings.stageVibration.value) vibrate(if (go) VIBRATION_MS else TICK_VIBRATION_MS)
+    if (settings.stageSound.value) beep(if (go) BEEP_MS else TICK_BEEP_MS)
+  }
+
+  private fun vibrate(durationMs: Long = VIBRATION_MS) {
     val vibrator = vibrator ?: return
     if (!vibrator.hasVibrator()) return
     try {
-      vibrator.vibrate(VibrationEffect.createOneShot(VIBRATION_MS, VibrationEffect.DEFAULT_AMPLITUDE))
+      vibrator.vibrate(VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE))
     } catch (e: SecurityException) {
       Log.w(TAG, "vibration not allowed", e)
     }
   }
 
-  private fun beep() {
+  private fun beep(durationMs: Int = BEEP_MS) {
     val generator = tone ?: createTone() ?: return
-    generator.startTone(ToneGenerator.TONE_PROP_BEEP, BEEP_MS)
+    generator.startTone(ToneGenerator.TONE_PROP_BEEP, durationMs)
   }
 
   /** Se crea la primera vez que hace falta; si el constructor falla, no se vuelve a intentar. */
@@ -72,6 +79,8 @@ class AndroidStageNotifier(context: Context, private val settings: TargetSetting
     const val TAG = "AndroidStageNotifier"
     const val VIBRATION_MS = 250L
     const val BEEP_MS = 200
+    const val TICK_VIBRATION_MS = 40L
+    const val TICK_BEEP_MS = 60
     const val VOLUME = 80
   }
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -45,7 +46,8 @@ private const val DISABLED_ALPHA = 0.45f
 /**
  * Fila del historial: minicurva, título, café, agua y tiempo en la unidad guardada, ratio y etiquetas. Con
  * [showMetrics] `false` (modo Básico) no muestra las etiquetas de estabilidad ni de ajuste; la minicurva, que es
- * decorativa, se mantiene.
+ * decorativa, se mantiene. Una preparación sin báscula (SPEC-007) lleva su etiqueta en lugar de las de estabilidad y
+ * ajuste, y un hueco en lugar de la minicurva, que saldría plana.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -59,7 +61,11 @@ fun HistoryRow(
   val state = if (enabled) Modifier else Modifier.alpha(DISABLED_ALPHA).semantics { disabled() }
   AntCard(modifier.testTag("history_row").then(state), size = AntCardSize.Small, onClick = if (enabled) onClick else null) {
     Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm), verticalAlignment = Alignment.Top) {
-      BrewPreviewLine(item.preview, Modifier.width(64.dp).height(40.dp))
+      if (item.scaleless) {
+        Spacer(Modifier.width(64.dp).height(40.dp))
+      } else {
+        BrewPreviewLine(item.preview, Modifier.width(64.dp).height(40.dp))
+      }
       Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
           AntText(
@@ -80,13 +86,15 @@ fun HistoryRow(
           text = stringResource(R.string.history_row_stats, water, formatDuration(item.totalTimeMs)) + ratio,
           type = AntTextType.Secondary,
         )
-        if (showMetrics || item.simulated) {
+        if (showMetrics || item.simulated || item.scaleless) {
           FlowRow(
             horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
             verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
             modifier = Modifier.fillMaxWidth(),
           ) {
-            if (showMetrics) {
+            if (item.scaleless) {
+              AntTag(stringResource(R.string.history_row_scaleless), Modifier.testTag("history_row_scaleless"), color = AntTagColor.Primary)
+            } else if (showMetrics) {
               val score = item.stabilityScore
               val level = item.stabilityLevel
               if (score != null && level != null) {
@@ -108,7 +116,7 @@ fun HistoryRow(
 @Composable
 private fun BrewPreviewLine(values: List<Float>, modifier: Modifier = Modifier) {
   val color = AntTheme.colors.primary.base
-  Canvas(modifier) {
+  Canvas(modifier.testTag("history_row_preview")) {
     if (values.size < 2) return@Canvas
     val inset = 2.dp.toPx()
     val width = size.width - 2 * inset

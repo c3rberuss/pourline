@@ -1,10 +1,13 @@
 package dev.josueamaya.pourline.history
 
+import dev.josueamaya.pourline.brew.BrewEffect
 import dev.josueamaya.pourline.brew.BrewFit
 import dev.josueamaya.pourline.brew.BrewSample
 import dev.josueamaya.pourline.brew.FinishReason
 import dev.josueamaya.pourline.brew.FinishedBrew
+import dev.josueamaya.pourline.brew.PlannedAmounts
 import dev.josueamaya.pourline.brew.Pour
+import dev.josueamaya.pourline.brew.TimedSession
 import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.brew.summarize
 import dev.josueamaya.pourline.protocol.ScaleModel
@@ -62,7 +65,28 @@ object TestBrews {
     target: UsedTarget? = null,
     details: BrewDetails? = null,
     coffee: UsedCoffee? = null,
-  ) = BrewContext(startedAtEpochMs, unit, model, simulated, target, details, coffee)
+    scaleless: Boolean = false,
+  ) = BrewContext(startedAtEpochMs, unit, model, simulated, target, details, coffee, scaleless)
+
+  /** Una preparación sin báscula, como la produce la sesión cronometrada: sin muestras ni vertidos. */
+  fun scalelessFinished(
+    totalTimeMs: Long = 115_000,
+    amounts: PlannedAmounts = PlannedAmounts(doseG = 15.0, waterG = 250.0),
+    t0MonoMs: Long = 0,
+  ): FinishedBrew {
+    val session = TimedSession()
+    session.arm(amounts)
+    session.start(t0MonoMs)
+    return (session.finish(t0MonoMs + totalTimeMs).single() as BrewEffect.Finished).brew
+  }
+
+  /** El contexto de [scalelessFinished]: gramos, sin modelo y no simulada. */
+  fun scalelessContext(
+    startedAtEpochMs: Long = 1_700_000_000_000,
+    target: UsedTarget? = null,
+    details: BrewDetails? = null,
+    coffee: UsedCoffee? = null,
+  ) = context(startedAtEpochMs, WeightUnit.GRAMS, simulated = false, model = null, target = target, details = details, coffee = coffee, scaleless = true)
 
   /** Un café determinista para los tests de catálogo. */
   fun coffeeDraft(

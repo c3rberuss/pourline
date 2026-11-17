@@ -2,6 +2,7 @@ package dev.josueamaya.pourline.ui.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.josueamaya.pourline.brew.PlannedAmounts
 import dev.josueamaya.pourline.coffee.CoffeeEntity
 import dev.josueamaya.pourline.coffee.CoffeeListItem
 import dev.josueamaya.pourline.coffee.CoffeeRepository
@@ -81,6 +82,7 @@ class BrewEditViewModel(
       val loaded = BrewEditForm.from(
         BrewDetails(entity.name, null, entity.method, entity.methodOther, entity.toGrindSetting(), entity.waterTempC, entity.notes, entity.rating),
         choice,
+        amounts = if (entity.scaleless) PlannedAmounts(entity.doseG, entity.totalWaterG) else null,
       )
       _initial.value = loaded
       _form.value = loaded
@@ -122,10 +124,12 @@ class BrewEditViewModel(
     if (_status.value != BrewEditStatus.Ready || !current.isValid) return
     _status.value = BrewEditStatus.Saving
     val initialChoice = _initial.value.coffee
+    // Las cantidades solo se escriben si cambiaron: así guardar otros datos no toca lo planeado.
+    val amounts = current.amounts()?.takeIf { it != _initial.value.amounts() }
     viewModelScope.launch {
       // La copia de texto del ajuste se regenera con el molino vivo (D17).
       val grinder = current.grind.liveGrinderId?.let { grinderRepository.get(it) }
-      repository.updateDetails(id, current.toDetails().copy(grind = current.grind.toSetting(grinder, grindTexts)).normalized())
+      repository.updateDetails(id, current.toDetails().copy(grind = current.grind.toSetting(grinder, grindTexts)).normalized(), amounts)
       if (current.coffee.needsLinkWrite(initialChoice)) repository.setCoffee(id, current.coffee.linkedId)
       _status.value = BrewEditStatus.Saved
     }

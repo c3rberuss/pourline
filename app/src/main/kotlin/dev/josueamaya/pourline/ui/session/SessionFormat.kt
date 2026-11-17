@@ -3,6 +3,8 @@ package dev.josueamaya.pourline.ui.session
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
 import dev.josueamaya.pourline.R
+import dev.josueamaya.pourline.brew.GuideState
+import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.brew.TargetStage
 import dev.josueamaya.pourline.recipe.StageType
 import dev.josueamaya.pourline.ui.components.AntIcons
@@ -54,3 +56,23 @@ fun nextStepInfo(next: TargetStage?, elapsedMs: Long, countdownS: Int?): NextSte
 
 /** El tiempo de "Siguiente … en": la cuenta atrás ("5 s" es un texto traducido, por eso lo da el composable) o `m:ss`. */
 fun nextStepClock(info: NextStepInfo): String = formatClock(info.remainingMs)
+
+/** El paso en curso de una sesión sin báscula (SPEC-007 §3.4): "paso n/N · quedan m:ss" y el avance del dial. */
+data class TimedStepView(
+  /** Desde 1. */
+  val number: Int,
+  val count: Int,
+  /** `endMs − tMs`, sin bajar de 0. */
+  val remainingMs: Long,
+  /** Avance 0..1 del paso; 1 si dura 0. */
+  val fraction: Float,
+)
+
+/** `null` sin guía, antes del primer paso o con todos los pasos hechos. */
+fun timedStepView(guide: GuideState?, curve: TargetCurve?, tMs: Long?): TimedStepView? {
+  val stage = guide?.stage ?: return null
+  if (guide.allStagesDone || curve == null || tMs == null) return null
+  val duration = stage.endMs - stage.startMs
+  val fraction = if (duration <= 0) 1f else ((tMs - stage.startMs).toFloat() / duration).coerceIn(0f, 1f)
+  return TimedStepView(stage.index + 1, curve.stages.size, (stage.endMs - tMs).coerceAtLeast(0), fraction)
+}

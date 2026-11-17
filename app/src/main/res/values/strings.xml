@@ -107,6 +107,7 @@
     <string name="history_empty_filtered">Ninguna preparación coincide con el filtro</string>
     <string name="history_row_no_score">Sin puntuación</string>
     <string name="history_row_simulated">Simulada</string>
+    <string name="history_row_scaleless">Sin báscula</string>
     <string name="history_row_stats">%1$s · %2$s</string>
     <string name="history_deleted">Preparación borrada</string>
     <string name="history_undo">Deshacer</string>
@@ -126,6 +127,7 @@
     <string name="brew_detail_temp">Temperatura</string>
     <string name="brew_detail_temp_value">%1$s °C</string>
     <string name="brew_detail_notes">Notas de cata</string>
+    <string name="brew_detail_target_chart">Curva objetivo</string>
     <string name="brew_detail_curve_error">No se pudo leer la curva de esta preparación</string>
     <string name="brew_detail_old_metric">Puntuación calculada con una versión anterior de la métrica</string>
     <string name="brew_method_other">Otro</string>
@@ -142,6 +144,10 @@
     <string name="brew_edit_method_none">Sin método</string>
     <string name="brew_edit_method_other">Nombre del método</string>
     <string name="brew_edit_temp">Temperatura (°C)</string>
+    <string name="brew_edit_dose">Dosis (g)</string>
+    <string name="brew_edit_dose_error">Entre 5 y 60 g, con un decimal como máximo.</string>
+    <string name="brew_edit_water">Agua (g)</string>
+    <string name="brew_edit_water_error">Más de 0 y hasta 1000 g, con un decimal como máximo.</string>
     <string name="brew_edit_temp_error">Escribe un valor de 0 a 100 con un decimal como máximo</string>
     <string name="brew_edit_notes">Notas de cata</string>
     <string name="brew_edit_rating">Valoración</string>
@@ -262,6 +268,10 @@
     <string name="recipe_error_no_pour">Añade al menos un paso de tipo Verter</string>
 
     <!-- Ajustes: guía de pasos y recetas -->
+    <string name="settings_countdown_title">Cuenta regresiva</string>
+    <string name="settings_countdown_off">No</string>
+    <string name="settings_countdown_value">%1$d s</string>
+    <string name="settings_countdown_hint">Segundos antes de que arranque el reloj al pulsar «Empezar timer», con o sin báscula. Con báscula, si empiezas a verter antes, la preparación empieza enseguida.</string>
     <string name="settings_stage_title">Guía de pasos</string>
     <string name="settings_stage_vibration">Vibrar al empezar cada paso</string>
     <string name="settings_stage_sound">Sonido al empezar cada paso</string>
@@ -483,6 +493,7 @@
     <string name="prepare_empty_value">—</string>
     <string name="prepare_start">Empezar</string>
     <string name="prepare_start_disabled">Conecta la báscula para empezar.</string>
+    <string name="prepare_start_scaleless">Empezar sin báscula</string>
     <string name="prepare_range_error">La dosis va de 5 a 60 g y el ratio, de 10 a 20.</string>
     <string name="scale_card_no_permission">Necesitamos permiso de Bluetooth</string>
     <string name="scale_card_grant">Dar permisos</string>
@@ -536,6 +547,11 @@
     <string name="session_options_unit">Unidad</string>
     <string name="session_options_restart">Reiniciar</string>
     <string name="session_options_simulation">Simulación</string>
+    <string name="scaleless_pour_to">Vierte hasta %1$s g</string>
+    <string name="scaleless_step_progress">paso %1$d/%2$d · quedan %3$s</string>
+    <string name="scaleless_water_goal">Agua objetivo: %1$s g</string>
+    <string name="scaleless_done_hint">Pasos completados. Pulsa Terminar cuando acabe de filtrar</string>
+    <string name="scaleless_dial_description">Tiempo %1$s. %2$s</string>
     <string name="prep_stepper">Paso %1$d de 4</string>
     <string name="prep_step_label">Paso %1$d de 4 · %2$s</string>
     <string name="prep_step_tare">Tara</string>
@@ -552,6 +568,10 @@
     <string name="prep_capture">Capturar ahora</string>
     <string name="prep_skip_dose">Saltar (sin dosis)</string>
     <string name="prep_start_timer">Empezar timer</string>
+    <string name="countdown_title">Prepárate para verter</string>
+    <string name="countdown_hint">El reloj empieza al llegar a cero</string>
+    <string name="countdown_description">Empieza en %1$d</string>
+    <string name="countdown_cancel">Cancelar</string>
     <string name="prep_waiting_tare">Esperando la tara…</string>
     <string name="prep_dose_value">Dosis: %1$s</string>
     <string name="prep_no_dose">Sin dosis</string>
@@ -763,6 +783,9 @@
     <string name="brew_notice_channel_description">Mantiene la preparación activa cuando sales de la app</string>
     <string name="brew_notice_water">%1$s de %2$s</string>
     <string name="brew_notice_saving">Guardando la preparación…</string>
+    <string name="brew_notice_scaleless_ready">Lista para empezar</string>
+    <string name="brew_notice_step">Paso %1$d/%2$d · %3$s</string>
+    <string name="brew_notice_step_pour">Paso %1$d/%2$d · %3$s hasta %4$s</string>
 
     <!-- Herramientas -->
     <string name="tab_tools">Herramientas</string>

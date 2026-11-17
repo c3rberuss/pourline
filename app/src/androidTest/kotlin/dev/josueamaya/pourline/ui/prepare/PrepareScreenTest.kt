@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.R
@@ -220,6 +221,104 @@ class PrepareScreenTest {
 
     rule.onNodeWithTag("prepare_start").assertIsEnabled()
     assertTrue(!exists("prepare_start_hint"))
+  }
+
+  // --- empezar sin báscula (SPEC-007) ---
+
+  private fun pickV60() {
+    rule.onNodeWithTag("target_chip").performClick()
+    waitFor("target_picker")
+    rule.onNodeWithText(recipeName()).performClick()
+    rule.waitUntil(5_000) { env.scaleSession.ui.value.target != null }
+  }
+
+  @Test
+  fun theScalelessStartIsVisibleAndEnabledWithARecipeAndNoScale() {
+    show()
+    pickV60()
+
+    rule.onNodeWithTag("prepare_start_scaleless").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithTag("prepare_start_scaleless").assertIsEnabled()
+    rule.onNodeWithTag("prepare_start_scaleless").assert(hasText(context.getString(R.string.prepare_start_scaleless)))
+    // "Empezar" sigue necesitando la báscula, y su ayuda se mantiene.
+    rule.onNodeWithTag("prepare_start").assertIsNotEnabled()
+    rule.onNodeWithTag("prepare_start_hint").assert(hasText(context.getString(R.string.prepare_start_disabled)))
+  }
+
+  @Test
+  fun theScalelessStartIsVisibleWithTheScaleReady() {
+    show()
+    connectSimulated()
+
+    rule.onNodeWithTag("prepare_start_scaleless").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithTag("prepare_start_scaleless").assertIsEnabled()
+    rule.onNodeWithTag("prepare_start").assertIsEnabled()
+  }
+
+  @Test
+  fun theScalelessStartIsDisabledWithAnInvalidFreeDoseOrRatioAndEnabledAgainWhenFixed() {
+    show()
+    rule.onNodeWithTag("prepare_start_scaleless").assertIsEnabled()
+
+    rule.onNodeWithTag("prepare_dose").performTextReplacement("80")
+    rule.onNodeWithTag("prepare_start_scaleless").assertIsNotEnabled()
+    rule.onNodeWithTag("prepare_dose").performTextReplacement("15")
+    rule.onNodeWithTag("prepare_start_scaleless").assertIsEnabled()
+
+    rule.onNodeWithTag("prepare_ratio").performTextReplacement("25")
+    rule.onNodeWithTag("prepare_start_scaleless").assertIsNotEnabled()
+    rule.onNodeWithTag("prepare_ratio").performTextReplacement("15,5")
+    rule.onNodeWithTag("prepare_start_scaleless").assertIsEnabled()
+
+    rule.onNodeWithTag("prepare_dose").performTextReplacement("15.55")
+    rule.onNodeWithTag("prepare_start_scaleless").assertIsNotEnabled()
+  }
+
+  @Test
+  fun theScalelessStartOpensTheSessionReadyToStart() {
+    show()
+    pickV60()
+
+    rule.onNodeWithTag("prepare_start_scaleless").performScrollTo().performClick()
+
+    waitFor("scaleless_start")
+    assertTrue(env.scaleSession.ui.value.scaleless)
+    assertTrue(!exists("session_prep"))
+    assertTrue(env.connectionsMade.isEmpty())
+  }
+
+  @Test
+  fun aFreeScalelessStartUsesTheTypedDoseAndRatio() {
+    show()
+    rule.onNodeWithTag("prepare_dose").performTextReplacement("18")
+    rule.onNodeWithTag("prepare_ratio").performTextReplacement("15")
+
+    rule.onNodeWithTag("prepare_start_scaleless").performScrollTo().performClick()
+
+    waitFor("scaleless_plan_water")
+    rule.onNodeWithTag("scaleless_plan_water").assert(hasText("270", substring = true))
+    assertEquals(18.0, env.scaleSession.ui.value.plannedDoseG!!, 0.0)
+  }
+
+  @Test
+  fun togglingTheRecipeResetsTheFreeTextsAsBefore() {
+    show()
+    // Un texto fuera de rango no se guarda: el plan sigue en 15 y 16.
+    rule.onNodeWithTag("prepare_dose").performTextReplacement("80")
+    rule.onNodeWithTag("prepare_start_scaleless").assertIsNotEnabled()
+    pickV60()
+    rule.onNodeWithTag("prepare_dose").assert(SemanticsMatcher.keyNotDefined(SemanticsActions.SetText))
+    rule.onNodeWithTag("prepare_start_scaleless").assertIsEnabled()
+
+    rule.onNodeWithTag("target_chip").performClick()
+    waitFor("target_picker")
+    rule.onNodeWithTag("target_picker_clear").performClick()
+    rule.waitUntil(5_000) { env.scaleSession.ui.value.target == null }
+
+    // Los campos vuelven a editarse con el plan guardado: el "80" no se arrastra.
+    rule.onNodeWithTag("prepare_dose").assert(hasText("15", substring = true))
+    rule.onNodeWithTag("prepare_ratio").assert(hasText("16", substring = true))
+    rule.onNodeWithTag("prepare_start_scaleless").assertIsEnabled()
   }
 
   // --- dosis y ratio ---

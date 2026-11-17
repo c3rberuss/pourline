@@ -30,6 +30,10 @@
     <!-- Servicio en primer plano mientras hay una preparación abierta: la app sigue al salir de ella -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <!-- La sesión sin báscula no tiene dispositivo: Android 14+ pide el tipo specialUse en lugar de connectedDevice -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Mantiene la CPU despierta durante una sesión sin báscula con la pantalla apagada (permiso normal) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- La notificación de ese servicio (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -60,7 +64,12 @@
         <service
             android:name=".session.BrewService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice" />
+            android:foregroundServiceType="connectedDevice|specialUse">
+            <!-- Obligatoria con specialUse: qué hace el servicio (el temporizador de una preparación sin báscula) -->
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="brew_timer" />
+        </service>
 
         <!-- Destino de la cámara del sistema y de las imágenes para compartir -->
         <provider

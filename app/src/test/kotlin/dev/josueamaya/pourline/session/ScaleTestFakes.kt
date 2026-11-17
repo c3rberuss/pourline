@@ -174,10 +174,15 @@ class FakeScaleCoffees : ScaleCoffees {
 
 class FakeNotifier : StageNotifier {
   val started = mutableListOf<TargetStage>()
+  val countdown = mutableListOf<Int>()
   var released = 0
 
   override fun stageStarted(stage: TargetStage) {
     started += stage
+  }
+
+  override fun countdownTick(remainingS: Int) {
+    countdown += remainingS
   }
 
   override fun release() {
@@ -256,4 +261,15 @@ fun ScaleSessionManager.beginArmedSession(plan: BrewPlan = BrewPlan(doseG = 15.0
   prepSkip()
   prepSkipDose()
   prepSkip()
+}
+
+/** Un [StageNotifier] que anota cada aviso con el índice del paso y el instante de [clock]. */
+class TimestampedNotifier(private val clock: () -> Long) : StageNotifier {
+  val started = mutableListOf<Pair<Int, Long>>()
+
+  override fun stageStarted(stage: TargetStage) {
+    started += stage.index to clock()
+  }
+
+  override fun release() = Unit
 }

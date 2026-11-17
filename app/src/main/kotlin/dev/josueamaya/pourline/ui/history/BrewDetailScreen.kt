@@ -64,6 +64,7 @@ import dev.josueamaya.pourline.ui.grinders.GrindSettingText
 import dev.josueamaya.pourline.ui.scale.BrewSummaryCard
 import dev.josueamaya.pourline.ui.scale.Chart
 import dev.josueamaya.pourline.ui.scale.FitBlock
+import dev.josueamaya.pourline.ui.scale.TargetChart
 import dev.josueamaya.pourline.ui.scale.fitView
 import dev.josueamaya.pourline.ui.scale.summaryStability
 import dev.josueamaya.pourline.ui.theme.AntTheme
@@ -155,6 +156,8 @@ private fun detailShareData(record: BrewRecord, coffee: CoffeeEntity?): BrewShar
       linked?.let { FooterCoffee(it.id, it.name, it.roaster, brewDaysSinceRoast(it.roastDate, entity.startedAtEpochMs, ZoneId.systemDefault())) },
     ),
     curveError = record.curveError,
+    scaleless = entity.scaleless,
+    doseG = entity.doseG,
   )
 }
 
@@ -174,6 +177,28 @@ private fun DetailContent(
   if (entity.simulated) {
     Row { AntTag(stringResource(R.string.history_row_simulated), color = AntTagColor.Primary) }
   }
+  if (entity.scaleless) {
+    // SPEC-007: sin muestras, ni estabilidad ni ajuste. Solo los datos y, en Experto con receta, la curva del plan.
+    Row { AntTag(stringResource(R.string.history_row_scaleless), Modifier.testTag("brew_detail_scaleless"), color = AntTagColor.Primary) }
+    val curve = record.target
+    if (mode.shows(ExpertFeature.BREW_DETAIL_CHART) && curve != null) {
+      AntCard(Modifier.fillMaxWidth().testTag("brew_detail_target_chart"), title = stringResource(R.string.brew_detail_target_chart)) {
+        TargetChart(curve)
+      }
+    }
+    BrewFactsCard(record, coffee, onOpenCoffee)
+  } else {
+    ScaleBrewBody(record, coffee, onOpenCoffee)
+  }
+  DetailsCard(record, grinder)
+  DetailButtons(record, onEdit, onDelete, onCompare, onSaveAsRecipe)
+}
+
+/** El cuerpo del detalle de una preparación con báscula: gráfica, resumen, ajuste y cata en Experto; los datos en Básico. */
+@Composable
+private fun ScaleBrewBody(record: BrewRecord, coffee: CoffeeEntity?, onOpenCoffee: (Long) -> Unit) {
+  val entity = record.entity
+  val mode = LocalExperienceMode.current
   if (mode.shows(ExpertFeature.BREW_DETAIL_CHART)) {
     if (record.curveError) {
       AntAlert(message = stringResource(R.string.brew_detail_curve_error), type = AntStatus.Error)
@@ -196,7 +221,17 @@ private fun DetailContent(
   } else {
     BrewFactsCard(record, coffee, onOpenCoffee)
   }
-  DetailsCard(record, grinder)
+}
+
+@Composable
+private fun DetailButtons(
+  record: BrewRecord,
+  onEdit: () -> Unit,
+  onDelete: () -> Unit,
+  onCompare: () -> Unit,
+  onSaveAsRecipe: () -> Unit,
+) {
+  val mode = LocalExperienceMode.current
   // Dos filas: cuatro botones no caben en una de 360 dp.
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
     AntButton(
@@ -212,8 +247,9 @@ private fun DetailContent(
       danger = true,
     )
   }
-  val compare = mode.shows(ExpertFeature.BREW_COMPARE)
-  val saveRecipe = mode.shows(ExpertFeature.BREW_SAVE_AS_RECIPE)
+  // Una preparación sin báscula no se compara ni se guarda como receta (SPEC-007 §3.6).
+  val compare = mode.shows(ExpertFeature.BREW_COMPARE) && !record.entity.scaleless
+  val saveRecipe = mode.shows(ExpertFeature.BREW_SAVE_AS_RECIPE) && !record.entity.scaleless
   if (compare || saveRecipe) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
       if (compare) {

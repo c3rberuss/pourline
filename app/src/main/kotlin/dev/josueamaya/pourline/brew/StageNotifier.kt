@@ -4,6 +4,9 @@ package dev.josueamaya.pourline.brew
 interface StageNotifier {
   fun stageStarted(stage: TargetStage)
 
+  /** Un segundo de la cuenta regresiva previa a la preparación: [remainingS] > 0 es un tic y 0 es la salida. */
+  fun countdownTick(remainingS: Int) = Unit
+
   /** Libera los recursos nativos. Se llama desde `ScaleViewModel.onCleared()`. */
   fun release()
 }

@@ -28,6 +28,7 @@ import dev.josueamaya.pourline.grinder.TestGrinders
 import dev.josueamaya.pourline.grinder.addGrinder
 import dev.josueamaya.pourline.grinder.grinderRepository
 import dev.josueamaya.pourline.grinder.toRows
+import dev.josueamaya.pourline.brew.PlannedAmounts
 import dev.josueamaya.pourline.history.BrewDetails
 import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.history.BrewRepository
@@ -381,5 +382,81 @@ class BrewDetailScreenTest {
     rule.waitUntil(5_000) { rule.onAllNodesWithTag("brew_detail_grind", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
     rule.onNodeWithTag("brew_detail_grind", useUnmergedTree = true).performScrollTo().assertTextContains("Chestnut S3", substring = true)
     rule.onNodeWithTag("brew_detail_grind_deleted", useUnmergedTree = true).assertExists()
+  }
+
+  // --- Sin báscula (SPEC-007) ---
+
+  private fun seedScaleless(withRecipe: Boolean = false, details: BrewDetails? = null): Long = runBlocking {
+    val id = repository.save(
+      TestBrews.scalelessFinished(totalTimeMs = 115_000, amounts = PlannedAmounts(doseG = 15.0, waterG = 250.0)),
+      TestBrews.scalelessContext(target = if (withRecipe) TestBrews.usedTarget(score = null) else null),
+    )
+    if (details != null) repository.updateDetails(id, details)
+    id
+  }
+
+  private fun waitFor(tag: String) = rule.waitUntil(5_000) { rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+
+  private fun checkScalelessFacts() {
+    waitFor("brew_detail_facts")
+    rule.onNodeWithTag("brew_detail_scaleless").performScrollTo().assertIsDisplayed()
+    for (key in listOf("date", "dose", "water", "ratio", "time")) {
+      rule.onNodeWithTag("brew_detail_facts_$key").performScrollTo().assertIsDisplayed()
+    }
+    rule.onNodeWithTag("brew_detail_facts_dose").assertTextContains("15", substring = true)
+    rule.onNodeWithTag("brew_detail_facts_water").assertTextContains("250", substring = true)
+    rule.onNodeWithTag("brew_detail_facts_ratio").assertTextContains("1:16.7")
+    rule.onNodeWithTag("brew_detail_facts_time").assertTextEquals("01:55")
+    for (tag in listOf("brew_summary", "brew_detail_fit", "brew_detail_tasting")) rule.onAllNodesWithTag(tag).assertCountEquals(0)
+  }
+
+  @Test
+  fun aScalelessBrewShowsTheTagAndTheFactsInBasic() {
+    mode.value = ExperienceMode.BASIC
+    show(seedScaleless(details = BrewDetails(rating = 5)))
+    checkScalelessFacts()
+    rule.onAllNodesWithTag("brew_chart").assertCountEquals(0)
+  }
+
+  @Test
+  fun aScalelessBrewShowsTheTagAndTheFactsInExpert() {
+    show(seedScaleless(details = BrewDetails(rating = 5)))
+    checkScalelessFacts()
+  }
+
+  @Test
+  fun aScalelessBrewHidesCompareAndSaveAsRecipe() {
+    show(seedScaleless(withRecipe = true))
+    waitFor("brew_detail_facts")
+    rule.onNodeWithTag("brew_detail_edit").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithTag("brew_detail_delete").assertIsDisplayed()
+    rule.onAllNodesWithTag("brew_detail_compare").assertCountEquals(0)
+    rule.onAllNodesWithTag("brew_detail_save_recipe").assertCountEquals(0)
+  }
+
+  @Test
+  fun aScalelessBrewWithARecipeShowsOnlyTheTargetCurveInExpert() {
+    show(seedScaleless(withRecipe = true))
+    waitFor("brew_detail_target_chart")
+    rule.onNodeWithTag("brew_detail_target_chart").performScrollTo().assertIsDisplayed()
+    rule.onAllNodesWithTag("brew_summary").assertCountEquals(0)
+    rule.onAllNodesWithTag("brew_detail_fit").assertCountEquals(0)
+    rule.onAllNodesWithTag("brew_detail_target_error").assertCountEquals(0)
+  }
+
+  @Test
+  fun aScalelessBrewWithARecipeHasNoCurveInBasic() {
+    mode.value = ExperienceMode.BASIC
+    show(seedScaleless(withRecipe = true))
+    waitFor("brew_detail_facts")
+    rule.onAllNodesWithTag("brew_detail_target_chart").assertCountEquals(0)
+  }
+
+  @Test
+  fun aScalelessBrewWithoutARecipeHasNoChart() {
+    show(seedScaleless(withRecipe = false))
+    waitFor("brew_detail_facts")
+    rule.onAllNodesWithTag("brew_detail_target_chart").assertCountEquals(0)
+    rule.onAllNodesWithTag("brew_chart").assertCountEquals(0)
   }
 }

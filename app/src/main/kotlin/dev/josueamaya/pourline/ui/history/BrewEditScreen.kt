@@ -164,7 +164,7 @@ fun BrewEditScreen(
         modifier = Modifier.fillMaxWidth(),
       )
       Field(stringResource(R.string.brew_edit_temp)) {
-        val invalid = !form.isValid
+        val invalid = form.tempInvalid
         AntInput(
           value = form.waterTemp,
           onValueChange = { v -> viewModel.update { it.copy(waterTemp = v) } },
@@ -174,6 +174,32 @@ fun BrewEditScreen(
         )
         if (invalid) {
           AntText(stringResource(R.string.brew_edit_temp_error), Modifier.testTag("brew_edit_temp_error"), type = AntTextType.Danger)
+        }
+      }
+      if (form.scaleless) {
+        Field(stringResource(R.string.brew_edit_dose)) {
+          AntInput(
+            value = form.dose,
+            onValueChange = { v -> viewModel.update { it.copy(dose = v) } },
+            modifier = Modifier.fillMaxWidth().testTag("brew_edit_dose"),
+            status = if (form.doseInvalid) AntInputStatus.Error else AntInputStatus.Default,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+          )
+          if (form.doseInvalid) {
+            AntText(stringResource(R.string.brew_edit_dose_error), Modifier.testTag("brew_edit_dose_error"), type = AntTextType.Danger)
+          }
+        }
+        Field(stringResource(R.string.brew_edit_water)) {
+          AntInput(
+            value = form.water,
+            onValueChange = { v -> viewModel.update { it.copy(water = v) } },
+            modifier = Modifier.fillMaxWidth().testTag("brew_edit_water"),
+            status = if (form.waterInvalid) AntInputStatus.Error else AntInputStatus.Default,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+          )
+          if (form.waterInvalid) {
+            AntText(stringResource(R.string.brew_edit_water_error), Modifier.testTag("brew_edit_water_error"), type = AntTextType.Danger)
+          }
         }
       }
       AntButton(

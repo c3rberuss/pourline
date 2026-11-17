@@ -166,4 +166,35 @@ class ComparePickScreenTest {
     runBlocking { repository.delete(a) }
     rule.waitUntil(5_000) { backCount > 0 }
   }
+
+  // --- Sin báscula (SPEC-007) ---
+
+  private fun seedScaleless(startedAt: Long, name: String): Long = runBlocking {
+    repository.save(
+      TestBrews.scalelessFinished(),
+      TestBrews.scalelessContext(startedAtEpochMs = startedAt, details = BrewDetails(name = name)),
+    )
+  }
+
+  @Test
+  fun scalelessBrewsAreNotOfferedAsB() {
+    val a = seed(1_000, name = "A")
+    seed(2_000, name = "B")
+    seedScaleless(3_000, "Sin báscula")
+    show(a)
+
+    waitForRows(1)
+    rows()[0].assertTextContains("B", substring = true)
+  }
+
+  @Test
+  fun withOnlyScalelessOthersThereIsNothingToCompare() {
+    val a = seed(1_000, name = "A")
+    seedScaleless(2_000, "Sin báscula")
+    show(a)
+
+    rule.waitUntil(5_000) { exists("compare_pick_empty") }
+    rule.onNodeWithTag("compare_pick_empty").assertIsDisplayed()
+    rows().assertCountEquals(0)
+  }
 }
