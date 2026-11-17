@@ -45,6 +45,8 @@ data class BrewContext(
   val details: BrewDetails? = null,
   /** El café elegido en Scale, congelado al empezar; `null` sin café (SPEC-004). */
   val coffee: UsedCoffee? = null,
+  /** Preparada sin báscula (SPEC-007): no hay muestras, y `unit` es siempre gramos. */
+  val scaleless: Boolean = false,
 )
 
 /** Datos manuales de una preparación. */

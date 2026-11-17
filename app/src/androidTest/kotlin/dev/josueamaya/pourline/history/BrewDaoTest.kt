@@ -2,6 +2,7 @@ package dev.josueamaya.pourline.history
 
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.brew.FinishReason
+import dev.josueamaya.pourline.brew.PlannedAmounts
 import dev.josueamaya.pourline.grinder.GrindSetting
 import dev.josueamaya.pourline.grinder.TestGrinders
 import dev.josueamaya.pourline.grinder.addGrinder
@@ -451,5 +452,146 @@ class BrewDaoTest {
 
   private companion object {
     val BrewConfigVersion = dev.josueamaya.pourline.brew.BrewConfig.METRIC_VERSION
+  }
+
+  // --- Sin báscula (SPEC-007) ---
+
+  private suspend fun saveScaleless(
+    startedAt: Long = 1_700_000_000_000,
+    amounts: PlannedAmounts = PlannedAmounts(15.0, 250.0),
+    target: UsedTarget? = null,
+  ): Long = repository.save(
+    TestBrews.scalelessFinished(amounts = amounts),
+    TestBrews.scalelessContext(startedAtEpochMs = startedAt, target = target),
+  )
+
+  @Test
+  fun aScalelessBrewIsStoredWithAnEmptyCurveAndAZeroPreview() = runTest {
+    val target = TestBrews.usedTarget(score = null)
+    val id = saveScaleless(target = target)
+
+    val record = repository.get(id)!!
+    val entity = record.entity
+    assertTrue(entity.scaleless)
+    assertEquals(15.0, entity.doseG!!, 1e-9)
+    assertEquals(250.0, entity.totalWaterG, 1e-9)
+    assertEquals(250.0 / 15.0, entity.finalRatio!!, 1e-9)
+    assertEquals(115_000L, entity.totalTimeMs)
+    assertEquals(0.0, entity.avgFlowGps, 0.0)
+    assertEquals(0.0, entity.maxFlowGps, 0.0)
+    assertNull(entity.stabilityScore)
+    assertNull(entity.stabilityLevel)
+    assertNull(entity.fitScore)
+    assertEquals(0.0, entity.shareStable, 0.0)
+    assertEquals(0.0, entity.shareIrregular, 0.0)
+    assertEquals(0.0, entity.shareTurbulent, 0.0)
+    assertEquals(WeightUnit.GRAMS, entity.unit)
+    assertNull(entity.scaleModel)
+    assertFalse(entity.simulated)
+    assertEquals(FinishReason.MANUAL, entity.finishReason)
+    assertEquals(List(48) { 0.toByte() }, entity.preview.toList())
+    // La curva se guarda vacía pero válida: la relación 1:1 con `brew_curves` se conserva.
+    assertFalse(record.curveError)
+    assertTrue(record.samples.isEmpty())
+    assertTrue(record.summary.pours.isEmpty())
+    // La referencia se guarda como hoy, con la copia de la curva objetivo.
+    assertEquals(ReferenceType.RECIPE, entity.referenceType)
+    assertEquals(target.curve.finalWaterG, entity.targetWaterG!!, 1e-9)
+    assertEquals(target.curve.endMs, entity.targetEndMs)
+    assertEquals(target.curve.points, record.target!!.points)
+    assertFalse(record.targetError)
+  }
+
+  @Test
+  fun theListCarriesScaleless() = runTest {
+    val scale = save(startedAt = 1_000)
+    val scaleless = saveScaleless(startedAt = 2_000)
+
+    val items = repository.list(BrewFilter()).first()
+
+    assertEquals(listOf(scaleless, scale), items.map { it.id })
+    assertEquals(listOf(true, false), items.map { it.scaleless })
+    assertTrue(items.first().preview.all { it == 0f })
+  }
+
+  @Test
+  fun progressSkipsScalelessBrewsEvenWithAScore() = runTest {
+    val real = save(startedAt = 1_000)
+    val scaleless = saveScaleless(startedAt = 2_000)
+    // El filtro es explícito: una fila sin báscula con puntuación tampoco cuenta.
+    dao.insertBrew(db.brewDao().brew(scaleless)!!.copy(id = 0, startedAtEpochMs = 3_000, stabilityScore = 80), ByteArray(0))
+
+    assertEquals(listOf(real), repository.progress(BrewFilter()).first().map { it.brewId })
+  }
+
+  @Test
+  fun comparableCountSkipsScalelessBrews() = runTest {
+    assertEquals(0, repository.comparableCount().first())
+    save(startedAt = 1_000)
+    saveScaleless(startedAt = 2_000)
+    saveScaleless(startedAt = 3_000)
+
+    assertEquals(3, repository.count().first())
+    assertEquals(1, repository.comparableCount().first())
+  }
+
+  @Test
+  fun applyDetailsWithAmountsRewritesDoseWaterAndRatioOnlyOnScalelessBrews() = runTest {
+    val scaleless = saveScaleless()
+    val scale = save(startedAt = 5_000)
+    val before = repository.get(scale)!!.entity
+
+    repository.updateDetails(scaleless, BrewDetails(rating = 4), PlannedAmounts(16.0, 260.0))
+    repository.updateDetails(scale, BrewDetails(rating = 2), PlannedAmounts(99.0, 999.0))
+
+    val edited = repository.get(scaleless)!!.entity
+    assertEquals(16.0, edited.doseG!!, 1e-9)
+    assertEquals(260.0, edited.totalWaterG, 1e-9)
+    assertEquals(16.25, edited.finalRatio!!, 1e-9)
+    assertEquals(4, edited.rating)
+    // En una con báscula, los datos medidos no se tocan; los detalles sí se guardan.
+    val untouched = repository.get(scale)!!.entity
+    assertEquals(before.doseG, untouched.doseG)
+    assertEquals(before.totalWaterG, untouched.totalWaterG, 0.0)
+    assertEquals(before.finalRatio, untouched.finalRatio)
+    assertEquals(2, untouched.rating)
+  }
+
+  @Test
+  fun applyDetailsWithANullDoseLeavesTheRatioNull() = runTest {
+    val id = saveScaleless()
+
+    repository.updateDetails(id, BrewDetails(), PlannedAmounts(null, 250.0))
+
+    val entity = repository.get(id)!!.entity
+    assertNull(entity.doseG)
+    assertNull(entity.finalRatio)
+    assertEquals(250.0, entity.totalWaterG, 1e-9)
+  }
+
+  @Test
+  fun applyDetailsWithoutAmountsKeepsTheScalelessAmounts() = runTest {
+    val id = saveScaleless()
+
+    repository.updateDetails(id, BrewDetails(notes = "Dulce"))
+
+    val entity = repository.get(id)!!.entity
+    assertEquals(15.0, entity.doseG!!, 1e-9)
+    assertEquals(250.0, entity.totalWaterG, 1e-9)
+  }
+
+  @Test
+  fun deleteAndRestoreKeepScaleless() = runTest {
+    val id = saveScaleless(target = TestBrews.usedTarget(score = null))
+
+    repository.delete(id)
+    assertNull(repository.get(id))
+    repository.restore(repository.pendingUndo.value!!)
+
+    val record = repository.get(id)!!
+    assertTrue(record.entity.scaleless)
+    assertFalse(record.curveError)
+    assertTrue(record.samples.isEmpty())
+    assertNotNull(record.target)
   }
 }

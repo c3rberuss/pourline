@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
+import dev.josueamaya.pourline.brew.PlannedAmounts
 import dev.josueamaya.pourline.coffee.CoffeeOption
 import kotlinx.coroutines.flow.Flow
 
@@ -14,14 +15,14 @@ abstract class BrewDao {
 
   @Query(
     "SELECT id, startedAtEpochMs, name, coffee, totalTimeMs, totalWaterG, finalRatio, stabilityScore, " +
-      "stabilityLevel, unit, simulated, preview, fitScore, rating FROM brews WHERE $FILTER " +
+      "stabilityLevel, unit, simulated, preview, fitScore, rating, scaleless FROM brews WHERE $FILTER " +
       "ORDER BY startedAtEpochMs DESC, id DESC",
   )
   abstract fun list(coffeeId: Long?, method: BrewMethod?): Flow<List<BrewListRow>>
 
   @Query(
     "SELECT id AS brewId, startedAtEpochMs, stabilityScore AS score FROM brews " +
-      "WHERE simulated = 0 AND stabilityScore IS NOT NULL AND $FILTER " +
+      "WHERE simulated = 0 AND scaleless = 0 AND stabilityScore IS NOT NULL AND $FILTER " +
       "ORDER BY startedAtEpochMs ASC, id ASC",
   )
   abstract fun progress(coffeeId: Long?, method: BrewMethod?): Flow<List<ProgressPoint>>
@@ -51,6 +52,9 @@ abstract class BrewDao {
 
   @Query("SELECT COUNT(*) FROM brews")
   abstract fun count(): Flow<Int>
+
+  @Query("SELECT COUNT(*) FROM brews WHERE scaleless = 0")
+  abstract fun comparableCount(): Flow<Int>
 
   @Insert
   protected abstract suspend fun insertBrewRow(brew: BrewEntity): Long
@@ -101,6 +105,10 @@ abstract class BrewDao {
     rating: Int?,
   )
 
+  /** Reescribe la dosis, el agua y el ratio de una preparación sin báscula; en una con báscula no toca nada (SPEC-007 §3.5). */
+  @Query("UPDATE brews SET doseG = :doseG, totalWaterG = :totalWaterG, finalRatio = :finalRatio WHERE id = :id AND scaleless = 1")
+  protected abstract suspend fun updateScalelessAmounts(id: Long, doseG: Double?, totalWaterG: Double, finalRatio: Double?): Int
+
   /**
    * Inserta la preparación, su curva y, si la hay, la copia de la curva objetivo en una transacción y devuelve
    * el id. Con [coffee]: si el café existe, se vincula con su nombre actual; si se borró mientras tanto (se
@@ -138,9 +146,12 @@ abstract class BrewDao {
     newId?.let { recomputeLastUsed(it) }
   }
 
-  /** Guarda los datos manuales. No toca `coffee` ni `coffeeId`: el café se cambia con [linkCoffee] (D22). */
+  /**
+   * Guarda los datos manuales. No toca `coffee` ni `coffeeId`: el café se cambia con [linkCoffee] (D22). Con [amounts],
+   * en la misma transacción, corrige la dosis y el agua, solo si la preparación es sin báscula.
+   */
   @Transaction
-  open suspend fun applyDetails(id: Long, details: BrewDetails) {
+  open suspend fun applyDetails(id: Long, details: BrewDetails, amounts: PlannedAmounts? = null) {
     val normalized = details.normalized()
     updateDetailsRow(
       id,
@@ -154,6 +165,7 @@ abstract class BrewDao {
       normalized.notes,
       normalized.rating,
     )
+    if (amounts != null) updateScalelessAmounts(id, amounts.doseG, amounts.waterG, amounts.ratio)
   }
 
   /** Borra la preparación (y su curva, por la cascada) y devuelve lo borrado, o `null` si no existía. */

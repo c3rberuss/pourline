@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline.history
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -91,6 +92,8 @@ data class BrewEntity(
   /** El ajuste en unidades base del molino. */
   val grindValue: Double? = null,
   val grindLabel: String? = null,
+  /** Preparada sin báscula (SPEC-007): sin curva, flujo ni estabilidad; la dosis y el agua son las del plan. */
+  @ColumnInfo(defaultValue = "0") val scaleless: Boolean = false,
 )
 
 /** Muestras y vertidos codificados con [BrewCurveCodec]. 1:1 con [BrewEntity]. */
@@ -143,6 +146,7 @@ data class BrewListRow(
   val preview: ByteArray,
   val fitScore: Int?,
   val rating: Int?,
+  val scaleless: Boolean = false,
 )
 
 /** Fila de la lista. */
@@ -164,6 +168,8 @@ data class BrewListItem(
   val fitScore: Int?,
   /** Valoración de 1 a 5; `null` sin valorar. */
   val rating: Int?,
+  /** Preparada sin báscula (SPEC-007). */
+  val scaleless: Boolean = false,
 )
 
 /** Detalle completo: la fila, la curva decodificada y el resumen reconstruido. */
