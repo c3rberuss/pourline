@@ -14,6 +14,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.josueamaya.pourline.R
@@ -160,3 +161,50 @@ fun BrewDial(
 /** La minigráfica no llega al ancho del texto: a esa altura del dial el círculo ya se estrecha. */
 private const val SPARKLINE_WIDTH = 0.6f
 private val SparklineHeight = 24.dp
+
+/**
+ * El dial de la sesión sin báscula (SPEC-007 §3.4): el mismo aro que [BrewDial], pero su avance es el del paso en curso y
+ * dentro van el reloj y, debajo, la línea de acción ([action]). No tiene agua, ratio ni flujo.
+ *
+ * @param fraction avance 0..1 del paso en curso.
+ * @param description lo que lee el lector de pantalla (el reloj y la acción).
+ * @param actionTag la etiqueta de pruebas de la línea de acción.
+ */
+@Composable
+fun TimedDial(
+  fraction: Float,
+  clock: String,
+  action: String?,
+  description: String,
+  modifier: Modifier = Modifier,
+  actionTag: String = "scaleless_action",
+) {
+  AntProgressCircle(
+    fraction = fraction,
+    modifier = modifier.testTag("session_dial").semantics { contentDescription = description },
+  ) {
+    Column(
+      Modifier.padding(horizontal = AntTheme.spacing.lg),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
+    ) {
+      AntText(
+        clock,
+        Modifier.fillMaxWidth().testTag("scaleless_clock"),
+        style = AntTheme.typography.heading1.copy(fontSize = 48.sp, lineHeight = 56.sp, fontWeight = FontWeight.Light),
+        textAlign = TextAlign.Center,
+        maxLines = 1,
+      )
+      if (action != null) {
+        AntText(
+          action,
+          Modifier.fillMaxWidth().testTag(actionTag),
+          type = AntTextType.Secondary,
+          textAlign = TextAlign.Center,
+          maxLines = 2,
+          overflow = TextOverflow.Ellipsis,
+        )
+      }
+    }
+  }
+}

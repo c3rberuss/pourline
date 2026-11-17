@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.ui
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -141,6 +142,8 @@ class TestAppDependencies(
   val bluetooth: FakeBluetoothEnvironment = FakeBluetoothEnvironment(),
   val scanner: FakeScanner = FakeScanner(),
   notifier: StageNotifier = SilentNotifier,
+  /** El reloj monotónico del gestor; un test lo adelanta a mano para no esperar los minutos de una receta. */
+  clock: () -> Long = SystemClock::elapsedRealtime,
 ) {
   init {
     context.deleteSharedPreferences(PREFS)
@@ -184,6 +187,7 @@ class TestAppDependencies(
     coffees = RepositoryScaleCoffees(coffees),
     grind = SessionGrind { grindSelection.current() },
     memory = connectionSettings,
+    clock = clock,
   )
 
   val grindSelection = GrindSelection(

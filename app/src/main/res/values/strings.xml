@@ -107,6 +107,7 @@
     <string name="history_empty_filtered">Ninguna preparación coincide con el filtro</string>
     <string name="history_row_no_score">Sin puntuación</string>
     <string name="history_row_simulated">Simulada</string>
+    <string name="history_row_scaleless">Sin báscula</string>
     <string name="history_row_stats">%1$s · %2$s</string>
     <string name="history_deleted">Preparación borrada</string>
     <string name="history_undo">Deshacer</string>
@@ -536,6 +537,11 @@
     <string name="session_options_unit">Unidad</string>
     <string name="session_options_restart">Reiniciar</string>
     <string name="session_options_simulation">Simulación</string>
+    <string name="scaleless_pour_to">Vierte hasta %1$s g</string>
+    <string name="scaleless_step_progress">paso %1$d/%2$d · quedan %3$s</string>
+    <string name="scaleless_water_goal">Agua objetivo: %1$s g</string>
+    <string name="scaleless_done_hint">Pasos completados. Pulsa Terminar cuando acabe de filtrar</string>
+    <string name="scaleless_dial_description">Tiempo %1$s. %2$s</string>
     <string name="prep_stepper">Paso %1$d de 4</string>
     <string name="prep_step_label">Paso %1$d de 4 · %2$s</string>
     <string name="prep_step_tare">Tara</string>

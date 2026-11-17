@@ -106,8 +106,8 @@ import dev.josueamaya.pourline.ui.theme.AntTheme
 import kotlinx.coroutines.flow.flowOf
 
 private const val PREP_STEPS = 4
-private val MaxDial = 260.dp
-private val MinDial = 180.dp
+internal val MaxDial = 260.dp
+internal val MinDial = 180.dp
 
 /**
  * La sesión inmersiva (§3.4): pantalla completa sin barra inferior. Según el estado muestra los pasos previos
@@ -181,7 +181,8 @@ fun SessionScreen(
     snackbarHost = { AntMessageHost(snackbar) },
   ) { padding ->
     Column(Modifier.fillMaxSize().padding(padding)) {
-      DisconnectedNotice(ui.connection, onRetry = session::retry)
+      // Sin báscula no hay nada que reconectar: la sesión va solo por el reloj.
+      if (!ui.scaleless) DisconnectedNotice(ui.connection, onRetry = session::retry)
       when {
         phase is BrewPhase.Finished -> {
           val saved = ui.savedBrew as? SavedBrew.Saved
@@ -201,7 +202,9 @@ fun SessionScreen(
             },
           )
         }
+        phase is BrewPhase.Active && ui.scaleless -> ScalelessActivePanel(ui, onFinish = session::finishBrew)
         phase is BrewPhase.Active -> ActivePanel(ui, mode, onFinish = session::finishBrew)
+        phase is BrewPhase.Armed && ui.scaleless -> ScalelessReadyPanel(ui, onStart = session::scalelessStartTimer)
         ui.prep != null -> PrepPanel(ui, ui.prep!!, session, grind, onAddGrinder, onFixGrinder, onOpenConverter)
         else -> Unit
       }
@@ -242,12 +245,13 @@ fun SessionScreen(
     SessionOptionsSheet(
       expert = mode == ExperienceMode.EXPERT,
       onExpertChange = { modeStore.setMode(if (it) ExperienceMode.EXPERT else ExperienceMode.BASIC) },
-      unit = ui.unit,
-      unitEnabled = ui.connection == ConnectionState.Ready,
+      unit = ui.sessionUnit,
+      unitEnabled = ui.connection == ConnectionState.Ready && !ui.scaleless,
       onUnitChange = { session.toggleUnit() },
-      restartEnabled = phase !is BrewPhase.Active,
+      // Sin báscula, "Reiniciar" solo tiene sentido al terminar: en `Armed` no habría nada que reiniciar.
+      restartEnabled = if (ui.scaleless) phase is BrewPhase.Finished else phase !is BrewPhase.Active,
       onRestart = session::restartPrep,
-      simulation = if (ui.isSimulated) {
+      simulation = if (ui.isSimulated && !ui.scaleless) {
         SimulationActions(
           hasTarget = ui.target != null,
           onAdd = session::simulateAdd,
@@ -631,8 +635,8 @@ private fun Metrics(ui: ScaleUiState, mode: ExperienceMode, onLegend: (() -> Uni
 
 /** El paso en curso: tipo con icono, nombre, agua acumulada (Verter) e instrucción. Sin receta, un único paso "Verter hasta X". */
 @Composable
-private fun CurrentStep(ui: ScaleUiState) {
-  val unit = ui.unit
+internal fun CurrentStep(ui: ScaleUiState) {
+  val unit = ui.sessionUnit
   val target = ui.target
   val guide = ui.guide
   val stage = guide?.stage?.takeIf { guide.allStagesDone.not() }
@@ -696,7 +700,7 @@ private fun CurrentStep(ui: ScaleUiState) {
 
 /** "Siguiente: {tipo} {nombre} en {m:ss}"; en los últimos 5 s, el tiempo es la cuenta atrás en color primario y negrita (D6). */
 @Composable
-private fun NextStep(ui: ScaleUiState, elapsedMs: Long) {
+internal fun NextStep(ui: ScaleUiState, elapsedMs: Long) {
   val guide = ui.guide ?: return
   if (ui.target == null || guide.allStagesDone) return
   val info = nextStepInfo(guide.nextStage, elapsedMs, guide.countdownS) ?: return

@@ -108,6 +108,7 @@
     <string name="history_empty_filtered">No brews match the filter</string>
     <string name="history_row_no_score">No score</string>
     <string name="history_row_simulated">Simulated</string>
+    <string name="history_row_scaleless">No scale</string>
     <string name="history_row_stats">%1$s · %2$s</string>
     <string name="history_deleted">Brew deleted</string>
     <string name="history_undo">Undo</string>
@@ -537,6 +538,11 @@
     <string name="session_options_unit">Unit</string>
     <string name="session_options_restart">Restart</string>
     <string name="session_options_simulation">Simulation</string>
+    <string name="scaleless_pour_to">Pour to %1$s g</string>
+    <string name="scaleless_step_progress">step %1$d/%2$d · %3$s left</string>
+    <string name="scaleless_water_goal">Water goal: %1$s g</string>
+    <string name="scaleless_done_hint">All steps done. Tap Finish when it stops dripping</string>
+    <string name="scaleless_dial_description">Time %1$s. %2$s</string>
     <string name="prep_stepper">Step %1$d of 4</string>
     <string name="prep_step_label">Step %1$d of 4 · %2$s</string>
     <string name="prep_step_tare">Tare</string>
