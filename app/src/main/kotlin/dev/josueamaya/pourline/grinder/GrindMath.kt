@@ -39,3 +39,14 @@ fun multipliers(units: List<GrindUnitLevel>): List<Long> {
 }
 
 internal fun roundTo6(value: Double): Double = (value * 1e6).roundToLong() / 1e6
+
+/** Interpola linealmente por tramos sobre [points] (ordenados por x) y extrapola por los tramos de los extremos. */
+internal fun interpolate(points: List<Pair<Double, Double>>, x: Double): Double? {
+  if (points.size < 2) return null
+  // Con x anterior al primer punto se usa el primer tramo; con x posterior al último, el último.
+  val i = points.indexOfLast { it.first <= x }.coerceIn(0, points.size - 2)
+  val (x0, y0) = points[i]
+  val (x1, y1) = points[i + 1]
+  if (abs(x1 - x0) < EPS) return null
+  return y0 + (x - x0) / (x1 - x0) * (y1 - y0)
+}

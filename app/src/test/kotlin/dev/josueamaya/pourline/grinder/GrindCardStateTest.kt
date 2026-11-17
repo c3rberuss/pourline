@@ -2,6 +2,7 @@ package dev.josueamaya.pourline.grinder
 
 import dev.josueamaya.pourline.grinder.GrinderFixtures.cinco
 import dev.josueamaya.pourline.grinder.GrinderFixtures.dos
+import dev.josueamaya.pourline.grinder.GrinderFixtures.sinCurva
 import dev.josueamaya.pourline.grinder.GrinderFixtures.tres
 import dev.josueamaya.pourline.grinder.GrinderFixtures.uno
 import dev.josueamaya.pourline.history.BrewMethod
@@ -150,5 +151,31 @@ class GrindCardStateTest {
   @Test
   fun `the snapshot is null without a chosen grinder`() {
     assertNull(state(source(uno, 20.0), uno, owned = emptyList()).snapshot(FakeGrindTexts))
+  }
+
+  // --- fixFor (enmienda 1, D45) ---
+
+  @Test
+  fun `one pair gives add calibration on the chosen grinder`() {
+    assertEquals(FixTarget(GrindFix.ADD_CALIBRATION, sinCurva.id), fixFor(uno, sinCurva, pairCount = 1))
+    assertEquals(FixTarget(GrindFix.ADD_CALIBRATION, uno.id), fixFor(sinCurva, uno, pairCount = 1))
+  }
+
+  @Test
+  fun `the fix points to the grinder without a curve`() {
+    // El origen no tiene curva y el elegido sí: se arregla el origen.
+    assertEquals(FixTarget(GrindFix.COMPLETE_RANGES, sinCurva.id), fixFor(sinCurva, uno, pairCount = 0))
+    // El elegido no tiene curva: el elegido.
+    assertEquals(FixTarget(GrindFix.COMPLETE_RANGES, sinCurva.id), fixFor(uno, sinCurva, pairCount = 0))
+    // Ninguno la tiene: el elegido.
+    val other = sinCurva.copy(id = 20)
+    assertEquals(FixTarget(GrindFix.COMPLETE_RANGES, other.id), fixFor(sinCurva, other, pairCount = 0))
+  }
+
+  @Test
+  fun `an own grinder gets complete ranges and a predefined one duplicate`() {
+    val predefined = sinCurva.copy(id = 30, catalogKey = "acme-sin-curva", sourceUrl = "https://example.com", sourceName = "Fuente")
+    assertEquals(FixTarget(GrindFix.DUPLICATE, predefined.id), fixFor(uno, predefined, pairCount = 0))
+    assertEquals(FixTarget(GrindFix.COMPLETE_RANGES, sinCurva.id), fixFor(uno, sinCurva, pairCount = 0))
   }
 }

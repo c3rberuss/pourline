@@ -12,6 +12,23 @@ enum class GrindFix {
 
   /** El molino de destino es predefinido: se duplica para personalizarlo. */
   DUPLICATE,
+
+  /** Hay un solo par de calibración y falta la curva de algún molino: se añade otra equivalencia (enmienda 1). */
+  ADD_CALIBRATION,
+}
+
+/** El arreglo de "Sin equivalencia" y el molino al que lleva (D45). */
+data class FixTarget(val fix: GrindFix, val grinderId: Long)
+
+/**
+ * Qué se ofrece cuando no hay equivalencia de [from] a [to] y cuántos pares hay entre ellos (D45). Con 1 par, añadir
+ * otra equivalencia en [to]. Si no, completar los rangos del molino sin curva ([to] si ninguno la tiene) si es propio, o
+ * duplicarlo si es predefinido.
+ */
+fun fixFor(from: Grinder, to: Grinder, pairCount: Int): FixTarget {
+  if (pairCount == 1) return FixTarget(GrindFix.ADD_CALIBRATION, to.id)
+  val target = if (GrindCurve.of(to) == null || GrindCurve.of(from) != null) to else from
+  return FixTarget(if (target.isPredefined) GrindFix.DUPLICATE else GrindFix.COMPLETE_RANGES, target.id)
 }
 
 /** Lo que recibe el convertidor suelto para abrirse ya relleno (F8). */
