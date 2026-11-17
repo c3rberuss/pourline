@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat
 import dev.josueamaya.pourline.PourlineApp
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.ui.scale.formatNumber
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -39,6 +40,7 @@ import kotlinx.coroutines.launch
 class BrewService : Service() {
   private val scope = MainScope()
   private var running = false
+  private var updates: Job? = null
 
   override fun onBind(intent: Intent?): IBinder? = null
 
@@ -57,9 +59,9 @@ class BrewService : Service() {
     }
     scope.launch {
       manager.ui.first { !it.needsKeepAlive() }
-      stopSelf()
+      stop()
     }
-    scope.launch {
+    updates = scope.launch {
       manager.ui.map { it.toBrewNotice() }.distinctUntilChanged().conflate().collect { notice ->
         notify(build(notice))
         delay(MIN_UPDATE_MS)
@@ -72,7 +74,19 @@ class BrewService : Service() {
   override fun onDestroy() {
     scope.cancel()
     ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+    // Por si una actualización se publicó cuando el servicio ya no estaba en primer plano: esa ya no se quita sola.
+    NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID)
     super.onDestroy()
+  }
+
+  /**
+   * Corta las actualizaciones antes de parar: `stopSelf` retira la notificación al momento, pero `onDestroy` llega
+   * después, y un `notify` en ese hueco la volvería a publicar como una notificación fija que ya nadie quita.
+   */
+  private fun stop() {
+    updates?.cancel()
+    ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+    stopSelf()
   }
 
   private fun notify(notification: Notification) {
