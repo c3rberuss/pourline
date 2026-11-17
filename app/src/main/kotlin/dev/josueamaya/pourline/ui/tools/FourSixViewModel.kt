@@ -22,7 +22,7 @@ enum class FourSixInputError {
   WATER,
 }
 
-/** El generador 4:6; empieza con la dosis predeterminada de Preparar, a 1:15, balanceado y estándar. */
+/** El generador 4:6; empieza con la dosis predeterminada de Preparar, a 1:15, equilibrado e intensidad media. */
 class FourSixViewModel(defaults: FreeBrewDefaults) : ViewModel() {
   // Estado de snapshot y no un `StateFlow`: el campo que se escribe tiene que actualizarse en el mismo frame.
   var dose: String by mutableStateOf(RatioCalculator.format(defaults.defaultDoseG.value))
