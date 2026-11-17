@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,6 +29,7 @@ import dev.josueamaya.pourline.brew.fromGrams
 import dev.josueamaya.pourline.protocol.WeightUnit
 import dev.josueamaya.pourline.ui.components.AntRate
 import dev.josueamaya.pourline.ui.components.AntTag
+import dev.josueamaya.pourline.ui.components.AntTagColor
 import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.scale.Chart
@@ -45,6 +47,8 @@ private val QuoteIndent = 10.dp
 /**
  * El resumen en Scale (sin nota) y el detalle de una preparación (con nota): título con el ajuste al objetivo,
  * subtítulo con la valoración, la gráfica en el alto que sobra, cuatro métricas, la nota de cata y el pie del café.
+ * Sin báscula, la marca "Sin báscula" en lugar del ajuste y una rejilla de cuatro datos en lugar de la gráfica y las
+ * métricas.
  */
 @Composable
 fun BrewShareCard(data: BrewShareData, modifier: Modifier = Modifier) {
@@ -52,14 +56,16 @@ fun BrewShareCard(data: BrewShareData, modifier: Modifier = Modifier) {
     BrewShareHeader(data)
     Spacer(Modifier.height(BODY_GAP))
     ShareChartSlot(Modifier.weight(1f)) {
-      if (data.curveError) {
-        CurveError()
-      } else {
-        Chart(data.samples, data.unit, summaryStability(data.summary), target = data.target, fillHeight = true)
+      when {
+        data.scaleless -> ScalelessMetrics(data)
+        data.curveError -> CurveError()
+        else -> Chart(data.samples, data.unit, summaryStability(data.summary), target = data.target, fillHeight = true)
       }
     }
-    Spacer(Modifier.height(BODY_GAP))
-    ShareMetrics(data.summary, data.unit)
+    if (!data.scaleless) {
+      Spacer(Modifier.height(BODY_GAP))
+      ShareMetrics(data.summary, data.unit)
+    }
     data.notes?.let { notes ->
       Spacer(Modifier.height(BODY_GAP))
       ShareQuote(notes)
@@ -96,7 +102,11 @@ private fun BrewShareHeader(data: BrewShareData) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
       )
-      data.fitScore?.let { AntTag(stringResource(R.string.history_row_fit, it), Modifier.testTag("history_row_fit")) }
+      if (data.scaleless) {
+        AntTag(stringResource(R.string.history_row_scaleless), Modifier.testTag("share_scaleless"), color = AntTagColor.Primary)
+      } else {
+        data.fitScore?.let { AntTag(stringResource(R.string.history_row_fit, it), Modifier.testTag("history_row_fit")) }
+      }
     }
     if (data.subtitle != null || data.rating != null) {
       Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs), verticalAlignment = Alignment.CenterVertically) {
@@ -107,6 +117,40 @@ private fun BrewShareHeader(data: BrewShareData) {
         }
         data.rating?.let { AntRate(it, onValueChange = null, starSize = RateStarSize, testTag = "share_rating") }
       }
+    }
+  }
+}
+
+/** Sin báscula: la dosis, el agua, el ratio y el tiempo del plan, en una rejilla de 2 × 2 que ocupa el hueco de la gráfica. */
+@Composable
+private fun ScalelessMetrics(data: BrewShareData) {
+  val none = stringResource(R.string.compare_none)
+  val summary = data.summary
+  val unit = data.unit
+  val style = AntTheme.typography.heading3
+  Column(Modifier.fillMaxWidth().testTag("share_scaleless_metrics"), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.base)) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+      ShareMetric(
+        stringResource(R.string.summary_dose),
+        data.doseG?.let { "${formatNumber(fromGrams(it, unit), unit)} ${unit.symbol}" } ?: none,
+        Modifier.weight(1f),
+        valueStyle = style,
+      )
+      ShareMetric(
+        stringResource(R.string.brew_summary_total_water),
+        "${formatNumber(fromGrams(summary.totalWaterG, unit), unit)} ${unit.symbol}",
+        Modifier.weight(1f),
+        valueStyle = style,
+      )
+    }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+      ShareMetric(
+        stringResource(R.string.scale_ratio),
+        summary.finalRatio?.let { stringResource(R.string.scale_ratio_value, it) } ?: none,
+        Modifier.weight(1f),
+        valueStyle = style,
+      )
+      ShareMetric(stringResource(R.string.brew_summary_total_time), formatDuration(summary.totalTimeMs), Modifier.weight(1f), valueStyle = style)
     }
   }
 }
@@ -139,13 +183,19 @@ private fun levelTextColor(colors: AntColors, level: StabilityLevel): Color = wh
 }
 
 @Composable
-private fun ShareMetric(label: String, value: String, modifier: Modifier, color: Color = AntTheme.colors.text) {
+private fun ShareMetric(
+  label: String,
+  value: String,
+  modifier: Modifier,
+  color: Color = AntTheme.colors.text,
+  valueStyle: TextStyle = AntTheme.typography.textLG,
+) {
   Column(modifier) {
     AntText(label, type = AntTextType.Secondary, style = AntTheme.typography.textSM, maxLines = 1, overflow = TextOverflow.Ellipsis)
     androidx.compose.material3.Text(
       value,
       color = color,
-      style = AntTheme.typography.textLG.copy(fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum"),
+      style = valueStyle.copy(fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum"),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
     )

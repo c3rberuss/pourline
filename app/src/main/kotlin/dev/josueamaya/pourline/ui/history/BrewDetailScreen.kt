@@ -156,6 +156,8 @@ private fun detailShareData(record: BrewRecord, coffee: CoffeeEntity?): BrewShar
       linked?.let { FooterCoffee(it.id, it.name, it.roaster, brewDaysSinceRoast(it.roastDate, entity.startedAtEpochMs, ZoneId.systemDefault())) },
     ),
     curveError = record.curveError,
+    scaleless = entity.scaleless,
+    doseG = entity.doseG,
   )
 }
 

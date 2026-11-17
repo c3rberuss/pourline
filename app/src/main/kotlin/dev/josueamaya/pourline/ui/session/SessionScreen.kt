@@ -188,7 +188,7 @@ fun SessionScreen(
           val saved = ui.savedBrew as? SavedBrew.Saved
           val record by remember(saved?.id) { saved?.let { brews.observe(it.id) } ?: flowOf(null) }
             .collectAsStateWithLifecycle(null)
-          val shareData = summaryShareData(ui, phase.summary, record?.entity?.rating, record?.entity?.notes)
+          val shareData = summaryShareData(ui, phase.summary, record?.entity?.rating, record?.entity?.notes, record?.entity)
           SessionSummary(
             ui = ui,
             summary = phase.summary,

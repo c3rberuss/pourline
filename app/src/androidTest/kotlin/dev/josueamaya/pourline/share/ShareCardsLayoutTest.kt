@@ -232,4 +232,46 @@ class ShareCardsLayoutTest {
     assertTrue("gráfica de $height px", height >= 432)
     assertNotNull(node("share_table"))
   }
+
+  @Test
+  fun aScalelessCardFitsWithoutChartOrStability() {
+    val coffeeId = longCoffee()
+    val id = runBlocking {
+      brews.save(
+        TestBrews.scalelessFinished(totalTimeMs = 235_000),
+        TestBrews.scalelessContext(startedAtEpochMs = 1_700_000_000_000, coffee = UsedCoffee(coffeeId, "x")),
+      )
+    }
+    val record = runBlocking { brews.get(id) }!!
+    capture(
+      ShareRequest.Brew(
+        BrewShareData(
+          samples = record.samples,
+          summary = record.summary,
+          unit = record.entity.unit,
+          target = null,
+          title = longName,
+          subtitle = "13 nov 2026, 8:30 · V60",
+          fitScore = null,
+          rating = 4,
+          notes = longNotes,
+          footer = footerLines(FooterCoffee(coffeeId, longName, "Café de Altura Tostadores Especializados de Origen Único", 9)),
+          scaleless = true,
+          doseG = record.entity.doseG,
+        ),
+      ),
+    )
+
+    assertSize()
+    brandInside()
+    assertNotNull(node("share_scaleless"))
+    assertNotNull(node("share_scaleless_metrics"))
+    assertTrue(lines("share_notes") <= 3)
+    // Ni gráfica ni estabilidad: la rejilla ocupa su hueco.
+    assertEquals(0, rule.onAllNodesWithTag("brew_chart", useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertEquals(0, rule.onAllNodesWithTag("share_metrics", useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertEquals(0, rule.onAllNodesWithTag("history_row_fit", useUnmergedTree = true).fetchSemanticsNodes().size)
+    val grid = node("share_scaleless_metrics")
+    assertTrue("la rejilla debe quedar dentro", grid.positionInRoot.y >= 0f && grid.positionInRoot.y + grid.size.height <= 1350)
+  }
 }
