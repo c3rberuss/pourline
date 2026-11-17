@@ -760,4 +760,64 @@
     <string name="converter_picker_owned">My grinders</string>
     <string name="converter_picker_catalog">Catalog</string>
     <string name="converter_picker_empty">No results</string>
+
+    <!-- Tools -->
+    <string name="tab_tools">Tools</string>
+    <string name="tools_title">Tools</string>
+    <string name="tools_ratio_title">Ratio calculator</string>
+    <string name="tools_ratio_description">Coffee, ratio and water: change one and the rest follow.</string>
+    <string name="tools_four_six_title">4:6 generator</string>
+    <string name="tools_four_six_description">The pours of Tetsu Kasuya\'s method for the taste and strength you want.</string>
+    <string name="tools_converter_title">Grind converter</string>
+    <string name="tools_converter_description">The equivalent setting on your grinders.</string>
+
+    <!-- Tools: ratio calculator -->
+    <string name="ratio_coffee">Coffee</string>
+    <string name="ratio_ratio">Ratio</string>
+    <string name="ratio_water">Water</string>
+    <string name="ratio_hint">Changing the coffee or the ratio updates the water; changing the water updates the coffee.</string>
+    <string name="ratio_error">Enter numbers above 0. The ratio goes from 1:1 to 1:50.</string>
+
+    <!-- Tools: 4:6 generator -->
+    <string name="four_six_title">4:6 method</string>
+    <string name="four_six_range_error">The dose goes from 5 to 60 g and the ratio from 1:10 to 1:20, with one decimal at most.</string>
+    <string name="four_six_water_error">The total water can\'t exceed 1000 g.</string>
+    <string name="four_six_taste">Taste</string>
+    <string name="four_six_taste_help">The first 40% of the water, in 2 pours: a short 1st pour makes a sweeter cup and a long one a brighter cup.</string>
+    <string name="four_six_strength">Strength</string>
+    <string name="four_six_strength_help">The remaining 60%: more pours make a stronger cup and fewer a lighter one.</string>
+    <string name="four_six_taste_sweet">Sweet</string>
+    <string name="four_six_taste_medium_sweet">Slightly sweet</string>
+    <string name="four_six_taste_balanced">Balanced</string>
+    <string name="four_six_taste_medium_bright">Slightly bright</string>
+    <string name="four_six_taste_bright">Bright</string>
+    <string name="four_six_strength_lightest">Very light</string>
+    <string name="four_six_strength_light">Light</string>
+    <string name="four_six_strength_standard">Standard</string>
+    <string name="four_six_strength_strong">Strong</string>
+    <string name="four_six_strength_strongest">Very strong</string>
+    <string name="four_six_pours">Pours</string>
+    <string name="four_six_time">Time</string>
+    <string name="four_six_pour_detail">%1$s · up to %2$s g</string>
+    <string name="four_six_pour_amount">+%1$s g</string>
+    <string name="four_six_end">Remove the filter</string>
+    <string name="four_six_note">Coarse grind and water at 92 °C. Each pour starts 45 s after the previous one, and the filter comes off 30 s after the last.</string>
+    <string name="four_six_save">Save as recipe</string>
+    <string name="four_six_recipe_name">4:6 · %1$s · %2$s</string>
+    <string-array name="four_six_pour_names">
+        <item>1st pour</item>
+        <item>2nd pour</item>
+        <item>3rd pour</item>
+        <item>4th pour</item>
+        <item>5th pour</item>
+        <item>6th pour</item>
+        <item>7th pour</item>
+    </string-array>
+    <string name="four_six_pour_name_n">Pour %1$d</string>
+    <string name="four_six_instruction_taste">Pour slowly and evenly: this pour sets the sweetness and acidity.</string>
+    <string name="four_six_instruction_strength">Pour slowly and evenly: this pour sets the strength.</string>
+    <string name="four_six_instruction_last">Last pour: take your time, up to the total water.</string>
+    <string name="four_six_instruction_wait">Wait for the water to draw down.</string>
+    <string name="four_six_instruction_drain">Let it drain and remove the filter.</string>
+    <string name="four_six_recipe_notes">Generated with the 4:6 method: the first 40% of the water sets the taste and the remaining 60% the strength. Coarse grind.</string>
 </resources>

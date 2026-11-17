@@ -49,6 +49,7 @@ import dev.dotscale.settings.TargetSettings
 import dev.dotscale.settings.ThemeMode
 import dev.dotscale.settings.ThemeSettings
 import dev.dotscale.sim.SimulatedScaleConnection
+import dev.dotscale.tools.ResourcesFourSixTexts
 import dev.dotscale.ui.coffees.FakeLabelOcr
 import dev.dotscale.ui.scale.SilentNotifier
 import dev.dotscale.ui.theme.DotScaleTheme
@@ -209,6 +210,7 @@ class TestAppDependencies(
     grinderSettings = grinderSettings,
     grinderRepository = grinders,
     grindTexts = grindTexts,
+    fourSixTexts = ResourcesFourSixTexts(context),
     grindSelection = grindSelection,
     coffeePhotoStore = photoStore,
     coffeeImages = CoffeeImages(photoStore, maxBytes = 1024 * 1024),

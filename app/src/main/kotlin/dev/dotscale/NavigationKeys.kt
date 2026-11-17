@@ -2,6 +2,7 @@ package dev.dotscale
 
 import androidx.navigation3.runtime.NavKey
 import dev.dotscale.history.BrewMethod
+import dev.dotscale.tools.FourSixParams
 import kotlinx.serialization.Serializable
 
 /** Raíz de la pestaña Preparar: la tarjeta de báscula y la configuración de la preparación. */
@@ -20,8 +21,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object Recipes : NavKey
 
-/** `id == null` crea una receta; `fromBrewId` la prellena desde una preparación ("Guardar como receta"). */
-@Serializable data class RecipeEdit(val id: Long? = null, val fromBrewId: Long? = null) : NavKey
+/**
+ * `id == null` crea una receta; `fromBrewId` la prellena desde una preparación y `fourSix`, desde el generador 4:6
+ * (los dos son "Guardar como receta").
+ */
+@Serializable data class RecipeEdit(val id: Long? = null, val fromBrewId: Long? = null, val fourSix: FourSixParams? = null) : NavKey
 
 /** Elegir la preparación B para compararla con A. Al elegir, se sustituye por [BrewCompare] en la pila. */
 @Serializable data class ComparePick(val aId: Long) : NavKey
@@ -51,3 +55,10 @@ import kotlinx.serialization.Serializable
 
 /** El convertidor suelto (SPEC-006); los argumentos lo abren ya relleno con el origen, el método y el ajuste. */
 @Serializable data class GrindConverter(val sourceId: Long? = null, val method: BrewMethod? = null, val value: Double? = null) : NavKey
+
+/** Raíz de la pestaña Herramientas: la lista de herramientas. */
+@Serializable data object Tools : NavKey
+
+@Serializable data object RatioTool : NavKey
+
+@Serializable data object FourSixTool : NavKey

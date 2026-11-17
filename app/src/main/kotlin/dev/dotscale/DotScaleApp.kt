@@ -31,6 +31,7 @@ import dev.dotscale.settings.ExperienceSettings
 import dev.dotscale.settings.GrinderSettings
 import dev.dotscale.settings.TargetSettings
 import dev.dotscale.settings.ThemeSettings
+import dev.dotscale.tools.ResourcesFourSixTexts
 import dev.dotscale.ui.scale.AndroidStageNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -162,6 +163,7 @@ class DotScaleApp : Application() {
       grinderSettings = grinderSettings,
       grinderRepository = grinderRepository,
       grindTexts = grindTexts,
+      fourSixTexts = ResourcesFourSixTexts(this),
       grindSelection = grindSelection,
       coffeePhotoStore = coffeePhotoStore,
       coffeeImages = coffeeImages,

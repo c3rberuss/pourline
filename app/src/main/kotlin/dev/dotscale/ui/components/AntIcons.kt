@@ -206,6 +206,16 @@ object AntIcons {
       "M10 13H14",
     )
   }
+  /** Calculadora: pantalla y teclas. Las herramientas. */
+  val Calculator: ImageVector by lazy {
+    strokeIcon(
+      "Calculator",
+      "M7 3H17A2 2 0 0 1 19 5V19A2 2 0 0 1 17 21H7A2 2 0 0 1 5 19V5A2 2 0 0 1 7 3Z",
+      "M8.5 7H15.5V10H8.5Z",
+      "M9 14H9.01", "M12 14H12.01", "M15 14H15.01",
+      "M9 17.5H9.01", "M12 17.5H12.01", "M15 17.5H15.01",
+    )
+  }
   /** Dos flechas opuestas: el convertidor. */
   val Convert: ImageVector by lazy {
     strokeIcon("Convert", "M4 8H20", "M16 4L20 8L16 12", "M20 16H4", "M8 12L4 16L8 20")

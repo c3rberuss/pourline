@@ -27,6 +27,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import dev.dotscale.grinder.GrindFix
+import dev.dotscale.tools.FourSix
 import dev.dotscale.ui.coffees.CoffeeDetailScreen
 import dev.dotscale.ui.coffees.CoffeeDetailViewModel
 import dev.dotscale.ui.coffees.CoffeeEditScreen
@@ -67,11 +68,16 @@ import dev.dotscale.ui.recipes.RecipesViewModel
 import dev.dotscale.ui.scale.TargetPickerViewModel
 import dev.dotscale.ui.session.SessionScreen
 import dev.dotscale.ui.settings.SettingsScreen
+import dev.dotscale.ui.tools.FourSixScreen
+import dev.dotscale.ui.tools.FourSixViewModel
+import dev.dotscale.ui.tools.RatioCalculatorScreen
+import dev.dotscale.ui.tools.RatioCalculatorViewModel
+import dev.dotscale.ui.tools.ToolsScreen
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 /**
- * La app: la elección del primer arranque (D11) mientras `onboardingDone` sea falso y, después, las cuatro
+ * La app: la elección del primer arranque (D11) mientras `onboardingDone` sea falso y, después, las cinco
  * pestañas con su pila cada una (D30).
  */
 @Composable
@@ -277,11 +283,29 @@ private fun tabEntryProvider(
     RecipeEditScreen(
       viewModel { RecipeEditViewModel(
           deps.recipeRepository, deps.brewRepository, deps.recipeTexts, deps.grinderRepository, deps.grinderSettings, deps.grindTexts, key.id, key.fromBrewId,
+          draft = key.fourSix?.let(FourSix::plan)?.let { FourSix.recipe(it, deps.fourSixTexts) },
         ) },
       onBack = ::back,
       // Duplicar abre la copia en lugar de la original: atrás vuelve a la lista.
       onDuplicated = { copyId -> stack[stack.lastIndex] = RecipeEdit(id = copyId) },
       onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
+    )
+  }
+  tabEntry<Tools>(tab) {
+    ToolsScreen(
+      onOpenRatio = { stack.add(RatioTool) },
+      onOpenFourSix = { stack.add(FourSixTool) },
+      onOpenConverter = { stack.add(GrindConverter()) },
+    )
+  }
+  tabEntry<RatioTool>(tab) {
+    RatioCalculatorScreen(viewModel { RatioCalculatorViewModel(deps.freeBrewDefaults) }, onBack = ::back)
+  }
+  tabEntry<FourSixTool>(tab) {
+    FourSixScreen(
+      viewModel { FourSixViewModel(deps.freeBrewDefaults) },
+      onBack = ::back,
+      onSaveAsRecipe = { params -> stack.add(RecipeEdit(fourSix = params)) },
     )
   }
   tabEntry<History>(tab) {
