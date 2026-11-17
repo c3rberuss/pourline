@@ -78,3 +78,17 @@ class FakeDefaultGrinderStore(initial: Long? = null) : DefaultGrinderStore {
 /** El repositorio de molinos de [this] con el predeterminado en memoria y los textos reales. */
 fun HistoryDatabase.grinderRepository(context: Context, defaults: DefaultGrinderStore = FakeDefaultGrinderStore()): GrinderRepository =
   GrinderRepository(this, defaults, ResourcesGrindTexts(context))
+
+/** Inserta un par de calibración en el orden canónico (`grinderAId < grinderBId`) y devuelve su id. */
+suspend fun HistoryDatabase.addCalibration(aId: Long, valueA: Double, bId: Long, valueB: Double, nowMs: Long = 1_000L): Long {
+  val swap = aId > bId
+  return grindCalibrationDao().insert(
+    GrindCalibrationEntity(
+      grinderAId = if (swap) bId else aId,
+      valueA = if (swap) valueB else valueA,
+      grinderBId = if (swap) aId else bId,
+      valueB = if (swap) valueA else valueB,
+      updatedAtEpochMs = nowMs,
+    ),
+  )
+}
