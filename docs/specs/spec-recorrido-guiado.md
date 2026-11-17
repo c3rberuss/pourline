@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado, pendiente de plan |
+| Estado | Aprobado. Plan aprobado, en implementación: [`plan-recorrido-guiado.md`](plan-recorrido-guiado.md) |
 | Fecha | 2026-11-17 |
 | Rama | Por crear desde `develop` (`1015b12`) |
 | Deriva de | Petición del usuario: que quien abra la app la conozca sin explicación externa |
