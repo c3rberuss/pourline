@@ -45,6 +45,9 @@ import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.history.label
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 /** El valor de "Sin método" en el desplegable. */
 private const val NO_METHOD = -1
@@ -69,6 +72,7 @@ fun GrindConverterScreen(
   var pickerOpen by rememberSaveable { mutableStateOf(false) }
   val texts = rememberGrindTexts()
 
+  TourHost(Tours.converter, ready = state != null)
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
@@ -88,7 +92,7 @@ fun GrindConverterScreen(
       AntSelectTrigger(
         value = ui.source?.displayName,
         onClick = { pickerOpen = true },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().tourAnchor("converter_source"),
         label = stringResource(R.string.converter_source),
         placeholder = stringResource(R.string.converter_source_placeholder),
         testTag = "converter_source",
@@ -135,7 +139,7 @@ fun GrindConverterScreen(
         ui.rows.isEmpty() -> Hint(stringResource(R.string.converter_no_others), "converter_no_others")
         else -> {
           AntCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp)) {
-            ui.rows.forEach { row -> ConverterRowItem(row, texts, onFix) }
+            ui.rows.forEachIndexed { i, row -> ConverterRowItem(row, texts, onFix, Modifier.tourAnchor("converter_row", enabled = i == 0)) }
           }
           GrindAttribution(
             listOfNotNull(ui.source) + ui.rows.map { it.grinder },
@@ -165,11 +169,11 @@ private fun Hint(text: String, tag: String) {
 }
 
 @Composable
-private fun ConverterRowItem(row: ConverterRow, texts: GrindTexts, onFix: (GrindFix, Long) -> Unit) {
+private fun ConverterRowItem(row: ConverterRow, texts: GrindTexts, onFix: (GrindFix, Long) -> Unit, modifier: Modifier = Modifier) {
   val grinder = row.grinder
   AntListItem(
     title = grinder.displayName,
-    modifier = Modifier.testTag("converter_row_${grinder.id}"),
+    modifier = modifier.testTag("converter_row_${grinder.id}"),
     extra = {
       Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs), verticalAlignment = Alignment.CenterVertically) {
         when (val conversion = row.conversion) {

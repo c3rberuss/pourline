@@ -53,6 +53,9 @@ import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.recipes.formatStart
 import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 /**
  * El generador 4:6: café y ratio, sabor (dulce ↔ brillante) e intensidad (suave ↔ intensa). Muestra cada vertido con
@@ -61,6 +64,7 @@ import dev.josueamaya.pourline.ui.theme.AntTheme
 @Composable
 fun FourSixScreen(viewModel: FourSixViewModel, onBack: () -> Unit, onSaveAsRecipe: (FourSixParams) -> Unit) {
   val plan = viewModel.plan
+  TourHost(Tours.fourSix)
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
@@ -85,7 +89,7 @@ fun FourSixScreen(viewModel: FourSixViewModel, onBack: () -> Unit, onSaveAsRecip
       AntButton(
         text = stringResource(R.string.four_six_save),
         onClick = { plan?.let { onSaveAsRecipe(it.params) } },
-        modifier = Modifier.fillMaxWidth().testTag("four_six_save"),
+        modifier = Modifier.fillMaxWidth().tourAnchor("four_six_save").testTag("four_six_save"),
         type = AntButtonType.Primary,
         size = AntSize.Large,
         enabled = plan != null,
@@ -104,7 +108,7 @@ private fun AmountsCard(viewModel: FourSixViewModel, plan: FourSixPlan?) {
         AntInput(
           value = viewModel.dose,
           onValueChange = { viewModel.dose = it },
-          modifier = Modifier.fillMaxWidth().testTag("four_six_dose"),
+          modifier = Modifier.fillMaxWidth().tourAnchor("four_six_dose").testTag("four_six_dose"),
           suffix = { AntText(stringResource(R.string.prepare_grams), type = AntTextType.Secondary) },
           status = if (viewModel.error == null) AntInputStatus.Default else AntInputStatus.Error,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -143,42 +147,45 @@ private fun AmountsCard(viewModel: FourSixViewModel, plan: FourSixPlan?) {
 @Composable
 private fun ProfileCard(viewModel: FourSixViewModel, plan: FourSixPlan?) {
   AntCard(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.base)) {
-    val taste = viewModel.taste
-    val tasteLabel = stringResource(taste.labelRes)
-    LevelSlider(
-      title = stringResource(R.string.four_six_taste),
-      value = plan?.let {
-        stringResource(
+    // Los dos sliders van juntos en una columna: es el ancla del paso "Sabor e intensidad".
+    Column(Modifier.fillMaxWidth().tourAnchor("four_six_levels").testTag("four_six_levels"), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.base)) {
+      val taste = viewModel.taste
+      val tasteLabel = stringResource(taste.labelRes)
+      LevelSlider(
+        title = stringResource(R.string.four_six_taste),
+        value = plan?.let {
+          stringResource(
+            R.string.four_six_level_value,
+            tasteLabel,
+            stringResource(R.string.four_six_taste_split, RatioCalculator.format(it.pours[0].pourG), RatioCalculator.format(it.pours[1].pourG)),
+          )
+        } ?: tasteLabel,
+        stateDescription = tasteLabel,
+        start = stringResource(R.string.four_six_taste_start),
+        end = stringResource(R.string.four_six_taste_end),
+        selected = taste.ordinal,
+        count = FourSixTaste.entries.size,
+        onSelect = { viewModel.taste = FourSixTaste.entries[it] },
+        tag = "four_six_taste",
+      )
+      val strength = viewModel.strength
+      val strengthLabel = stringResource(strength.labelRes)
+      LevelSlider(
+        title = stringResource(R.string.four_six_strength),
+        value = stringResource(
           R.string.four_six_level_value,
-          tasteLabel,
-          stringResource(R.string.four_six_taste_split, RatioCalculator.format(it.pours[0].pourG), RatioCalculator.format(it.pours[1].pourG)),
-        )
-      } ?: tasteLabel,
-      stateDescription = tasteLabel,
-      start = stringResource(R.string.four_six_taste_start),
-      end = stringResource(R.string.four_six_taste_end),
-      selected = taste.ordinal,
-      count = FourSixTaste.entries.size,
-      onSelect = { viewModel.taste = FourSixTaste.entries[it] },
-      tag = "four_six_taste",
-    )
-    val strength = viewModel.strength
-    val strengthLabel = stringResource(strength.labelRes)
-    LevelSlider(
-      title = stringResource(R.string.four_six_strength),
-      value = stringResource(
-        R.string.four_six_level_value,
-        strengthLabel,
-        pluralStringResource(R.plurals.four_six_strength_pours, strength.pours, strength.pours),
-      ),
-      stateDescription = strengthLabel,
-      start = stringResource(R.string.four_six_strength_start),
-      end = stringResource(R.string.four_six_strength_end),
-      selected = strength.ordinal,
-      count = FourSixStrength.entries.size,
-      onSelect = { viewModel.strength = FourSixStrength.entries[it] },
-      tag = "four_six_strength",
-    )
+          strengthLabel,
+          pluralStringResource(R.plurals.four_six_strength_pours, strength.pours, strength.pours),
+        ),
+        stateDescription = strengthLabel,
+        start = stringResource(R.string.four_six_strength_start),
+        end = stringResource(R.string.four_six_strength_end),
+        selected = strength.ordinal,
+        count = FourSixStrength.entries.size,
+        onSelect = { viewModel.strength = FourSixStrength.entries[it] },
+        tag = "four_six_strength",
+      )
+    }
     plan?.let { PourSplit(it) }
   }
 }
@@ -290,7 +297,7 @@ private fun PlanCard(plan: FourSixPlan) {
       AntListItem(
         title = pourNames.getOrNull(i) ?: stringResource(R.string.four_six_pour_name_n, i + 1),
         description = stringResource(R.string.four_six_pour_detail, formatStart(pour.startMs), RatioCalculator.format(pour.totalG)),
-        modifier = Modifier.testTag("four_six_pour_$i"),
+        modifier = Modifier.tourAnchor("four_six_pour_0", enabled = i == 0).testTag("four_six_pour_$i"),
         extra = {
           AntText(
             stringResource(R.string.four_six_pour_amount, RatioCalculator.format(pour.pourG)),

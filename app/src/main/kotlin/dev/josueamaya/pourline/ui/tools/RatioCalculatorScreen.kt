@@ -28,10 +28,14 @@ import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 @Composable
 fun RatioCalculatorScreen(viewModel: RatioCalculatorViewModel, onBack: () -> Unit) {
   val state = viewModel.state
+  TourHost(Tours.ratioCalculator)
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
@@ -75,7 +79,9 @@ private fun RatioInput(
   suffix: Int? = null,
   last: Boolean = false,
 ) {
-  Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
+  // Los pasos del recorrido resaltan el campo del café y el del agua, con su etiqueta.
+  val anchor = Modifier.tourAnchor("ratio_${field.name.lowercase()}", enabled = field != RatioField.RATIO)
+  Column(Modifier.fillMaxWidth().then(anchor), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
     AntText(stringResource(label), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
     AntInput(
       value = state.text(field),
