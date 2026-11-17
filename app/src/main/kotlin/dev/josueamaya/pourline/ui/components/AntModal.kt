@@ -27,6 +27,7 @@ fun AntModal(
   modifier: Modifier = Modifier,
   danger: Boolean = false,
 ) {
+  ReportModalPresence()
   Dialog(onDismissRequest = onDismiss) {
     AntCard(modifier.testTag("ant_modal"), title = title) {
       Text(text, color = AntTheme.colors.textSecondary, style = AntTheme.typography.text)
@@ -62,6 +63,7 @@ fun AntChoiceModal(
   onDismiss: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  ReportModalPresence()
   Dialog(onDismissRequest = onDismiss) {
     AntCard(modifier.testTag("ant_modal"), title = title) {
       if (text != null) Text(text, color = AntTheme.colors.textSecondary, style = AntTheme.typography.text)

@@ -43,6 +43,7 @@ fun AntDrawer(
   val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
   val scope = rememberCoroutineScope()
   val corner = AntTheme.radius.lg * 2
+  ReportModalPresence()
 
   ModalBottomSheet(
     onDismissRequest = onClose,
