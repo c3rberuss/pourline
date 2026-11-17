@@ -37,4 +37,13 @@ class ScaleUiStateTest {
   fun `timer status is tracked`() {
     assertEquals(TimerStatus.RUNNING, ScaleUiState().reduce(ScaleMessage.Timer(TimerStatus.RUNNING)).timer)
   }
+
+  @Test
+  fun `the session unit is grams without a scale and the scale unit otherwise`() {
+    val ounces = ScaleUiState(unit = WeightUnit.OUNCES)
+
+    assertEquals(WeightUnit.OUNCES, ounces.sessionUnit)
+    assertEquals(WeightUnit.GRAMS, ounces.copy(scaleless = true).sessionUnit)
+    assertEquals(WeightUnit.GRAMS, ScaleUiState().sessionUnit)
+  }
 }

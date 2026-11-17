@@ -106,7 +106,14 @@ data class ScaleUiState(
   val plan: BrewPlan? = null,
   /** El agua objetivo del aro (D26); `null` sin sesión abierta. */
   val targetWaterG: Double? = null,
+  /** Sesión cronometrada, sin báscula (SPEC-007): desde "Empezar sin báscula" hasta "Listo" o "Descartar". */
+  val scaleless: Boolean = false,
+  /** La dosis del plan de la sesión sin báscula, en gramos; `null` sin sesión sin báscula o sin dosis. */
+  val plannedDoseG: Double? = null,
 ) {
+  /** La unidad de la sesión: la de la báscula, o gramos sin báscula. */
+  val sessionUnit: WeightUnit get() = if (scaleless) WeightUnit.GRAMS else unit
+
   /** Hay una sesión abierta: desde "Empezar" hasta "Listo", la X antes de `Active` o "Descartar". */
   val hasSession: Boolean get() = plan != null
 

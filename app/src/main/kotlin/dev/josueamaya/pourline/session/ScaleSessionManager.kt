@@ -6,6 +6,7 @@ import dev.josueamaya.pourline.brew.BrewEffect
 import dev.josueamaya.pourline.brew.BrewPhase
 import dev.josueamaya.pourline.brew.BrewSession
 import dev.josueamaya.pourline.brew.FinishedBrew
+import dev.josueamaya.pourline.brew.PlannedAmounts
 import dev.josueamaya.pourline.brew.StageAlertTracker
 import dev.josueamaya.pourline.grinder.GrindSetting
 import dev.josueamaya.pourline.grinder.toGrindSetting
@@ -13,6 +14,7 @@ import dev.josueamaya.pourline.brew.StageNotifier
 import dev.josueamaya.pourline.brew.TargetConfig
 import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.brew.TargetGuide
+import dev.josueamaya.pourline.brew.TimedSession
 import dev.josueamaya.pourline.brew.brewFit
 import dev.josueamaya.pourline.brew.fromGrams
 import dev.josueamaya.pourline.brew.toGrams
@@ -43,6 +45,7 @@ import dev.josueamaya.pourline.ui.history.formatBrewDateTime
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,7 +65,8 @@ import java.util.concurrent.atomic.AtomicLong
 /**
  * La conexión con la báscula y la sesión de preparación, a nivel de app (un objeto por proceso). La conexión se
  * crea al llamar a [connect] con un [ScaleTarget] y se cierra con [disconnect]; cambiar de pestaña no la toca.
- * La `BrewSession` solo recibe pesos mientras el gestor está armado ([arm] y [disarm]).
+ * La `BrewSession` solo recibe pesos mientras el gestor está armado ([arm] y [disarm]). La sesión sin báscula
+ * ([startScalelessSession], SPEC-007) usa una [TimedSession] y no recibe nunca pesos.
  *
  * @param connections crea la conexión de cada destino.
  * @param scope ámbito de las corrutinas del gestor (colectores, tick y comandos).
@@ -101,6 +105,28 @@ class ScaleSessionManager(
 
   // Solo se toca desde el hilo principal (colectores y tick de `scope`).
   private val session = BrewSession()
+
+  /** La sesión cronometrada, sin báscula (SPEC-007). Solo se publica con [scaleless]. */
+  private val timed = TimedSession()
+
+  /** `true` desde [startScalelessSession] hasta [endSession] o [discardSession]: la sesión es la cronometrada. */
+  private var scaleless = false
+
+  /** Lo que la sesión sin báscula congela al abrirse (D3). */
+  private data class ScalelessFrozen(
+    val target: ActiveTarget?,
+    val coffee: PickedCoffee?,
+    val grind: GrindSetting?,
+    val amounts: PlannedAmounts,
+  )
+
+  private var scalelessFrozen: ScalelessFrozen? = null
+
+  /** El reloj de 100 ms de la sesión sin báscula mientras está en `Active` (D5). */
+  private var scalelessTicker: Job? = null
+
+  /** El `t0` de la sesión sin báscula de la que ya se avisó de que no quedan pasos (D6). */
+  private var doneAlertedFor: Long? = null
 
   private val _ui = MutableStateFlow(ScaleUiState())
   val ui: StateFlow<ScaleUiState> = _ui.asStateFlow()
@@ -247,7 +273,7 @@ class ScaleSessionManager(
       session.setDoseGrams(null)
       prep?.forgetDose()
     }
-    val effects = if (!armed) {
+    val effects = if (!armed || scaleless) {
       emptyList()
     } else {
       when (message) {
@@ -320,7 +346,8 @@ class ScaleSessionManager(
    */
   private fun publish(transform: (ScaleUiState) -> ScaleUiState = { it }) {
     _ui.update { current ->
-      val next = transform(current).copy(brew = session.state).withTarget(current).withCoffee(current).withSession()
+      val brew = if (scaleless) timed.state else session.state
+      val next = transform(current).copy(brew = brew).withTarget(current).withCoffee(current).withSession()
       if (next.brew.phase is BrewPhase.Active && (next.savedBrew != null || next.lastFit != null || next.lastBrew != null)) {
         if (next.savedBrew != null) saveGeneration.incrementAndGet()
         next.copy(savedBrew = null, lastFit = null, lastBrew = null)
@@ -338,7 +365,15 @@ class ScaleSessionManager(
   private fun ScaleUiState.withTarget(previous: ScaleUiState): ScaleUiState {
     val phase = brew.phase
     val t0 = brew.t0MonoMs
-    val target = if (phase is BrewPhase.Active) {
+    val frozenScaleless = scalelessFrozen.takeIf { this@ScaleSessionManager.scaleless }
+    val target = if (frozenScaleless != null) {
+      // Sin báscula, el objetivo es el de al abrir la sesión (D3), también en `Armed` y en `Finished`.
+      if (t0 != null && frozenFor != t0) {
+        frozenFor = t0
+        sessionTarget = frozenScaleless.target
+      }
+      frozenScaleless.target
+    } else if (phase is BrewPhase.Active) {
       if (frozenFor != t0) {
         frozenFor = t0
         sessionTarget = previous.target
@@ -365,18 +400,31 @@ class ScaleSessionManager(
       else -> null
     }
     val plan = sessionPlan
+    val frozenScaleless = scalelessFrozen.takeIf { this@ScaleSessionManager.scaleless }
     return copy(
       prep = this@ScaleSessionManager.prep?.state,
       elapsedMs = elapsed,
       plan = plan,
-      targetWaterG = plan?.let { targetWaterG(target, dose?.let { d -> toGrams(d, unit) }, it) },
+      targetWaterG = frozenScaleless?.amounts?.waterG ?: plan?.let { targetWaterG(target, dose?.let { d -> toGrams(d, unit) }, it) },
+      scaleless = frozenScaleless != null,
+      plannedDoseG = frozenScaleless?.amounts?.doseG,
     )
   }
 
   /** El café para este estado: fuera de `Active` sigue a la elección; en `Active` es el que había al empezar. */
   private fun ScaleUiState.withCoffee(previous: ScaleUiState): ScaleUiState {
     val t0 = brew.t0MonoMs
-    val picked = if (brew.phase is BrewPhase.Active) {
+    val frozenScaleless = scalelessFrozen.takeIf { this@ScaleSessionManager.scaleless }
+    val picked = if (frozenScaleless != null) {
+      // Sin báscula, el café y la molienda son los de al abrir la sesión (D3).
+      if (t0 != null) {
+        coffeeFrozenFor = t0
+        sessionCoffee = frozenScaleless.coffee
+        grindFrozenFor = t0
+        sessionGrind = frozenScaleless.grind
+      }
+      frozenScaleless.coffee
+    } else if (brew.phase is BrewPhase.Active) {
       if (coffeeFrozenFor != t0) {
         coffeeFrozenFor = t0
         sessionCoffee = previous.coffee
@@ -421,6 +469,11 @@ class ScaleSessionManager(
     val t0 = state.brew.t0MonoMs.takeIf { state.brew.phase is BrewPhase.Active }
     val stage = alerts.update(t0, state.target?.curve, t0?.let { clock() - it })
     if (stage != null) notifier.stageStarted(stage)
+    // Sin báscula, un único aviso más cuando acaba el último paso (D6).
+    if (state.scaleless && t0 != null && state.guide?.allStagesDone == true && doneAlertedFor != t0) {
+      doneAlertedFor = t0
+      state.target?.curve?.stages?.lastOrNull()?.let(notifier::stageStarted)
+    }
   }
 
   /**
@@ -454,21 +507,24 @@ class ScaleSessionManager(
     val usedCoffee = sessionCoffee?.takeIf { coffeeFrozenFor == brew.t0MonoMs }
     val usedGrind = sessionGrind?.takeIf { grindFrozenFor == brew.t0MonoMs }
     val startedAt = wallClock() - (clock() - brew.t0MonoMs)
+    val scaleless = scaleless
     val context = BrewContext(
       startedAtEpochMs = startedAt,
-      unit = ui.unit,
-      scaleModel = ui.model,
-      simulated = ui.isSimulated,
+      // Sin báscula: gramos, sin modelo y no simulada (D7).
+      unit = if (scaleless) WeightUnit.GRAMS else ui.unit,
+      scaleModel = if (scaleless) null else ui.model,
+      simulated = if (scaleless) false else ui.isSimulated,
       target = used,
       // La molienda es la de "Moler con", no la de la referencia (D24).
       details = if (frozen == null && usedGrind == null) null else (frozen?.prefill ?: BrewDetails()).copy(grind = usedGrind),
       coffee = usedCoffee?.let { UsedCoffee(it.id, it.name) },
+      scaleless = scaleless,
     )
     val generation = saveGeneration.incrementAndGet()
     _ui.update {
       it.copy(
         savedBrew = SavedBrew.Saving,
-        lastFit = used?.let { u -> SessionFit(u.name, u.curve, u.fit) },
+        lastFit = used?.takeUnless { scaleless }?.let { u -> SessionFit(u.name, u.curve, u.fit) },
         lastBrew = LastBrew(startedAt, usedCoffee),
       )
     }
@@ -550,7 +606,8 @@ class ScaleSessionManager(
    * la dosis se da por hecho (D24). Se ignora con una sesión `Active`.
    */
   fun startSession(plan: BrewPlan) {
-    if (session.state.phase is BrewPhase.Active) return
+    if (session.state.phase is BrewPhase.Active || timed.state.phase is BrewPhase.Active) return
+    clearScaleless()
     session.reset()
     armed = false
     forgetFrozen()
@@ -566,6 +623,10 @@ class ScaleSessionManager(
    * antes de `Active` se conserva (D24). La compuerta ya estaba cerrada desde `Finished`.
    */
   fun endSession() {
+    if (scaleless) {
+      endScalelessSession()
+      return
+    }
     if (session.state.phase is BrewPhase.Active) handle(session.finish(clock()))
     val finished = session.state.phase is BrewPhase.Finished
     armed = false
@@ -584,6 +645,10 @@ class ScaleSessionManager(
    * `Finished`; la dosis, el objetivo y el café congelados se olvidan.
    */
   fun discardSession() {
+    if (scaleless) {
+      discardScalelessSession()
+      return
+    }
     val effects = session.discard(clock())
     armed = false
     prep = null
@@ -600,12 +665,109 @@ class ScaleSessionManager(
    */
   fun restartPrep() {
     val plan = sessionPlan ?: return
+    if (scaleless) {
+      // Sin báscula solo se reinicia desde `Finished`: en `Armed` no hay nada que reiniciar y en `Active` corre el reloj.
+      if (timed.state.phase is BrewPhase.Finished) {
+        endSession()
+        startScalelessSession(plan)
+      }
+      return
+    }
     when (session.state.phase) {
       is BrewPhase.Active -> return
       is BrewPhase.Finished -> endSession()
       BrewPhase.Armed -> clearDose()
     }
     startSession(plan)
+  }
+
+  /**
+   * "Empezar sin báscula" (SPEC-007): abre la sesión cronometrada en `Armed`, sin pasos previos. Congela el objetivo, el
+   * café y la molienda y las cantidades del plan (D3). Se ignora con una sesión `Active`, sea del tipo que sea.
+   */
+  fun startScalelessSession(plan: BrewPlan) {
+    if (session.state.phase is BrewPhase.Active || timed.state.phase is BrewPhase.Active) return
+    val state = _ui.value
+    stopScalelessTicker()
+    session.reset()
+    armed = false
+    prep = null
+    forgetFrozen()
+    doneAlertedFor = null
+    val target = scaledTarget(state.dose, state.unit)
+    val frozen = ScalelessFrozen(target, selectedCoffee, grind.current(), plannedAmounts(target, plan))
+    scalelessFrozen = frozen
+    timed.arm(frozen.amounts)
+    scaleless = true
+    sessionPlan = plan
+    if (state.savedBrew != null) saveGeneration.incrementAndGet()
+    publish { it.copy(savedBrew = null, lastFit = null, lastBrew = null) }
+  }
+
+  /** "Empezar timer": la sesión sin báscula pasa a `Active` y arranca su reloj. */
+  fun scalelessStartTimer() {
+    if (!scaleless || timed.state.phase != BrewPhase.Armed) return
+    val effects = timed.start(clock())
+    publish()
+    handle(effects)
+    startScalelessTicker()
+  }
+
+  /** El reloj de la sesión sin báscula: cada [SCALELESS_TICK_MS] publica la guía y los avisos, y vigila el tope (D5). */
+  private fun startScalelessTicker() {
+    scalelessTicker?.cancel()
+    scalelessTicker = scope.launch {
+      while (isActive) {
+        delay(SCALELESS_TICK_MS)
+        if (!scaleless || timed.state.phase !is BrewPhase.Active) break
+        val effects = timed.tick(clock())
+        publish()
+        handle(effects)
+      }
+    }
+  }
+
+  private fun stopScalelessTicker() {
+    scalelessTicker?.cancel()
+    scalelessTicker = null
+  }
+
+  /** Deja el gestor como si no hubiera habido sesión sin báscula; no publica. */
+  private fun clearScaleless() {
+    stopScalelessTicker()
+    scaleless = false
+    scalelessFrozen = null
+    doneAlertedFor = null
+  }
+
+  /** [endSession] de la sesión sin báscula: desde `Finished` la dosis se borra, como con báscula. */
+  private fun endScalelessSession() {
+    if (timed.state.phase is BrewPhase.Active) handle(timed.finish(clock()))
+    val finished = timed.state.phase is BrewPhase.Finished
+    clearScaleless()
+    armed = false
+    prep = null
+    sessionPlan = null
+    forgetFrozen()
+    if (finished) {
+      session.setDoseGrams(null)
+      publish { it.copy(dose = null) }
+    } else {
+      publish()
+    }
+  }
+
+  /** [discardSession] de la sesión sin báscula: no guarda nada. */
+  private fun discardScalelessSession() {
+    val effects = timed.discard()
+    clearScaleless()
+    armed = false
+    prep = null
+    sessionPlan = null
+    forgetFrozen()
+    session.setDoseGrams(null)
+    publish { it.copy(dose = null) }
+    handle(effects)
   }
 
   private fun forgetFrozen() {
@@ -660,7 +822,7 @@ class ScaleSessionManager(
 
   /** Botón "Terminar" de la gráfica. */
   fun finishBrew() {
-    val effects = session.finish(clock())
+    val effects = if (scaleless) timed.finish(clock()) else session.finish(clock())
     publish()
     handle(effects)
   }
@@ -772,9 +934,12 @@ class ScaleSessionManager(
     return Resolution.Resolved(TargetBase(key, ReferenceType.BREW, name, curve, entity.doseG, prefill, entity.toGrindSetting()))
   }
 
-  private companion object {
-    const val TAG = "ScaleSessionManager"
-    const val TICK_MS = 1_000L
+  companion object {
+    /** Cada cuánto corre el reloj de la sesión sin báscula (D5): el de los pesos de la báscula, para avisar a tiempo. */
+    const val SCALELESS_TICK_MS = 100L
+
+    private const val TAG = "ScaleSessionManager"
+    private const val TICK_MS = 1_000L
   }
 }
 
