@@ -27,6 +27,12 @@
     <!-- Vibración al empezar cada etapa de la guía (permiso normal, sin diálogo) -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Servicio en primer plano mientras hay una preparación abierta: la app sigue al salir de ella -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <!-- La notificación de ese servicio (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!--
       ML Kit (OCR de etiquetas) añade INTERNET para su telemetría. El modelo va incluido en el APK y la app
       no usa la red: fotos y datos no salen del teléfono. ACCESS_NETWORK_STATE no da acceso a datos y se deja.
@@ -50,6 +56,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".session.BrewService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
 
         <!-- Destino de la cámara del sistema y de las imágenes para compartir -->
         <provider
