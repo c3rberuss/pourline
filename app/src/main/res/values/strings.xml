@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Dot Scale</string>
+    <string name="app_name">Pourline</string>
 
     <!-- Escaneo -->
     <string name="scan_start">Buscar</string>

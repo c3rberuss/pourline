@@ -2,7 +2,7 @@
 <resources>
 
     <!-- Fondo de arranque = colorBgLayout de Ant Design (claro). -->
-    <style name="Theme.DotScale" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Theme.Pourline" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/ant_bg_layout</item>
     </style>
 </resources>

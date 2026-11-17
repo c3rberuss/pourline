@@ -48,10 +48,10 @@ Se aprobaron y están incorporadas al spec, en el §3.9.
 | D4 | Recorte al terminar | Al terminar se descartan las muestras con `tMs > totalTimeMs + POUR_GAP_MS`. `totalWaterG` es el `waterG` de la última muestra válida conservada. | Con `INACTIVITY` la gráfica tendría 60 s de línea plana al final. Con los otros motivos no hay muestras posteriores al evento, así que el recorte no cambia nada. |
 | D5 | Peso negativo | Una muestra es inválida si `outOfRange` o si su peso es menor que −1,0 g (`negativeWeightToleranceG`). | El ruido alrededor de 0 g tras una tara abriría huecos de una muestra. Al retirar la taza el peso baja mucho más. |
 | D6 | Ponderación por tiempo | Cada muestra pesa el Δt respecto a la anterior, con un tope de 500 ms (`maxSampleGapMs`). Se aplica a `avgFlowGps`, `stabilityScore` y `levelShare`. | Un corte de notificaciones no debe pesar como segundos de vertido. |
-| D7 | Ámbito de `BrewSettings` | Una sola instancia por proceso, en una nueva `DotScaleApp : Application`. La clase se adelanta a la fase 3, y la pantalla sigue en la 5. | `ScaleViewModel` sobrevive a la rotación. Con una instancia por `Activity`, tras rotar la pantalla de ajustes escribiría en un `StateFlow` que el ViewModel ya no observa, y el cambio no llegaría a la sesión en curso. |
+| D7 | Ámbito de `BrewSettings` | Una sola instancia por proceso, en una nueva `PourlineApp : Application`. La clase se adelanta a la fase 3, y la pantalla sigue en la 5. | `ScaleViewModel` sobrevive a la rotación. Con una instancia por `Activity`, tras rotar la pantalla de ajustes escribiría en un `StateFlow` que el ViewModel ya no observa, y el cambio no llegaría a la sesión en curso. |
 | D8 | Archivos de textos | Todos los textos van en `values/strings.xml` y `values-en/strings.xml`, y se traducen también al inglés los 56 textos que ya existían. | Al crear `values-en/`, lint marcaría como error `MissingTranslation` los textos sin traducir. Traducirlos evita excepciones y deja la app coherente en inglés. Amplía el alcance del §1 (antes fuera de alcance). *Cambio posterior: la primera versión usaba `strings_brew.xml` con `tools:ignore`.* |
 | D9 | Dosis | El ViewModel llama a `setDoseGrams` solo en `captureDose()` y `clearDose()`. `finalRatio` se fija al terminar. | `ScaleUiState.reduce(UnitChanged)` borra hoy la dosis. Como la sesión la guarda en gramos, cambiar de unidad a mitad no pierde el ratio. |
-| D10 | Factor de onzas | `GRAMS_PER_OUNCE = 28.349523125` vive en `dev.dotscale.brew` y lo usa también el simulador. | Hoy el simulador usa 28,3495 y el spec pide el valor exacto. |
+| D10 | Factor de onzas | `GRAMS_PER_OUNCE = 28.349523125` vive en `dev.josueamaya.pourline.brew` y lo usa también el simulador. | Hoy el simulador usa 28,3495 y el spec pide el valor exacto. |
 | D11 | Tara | En `Armed` (o `Finished` rearmada), una tara descarta la racha de confirmación y la última muestra válida. En `Active`, se aplica `baselineG -= lastRawWeightG` (último peso bruto recibido). | Supone que `Tared` llega antes de la primera muestra posterior a la tara, como en el simulador. Con la DOT está sin verificar (R1). |
 | D12 | Simulador | `simulatePour` se ignora si ya hay un vertido simulado en curso. Perfil: bloom de 9 s a 5 g/s (~45 g), pausa de 20 s y vertido principal a 4 g/s hasta ~250 g. `IRREGULAR` multiplica el flujo objetivo por un factor U(0,35; 1,65) que cambia cada 5 ticks, con semilla fija. | Con una pausa de menos de 30 s, el E2E con fin a 30 s no termina en el bloom. El factor mínimo deja el flujo por encima del umbral, así que el vertido no se parte. |
 | D13 | Publicación del estado | `BrewSession.state` es una instancia cacheada que solo se reconstruye cuando algo cambia. `samples` es una copia inmutable de la lista interna. | Con la misma instancia, la igualdad de `StateFlow` se resuelve por identidad. La copia cuesta O(n) por muestra con n ≤ 9000, lo que es despreciable. Si el perfilado muestra jank, se cambia por una vista de solo-anexar. |
@@ -97,9 +97,9 @@ F2) y `7e917ac` (F3 a F6).*
 
 Commit sugerido: `build(app): add AndroidJUnitRunner for instrumented tests`.
 
-### F1. Lógica pura (`app/src/main/kotlin/dev/dotscale/brew/`)
+### F1. Lógica pura (`app/src/main/kotlin/dev/josueamaya/pourline/brew/`)
 
-Kotlin puro: solo puede importar de `kotlin.*` y `dev.dotscale.protocol` (módulo JVM).
+Kotlin puro: solo puede importar de `kotlin.*` y `dev.josueamaya.pourline.protocol` (módulo JVM).
 
 **Archivos:**
 
@@ -177,7 +177,7 @@ Todos los fines pasan por un único `finishWith(reason, totalTimeMs)`:
 3. Calcula el resumen con `summarize`.
 4. Pasa a `Finished(rearmed = false, pourIgnored = false)`.
 
-**Tests** (`app/src/test/kotlin/dev/dotscale/brew/`):
+**Tests** (`app/src/test/kotlin/dev/josueamaya/pourline/brew/`):
 
 `BrewTestFixtures.kt` contiene un `FakeScale` que genera `ScaleMessage.Weight` cada 100 ms, acumula
 el peso según el flujo y cuantiza como la báscula (×10 en g, ×100 en oz). Tiene `pour(gps, ms)`,
@@ -192,8 +192,8 @@ el peso según el flujo y cuantiza como la báscula (×10 en g, ×100 en oz). Ti
 | `DownsamplingTest.kt` | Salida de como máximo `2 × widthPx` puntos con 9000 muestras, conserva el mínimo y el máximo de cada columna, `breakBefore` tras un hueco, y `widthPx ≤ 0` devuelve una lista vacía. |
 
 **Verificación:**
-- `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.brew.*"`.
-- `grep -rn "import android" app/src/main/kotlin/dev/dotscale/brew` no devuelve nada.
+- `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.brew.*"`.
+- `grep -rn "import android" app/src/main/kotlin/dev/josueamaya/pourline/brew` no devuelve nada.
 
 Commit sugerido: `feat(brew): add brew session, stability metric and chart axes`.
 
@@ -213,7 +213,7 @@ Commit sugerido: `feat(brew): add brew session, stability metric and chart axes`
     uno en curso.
   - Usa `GRAMS_PER_OUNCE` de `brew` (D10) y actualiza el KDoc de la clase.
 
-**Tests:** `app/src/test/kotlin/dev/dotscale/sim/SimulatedPourTest.kt` pasa cada perfil por
+**Tests:** `app/src/test/kotlin/dev/josueamaya/pourline/sim/SimulatedPourTest.kt` pasa cada perfil por
 `BrewSession` con la cuantización del payload. Con esto el criterio de `levelShare` del §5 se puede
 comprobar de forma determinista en la JVM, además de en el emulador.
 - `STABLE`: `levelShare[STABLE] ≥ 0,7`, dos vertidos y unos 250 g en total.
@@ -230,9 +230,9 @@ Commit sugerido: `feat(sim): decouple simulated pours from the timer`.
   - Expone `ALLOWED = listOf(30, 45, 60, 90, 120)`, `autoFinishSeconds: StateFlow<Int>` y
     `setAutoFinishSeconds(Int)`, que hace `require(value in ALLOWED)`.
   - Un valor guardado fuera de `ALLOWED` se lee como 60.
-- `DotScaleApp.kt` (nuevo): `class DotScaleApp : Application` con
+- `PourlineApp.kt` (nuevo): `class PourlineApp : Application` con
   `val brewSettings by lazy { BrewSettings(this) }`. Se registra en el manifiesto con
-  `android:name=".DotScaleApp"` (D7).
+  `android:name=".PourlineApp"` (D7).
 - `ui/scale/ScaleUiState.kt`: añade el campo `brew: BrewState = BrewState.Initial`. `reduce` no
   cambia.
 - `ui/scale/ScaleViewModel.kt`:
@@ -248,7 +248,7 @@ Commit sugerido: `feat(sim): decouple simulated pours from the timer`.
   - Nuevas funciones: `finishBrew()` y `simulatePour(profile)`.
   - `captureDose()` y `clearDose()` llaman a `setDoseGrams` (D9).
 - `Navigation.kt`: el `entry<Scale>` construye el ViewModel con
-  `(appContext as DotScaleApp).brewSettings.autoFinishSeconds`.
+  `(appContext as PourlineApp).brewSettings.autoFinishSeconds`.
 
 **Tests (opcional):** `ScaleViewModelBrewTest`, con una `ScaleConnection` falsa, el reloj inyectado
 y `Dispatchers.setMain`. Comprobaría que un vertido produce exactamente un `startTimer` enviado.
@@ -260,7 +260,7 @@ Commit sugerido: `feat(scale): track brew sessions in ScaleViewModel`.
 
 ### F4. UI de la gráfica y del resumen
 
-**Archivos** (en `app/src/main/kotlin/dev/dotscale/ui/scale/`):
+**Archivos** (en `app/src/main/kotlin/dev/josueamaya/pourline/ui/scale/`):
 
 | Archivo | Contenido |
 |---|---|
@@ -277,7 +277,7 @@ Commit sugerido: `feat(scale): track brew sessions in ScaleViewModel`.
 - Textos (D8): añadir a `values/strings.xml` los textos con prefijos `brew_` y `sim_pour_`, y crear
   `values-en/strings.xml` con todos los textos de la app traducidos.
 
-**Tests:** `app/src/test/kotlin/dev/dotscale/ui/scale/BrewChartColorsTest.kt` comprueba un contraste
+**Tests:** `app/src/test/kotlin/dev/josueamaya/pourline/ui/scale/BrewChartColorsTest.kt` comprueba un contraste
 ≥ 3:1 de cada color de serie contra `bgContainer`, en claro y en oscuro. Los colores con alfa, como
 `textSecondary`, se componen antes sobre el fondo con `compositeOver`, porque `AntPalette.contrast`
 espera colores opacos.
@@ -323,10 +323,10 @@ Commit sugerido: `feat(settings): add settings screen with auto-finish preferenc
    | E3 | Tras E2, sin tara, "Simular vertido estable" → "Tara" → simular otra vez | Aviso de `pourIgnored` con el resumen conservado, después "Lista para la siguiente preparación" y, al verter, una gráfica nueva |
 
    El perfil estable dura unos 80 s más el fin automático.
-3. **Tests instrumentados** (`app/src/androidTest/kotlin/dev/dotscale/ui/`), escritos a partir de
+3. **Tests instrumentados** (`app/src/androidTest/kotlin/dev/josueamaya/pourline/ui/`), escritos a partir de
    lo verificado en el paso 2:
    - `BrewChartTest`: `createComposeRule()` con `ScaleScreen(ScaleViewModel(SimulatedScaleConnection(), MutableStateFlow(60)), …)`
-     dentro de `DotScaleTheme`, sin permisos BLE.
+     dentro de `PourlineTheme`, sin permisos BLE.
      - "Simular vertido estable" → `waitUntil(5_000)` hasta que existe `brew_chart`.
      - "Terminar" → `brew_summary` visible.
      - En `@After`, `connection.disconnect()`.

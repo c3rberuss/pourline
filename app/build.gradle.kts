@@ -7,15 +7,15 @@ plugins {
 }
 
 android {
-  namespace = "dev.dotscale"
+  namespace = "dev.josueamaya.pourline"
   compileSdk = 37
   defaultConfig {
-    applicationId = "dev.dotscale"
+    applicationId = "dev.josueamaya.pourline"
     minSdk = 26
     targetSdk = 37
     versionCode = 1
     versionName = "1.0"
-    testInstrumentationRunner = "dev.dotscale.DotScaleTestRunner"
+    testInstrumentationRunner = "dev.josueamaya.pourline.PourlineTestRunner"
   }
 
   buildTypes {
@@ -39,7 +39,7 @@ android {
     // Los tests JVM del ViewModel llaman a `Log`; los métodos de Android devuelven valores por defecto.
     unitTests.isReturnDefaultValues = true
     // `-PlabelsExpected=<ruta>` activa la prueba de aciertos con las etiquetas reales (F4); sin ella se salta.
-    unitTests.all { it.systemProperty("dotscale.labelsExpected", providers.gradleProperty("labelsExpected").getOrElse("")) }
+    unitTests.all { it.systemProperty("pourline.labelsExpected", providers.gradleProperty("labelsExpected").getOrElse("")) }
   }
 
   packaging {

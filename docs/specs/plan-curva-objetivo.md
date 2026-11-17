@@ -62,7 +62,7 @@ SPEC-001 y SPEC-002).
 |---|---|---|---|
 | D1 | Orden de fases | Recetas (F4) va antes que Scale (F5), al revés que en el §8 del spec. | El selector de objetivo reutiliza `RecipeRow` y navega a `Recipes`, y `TargetSettings` hace falta ya para los ajustes de avisos. |
 | D2 | Dependencias del ViewModel | `ScaleViewModel` recibe tres interfaces: `ReferenceStore` (`reference: StateFlow<ReferenceKey?>` y `setReference`, implementada por `TargetSettings`), `TargetReferences` (`recipe(id): Flow<Recipe?>` y `brew(id): Flow<BrewRecord?>`, implementada por `RepositoryTargetReferences(recipeRepository, brewRepository)`) y `StageNotifier`. | Igual que `BrewSaver` (D2 de SPEC-002): `SharedPreferences` y Room necesitan Android, y no hay Robolectric ni mockk. |
-| D3 | `StageNotifier` (cierra la opción abierta del §3.1) | Interfaz `StageNotifier { fun stageStarted(stage: TargetStage); fun release() }` en `dev.dotscale.brew`. Implementación `AndroidStageNotifier(context, settings)` en `ui/scale`. Vibración con `VibratorManager.defaultVibrator` en API 31+ (y `Vibrator` antes), solo si `hasVibrator()`. `ToneGenerator(STREAM_NOTIFICATION, 80)` creado la primera vez que hace falta; si su constructor lanza, el sonido se omite. Lee los dos ajustes en cada aviso. `release()` se llama en `ScaleViewModel.onCleared()`. | Solo lo usa Scale, y `ToneGenerator` guarda recursos nativos que hay que liberar. |
+| D3 | `StageNotifier` (cierra la opción abierta del §3.1) | Interfaz `StageNotifier { fun stageStarted(stage: TargetStage); fun release() }` en `dev.josueamaya.pourline.brew`. Implementación `AndroidStageNotifier(context, settings)` en `ui/scale`. Vibración con `VibratorManager.defaultVibrator` en API 31+ (y `Vibrator` antes), solo si `hasVibrator()`. `ToneGenerator(STREAM_NOTIFICATION, 80)` creado la primera vez que hace falta; si su constructor lanza, el sonido se omite. Lee los dos ajustes en cada aviso. `release()` se llama en `ScaleViewModel.onCleared()`. | Solo lo usa Scale, y `ToneGenerator` guarda recursos nativos que hay que liberar. |
 | D4 | `fromBrew` | La firma es `TargetCurve.fromBrew(samples, pours, totalTimeMs)`. | El caso sin vertidos necesita `totalTimeMs` para su única etapa (§3.3). |
 | D5 | Guía | `GuideState` gana `allStagesDone: Boolean` (`tMs ≥ target.endMs`), que pinta "Última etapa completada". Antes de una primera etapa con `startMs > 0`: `stage = null` y `nextStage` = la primera. Cuenta atrás: `ceil((next.startMs − tMs) / 1000)` si queda entre 1 ms y 5000 ms. Niveles con tolerancia `1e-9`, inclusivos en el 5 % y el 10 %. `tMs = clock() − t0MonoMs`; `waterG` es el de la última muestra si es válida y `null` si no. | El spec no dice cómo pintar el final ni el hueco previo a la primera etapa, y los límites se prueban en sus bordes. |
 | D6 | Reloj y avisos | `BrewState.t0MonoMs` no es nulo en `Active` ni en `Finished` (por defecto `null`, para no romper previews y tests). `StageAlertTracker.update(t0MonoMs, target, tMs): TargetStage?` se reinicia cuando cambia `t0MonoMs`. El tracker y el notifier se llaman después de `_ui.update`, nunca dentro. | El bloque de `update` puede reintentarse, y un efecto ahí dentro repetiría avisos. Usar t0 como clave reinicia el tracker con cada sesión sin más estado. |
@@ -113,7 +113,7 @@ mensaje al final de cada fase.
 
 ### F1. Lógica pura
 
-**Archivos** (`app/src/main/kotlin/dev/dotscale/`):
+**Archivos** (`app/src/main/kotlin/dev/josueamaya/pourline/`):
 
 | Archivo | Contenido |
 |---|---|
@@ -134,7 +134,7 @@ mensaje al final de cada fase.
 
 Nada de lo anterior importa `android.*` ni `androidx.*`.
 
-**Tests** (`app/src/test/kotlin/dev/dotscale/`): los del §5 del spec (`TargetCurveTest`,
+**Tests** (`app/src/test/kotlin/dev/josueamaya/pourline/`): los del §5 del spec (`TargetCurveTest`,
 `TargetGuideTest`, `StageAlertTrackerTest`, `BrewFitTest`, `RecipeValidatorTest`, `RecipeFromBrewTest` y
 `TargetCurveCodecTest`). Además:
 - `recipe/BuiltInRecipesTest.kt`: las dos pasan `validate`, con 250 g · 1:16,7 y 300 g · 1:15.
@@ -144,7 +144,7 @@ Nada de lo anterior importa `android.*` ni `androidx.*`.
 - `BrewCurveCodecTest` sigue en verde tras extraer `CodecIO`.
 
 **Verificación:** `./gradlew :app:testDebugUnitTest` y
-`grep -rn "import android" app/src/main/kotlin/dev/dotscale/brew app/src/main/kotlin/dev/dotscale/recipe app/src/main/kotlin/dev/dotscale/history/TargetCurveCodec.kt app/src/main/kotlin/dev/dotscale/history/CodecIO.kt`
+`grep -rn "import android" app/src/main/kotlin/dev/josueamaya/pourline/brew app/src/main/kotlin/dev/josueamaya/pourline/recipe app/src/main/kotlin/dev/josueamaya/pourline/history/TargetCurveCodec.kt app/src/main/kotlin/dev/josueamaya/pourline/history/CodecIO.kt`
 no devuelve nada.
 
 Commit sugerido: `feat(brew): add target curve, stage guide, brew fit and recipe model`.
@@ -170,13 +170,13 @@ Commit sugerido: `feat(brew): add target curve, stage guide, brew fit and recipe
 | `recipe/ResourcesRecipeTexts.kt` | Implementación con los recursos de la aplicación. |
 | `history/Migrations.kt` | `migration1To2(texts, clock)`: seis `ALTER TABLE`, tres `CREATE TABLE` con sus índices (copiados de `2.json`) y la siembra. |
 | `history/HistoryDatabase.kt` | `version = 2` con las entidades nuevas, `recipeDao()`, la migración y un `Callback.onCreate` que siembra, en `create` y en `inMemory`. |
-| `DotScaleApp.kt` | `val recipeRepository by lazy { RecipeRepository(historyDatabase, ResourcesRecipeTexts(this)) }`. |
+| `PourlineApp.kt` | `val recipeRepository by lazy { RecipeRepository(historyDatabase, ResourcesRecipeTexts(this)) }`. |
 | `res/values*/strings.xml` | Nombres de las predefinidas (`recipe_builtin_*`), sus etapas en `<string-array>`, `recipe_copy_name` y `recipe_from_brew_name`, en es y en. |
 
-**Esquema:** `app/schemas/dev.dotscale.history.HistoryDatabase/2.json` se genera al compilar y se añade
+**Esquema:** `app/schemas/dev.josueamaya.pourline.history.HistoryDatabase/2.json` se genera al compilar y se añade
 al repositorio. `1.json` no se toca.
 
-**Tests** (`app/src/androidTest/kotlin/dev/dotscale/`):
+**Tests** (`app/src/androidTest/kotlin/dev/josueamaya/pourline/`):
 - `history/HistoryMigrationTest.kt` (`MigrationTestHelper`): crea la v1 con dos preparaciones por SQL,
   migra y valida. Las filas se conservan con todas sus columnas, las nuevas valen `null`, `brew_curves`
   sigue igual y existen las dos predefinidas con sus etapas. Después abre la base con Room y lee las dos
@@ -188,7 +188,7 @@ al repositorio. `1.json` no se toca.
 - `history/TestBrews.kt`: `context(target = …, details = …)` y un `usedTarget(...)` determinista.
 
 **Verificación:** `./gradlew :app:compileDebugKotlin` (genera `2.json`) y
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.history.HistoryMigrationTest,dev.dotscale.history.BrewDaoTest,dev.dotscale.recipe.RecipeDaoTest`.
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.history.HistoryMigrationTest,dev.josueamaya.pourline.history.BrewDaoTest,dev.josueamaya.pourline.recipe.RecipeDaoTest`.
 
 Commit sugerido: `feat(history): migrate the database to v2 with recipes and brew targets`.
 
@@ -204,7 +204,7 @@ Commit sugerido: `feat(history): migrate the database to v2 with recipes and bre
 inactividad y calcula `brewFit` con "V60 clásica". Fiel: agua dentro de ±3 %, tiempo dentro de ±5 s y
 ajuste ≥ 90. Desviado: fuera de las dos tolerancias y ajuste ≤ 60. Mismo resultado con la misma semilla.
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.sim.*"`.
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.sim.*"`.
 
 Commit sugerido: `feat(sim): simulate pours that follow the target curve`.
 
@@ -228,7 +228,7 @@ Commit sugerido: `feat(sim): simulate pours that follow the target curve`.
 | `ui/recipes/RecipeEditScreen.kt` | Campos del §3.8 con su error. Filas de etapa con quitar (`AntIcons.Close` y `contentDescription` "Quitar etapa N"). "Añadir etapa". "Agua total · Ratio" en vivo. Vista previa con `BrewChart(samples = emptyList(), target = …)`. `AntAlert` de ajustes (D16). "Guardar", "Duplicar" y "Borrar" (borrar sin modal, con deshacer en la lista). Descarte con `AntModal`. |
 | `settings/TargetSettings.kt` | §3.7: `ReferenceKey` (`sealed interface`) y `TargetSettings`, que implementa `ReferenceStore` (D2). Claves `target_ref_type`, `target_ref_id`, `stage_vibration` y `stage_sound`. |
 | `ui/settings/SettingsScreen.kt` | Sección "Guía de etapas" con dos `AntSwitch` y "Restaurar recetas predefinidas" con `AntModal` (D23). |
-| `DotScaleApp.kt` | `val targetSettings by lazy { TargetSettings(this) }`. |
+| `PourlineApp.kt` | `val targetSettings by lazy { TargetSettings(this) }`. |
 
 **Textos:** prefijos `recipe_` y `settings_stage_*` en `values/` y `values-en/`.
 
@@ -334,7 +334,7 @@ Commit sugerido: `feat(history): show brew fit and compare two brews`.
 1. **Dispositivo.** `adb devices -l`. Si hay más de uno, preguntar cuál usar. Después,
    `./gradlew :app:installDebug`. *No se usa ARTEMIS:* `uiautomator dump`, `input tap` y
    `screencap -d <display id>`.
-2. **E2E por adb** con la báscula simulada. Antes: `adb shell pm clear dev.dotscale`, `pm grant` de
+2. **E2E por adb** con la báscula simulada. Antes: `adb shell pm clear dev.josueamaya.pourline`, `pm grant` de
    `BLUETOOTH_SCAN` y `BLUETOOTH_CONNECT` y "Fin automático" en 30 s.
 
    | Paso | Recorrido | Comprobaciones |
@@ -347,7 +347,7 @@ Commit sugerido: `feat(history): show brew fit and compare two brews`.
    | 6 | Scale → "Seguir con desvío" → esperar el fin | Desvío en rojo, ajuste ≤ 60 |
    | 7 | Detalle de la 2.ª → "Comparar con…" → la 1.ª | 3 toques desde el historial. Filtro con su café (o "Todos"), dos gráficas y tabla con B−A. Atrás vuelve al detalle de A |
    | 8 | Elegir una preparación como objetivo | 3 toques desde Scale |
-   | 9 | `adb shell am force-stop dev.dotscale` → abrir Scale | La referencia sigue activa |
+   | 9 | `adb shell am force-stop dev.josueamaya.pourline` → abrir Scale | La referencia sigue activa |
    | 10 | Móvil en inglés (`cmd locale` o Ajustes) | "Classic V60" y "4:6 method" |
 
 3. **Rendimiento** (emulador con API 36 o superior):
@@ -397,7 +397,7 @@ Commit sugerido: `test(history): add compare performance test and verify the tar
 |---|---|---|
 | R1 | El perfil fiel no llega a un ajuste ≥ 90 por la deriva aleatoria del ±10 %. | Se ve en F3 con `SimulatedTargetPourTest`. Si falla, el flujo base de cada tick se calcula con el agua y el tiempo que faltan de la etapa (lazo cerrado), y se anota como desviación del §3.10. |
 | R2 | Room rechaza la migración por una diferencia de esquema (índices, `DEFAULT`, FK). | Los `CREATE TABLE` se copian de `2.json` y las columnas nuevas no llevan `defaultValue`. `runMigrationsAndValidate` lo detecta en F2. |
-| R3 | Un ViewModel retenido muestra los nombres de las predefinidas en el idioma anterior hasta que la lista vuelve a emitir. | Aceptado: al reabrir la pantalla se ven bien. Si molesta, `RecipeRepository` combina sus flujos con un `StateFlow` de idioma que actualiza `DotScaleApp.onConfigurationChanged`. |
+| R3 | Un ViewModel retenido muestra los nombres de las predefinidas en el idioma anterior hasta que la lista vuelve a emitir. | Aceptado: al reabrir la pantalla se ven bien. Si molesta, `RecipeRepository` combina sus flujos con un `StateFlow` de idioma que actualiza `PourlineApp.onConfigurationChanged`. |
 | R4 | `ToneGenerator` falla o suena distinto en algunos dispositivos. | Se captura la excepción y se omite el sonido (D3). La vibración no depende del tono. |
 | R5 | `ModalBottomSheet` en tests de Compose (animaciones, foco). | `TargetPickerTest` prueba el contenido sin estado y, aparte, una apertura con `mainClock.autoAdvance`. |
 | R6 | Con referencia de tipo preparación, cada guardado de otra preparación invalida la tabla `brews` y la base se reconstruye. | `distinctUntilChanged` sobre la base (curva y datos comparables por valor) evita el trabajo extra, y nunca ocurre en `Active` (D7). |

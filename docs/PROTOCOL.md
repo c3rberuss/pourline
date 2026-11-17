@@ -5,7 +5,7 @@ Especificación del protocolo de comunicación entre la app y las básculas TIME
 
 No depende de ningún lenguaje: con este documento se puede implementar un cliente en Android, iOS,
 Web Bluetooth, Python (`bleak`), ESP32, etc. La implementación de referencia está en el módulo
-[`protocol`](../protocol/src/main/kotlin/dev/dotscale/protocol); su uso se explica en [API.md](API.md).
+[`protocol`](../protocol/src/main/kotlin/dev/josueamaya/pourline/protocol); su uso se explica en [API.md](API.md).
 
 ## Contenido
 

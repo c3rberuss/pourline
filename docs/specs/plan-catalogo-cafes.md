@@ -39,7 +39,7 @@ preguntas de §6 están resueltas.
   `showAntMessage`, `AntAlert` (con `action`), `AntEmpty(action)`, `AntTag` (`icon`, `onClose`),
   `AntButton`, `AntIconButton`, `AntProgress`, `AntStatistic`, `AntDivider(text, orientation)`, `AntSpin`,
   `AntText`, `AntTitle` y los modificadores `internal` `antBorder(dashed = true)` y `thenIf`.
-- Tema: `DotScaleTheme(darkTheme)` y `AntTheme.colors / typography / spacing / radius / controlHeight`.
+- Tema: `PourlineTheme(darkTheme)` y `AntTheme.colors / typography / spacing / radius / controlHeight`.
 - Tests: `TestBrews`, `HistoryDatabase.inMemory`, `MigrationTestHelper` (`HistoryMigrationTest`), la
   metodología de `HistoryPerformanceTest` (calentamiento y mediana de 5), los falsos de
   `ui/scale/ScaleTestFakes.kt` (JVM y `androidTest`) y `FakeScale`.
@@ -78,7 +78,7 @@ Se aprueban junto con el plan. Al terminar se pasan al spec como §3.8, como en 
 | ID | Tema | Decisión | Motivo |
 |---|---|---|---|
 | D1 | Tamaño de las imágenes (cierra §6.3) | Las cuatro imágenes (tarjeta del café, resumen en Scale, detalle de preparación y comparación) miden **1080 × 1350 px** (4:5; 360 × 450 dp). Se dibujan con `Density(3f, fontScale = 1f)` fija, sea cual sea el teléfono. | Decisión del usuario al revisar F0. 4:5 es el vertical máximo del feed de Instagram y se ve entero en WhatsApp. Con un solo formato hay una sola constante y una sola comprobación de tamaño. La densidad fija hace el tamaño en píxeles determinista y el escalado de fuente del sistema no rompe la maqueta. |
-| D2 | Tema, marco y compactación de las imágenes | Siempre en **tema claro** (`DotScaleTheme(darkTheme = false)`), fondo `bgContainer`, barra de acento de 4 dp en `primary.base` arriba, márgenes de 20 dp a los lados y 16 dp arriba y abajo, y la marca "Dot Scale" (`app_name`) abajo a la derecha, en la misma línea que la última del pie del café. Tipografía de `antTypography()`; tabla en F0.4. Para que las tres gráficas quepan en 450 dp: (a) sin sobretítulo ("RESUMEN", "PREPARACIÓN", "COMPARACIÓN"); (b) el ajuste al objetivo pasa de línea propia a un `AntTag` en la fila del título; (c) la valoración va como estrellas a la derecha del subtítulo y la nota de cata, sin rótulo, como cita de 3 líneas; (d) se quita el reparto por nivel de estabilidad; (e) la gráfica deja los 200 dp fijos y ocupa el alto que sobra (`weight(1f)`), con un **mínimo de 144 dp**; (f) la comparación lleva solo la gráfica de agua, 4 de las 8 métricas de `compareRows` y un pie de una línea por café. | La imagen se ve en otras apps sobre fondos desconocidos: el claro es el más legible y no depende del tema de quien la genera. Con los diseños de 9:16 harían falta 533, 603 y 589 dp. Se conserva lo que fija §3.7: gráfica, métricas principales, café al pie y, en el detalle, valoración y nota de 3 líneas. El sobretítulo y el rótulo de la nota no aportan datos. El reparto por nivel no cabe en una fila a 320 dp (tres etiquetas ocupan unos 330), y la estabilidad ya lleva el color de su nivel. 144 dp son 432 px de alto, legibles con los ejes, y en el resumen, que no tiene nota, la gráfica crece hasta 233 dp en vez de dejar un hueco. Marca y pie en la misma línea ahorran 20 dp. |
+| D2 | Tema, marco y compactación de las imágenes | Siempre en **tema claro** (`PourlineTheme(darkTheme = false)`), fondo `bgContainer`, barra de acento de 4 dp en `primary.base` arriba, márgenes de 20 dp a los lados y 16 dp arriba y abajo, y la marca "Dot Scale" (`app_name`) abajo a la derecha, en la misma línea que la última del pie del café. Tipografía de `antTypography()`; tabla en F0.4. Para que las tres gráficas quepan en 450 dp: (a) sin sobretítulo ("RESUMEN", "PREPARACIÓN", "COMPARACIÓN"); (b) el ajuste al objetivo pasa de línea propia a un `AntTag` en la fila del título; (c) la valoración va como estrellas a la derecha del subtítulo y la nota de cata, sin rótulo, como cita de 3 líneas; (d) se quita el reparto por nivel de estabilidad; (e) la gráfica deja los 200 dp fijos y ocupa el alto que sobra (`weight(1f)`), con un **mínimo de 144 dp**; (f) la comparación lleva solo la gráfica de agua, 4 de las 8 métricas de `compareRows` y un pie de una línea por café. | La imagen se ve en otras apps sobre fondos desconocidos: el claro es el más legible y no depende del tema de quien la genera. Con los diseños de 9:16 harían falta 533, 603 y 589 dp. Se conserva lo que fija §3.7: gráfica, métricas principales, café al pie y, en el detalle, valoración y nota de 3 líneas. El sobretítulo y el rótulo de la nota no aportan datos. El reparto por nivel no cabe en una fila a 320 dp (tres etiquetas ocupan unos 330), y la estabilidad ya lleva el color de su nivel. 144 dp son 432 px de alto, legibles con los ejes, y en el resumen, que no tiene nota, la gráfica crece hasta 233 dp en vez de dejar un hueco. Marca y pie en la misma línea ahorran 20 dp. |
 | D3 | Contenido y recortes | Lo que lleva cada imagen y su orden están en F0.4. Todos los textos tienen `maxLines` y elipsis; las filas sin dato se omiten. La tarjeta del café nunca incluye precio ni stock. | Con alto fijo, el contenido no puede crecer sin límite. |
 | D4 | Pie de la comparación | Con dos cafés distintos, una línea por preparación vinculada: punto de color de A o B, nombre y "tostador · día N". Si las dos tienen el mismo `coffeeId`, el pie normal de un café, sin punto, con "días 9 y 11" (o "día 9" si coinciden). Con una sola vinculada, el pie normal con su punto. Sin ninguna vinculada, no hay pie. | El spec habla de "el café vinculado" en singular, pero en una comparación puede haber dos. |
 | D5 | Selectores de Scale | El chip "Objetivo" sale de la cabecera de `BrewChartCard`. Arriba del cuerpo de la tarjeta van dos filas: "Objetivo [V60 clásica v]" y "Café [Etiopía Guji · día 9 v]", con `AntSelectTrigger` (nuevo). Las dos se deshabilitan en `Active`. Se conserva `testTag("target_chip")`. | Dos chips con nombre no caben en la cabecera a 360 dp sin cortar el título. Con etiqueta a la izquierda se leen sin el prefijo "Objetivo:" y TalkBack recibe la descripción completa. |
@@ -96,7 +96,7 @@ Se aprueban junto con el plan. Al terminar se pasan al spec como §3.8, como en 
 
 | ID | Tema | Decisión | Motivo |
 |---|---|---|---|
-| D15 | Paquetes | `dev.dotscale.coffee`: modelo, validación, derivados, Room y repositorio. `dev.dotscale.coffee.label`: parser (JVM puro) y `MlKitLabelOcr`. `dev.dotscale.coffee.photo`: fotos y miniaturas. `dev.dotscale.ui.coffees`: pantallas. `dev.dotscale.share`: imágenes para compartir. | Los archivos puros se comprueban con `grep "import android"` por lista, como en `history`. |
+| D15 | Paquetes | `dev.josueamaya.pourline.coffee`: modelo, validación, derivados, Room y repositorio. `dev.josueamaya.pourline.coffee.label`: parser (JVM puro) y `MlKitLabelOcr`. `dev.josueamaya.pourline.coffee.photo`: fotos y miniaturas. `dev.josueamaya.pourline.ui.coffees`: pantallas. `dev.josueamaya.pourline.share`: imágenes para compartir. | Los archivos puros se comprueban con `grep "import android"` por lista, como en `history`. |
 | D16 | Migración 2 → 3 | `val MIGRATION_2_3` (constante, no necesita dependencias): `CREATE TABLE coffees` y sus índices copiados de `3.json`, `ALTER TABLE brews ADD COLUMN coffeeId INTEGER REFERENCES coffees(id) ON UPDATE NO ACTION ON DELETE SET NULL`, `ALTER TABLE brews ADD COLUMN rating INTEGER` e `index_brews_coffeeId`. No se reconstruye `brews`. | Reconstruir `brews` (crear, copiar, borrar la antigua) dispararía el `CASCADE` hacia `brew_curves` y `brew_targets` con las claves foráneas activas. SQLite admite `REFERENCES` en `ADD COLUMN` con valor por defecto `NULL`, y `PRAGMA foreign_key_list` lo informa igual que una FK de tabla (R2). |
 | D17 | Conversores (`CoffeeConverters`) | `List<String>` como texto unido con `\n` (vacía → `""`, columna no nula). `LocalDate` como `toEpochDay()`. `CoffeeProcess` y `RoastLevel` por nombre; un nombre desconocido se lee como `null`. | Ninguna variedad tiene saltos de línea (se recortan). Igual que `ReferenceType` en `HistoryConverters`. |
 | D18 | Búsqueda | SQL solo filtra `archived`. El texto se busca en Kotlin con `CoffeeSearch.matches(item, query)`: `name`, `roaster`, `originCountry` y `originRegion`, sin distinguir mayúsculas **ni tildes** (`Normalizer` NFD sin marcas). La usan la lista y `CoffeePicker`. | `LIKE` de SQLite no pliega "Í" ni "é". Plegar tildes amplía un poco el spec ("etiopia" encuentra "Etiopía"); se puede quitar si no se quiere. |
@@ -112,7 +112,7 @@ Se aprueban junto con el plan. Al terminar se pasan al spec como §3.8, como en 
 | D28 | Proceso y nombre en la etiqueta | Diccionario plegado (sin mayúsculas ni tildes), con las frases largas antes que las cortas: "anaeróbico lavado", "anaerobic washed", "anaerobic natural", "anaeróbico" y "anaerobic" → `ANAEROBIC`; "semi lavado", "semilavado", "semi-lavado" y "wet hulled" → `WET_HULLED`; "yellow honey", "red honey", "black honey", "white honey" y "honey" → `HONEY`; "natural" → `NATURAL`; "lavado", "washed" y "fully washed" → `WASHED`; "fermentación láctica" y "lactic fermentation" → `OTHER`, con `processOther` = el texto tal como viene en la etiqueta. Una frase larga consume su texto: "Anaeróbico lavado" no cuenta además como lavado. "Miel" no cuenta (aparece en las notas). Fuentes, por orden: el valor del rótulo "Proceso"/"Process" (D40) y, si no hay, las líneas con un solo proceso; si esas líneas no coinciden, no se rellena. **Nombre:** la línea candidata más alta (sin fechas, pesos, rótulos de campo ni las palabras de D37); si la línea siguiente en el orden de lectura es solo una frase de proceso, se une al nombre con mayúscula inicial en cada palabra ("Pacamara" + "Red honey" → "Pacamara Red Honey", §3.3 del spec), y el proceso se rellena igualmente. **Tostador:** la segunda candidata más alta; es poco fiable (casi siempre es un logo, y en 2 de las 15 fotos no se ve) y no cuenta para el criterio. País con el nombre canónico en español; "Colombia" no cuenta como variedad. | Son los procesos que aparecen en las 15 etiquetas reales, y "semilavado" y "anaeróbico lavado" contienen "lavado". Con dos procesos distintos sin rótulo, cualquier elección sería adivinar. La unión con el proceso distingue los cafés cuyo título es la variedad. |
 | D29 | `INTERNET` (cierra §6.2) | En F3 se revisa el manifiesto fusionado. Si ML Kit añade `INTERNET` (lo hace `transport-backend-cct`), se elimina con `<uses-permission android:name="android.permission.INTERNET" tools:node="remove" />`. `ACCESS_NETWORK_STATE`, si aparece, se deja. | La app no usa la red y el spec promete que fotos y datos no salen del teléfono. `ACCESS_NETWORK_STATE` no da acceso a datos, y quitarlo podría hacer fallar la planificación de trabajos de la telemetría de ML Kit (R4). |
 | D30 | Captura y envío | `ShareCaptureHost` compone la tarjeta dentro de un nodo de tamaño 0 (`Modifier.layout`) que mide el hijo al tamaño fijo, con `LocalDensity` fija y `drawWithContent { layer.record { drawContent() } }` **sin** dibujar la capa. Tras dos frames, `layer.toImageBitmap()`. El PNG se escribe en `Dispatchers.IO` en `cacheDir/shared/`, tras borrar los anteriores. El envío pasa por `fun interface ShareSender { fun send(chooser: Intent) }`, que cada pantalla recibe con un valor por defecto. | Es el mecanismo del spec (§3.7) sin que la tarjeta aparezca en pantalla. El `ShareSender` permite probar el `ACTION_SEND` sin Espresso-Intents. |
-| D31 | Fixtures reales del OCR | Escritura en el dispositivo con `org.json` (real en Android) y lectura en la JVM con `kotlinx-serialization-json` (`testImplementation`). JSON por etiqueta: `file`, `capturedOn` (fecha de captura) y `lines` (`text`, `heightPx`). La captura solo corre con `-e labelsCapture true` (`assumeTrue`), y se lanza con `am instrument` para que la app no se desinstale al terminar. Los esperados llegan al test JVM con `-PlabelsExpected=<ruta>`. | `org.json` está simulado en los tests JVM (`isReturnDefaultValues`). `connectedDebugAndroidTest` desinstala la app y borraría `Android/data/dev.dotscale/`. `capturedOn` hace deterministas las fechas "no futuras". |
+| D31 | Fixtures reales del OCR | Escritura en el dispositivo con `org.json` (real en Android) y lectura en la JVM con `kotlinx-serialization-json` (`testImplementation`). JSON por etiqueta: `file`, `capturedOn` (fecha de captura) y `lines` (`text`, `heightPx`). La captura solo corre con `-e labelsCapture true` (`assumeTrue`), y se lanza con `am instrument` para que la app no se desinstale al terminar. Los esperados llegan al test JVM con `-PlabelsExpected=<ruta>`. | `org.json` está simulado en los tests JVM (`isReturnDefaultValues`). `connectedDebugAndroidTest` desinstala la app y borraría `Android/data/dev.josueamaya.pourline/`. `capturedOn` hace deterministas las fechas "no futuras". |
 | D32 | Dependencias del ViewModel de Scale | Dos interfaces nuevas: `CoffeeStore` (`lastCoffeeId: StateFlow<Long?>`, `setLastCoffeeId`), implementada por `BrewSettings`, y `ScaleCoffees` (`coffee(id): Flow<PickedCoffee?>`, `null` si no existe o está archivado, y `created: Flow<Long>`), implementada por `RepositoryScaleCoffees(coffeeRepository)` sobre `pickable()`. Las dos tienen un valor por defecto sin cafés. | Igual que `ReferenceStore` y `TargetReferences` (D2 de SPEC-003). Con valores por defecto no cambian los tests actuales del ViewModel. |
 | D33 | Filtro del historial | `BrewFilter(coffeeId: Long?, method)`. Opciones: `BrewDao.coffeeOptions()` → `CoffeeOption(id, name, roastDate)`, cafés con al menos una preparación vinculada (también los archivados), por la preparación más reciente. Si dos opciones tienen el mismo nombre, la etiqueta añade " · tostado 12 oct 2026" (o " · sin fecha"). `FilterSaver` guarda el id como texto. `ComparePickScreen` empieza con el `coffeeId` de A (o "Todos"). | §3.5 del spec. Dos bolsas del mismo café se distinguen por la fecha de tueste. |
 | D34 | Números del formulario | Altitud: enteros. Peso de la bolsa: `,` o `.` y un decimal como máximo. Precio: `,` o `.` y dos decimales como máximo. Un solo campo de altitud relleno → los dos iguales al guardar (§4). | Mismo estilo de parseo que `parseWaterTemp`. |
@@ -694,8 +694,8 @@ con café vinculado (§3.7); un texto antiguo sin vínculo no lleva pie.
   el contenido se ve y `stateDescription` pasa de "Plegado" a "Desplegado".
 
 **Verificación:** `./gradlew :app:compileDebugKotlin`,
-`./gradlew :app:testDebugUnitTest --tests "dev.dotscale.ui.components.*"`,
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.components.AntComponentsTest`,
+`./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.ui.components.*"`,
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.components.AntComponentsTest`,
 `./gradlew :app:lintDebug` y revisión de las previews en claro y oscuro.
 
 Commit sugerido: `feat(ui): add form item, rate, select trigger and date picker components`.
@@ -704,7 +704,7 @@ Commit sugerido: `feat(ui): add form item, rate, select trigger and date picker 
 
 **Objetivo:** todo lo que no necesita Android, probado en la JVM.
 
-**Archivos** (`app/src/main/kotlin/dev/dotscale/`):
+**Archivos** (`app/src/main/kotlin/dev/josueamaya/pourline/`):
 
 | Archivo | Contenido |
 |---|---|
@@ -724,7 +724,7 @@ Commit sugerido: `feat(ui): add form item, rate, select trigger and date picker 
 Nada de `coffee/` (salvo lo que llegue en F2 y F3) ni `ui/coffees/CoffeeForm.kt` importa `android.*` o
 `androidx.*`.
 
-**Tests** (`app/src/test/kotlin/dev/dotscale/`):
+**Tests** (`app/src/test/kotlin/dev/josueamaya/pourline/`):
 
 | Archivo | Casos |
 |---|---|
@@ -737,8 +737,8 @@ Nada de `coffee/` (salvo lo que llegue en F2 y F3) ni `ui/coffees/CoffeeForm.kt`
 | `coffee/label/LabelScoreTest.kt` | `parseExpected` con fecha vacía → `null` y con fecha ISO; líneas mal formadas → error con el número de línea. `sameName`: "Pacamara Red Honey" = "PACAMARA RED HONEY" = "pacamara redhoney"; "Etiopía" = "Etiopia"; nombres distintos no. `score`: 12 de 15 nombres y ninguna fecha inventada → `meetsTarget`; 11 de 15 → no; una fecha leída en una etiqueta sin fecha → no, y aparece en `inventedDates`; las fechas a mano mal leídas solo aparecen en `handwritten`. |
 | `ui/coffees/CoffeeFormTest.kt` | `applyOcr` no pisa un campo escrito, rellena los vacíos y los marca; editar un campo marcado le quita la marca; dos lecturas seguidas: la segunda solo rellena lo que siga vacío; altitud única rellena los dos campos. Números de D34 ("18,50" y "18.50" válidos, "18,505" no; "1800,5" no es altitud). `toDraft` con un solo campo de altitud. `isDirty` no cuenta las marcas. `applyOcr` con `OTHER` rellena proceso y texto como un solo campo marcado; región y finca se rellenan y marcan. |
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.coffee.*" --tests "dev.dotscale.ui.coffees.*"`
-y `grep -rln "import android" app/src/main/kotlin/dev/dotscale/coffee app/src/main/kotlin/dev/dotscale/ui/coffees/CoffeeForm.kt`
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.coffee.*" --tests "dev.josueamaya.pourline.ui.coffees.*"`
+y `grep -rln "import android" app/src/main/kotlin/dev/josueamaya/pourline/coffee app/src/main/kotlin/dev/josueamaya/pourline/ui/coffees/CoffeeForm.kt`
 sin resultados.
 
 Commit sugerido: `feat(coffee): add coffee model, validation, derived values and label parser`.
@@ -763,12 +763,12 @@ vínculo. Es aditiva: el comportamiento actual del historial no cambia hasta F7.
 | `history/Migrations.kt` | `val MIGRATION_2_3` (D16). |
 | `history/HistoryDatabase.kt` | `version = 3`, `CoffeeEntity` en `entities`, `abstract fun coffeeDao(): CoffeeDao`, `@TypeConverters(HistoryConverters::class, CoffeeConverters::class)` y `.addMigrations(migration1To2(texts), MIGRATION_2_3)`. KDoc con la versión 3. |
 | `settings/BrewSettings.kt` | `interface CoffeeStore` (D32), implementada por `BrewSettings`: `lastCoffeeId: StateFlow<Long?>` y `setLastCoffeeId(id: Long?)`, clave `last_coffee_id`. |
-| `DotScaleApp.kt` | `val coffeeRepository by lazy { CoffeeRepository(historyDatabase, PhotoFiles { }) }`. |
+| `PourlineApp.kt` | `val coffeeRepository by lazy { CoffeeRepository(historyDatabase, PhotoFiles { }) }`. |
 
-**Esquema:** `app/schemas/dev.dotscale.history.HistoryDatabase/3.json` se genera al compilar y se añade al
+**Esquema:** `app/schemas/dev.josueamaya.pourline.history.HistoryDatabase/3.json` se genera al compilar y se añade al
 repositorio. Los `CREATE TABLE` e índices de `MIGRATION_2_3` se copian de ahí.
 
-**Tests** (`app/src/androidTest/kotlin/dev/dotscale/`):
+**Tests** (`app/src/androidTest/kotlin/dev/josueamaya/pourline/`):
 - `coffee/CoffeeDaoTest.kt` (nuevo, Room en memoria y un `PhotoFiles` que registra lo borrado). Los casos del
   §5 del spec:
   - Búsqueda por los cuatro campos, sin mayúsculas ni tildes, y que no devuelve archivados en "Activos".
@@ -793,7 +793,7 @@ repositorio. Los `CREATE TABLE` e índices de `MIGRATION_2_3` se copian de ahí.
 - `history/TestBrews.kt`: `context(..., coffee: UsedCoffee? = null)` y un `coffeeDraft(...)` determinista.
 
 **Verificación:** `./gradlew :app:compileDebugKotlin` (genera `3.json`) y
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.coffee.CoffeeDaoTest,dev.dotscale.history.HistoryMigrationTest,dev.dotscale.history.BrewDaoTest`.
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.coffee.CoffeeDaoTest,dev.josueamaya.pourline.history.HistoryMigrationTest,dev.josueamaya.pourline.history.BrewDaoTest`.
 
 Commit sugerido: `feat(coffee): migrate the database to v3 with the coffee catalog`.
 
@@ -817,7 +817,7 @@ con la última estable de Google Maven al empezar la fase (16.0.1 es la última 
 | `coffee/label/MlKitLabelOcr.kt` (nuevo) | `class MlKitLabelOcr : LabelOcr, Closeable` (D27). |
 | `res/xml/file_paths.xml` (nuevo) | `<cache-path name="camera" path="camera/" />` y `<cache-path name="shared" path="shared/" />`. |
 | `AndroidManifest.xml` | `<provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">` con `FILE_PROVIDER_PATHS`, y la retirada de `INTERNET` de D29 si aparece. Sin `CAMERA`. |
-| `DotScaleApp.kt` | `coffeePhotoStore` (`filesDir/coffee_photos`), `coffeeImages` (16 MB), `labelOcr` (perezoso) y el repositorio con `coffeePhotoStore`. En `onCreate`, `applicationScope.launch { coffeePhotoStore.sweepOrphans(…, 24 h) }`. |
+| `PourlineApp.kt` | `coffeePhotoStore` (`filesDir/coffee_photos`), `coffeeImages` (16 MB), `labelOcr` (perezoso) y el repositorio con `coffeePhotoStore`. En `onCreate`, `applicationScope.launch { coffeePhotoStore.sweepOrphans(…, 24 h) }`. |
 | `MainActivity.kt` | `CompositionLocalProvider(LocalCoffeeImages provides app.coffeeImages)`. |
 
 **Permiso `INTERNET` (§6.2 del spec):** `./gradlew :app:processDebugMainManifest` y buscar `INTERNET` en el
@@ -840,8 +840,8 @@ Anotar en este plan qué permisos añade ML Kit y aplicar D29.
   después, da las mismas líneas: la rotación EXIF se aplica antes del OCR (D25, D27). Una de las 15 fotos
   reales (`IMG_20261113_134720.jpg`) está tomada así.
 
-**Verificación:** `./gradlew :app:compileDebugKotlin`, `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.coffee.photo.*"`,
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.coffee.photo.CoffeePhotoStoreTest,dev.dotscale.coffee.label.MlKitLabelOcrTest`,
+**Verificación:** `./gradlew :app:compileDebugKotlin`, `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.coffee.photo.*"`,
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.coffee.photo.CoffeePhotoStoreTest,dev.josueamaya.pourline.coffee.label.MlKitLabelOcrTest`,
 la revisión del manifiesto fusionado y `zipalign -c -P 16 -v 4 app/build/outputs/apk/debug/app-debug.apk`
 para las bibliotecas nativas de ML Kit (R3).
 
@@ -862,7 +862,7 @@ informe con los dos objetivos del spec.
 
 **Gradle:** `kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }`
 y `testImplementation(libs.kotlinx.serialization.json)`. En `android.testOptions.unitTests.all`, la
-propiedad del sistema `dotscale.labelsExpected` con `providers.gradleProperty("labelsExpected").getOrElse("")`.
+propiedad del sistema `pourline.labelsExpected` con `providers.gradleProperty("labelsExpected").getOrElse("")`.
 
 **Archivos:**
 
@@ -871,7 +871,7 @@ propiedad del sistema `dotscale.labelsExpected` con `providers.gradleProperty("l
 | `androidTest/.../coffee/label/LabelFixtureCaptureTest.kt` (nuevo) | Solo corre con el argumento `labelsCapture=true` (D31). Lee las fotos de `getExternalFilesDir("labels")`, las importa con `CoffeePhotoStore` (en un directorio temporal) como en la app, así que se reducen y se giran según su EXIF antes del OCR, y las pasa por `MlKitLabelOcr`. Escribe `<nombre>.json` en `getExternalFilesDir("labels-out")`. Con `expected.tsv` en la misma carpeta, calcula `LabelScore` con `LabelParser.parse(lines, capturedOn)` y escribe `getExternalFilesDir("labels-report")/report.txt`, fuera de la salida de los JSON (y cada línea con `Log.i("LabelReport", …)`): por foto, nombre esperado y leído, acierto o fallo, fecha leída, tostador leído (informativo) y orientación EXIF; después, el total de nombres (objetivo 12 de 15), las fechas inventadas (objetivo: ninguna de 13) y las 2 fechas a mano, leída frente a esperada. Falla si no se cumple alguno de los dos objetivos, después de escribir los archivos. |
 | `test/resources/labels/*.json` (nuevos) | Los JSON traídos del dispositivo, versionados (P2). Las fotos y `expected.tsv` no se versionan. |
 | `test/.../coffee/label/LabelFixtures.kt` (nuevo) | Carga los JSON con `kotlinx-serialization-json`. |
-| `test/.../coffee/label/LabelParserTest.kt` | Con cada fixture: no lanza excepciones, la fecha nunca es posterior a `capturedOn` y el nombre no está vacío. `realLabelsReachTheTarget()`: con `dotscale.labelsExpected`, `LabelScore.meetsTarget()` (nombres ≥ 12 de 15 y ninguna fecha inventada en las 13 sin fecha); el mensaje de fallo es el informe. Sin la propiedad, `assumeTrue` la salta. |
+| `test/.../coffee/label/LabelParserTest.kt` | Con cada fixture: no lanza excepciones, la fecha nunca es posterior a `capturedOn` y el nombre no está vacío. `realLabelsReachTheTarget()`: con `pourline.labelsExpected`, `LabelScore.meetsTarget()` (nombres ≥ 12 de 15 y ninguna fecha inventada en las 13 sin fecha); el mensaje de fallo es el informe. Sin la propiedad, `assumeTrue` la salta. |
 
 **`expected.tsv`:** una línea por foto, `archivo<TAB>nombre<TAB>aaaa-mm-dd`. Una fecha vacía significa "sin
 fecha" y es la que cuenta para el 13 de 13; las dos con fecha son las escritas a mano.
@@ -896,13 +896,13 @@ fecha" y es la que cuenta para el 13 de 13; las dos con fecha son las escritas a
 
 ```
 ./gradlew :app:installDebug :app:installDebugAndroidTest
-adb -s <serial> shell mkdir -p /sdcard/Android/data/dev.dotscale/files/labels
-adb -s <serial> push <carpeta>/. /sdcard/Android/data/dev.dotscale/files/labels/
-adb -s <serial> shell am instrument -w -e class dev.dotscale.coffee.label.LabelFixtureCaptureTest \
-  -e labelsCapture true dev.dotscale.test/androidx.test.runner.AndroidJUnitRunner
-adb -s <serial> pull /sdcard/Android/data/dev.dotscale/files/labels-out/. app/src/test/resources/labels/
-adb -s <serial> pull /sdcard/Android/data/dev.dotscale/files/labels-report/report.txt <carpeta>/report.txt
-./gradlew :app:testDebugUnitTest --tests "dev.dotscale.coffee.label.*" -PlabelsExpected=<carpeta>/expected.tsv
+adb -s <serial> shell mkdir -p /sdcard/Android/data/dev.josueamaya.pourline/files/labels
+adb -s <serial> push <carpeta>/. /sdcard/Android/data/dev.josueamaya.pourline/files/labels/
+adb -s <serial> shell am instrument -w -e class dev.josueamaya.pourline.coffee.label.LabelFixtureCaptureTest \
+  -e labelsCapture true dev.josueamaya.pourline.test/androidx.test.runner.AndroidJUnitRunner
+adb -s <serial> pull /sdcard/Android/data/dev.josueamaya.pourline/files/labels-out/. app/src/test/resources/labels/
+adb -s <serial> pull /sdcard/Android/data/dev.josueamaya.pourline/files/labels-report/report.txt <carpeta>/report.txt
+./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.coffee.label.*" -PlabelsExpected=<carpeta>/expected.tsv
 ```
 
 `report.txt` se trae a la carpeta de las fotos, fuera del repo, porque repite los nombres esperados.
@@ -926,12 +926,12 @@ provisional desde las barras superiores (F0.3).
 
 **Navegación:**
 - `NavigationKeys.kt`: `Coffees`, `CoffeeDetail(id)` y `CoffeeEdit(id, fromCoffeeId)` (§3.6 del spec). La
-  clave `CoffeeDetail` convive con el modelo `dev.dotscale.coffee.CoffeeDetail`; ningún archivo necesita los
+  clave `CoffeeDetail` convive con el modelo `dev.josueamaya.pourline.coffee.CoffeeDetail`; ningún archivo necesita los
   dos (si hiciera falta, alias de importación).
 - `Navigation.kt`: las tres entradas con sus ViewModels, `onOpenCoffees` en Scan y Scale, `onOpenBrew` desde
   la bitácora y la navegación de D24 (`backStack[backStack.lastIndex] = CoffeeDetail(id)` para "Nueva bolsa").
 
-**Archivos** (`app/src/main/kotlin/dev/dotscale/ui/coffees/`, nuevos salvo indicación):
+**Archivos** (`app/src/main/kotlin/dev/josueamaya/pourline/ui/coffees/`, nuevos salvo indicación):
 
 | Archivo | Contenido |
 |---|---|
@@ -975,7 +975,7 @@ Commit sugerido: `feat(coffee): add coffee list, detail and editor screens`.
 **Objetivo:** el selector de §3.6 del spec con su regla de habilitado, la congelación en `Active` y el
 guardado con el café.
 
-**Archivos** (`app/src/main/kotlin/dev/dotscale/ui/scale/`):
+**Archivos** (`app/src/main/kotlin/dev/josueamaya/pourline/ui/scale/`):
 
 | Archivo | Cambio |
 |---|---|
@@ -995,7 +995,7 @@ guardado con el café.
 | `androidTest/.../ui/scale/CoffeeSelectorTest.kt` (nuevo) | **Selector de café con la báscula simulada**: `ScaleScreen` con `SimulatedScaleConnection`, Room en memoria y un café → `coffee_trigger` → la fila → "+15 g" → "Fijar dosis" → "Simular vertido estable" → `coffee_trigger` deshabilitado en `Active` → "Terminar" → la preparación guardada tiene `coffeeId`, `coffee` y aparece en `coffee(id).brews` con el stock descontado. |
 | `androidTest/.../ui/scale/BrewChartCardTargetTest.kt` | El chip pasa a la fila "Objetivo" (mismo `testTag`; el texto es el nombre). Fila "Café" deshabilitada en `Active`. |
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.ui.scale.*"`, `./gradlew :app:lintDebug`
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.ui.scale.*"`, `./gradlew :app:lintDebug`
 y los dos tests de Compose con `connectedDebugAndroidTest`.
 
 Commit sugerido: `feat(scale): pick the coffee before pouring`.
@@ -1043,7 +1043,7 @@ por catálogo.
 - `androidTest/.../history/BrewDaoTest.kt`: filtro por `coffeeId`, `coffeeOptions` con archivados y
   `applyDetails` sin tocar `coffee`.
 
-**Verificación:** `./gradlew :app:compileDebugKotlin`, `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.ui.history.*" --tests "dev.dotscale.history.*"`,
+**Verificación:** `./gradlew :app:compileDebugKotlin`, `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.ui.history.*" --tests "dev.josueamaya.pourline.history.*"`,
 `./gradlew :app:lintDebug` y los tests anteriores con `connectedDebugAndroidTest`.
 
 Commit sugerido: `feat(history): link brews to coffees with rating and tasting notes`.
@@ -1052,7 +1052,7 @@ Commit sugerido: `feat(history): link brews to coffees with rating and tasting n
 
 **Objetivo:** las cuatro imágenes de F0.4 y su envío (§3.7 del spec).
 
-**Archivos** (`app/src/main/kotlin/dev/dotscale/share/`, nuevos):
+**Archivos** (`app/src/main/kotlin/dev/josueamaya/pourline/share/`, nuevos):
 
 | Archivo | Contenido |
 |---|---|
@@ -1060,7 +1060,7 @@ Commit sugerido: `feat(history): link brews to coffees with rating and tasting n
 | `ShareSpec.kt` | `val SHARE_SIZE = DpSize(360.dp, 450.dp)`, `SHARE_DENSITY = 3f` (D1) y `val SHARE_CHART_MIN_HEIGHT = 144.dp` (D2). Un solo formato para las cuatro imágenes. |
 | `ShareFrame.kt` | El marco común de F0.4. |
 | `CoffeeShareCard.kt`, `BrewShareCard.kt`, `CompareShareCard.kt`, `ShareCoffeeFooter.kt` | Las tarjetas de F0.4. `BrewShareCard` sirve para el resumen y el detalle (sin nota y con nota). La gráfica va con `Modifier.weight(1f).testTag("share_chart")` y `fillHeight = true`: `Chart` (`ui/scale`) en `BrewShareCard` y `CompareChart` (`CompareKind` de agua) en `CompareShareCard`. La tabla usa `compareRows` filtrado a `TOTAL_TIME`, `TOTAL_WATER`, `RATIO` y `STABILITY`; `formatValue` y `formatDiff` de `BrewCompareScreen.kt` pasan a `internal`. |
-| `ShareCapture.kt` | `ShareCaptureHost(request: ShareRequest?, onCaptured: (ImageBitmap) -> Unit, onFailed: () -> Unit)` (D30) con `DotScaleTheme(darkTheme = false)` y `LocalDensity` fija. |
+| `ShareCapture.kt` | `ShareCaptureHost(request: ShareRequest?, onCaptured: (ImageBitmap) -> Unit, onFailed: () -> Unit)` (D30) con `PourlineTheme(darkTheme = false)` y `LocalDensity` fija. |
 | `ShareImages.kt` | `class ShareImages(context)`: `suspend fun write(bitmap: ImageBitmap, name: String): File` (borra `cacheDir/shared/*` y escribe el PNG en `IO`), `uri(file)` (`FileProvider`, `${packageName}.fileprovider`) y `chooser(uri, title)`: `ACTION_SEND`, `image/png`, `EXTRA_STREAM`, `FLAG_GRANT_READ_URI_PERMISSION` y `Intent.createChooser`. |
 | `ShareSender.kt` | `fun interface ShareSender` y `rememberShareSender()` (`context.startActivity`). |
 | `ShareLauncher.kt` | `rememberShareLauncher(sender): ShareLauncher` que encadena carga de la foto (`CoffeeImages.photo`), captura, escritura y envío; un fallo muestra `AntMessage(Error, "No se pudo generar la imagen")` y no abre el selector (§4). |
@@ -1093,11 +1093,11 @@ Commit sugerido: `feat(history): link brews to coffees with rating and tasting n
 - `androidTest/.../share/ShareIntentTest.kt`: **compartir lanza un `ACTION_SEND` con un `image/png`**: en
   `CoffeeDetailScreen` con un `ShareSender` falso, un toque en `coffee_detail_share` produce un chooser cuyo
   `EXTRA_INTENT` es `ACTION_SEND`, `image/png`, con `EXTRA_STREAM` de la autoridad
-  `dev.dotscale.fileprovider` y `FLAG_GRANT_READ_URI_PERMISSION`; el PNG se decodifica a 1080 × 1350.
+  `dev.josueamaya.pourline.fileprovider` y `FLAG_GRANT_READ_URI_PERMISSION`; el PNG se decodifica a 1080 × 1350.
   Compartir dos veces deja un solo archivo en `cacheDir/shared/`. Lo mismo para `BrewDetailScreen`,
   `BrewCompareScreen` y `BrewSummaryCard`, también de 1080 × 1350.
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.share.*"`, `./gradlew :app:lintDebug`
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.share.*"`, `./gradlew :app:lintDebug`
 y los dos tests de Compose con `connectedDebugAndroidTest`.
 
 Commit sugerido: `feat(share): share coffee cards and brew charts as images`.
@@ -1225,7 +1225,7 @@ una apertura de calentamiento que no cuenta y la mediana de 5:
 ### 7.3 E2E por adb (emulador, báscula simulada, sin ARTEMIS)
 
 Antes: `adb devices -l` (si hay más de uno, preguntar cuál usar), `./gradlew :app:installDebug`,
-`adb shell pm clear dev.dotscale`, `pm grant` de `BLUETOOTH_SCAN` y `BLUETOOTH_CONNECT`, "Fin automático" a
+`adb shell pm clear dev.josueamaya.pourline`, `pm grant` de `BLUETOOTH_SCAN` y `BLUETOOTH_CONNECT`, "Fin automático" a
 30 s, y una etiqueta real en la galería:
 `adb push ~/Downloads/coffee-bags/<una foto>.jpg /sdcard/Pictures/` y
 `adb shell content call --method scan_volume --uri content://media --arg external_primary`.
@@ -1242,12 +1242,12 @@ o "Borrar" se desplaza con `adb shell input swipe 540 1800 540 600` y se vuelve 
 | 4 | "+15 g" → "Fijar dosis" → "Simular vertido estable" → fin → "Añadir detalles" → 4 estrellas y nota → "Guardar" | El selector se deshabilita durante el vertido |
 | 5 | Scale → Cafés → el café | La bitácora se ve sin desplazar, debajo del estado, con la preparación (fecha, "Día N", 4 estrellas y la nota). "Quedan 235 g" |
 | 6 | Historial → filtro "Café" → el café → la fila → el café en "Cata" | Solo esa preparación, con estrellas; la tarjeta "Cata" abre el detalle del café |
-| 7 | `adb shell am force-stop dev.dotscale` → Scale | El café sigue preseleccionado (`lastCoffeeId`) |
+| 7 | `adb shell am force-stop dev.josueamaya.pourline` → Scale | El café sigue preseleccionado (`lastCoffeeId`) |
 | 8 | Detalle de la preparación → "Borrar" → Cafés → el café | "Quedan 250 g" |
-| 9 | Detalle del café → compartir → elegir una app; después, detalle de una preparación → compartir | 2 toques. `adb shell run-as dev.dotscale ls cache/shared` muestra un solo PNG; se copia con `adb exec-out run-as dev.dotscale cat cache/shared/<archivo> > /tmp/...` y se revisa a ojo (las dos de 1080 × 1350, con el café al pie y la gráfica legible) |
+| 9 | Detalle del café → compartir → elegir una app; después, detalle de una preparación → compartir | 2 toques. `adb shell run-as dev.josueamaya.pourline ls cache/shared` muestra un solo PNG; se copia con `adb exec-out run-as dev.josueamaya.pourline cat cache/shared/<archivo> > /tmp/...` y se revisa a ojo (las dos de 1080 × 1350, con el café al pie y la gráfica legible) |
 | 10 | Detalle del café → "Nueva bolsa" → fecha de tueste → "Guardar" | Datos copiados sin fechas ni fotos; se abre el detalle de la bolsa nueva; en la lista, dos filas distinguidas por la fecha |
 | 11 | Editar la bolsa nueva con peso 15 g → otro vertido con dosis 15 g → su detalle | "Agotado" y "Archivar" → archivada: desaparece del selector de Scale y sigue en el filtro del historial |
-| 12 | Detalle del café original → "Borrar" → confirmar | El historial conserva el nombre en sus preparaciones; `adb shell run-as dev.dotscale ls files/coffee_photos` ya no tiene sus archivos |
+| 12 | Detalle del café original → "Borrar" → confirmar | El historial conserva el nombre en sus preparaciones; `adb shell run-as dev.josueamaya.pourline ls files/coffee_photos` ya no tiene sus archivos |
 | 13 | `adb shell cmd connectivity airplane-mode enable` → alta con foto | El OCR funciona sin red. `adb logcat -b crash -d` vacío durante todo el recorrido |
 
 ## 8. Seguimiento fuera de este plan
