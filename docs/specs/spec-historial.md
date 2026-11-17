@@ -5,7 +5,7 @@
 | Estado | Implementado (F0–F6). Plan: [`plan-historial.md`](plan-historial.md) |
 | Fecha | 2026-11-12 |
 | Deriva de | [SPEC-001 Gráfica de vertido](spec-grafica-vertido.md) (Anexo y punto P1 de su [plan](plan-grafica-vertido.md)) |
-| Módulos afectados | `:app` (nuevo paquete `dev.dotscale.history`, nuevo `ui/history`, `brew`, `ui/scale`, `ui/components`, navegación) |
+| Módulos afectados | `:app` (nuevo paquete `dev.josueamaya.pourline.history`, nuevo `ui/history`, `brew`, `ui/scale`, `ui/components`, navegación) |
 | Specs relacionados | [SPEC-003 Curva objetivo](spec-curva-objetivo.md), [SPEC-004 Catálogo de cafés y compartir imagen](spec-catalogo-cafes.md) |
 
 ## 1. Resumen y Contexto
@@ -84,11 +84,11 @@
 
 | Elemento | Ubicación | Tipo |
 |---|---|---|
-| Base de datos, entidades, DAO y repositorio | `app/src/main/kotlin/dev/dotscale/history/` | Room |
-| Codificación de la curva y minicurva | `app/src/main/kotlin/dev/dotscale/history/` (`BrewCurveCodec`, `BrewPreview`) | Kotlin puro, sin `android.*` |
-| Pantallas de historial, detalle y edición | `app/src/main/kotlin/dev/dotscale/ui/history/` | Compose |
-| Singletons (base de datos, repositorio, `applicationScope`) | `DotScaleApp` | Existente |
-| Efectos de fin y del temporizador | `dev.dotscale.brew.BrewSession` | Existente, cambia el contrato (§3.5) |
+| Base de datos, entidades, DAO y repositorio | `app/src/main/kotlin/dev/josueamaya/pourline/history/` | Room |
+| Codificación de la curva y minicurva | `app/src/main/kotlin/dev/josueamaya/pourline/history/` (`BrewCurveCodec`, `BrewPreview`) | Kotlin puro, sin `android.*` |
+| Pantallas de historial, detalle y edición | `app/src/main/kotlin/dev/josueamaya/pourline/ui/history/` | Compose |
+| Singletons (base de datos, repositorio, `applicationScope`) | `PourlineApp` | Existente |
+| Efectos de fin y del temporizador | `dev.josueamaya.pourline.brew.BrewSession` | Existente, cambia el contrato (§3.5) |
 | Guardado al terminar y "Añadir detalles" | `ScaleViewModel`, `ScaleUiState`, `BrewSummaryCard` | Existentes |
 | Navegación | `NavigationKeys.kt`, `Navigation.kt` | Existentes |
 | Componentes nuevos | `ui/components/` (`AntSelect`, `AntAutoComplete`, acción en `AntMessage`, icono `AntIcons.History`) | Compose |
@@ -140,7 +140,7 @@ Los enums se guardan por nombre (`TypeConverter`), no por ordinal.
 | `data` | `ByteArray` (BLOB) | Muestras y vertidos codificados (§3.4) |
 
 ```kotlin
-package dev.dotscale.history
+package dev.josueamaya.pourline.history
 
 enum class BrewMethod { V60, KALITA_WAVE, CHEMEX, ORIGAMI, AEROPRESS, OTHER }
 
@@ -176,7 +176,7 @@ data class ProgressPoint(val brewId: Long, val startedAtEpochMs: Long, val score
 
 ### 3.3 Contrato del repositorio
 
-`BrewRepository` es un singleton en `DotScaleApp`. Todas sus funciones `suspend` corren en
+`BrewRepository` es un singleton en `PourlineApp`. Todas sus funciones `suspend` corren en
 `Dispatchers.IO`.
 
 ```kotlin
@@ -395,7 +395,7 @@ data class FinishedBrew(
 - "Borrar" llama a `delete(id)` y vuelve a la lista.
 - `delete` guarda la fila y la curva borradas en `BrewRepository.pendingUndo:
   StateFlow<DeletedBrew?>`.
-  - Vive en el repositorio, el singleton de `DotScaleApp`, porque el detalle y la lista tienen
+  - Vive en el repositorio, el singleton de `PourlineApp`, porque el detalle y la lista tienen
     ViewModels distintos y Navigation 3 no tiene una API para devolver resultados a la pantalla
     anterior.
 - `HistoryScreen` observa `pendingUndo` y, cuando no es `null`, muestra un `AntMessage`
@@ -512,7 +512,7 @@ Tomadas en el [plan](plan-historial.md) y durante la implementación.
 **Funcionales** (verificables con la báscula simulada):
 - [x] Toda sesión terminada aparece en el historial sin pulsar nada, con su curva y su resumen.
 - [x] Salir de Scale con una sesión activa la guarda como `MANUAL`.
-- [x] Tras `adb shell am kill dev.dotscale` y volver a abrir la app, las preparaciones siguen en el
+- [x] Tras `adb shell am kill dev.josueamaya.pourline` y volver a abrir la app, las preparaciones siguen en el
       historial.
 - [x] Desde Scan, una preparación se abre en dos toques (icono de historial y fila).
 - [x] "Añadir detalles" en el resumen abre la edición de esa preparación, y los datos guardados
@@ -538,7 +538,7 @@ cuenta, y el resultado es la mediana de 5 aperturas:
 - [x] El detalle muestra la gráfica en menos de 500 ms desde que se pulsa la fila.
 - [x] `history.db` (con `-wal` y `-shm`) ocupa menos de 10 MB.
 
-**Pruebas JVM** (`app/src/test/kotlin/dev/dotscale/`):
+**Pruebas JVM** (`app/src/test/kotlin/dev/josueamaya/pourline/`):
 - [x] `BrewCurveCodecTest`:
   - Ida y vuelta con muestras válidas e inválidas, `stability` nula y no nula, y vertidos.
   - Error de 0,005 o menos en `waterG` y `flowGps`.
@@ -559,7 +559,7 @@ cuenta, y el resultado es la mediana de 5 aperturas:
     `resetTimer` falla, `startTimer` se envía igualmente y el error llega a `errors`.
 - [x] Lógica de la serie de progreso y del filtro, si queda fuera del DAO.
 
-**Pruebas instrumentadas** (`app/src/androidTest/kotlin/dev/dotscale/`):
+**Pruebas instrumentadas** (`app/src/androidTest/kotlin/dev/josueamaya/pourline/`):
 - [x] `BrewDaoTest` con Room en memoria:
   - Insertar y leer.
   - `list` sin la curva, más reciente primero.

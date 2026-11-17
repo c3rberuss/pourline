@@ -5,7 +5,7 @@
 | Estado | Implementado (F0–F7) en `feat/target-curve`; pendiente de validación con la DOT física. Plan: [`plan-curva-objetivo.md`](plan-curva-objetivo.md) |
 | Fecha | 2026-11-12 |
 | Deriva de | [SPEC-001 Gráfica de vertido](spec-grafica-vertido.md) (Anexo) y [SPEC-002 Historial](spec-historial.md) (alcance Out) |
-| Módulos afectados | `:app` (nuevo paquete `dev.dotscale.recipe`, nuevo `ui/recipes`, `brew`, `history`, `settings`, `sim`, `ui/scale`, `ui/history`, `ui/settings`, `ui/components`, navegación) |
+| Módulos afectados | `:app` (nuevo paquete `dev.josueamaya.pourline.recipe`, nuevo `ui/recipes`, `brew`, `history`, `settings`, `sim`, `ui/scale`, `ui/history`, `ui/settings`, `ui/components`, navegación) |
 | Specs relacionados | [SPEC-004 Catálogo de cafés y compartir imagen](spec-catalogo-cafes.md) |
 
 ## 1. Resumen y Contexto
@@ -142,19 +142,19 @@
 
 | Elemento | Ubicación | Tipo |
 |---|---|---|
-| Curva objetivo, escalado, guía, avisos de etapa y métrica de ajuste | `app/src/main/kotlin/dev/dotscale/brew/` (`TargetCurve`, `TargetGuide`, `StageAlertTracker`, `BrewFit`, `TargetConfig`) | Kotlin puro, sin `android.*` |
-| Receta, validación y conversión desde una preparación | `app/src/main/kotlin/dev/dotscale/recipe/` (`Recipe`, `RecipeValidator`, `RecipeFromBrew`, `BuiltInRecipes`) | Kotlin puro |
-| Entidades, DAO y repositorio de recetas | `app/src/main/kotlin/dev/dotscale/recipe/` (`RecipeEntity`, `RecipeStageEntity`, `RecipeDao`, `RecipeRepository`) | Room, en `HistoryDatabase` |
-| Copia de la curva objetivo, columnas nuevas y migración 1→2 | `app/src/main/kotlin/dev/dotscale/history/` (`BrewTargetEntity`, `TargetCurveCodec`, `Migrations`) | Room y Kotlin puro |
-| Referencia activa y preferencias de avisos | `dev.dotscale.settings` (`TargetSettings`) | `SharedPreferences "settings"` |
-| Vibración y sonido | `dev.dotscale.brew` define la interfaz `StageNotifier`; la implementación Android va en `dev.dotscale.settings` o `ui/scale` (se decide en el plan) | Android |
-| Pantallas de recetas y editor | `app/src/main/kotlin/dev/dotscale/ui/recipes/` | Compose |
+| Curva objetivo, escalado, guía, avisos de etapa y métrica de ajuste | `app/src/main/kotlin/dev/josueamaya/pourline/brew/` (`TargetCurve`, `TargetGuide`, `StageAlertTracker`, `BrewFit`, `TargetConfig`) | Kotlin puro, sin `android.*` |
+| Receta, validación y conversión desde una preparación | `app/src/main/kotlin/dev/josueamaya/pourline/recipe/` (`Recipe`, `RecipeValidator`, `RecipeFromBrew`, `BuiltInRecipes`) | Kotlin puro |
+| Entidades, DAO y repositorio de recetas | `app/src/main/kotlin/dev/josueamaya/pourline/recipe/` (`RecipeEntity`, `RecipeStageEntity`, `RecipeDao`, `RecipeRepository`) | Room, en `HistoryDatabase` |
+| Copia de la curva objetivo, columnas nuevas y migración 1→2 | `app/src/main/kotlin/dev/josueamaya/pourline/history/` (`BrewTargetEntity`, `TargetCurveCodec`, `Migrations`) | Room y Kotlin puro |
+| Referencia activa y preferencias de avisos | `dev.josueamaya.pourline.settings` (`TargetSettings`) | `SharedPreferences "settings"` |
+| Vibración y sonido | `dev.josueamaya.pourline.brew` define la interfaz `StageNotifier`; la implementación Android va en `dev.josueamaya.pourline.settings` o `ui/scale` (se decide en el plan) | Android |
+| Pantallas de recetas y editor | `app/src/main/kotlin/dev/josueamaya/pourline/ui/recipes/` | Compose |
 | Selector de objetivo y guía en Scale | `ui/scale/` (`TargetPicker`, `BrewChartCard`, `BrewSummaryCard`) | Compose |
 | Selector de B y vista de comparación | `ui/history/` (`ComparePickScreen`, `BrewCompareScreen`) | Compose |
 | Curva objetivo en la gráfica | `ui/scale/BrewChart.kt` (parámetro `target`) | Existente, se amplía |
 | Ajustes | `ui/settings/SettingsScreen.kt` | Existente, se amplía |
 | Simulador | `sim/` (`SimulatedTargetPour`, `SimulatedScaleConnection.simulatePour`) | Existente, se amplía |
-| Singletons (`RecipeRepository`, `TargetSettings`) | `DotScaleApp` | Existente |
+| Singletons (`RecipeRepository`, `TargetSettings`) | `PourlineApp` | Existente |
 
 **Dependencias nuevas:** ninguna. **Permiso nuevo:** `android.permission.VIBRATE` (permiso normal, sin
 diálogo).
@@ -164,7 +164,7 @@ diálogo).
 Todas las magnitudes se guardan en gramos, milisegundos y °C.
 
 ```kotlin
-package dev.dotscale.recipe
+package dev.josueamaya.pourline.recipe
 
 data class Recipe(
   val id: Long = 0,
@@ -240,7 +240,7 @@ usan el método `V60`:
 ### 3.3 Curva objetivo
 
 ```kotlin
-package dev.dotscale.brew
+package dev.josueamaya.pourline.brew
 
 data class TargetPoint(val tMs: Long, val waterG: Double)
 
@@ -354,7 +354,7 @@ object TargetGuide {
   de peso y del tick. La curva objetivo y su versión reducida para dibujar se calculan solo al
   cambiar la referencia, el factor de escala o la unidad, nunca en cada muestra.
 
-**`TargetConfig`** (constantes, en `dev.dotscale.brew`):
+**`TargetConfig`** (constantes, en `dev.josueamaya.pourline.brew`):
 
 | Constante | Valor |
 |---|---|
@@ -460,7 +460,7 @@ Las diferencias se derivan de estas columnas y del resumen; no se guardan aparte
 ### 3.7 Contratos de repositorios, ajustes y ViewModels
 
 ```kotlin
-package dev.dotscale.recipe
+package dev.josueamaya.pourline.recipe
 
 class RecipeRepository(db: HistoryDatabase) {
   fun list(): Flow<List<RecipeListItem>>           // por nombre, sin distinguir mayúsculas
@@ -487,7 +487,7 @@ data class RecipeListItem(
   - `BrewRecord` gana `target: TargetCurve?` y `targetError: Boolean`.
 
 ```kotlin
-package dev.dotscale.settings
+package dev.josueamaya.pourline.settings
 
 sealed interface ReferenceKey {
   data class Recipe(val id: Long) : ReferenceKey
@@ -794,7 +794,7 @@ descrito en §3.1–§3.11, mandan estas.
 |---|---|---|---|
 | D1 | Orden de fases | Recetas (F4) va antes que Scale (F5), al revés que en el §8 del spec. | El selector de objetivo reutiliza `RecipeRow` y navega a `Recipes`, y `TargetSettings` hace falta ya para los ajustes de avisos. |
 | D2 | Dependencias del ViewModel | `ScaleViewModel` recibe tres interfaces: `ReferenceStore` (`reference: StateFlow<ReferenceKey?>` y `setReference`, implementada por `TargetSettings`), `TargetReferences` (`recipe(id): Flow<Recipe?>` y `brew(id): Flow<BrewRecord?>`, implementada por `RepositoryTargetReferences(recipeRepository, brewRepository)`) y `StageNotifier`. | Igual que `BrewSaver` (D2 de SPEC-002): `SharedPreferences` y Room necesitan Android, y no hay Robolectric ni mockk. |
-| D3 | `StageNotifier` (cierra la opción abierta del §3.1) | Interfaz `StageNotifier { fun stageStarted(stage: TargetStage); fun release() }` en `dev.dotscale.brew`. Implementación `AndroidStageNotifier(context, settings)` en `ui/scale`. Vibración con `VibratorManager.defaultVibrator` en API 31+ (y `Vibrator` antes), solo si `hasVibrator()`. `ToneGenerator(STREAM_NOTIFICATION, 80)` creado la primera vez que hace falta; si su constructor lanza, el sonido se omite. Lee los dos ajustes en cada aviso. `release()` se llama en `ScaleViewModel.onCleared()`. | Solo lo usa Scale, y `ToneGenerator` guarda recursos nativos que hay que liberar. |
+| D3 | `StageNotifier` (cierra la opción abierta del §3.1) | Interfaz `StageNotifier { fun stageStarted(stage: TargetStage); fun release() }` en `dev.josueamaya.pourline.brew`. Implementación `AndroidStageNotifier(context, settings)` en `ui/scale`. Vibración con `VibratorManager.defaultVibrator` en API 31+ (y `Vibrator` antes), solo si `hasVibrator()`. `ToneGenerator(STREAM_NOTIFICATION, 80)` creado la primera vez que hace falta; si su constructor lanza, el sonido se omite. Lee los dos ajustes en cada aviso. `release()` se llama en `ScaleViewModel.onCleared()`. | Solo lo usa Scale, y `ToneGenerator` guarda recursos nativos que hay que liberar. |
 | D4 | `fromBrew` | La firma es `TargetCurve.fromBrew(samples, pours, totalTimeMs)`. | El caso sin vertidos necesita `totalTimeMs` para su única etapa (§3.3). |
 | D5 | Guía | `GuideState` gana `allStagesDone: Boolean` (`tMs ≥ target.endMs`), que pinta "Última etapa completada". Antes de una primera etapa con `startMs > 0`: `stage = null` y `nextStage` = la primera. Cuenta atrás: `ceil((next.startMs − tMs) / 1000)` si queda entre 1 ms y 5000 ms. Niveles con tolerancia `1e-9`, inclusivos en el 5 % y el 10 %. `tMs = clock() − t0MonoMs`; `waterG` es el de la última muestra si es válida y `null` si no. | El spec no dice cómo pintar el final ni el hueco previo a la primera etapa, y los límites se prueban en sus bordes. |
 | D6 | Reloj y avisos | `BrewState.t0MonoMs` no es nulo en `Active` ni en `Finished` (por defecto `null`, para no romper previews y tests). `StageAlertTracker.update(t0MonoMs, target, tMs): TargetStage?` se reinicia cuando cambia `t0MonoMs`. El tracker y el notifier se llaman después de `_ui.update`, nunca dentro. | El bloque de `update` puede reintentarse, y un efecto ahí dentro repetiría avisos. Usar t0 como clave reinicia el tracker con cada sesión sin más estado. |
@@ -934,7 +934,7 @@ descrito en §3.1–§3.11, mandan estas.
 - [x] `history.db` sigue por debajo de 10 MB con 500 preparaciones de 4 min, todas con curva
       objetivo.
 
-**Pruebas JVM** (`app/src/test/kotlin/dev/dotscale/`):
+**Pruebas JVM** (`app/src/test/kotlin/dev/josueamaya/pourline/`):
 - [x] `TargetCurveTest`:
   - `fromRecipe` con rampas y mesetas, y con la primera etapa empezando después de 0.
   - `waterAt` antes, dentro y después de la curva.
@@ -980,7 +980,7 @@ descrito en §3.1–§3.11, mandan estas.
   - `BrewContext` con `target` y `details`.
   - Avisos hacia el notifier.
 
-**Pruebas instrumentadas** (`app/src/androidTest/kotlin/dev/dotscale/`):
+**Pruebas instrumentadas** (`app/src/androidTest/kotlin/dev/josueamaya/pourline/`):
 - [x] `HistoryMigrationTest` (`MigrationTestHelper`, versión 1 → 2).
 - [x] `RecipeDaoTest` con Room en memoria:
   - Guardar con etapas y leer.

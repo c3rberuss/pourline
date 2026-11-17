@@ -30,7 +30,7 @@ plugins {
   id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-rootProject.name = "Dot Scale"
+rootProject.name = "Pourline"
 
 include(":app")
 include(":protocol")

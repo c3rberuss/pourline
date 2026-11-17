@@ -40,11 +40,11 @@ leer sus datos y enviarle comandos. El protocolo binario que hay debajo se descr
 
 | Módulo | Paquete | Depende de Android | Responsabilidad |
 |---|---|---|---|
-| `protocol` | `dev.dotscale.protocol` | **No** | Codificar y decodificar tramas, interpretar mensajes, construir comandos |
-| `app` | `dev.dotscale.ble` | Sí | Escaneo BLE y conexión GATT |
-| `app` | `dev.dotscale.sim` | No (solo coroutines) | Báscula simulada |
-| `app` | `dev.dotscale.scale` | No | Contrato `ScaleConnection` |
-| `app` | `dev.dotscale.ui.*` | Sí | Pantallas Compose y ViewModels |
+| `protocol` | `dev.josueamaya.pourline.protocol` | **No** | Codificar y decodificar tramas, interpretar mensajes, construir comandos |
+| `app` | `dev.josueamaya.pourline.ble` | Sí | Escaneo BLE y conexión GATT |
+| `app` | `dev.josueamaya.pourline.sim` | No (solo coroutines) | Báscula simulada |
+| `app` | `dev.josueamaya.pourline.scale` | No | Contrato `ScaleConnection` |
+| `app` | `dev.josueamaya.pourline.ui.*` | Sí | Pantallas Compose y ViewModels |
 
 Como `protocol` es Kotlin puro, se puede reutilizar en otro proyecto (Kotlin Multiplatform,
 servidor, herramientas de línea de comandos) y se prueba sin emulador.

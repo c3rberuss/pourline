@@ -138,7 +138,7 @@ Las de F0 a F6 las dio quien encargó F7 y F8; las de F7 y F8 son de esta ejecuc
   la tara con la trama de confirmación (`Cmd.TARE`, que el parser convierte en `ScaleMessage.Tared(true)`).
 - Componentes: `AntDrawer` (hoja inferior), `AntModal`, `AntSegmented`, `AntSwitch`, `AntCard`, `AntAlert`
   (con `action`), `AntInput`, `AntProgress`, `AntStatistic`, `AntTag`, `AntTopBar(navigationIcon, actions)`,
-  `AntButton`, `AntIconButton`, `AntMessageHost` + `showAntMessage`. Tema: `DotScaleTheme(darkTheme)` y
+  `AntButton`, `AntIconButton`, `AntMessageHost` + `showAntMessage`. Tema: `PourlineTheme(darkTheme)` y
   `AntTheme`.
 - Navigation 3 1.0.1: `rememberNavBackStack`, `rememberDecoratedNavEntries(backStack, entryDecorators,
   entryProvider)`, `NavDisplay(entries, ..., onBack)`, `rememberSaveableStateHolderNavEntryDecorator` y
@@ -151,7 +151,7 @@ Las de F0 a F6 las dio quien encargó F7 y F8; las de F7 y F8 son de esta ejecuc
 **Falta o hay que corregir:**
 - La conexión y la sesión viven en el `ScaleViewModel` de la entrada `Scale`; su `onCleared` termina la sesión,
   la guarda y desconecta. La navegación es una sola pila (`rememberNavBackStack(Scan)`) y todas las entradas
-  sacan las dependencias con `appContext as DotScaleApp`.
+  sacan las dependencias con `appContext as PourlineApp`.
 - `ThemeSettings` se crea en `MainActivity` y se expone con `LocalThemeSettings`; `ThemeModeButton` está en
   los topbars de Scan y Scale, junto a los iconos de sección (`scan_open_coffees`, `scale_open_coffees`).
 - **El protocolo no trae bandera de peso estable** (`ScaleMessage.Weight`: `rawWeight`, `rawFlow`, `seconds`,
@@ -474,8 +474,8 @@ En Básico no se muestra la vista previa de la curva (`recipe_edit_preview`).
   `progressBarRangeInfo`.
 
 **Verificación:** `./gradlew :app:compileDebugKotlin`,
-`./gradlew :app:testDebugUnitTest --tests "dev.dotscale.ui.components.*"`,
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.components.AntComponentsTest`,
+`./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.ui.components.*"`,
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.components.AntComponentsTest`,
 `./gradlew :app:lintDebug` y revisión de las previews en claro y oscuro.
 
 Commit sugerido: `feat(ui): add tab bar, circular progress, page indicator and choice modal components`.
@@ -499,14 +499,14 @@ los tests actuales intactos como red.
   `ViewModel`: conecta, publica un peso y `close()` termina y guarda una sesión `Active` con
   `FinishReason.MANUAL`.
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.ui.scale.*" --tests "dev.dotscale.session.*"` y
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.BrewChartTest,dev.dotscale.ui.scale.CoffeeSelectorTest`.
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.ui.scale.*" --tests "dev.josueamaya.pourline.session.*"` y
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.BrewChartTest,dev.josueamaya.pourline.ui.scale.CoffeeSelectorTest`.
 
 Commit sugerido: `refactor(scale): extract the brew session logic into ScaleSessionManager`.
 
 ### F2. Gestor a nivel de app
 
-**Objetivo:** el gestor vive en `DotScaleApp`, crea la conexión al conectar, recuerda la última báscula real y
+**Objetivo:** el gestor vive en `PourlineApp`, crea la conexión al conectar, recuerda la última báscula real y
 solo alimenta la `BrewSession` cuando está armado (D15, D16, D28). La app sigue funcionando como hoy: Scan →
 Scale, y salir de Scale con "Atrás" desconecta (provisional hasta F6).
 
@@ -521,7 +521,7 @@ Scale, y salir de Scale con "Atrás" desconecta (provisional hasta F6).
 | `session/ScaleSessionManager.kt` | El constructor cambia `connection` por `connections: ScaleConnectionFactory` y añade `memory: ScaleMemory = NoScaleMemory`. Nuevos: `val target: StateFlow<ScaleTarget?>`, `fun connect(target: ScaleTarget)` (si hay otra, termina y guarda una sesión `Active` y la cierra), `fun retry()`, `fun disconnect()` (termina y guarda una sesión `Active` con `MANUAL`, como hoy al salir, y desarma), `fun arm()`, `fun disarm()` (D16) y `val isArmed`. `remember` al llegar a `Ready` con `ScaleTarget.Real`. `isSimulated` sale del destino. El tick de 1 s corre siempre. `connect()` sin argumentos y `close()` desaparecen. |
 | `session/ScaleUiState.kt`, `session/ScaleCoffees.kt`, `session/TargetReferences.kt` | `git mv` desde `ui/scale/` (D14). |
 | `ui/scale/ScaleViewModel.kt` | Se borra. |
-| `DotScaleApp.kt` | `connectionSettings` y `scaleSession` (`MainScope()`, `AndroidScaleConnections(this)`, `memory = connectionSettings` y las dependencias de hoy). |
+| `PourlineApp.kt` | `connectionSettings` y `scaleSession` (`MainScope()`, `AndroidScaleConnections(this)`, `memory = connectionSettings` y las dependencias de hoy). |
 | `ui/scale/ScaleScreen.kt` | Recibe `session: ScaleSessionManager` en lugar del `ViewModel`; `LaunchedEffect(Unit) { session.arm() }`. |
 | `Navigation.kt` | `entry<Scale>`: `LaunchedEffect(key) { app.scaleSession.connect(key.toTarget(simulatedName)) }` y un `ViewModel` de concesión (`private class ScaleLease(val session: ScaleSessionManager) : ViewModel() { override fun onCleared() = session.disconnect() }`) que desconecta al sacar la entrada de la pila (no al rotar). Provisional hasta F6. |
 
@@ -534,8 +534,8 @@ Scale, y salir de Scale con "Atrás" desconecta (provisional hasta F6).
 | `test/.../session/ScaleSessionManagerConnectionTest.kt` (nuevo) | Recuerda la real al llegar a `Ready` y no antes; la simulada nunca; conectar otra cierra la anterior y guarda la sesión `Active`; `retry` reutiliza el destino; desarmado, un vertido no crea sesión ni guarda nada; armado, sí; desconexión en `Armed` limpia sin guardar; desconexión en `Active` guarda con `DISCONNECTED`; `disconnect()` en `Active` guarda con `MANUAL`. |
 | `androidTest/.../ui/scale/ScaleTestFakes.kt`, `BrewChartTest`, `CoffeeSelectorTest` | Montan el gestor con una fábrica a `SimulatedScaleConnection`, `connect(Simulated)` y pasan el gestor a `ScaleScreen`. |
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.session.*" --tests "dev.dotscale.ui.scale.*"`,
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.BrewChartTest,dev.dotscale.ui.scale.CoffeeSelectorTest,dev.dotscale.ui.SettingsNavigationTest`
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.session.*" --tests "dev.josueamaya.pourline.ui.scale.*"`,
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.BrewChartTest,dev.josueamaya.pourline.ui.scale.CoffeeSelectorTest,dev.josueamaya.pourline.ui.SettingsNavigationTest`
 y un humo por adb: Scan → simulada → "+15 g" → "Fijar dosis" → vertido; rotar
 (`adb shell settings put system accelerometer_rotation 0`, `adb shell settings put system user_rotation 1`) y
 comprobar que la sesión sigue; "Atrás" vuelve a Scan y desconecta.
@@ -558,7 +558,7 @@ para la regla de duración de `WAIT` (D37).
 | `recipe/RecipeEntities.kt` | `RecipeStageEntity` gana `@ColumnInfo(defaultValue = "POUR") val type: StageType = StageType.POUR` y `val instruction: String? = null`. |
 | `history/HistoryConverters.kt` | `StageType` por nombre; un nombre desconocido se lee como `POUR`. |
 | `history/Migrations.kt` | `val MIGRATION_3_4` (D35). `migration1To2` siembra con `SeedSchema.V2` (D38). |
-| `history/HistoryDatabase.kt` | `version = 4`; `.addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4)`. Se genera `app/schemas/dev.dotscale.history.HistoryDatabase/4.json`. |
+| `history/HistoryDatabase.kt` | `version = 4`; `.addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4)`. Se genera `app/schemas/dev.josueamaya.pourline.history.HistoryDatabase/4.json`. |
 | `recipe/BuiltInRecipeSeeder.kt` | `enum class SeedSchema { V2, CURRENT }` y el parámetro de D38. |
 | `recipe/BuiltInRecipes.kt` | Definiciones de D39 (tipo, inicio, agua, duración), nombres e instrucciones por índice. |
 | `recipe/RecipeTexts.kt`, `recipe/ResourcesRecipeTexts.kt` | `builtInStageNames(key): List<String?>` y `builtInStageInstructions(key): List<String?>`. |
@@ -590,8 +590,8 @@ para la regla de duración de `WAIT` (D37).
 | `androidTest/.../recipe/RecipeDaoTest.kt` | Tipo e instrucción se guardan y se leen; "Restaurar" deja las predefinidas con sus `WAIT`; la predefinida en inglés trae nombres e instrucciones en inglés. |
 
 **Verificación:** `./gradlew :app:compileDebugKotlin` (genera `4.json`),
-`./gradlew :app:testDebugUnitTest --tests "dev.dotscale.recipe.*" --tests "dev.dotscale.brew.*" --tests "dev.dotscale.history.*" --tests "dev.dotscale.sim.*" --tests "dev.dotscale.ui.recipes.*"` y
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.history.HistoryMigrationTest,dev.dotscale.recipe.RecipeDaoTest,dev.dotscale.ui.SettingsScreenTest,dev.dotscale.ui.recipes.RecipeEditScreenTest`.
+`./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.recipe.*" --tests "dev.josueamaya.pourline.brew.*" --tests "dev.josueamaya.pourline.history.*" --tests "dev.josueamaya.pourline.sim.*" --tests "dev.josueamaya.pourline.ui.recipes.*"` y
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.history.HistoryMigrationTest,dev.josueamaya.pourline.recipe.RecipeDaoTest,dev.josueamaya.pourline.ui.SettingsScreenTest,dev.josueamaya.pourline.ui.recipes.RecipeEditScreenTest`.
 
 Commit sugerido: `feat(recipe): add typed recipe steps with instructions and migrate the database to v4`.
 
@@ -614,8 +614,8 @@ Commit sugerido: `feat(recipe): add typed recipe steps with instructions and mig
   instrucción y guardar la conserva; la V60 clásica muestra sus 5 pasos con 2 `WAIT`; una receta de 21 pasos
   insertada por SQL muestra el error de recuento y no se guarda hasta reducirla (§4).
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.ui.recipes.*"`,
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.recipes.RecipeEditScreenTest`
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.ui.recipes.*"`,
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.recipes.RecipeEditScreenTest`
 y `./gradlew :app:lintDebug`.
 
 Commit sugerido: `feat(recipes): edit step type and instruction in the recipe editor`.
@@ -634,7 +634,7 @@ en F7 con la misma función.
 | `settings/ExperienceSettings.kt` (nuevo) | `interface ModeStore { val mode: StateFlow<ExperienceMode>; fun setMode(mode: ExperienceMode) }` y `class ExperienceSettings(context, prefsName = BrewSettings.PREFS_NAME) : ModeStore` con `onboardingDone: StateFlow<Boolean>` y `completeOnboarding(mode: ExperienceMode)`. Claves `experience_mode` y `onboarding_done`; un valor desconocido se lee como `BASIC`. |
 | `settings/ThemeSettings.kt`, `BrewSettings.kt`, `TargetSettings.kt` | Parámetro `prefsName` (D32). `LocalThemeSettings` se borra. |
 | `settings/ThemeModeButton.kt` | Se borra; se quita de `ScanScreen` y de `ScaleTopBar`. |
-| `DotScaleApp.kt`, `MainActivity.kt` | `themeSettings` y `experienceSettings` en la app; `MainActivity` los lee de ahí y provee `LocalExperienceMode`. |
+| `PourlineApp.kt`, `MainActivity.kt` | `themeSettings` y `experienceSettings` en la app; `MainActivity` los lee de ahí y provee `LocalExperienceMode`. |
 | `ui/settings/SettingsScreen.kt` | Filas "Modo" y "Apariencia" (F0.3); "Restaurar recetas predefinidas" solo con `RESTORE_BUILT_INS`. Firma: `SettingsScreen(brewSettings, targetSettings, experienceSettings: ModeStore, themeSettings: ThemeSettings, onRestoreRecipes, onBack: (() -> Unit)?)`. |
 | `ui/history/BrewDetailScreen.kt` | `BrewFactsCard` (nueva) y las reglas de D9. |
 | `ui/history/HistoryScreen.kt`, `HistoryRow.kt` | Tarjeta de progreso con `HISTORY_STABILITY_PROGRESS`; `HistoryRow(…, showMetrics: Boolean = true)` (D10). |
@@ -654,8 +654,8 @@ en F7 con la misma función.
 | `androidTest/.../ui/scale/TargetPickerTest.kt` | Con `showBrews = false`, solo recetas. |
 | `androidTest/.../ui/ScaleTopBarTest.kt` | Sin `LocalThemeSettings` ni la aserción de `theme_change`; el resto igual (los iconos de sección se quitan en F6). |
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.settings.*"`,
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.SettingsScreenTest,dev.dotscale.ui.history.BrewDetailScreenTest,dev.dotscale.ui.history.HistoryScreenTest,dev.dotscale.ui.recipes.RecipeEditScreenTest,dev.dotscale.ui.scale.TargetPickerTest,dev.dotscale.ui.ScaleTopBarTest`
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.settings.*"`,
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.SettingsScreenTest,dev.josueamaya.pourline.ui.history.BrewDetailScreenTest,dev.josueamaya.pourline.ui.history.HistoryScreenTest,dev.josueamaya.pourline.ui.recipes.RecipeEditScreenTest,dev.josueamaya.pourline.ui.scale.TargetPickerTest,dev.josueamaya.pourline.ui.ScaleTopBarTest`
 y `./gradlew :app:lintDebug`.
 
 Commit sugerido: `feat(settings): add basic and expert modes with visibility rules`.
@@ -671,9 +671,9 @@ arranque. "Empezar" abre la sesión **provisional**: `ScaleScreen` sin barra inf
 | Archivo | Cambio |
 |---|---|
 | `NavigationKeys.kt` | Se borran `Scan` y `Scale`; nuevos `@Serializable data object Prepare : NavKey` y `@Serializable data object Session : NavKey`. |
-| `Tabs.kt` (nuevo, `dev.dotscale`) | `enum class Tab(val root: NavKey, @StringRes val label: Int, val testTag: String) { PREPARE, COFFEES, RECIPES, HISTORY }` y su icono. |
+| `Tabs.kt` (nuevo, `dev.josueamaya.pourline`) | `enum class Tab(val root: NavKey, @StringRes val label: Int, val testTag: String) { PREPARE, COFFEES, RECIPES, HISTORY }` y su icono. |
 | `TabNavigation.kt` (nuevo, puro) | `showsBottomBar`, `sealed interface BackAction { data object Pop; data object SelectPrepare; data object Exit }`, `backAction(tab, stackSize)` y `fun MutableList<NavKey>.popToRoot()` (D31). |
-| `AppDependencies.kt` (nuevo) | D32. `DotScaleApp.dependencies` por `lazy`. |
+| `AppDependencies.kt` (nuevo) | D32. `PourlineApp.dependencies` por `lazy`. |
 | `Navigation.kt` | `MainNavigation(deps: AppDependencies)`: puerta del primer arranque (D11) y pestañas (D30). Las entradas usan `deps`. `entry<Prepare>`, `entry<Session>` (provisional: `ScaleScreen(deps.scaleSession, …)` con un `onBack` que termina y guarda una sesión `Active` con `finishBrew()`, desarma y hace `pop`; D44 aún no aplica porque la pantalla provisional no depende de una sesión abierta), `entry<Settings>` con los ajustes nuevos. Se borra la concesión de F2: salir de la sesión ya no desconecta. |
 | `MainActivity.kt` | `MainNavigation(app.dependencies)`; `LifecycleEventEffect(ON_START)` → `deps.autoReconnect.onTrigger(…)`: el primer `ON_START` del proceso cuenta como `APP_START` y los siguientes como `APP_RESUMED`. `AutoReconnect` recoge `BluetoothEnvironment.enabled` y dispara `BLUETOOTH_ON` en el paso de apagado a encendido. |
 | `ble/BlePermissions.kt` (nuevo) | `BLUETOOTH_PERMISSIONS` y `Context.hasBluetoothPermissions()`, movidos de `ScanScreen.kt`. |
@@ -707,7 +707,7 @@ arranque. "Empezar" abre la sesión **provisional**: `ScaleScreen` sin barra inf
 | `androidTest/.../ui/ScaleTopBarTest.kt` | Sin iconos de sección: título largo recortado, flecha y batería visibles. |
 
 **Verificación:** `./gradlew :app:testDebugUnitTest`,
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.TabsNavigationTest,dev.dotscale.ui.onboarding.OnboardingTest,dev.dotscale.ui.prepare.PrepareScreenTest,dev.dotscale.ui.SettingsNavigationTest,dev.dotscale.ui.ScaleTopBarTest,dev.dotscale.ui.scale.CoffeeSelectorTest`,
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.TabsNavigationTest,dev.josueamaya.pourline.ui.onboarding.OnboardingTest,dev.josueamaya.pourline.ui.prepare.PrepareScreenTest,dev.josueamaya.pourline.ui.SettingsNavigationTest,dev.josueamaya.pourline.ui.ScaleTopBarTest,dev.josueamaya.pourline.ui.scale.CoffeeSelectorTest`,
 `./gradlew :app:lintDebug` y humo por adb: `pm clear`, primer arranque, Preparar, hoja, simulada, "Empezar"
 (sesión provisional sin barra), atrás, pestañas.
 
@@ -752,7 +752,7 @@ Scale.
 | Se borran | `BrewChartTest` (sus casos pasan a `SessionScreenTest`), `BrewChartCardTargetTest` (a `PrepareScreenTest` en F6), `CoffeeSelectorTest` y `ScaleTopBarTest`. |
 
 **Verificación:** `./gradlew :app:testDebugUnitTest`,
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.session.SessionScreenTest,dev.dotscale.ui.session.SessionLayoutTest,dev.dotscale.ui.session.SessionTopBarTest,dev.dotscale.ui.prepare.PrepareCoffeeTest,dev.dotscale.ui.TabsNavigationTest`
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.session.SessionScreenTest,dev.josueamaya.pourline.ui.session.SessionLayoutTest,dev.josueamaya.pourline.ui.session.SessionTopBarTest,dev.josueamaya.pourline.ui.prepare.PrepareCoffeeTest,dev.josueamaya.pourline.ui.TabsNavigationTest`
 y `./gradlew :app:lintDebug` (sin `UnusedResources` nuevos ni `MissingTranslation`).
 
 Commit sugerido: `feat(session): add the immersive guided brew session`.
@@ -851,7 +851,7 @@ proceso muerto (D44, E2E 9), receta borrada (`PrepareScreenTest`), migración co
 | R7 | Con la conexión viva fuera de la sesión, un vertido en otra pantalla cree una sesión fantasma. | Compuerta (D16), probada en `ScaleSessionManagerConnectionTest` y `ScaleSessionManagerSessionTest`. |
 | R8 | En Experto o con fuente grande, el bloque fijo no quepa en 1080 × 2400. | Dial adaptable (D4), instrucción a 2 líneas, lista con `weight(1f)` y `SessionLayoutTest` en los dos modos. Con escala de fuente 1,3 se revisa a mano en E2E 5; si no cabe, el dial baja a su mínimo de 180 dp. |
 | R9 | Recomponer la sesión a 10 Hz con la gráfica cause tirones. | El pager no compone la gráfica en la página 1 (D5); lecturas derivadas con `derivedStateOf`; `SessionPerformanceTest` en los dos casos. |
-| R10 | El reloj de pruebas de Compose altere la medida de frames. | La medida usa `FrameMetrics` de la ventana real; se contrasta con `adb shell dumpsys gfxinfo dev.dotscale` en E2E 12. Si difieren mucho, la prueba se lanza con `ActivityScenario` y `TestAppDependencies` sin el reloj de Compose. |
+| R10 | El reloj de pruebas de Compose altere la medida de frames. | La medida usa `FrameMetrics` de la ventana real; se contrasta con `adb shell dumpsys gfxinfo dev.josueamaya.pourline` en E2E 12. Si difieren mucho, la prueba se lanza con `ActivityScenario` y `TestAppDependencies` sin el reloj de Compose. |
 | R11 | La conexión BLE siga abierta con la app en segundo plano, o Android la cierre. | Fuera de alcance (§1 del spec, sin servicio). Al volver, `APP_RESUMED` reconecta si se perdió (D29). |
 | R12 | Tests y recursos que dependen de Scan y Scale queden rotos o huérfanos. | Lista en §1 y su destino en F6 y F7; `grep` de `scan_open_coffees`, `scale_open_coffees`, `ScanScreen` y `ScaleScreen` sin resultados al final de F7; lint `UnusedResources`. |
 | R13 | El modo por defecto de `LocalExperienceMode` (`EXPERT`) oculte en un test un fallo de Básico. | Los tests de Básico proveen el modo explícitamente; `OnboardingTest` y `NewUserJourneyTest` usan la preferencia real (`BASIC` por defecto). |
@@ -911,7 +911,7 @@ no devuelve nada.
 
 Antes: `adb devices -l` (si hay más de uno, preguntar cuál), `adb shell wm size` (debe ser 1080x2400; si no,
 `adb shell wm size 1080x2400` y `adb shell wm density 420`, y `wm size reset` y `wm density reset` al acabar),
-`./gradlew :app:installDebug` y `adb shell pm clear dev.dotscale`. Sin conceder permisos al principio. Se usa
+`./gradlew :app:installDebug` y `adb shell pm clear dev.josueamaya.pourline`. Sin conceder permisos al principio. Se usa
 `uiautomator dump` para localizar, `input tap` y `screencap -d <display id>`; `adb logcat -b crash -d` debe
 quedar vacío en todo el recorrido.
 
@@ -920,16 +920,16 @@ quedar vacío en todo el recorrido.
 | 1 | Abrir la app | "¿Cómo preparas tu café?"; "Básico" → Preparar (nunca la lista BLE). Tarjeta "Necesitamos permiso de Bluetooth" → "Dar permisos" → permitir → "Conecta tu báscula" |
 | 2 | Tarjeta → hoja | "Buscar", "Mostrar todos" y "Usar báscula simulada"; elegirla cierra la hoja y la tarjeta pasa a "Conectando…" y a "Báscula simulada conectada" |
 | 3 | Cafés → un café → Historial → Recetas → Preparar; tocar Cafés dos veces | La tarjeta sigue conectada sin reconectar; Cafés vuelve a su raíz; atrás en Cafés raíz selecciona Preparar |
-| 4 | Sin receta: dosis 18, ratio 15 → agua 270 g. `adb shell am force-stop dev.dotscale` y abrir | Siguen 18 y 1:15; no se muestra el primer arranque; la simulada no reconecta: "Conecta tu báscula" |
+| 4 | Sin receta: dosis 18, ratio 15 → agua 270 g. `adb shell am force-stop dev.josueamaya.pourline` y abrir | Siguen 18 y 1:15; no se muestra el primer arranque; la simulada no reconecta: "Conecta tu báscula" |
 | 5 | Simulada → receta V60 clásica → "Empezar" → "Tarar" → ⋯ → Simulación "+15 g" → captura → "Tarar" → "Seguir objetivo" | Sin barra inferior. Timer, agua, paso actual (con instrucción) y siguiente visibles a la vez; captura. ⋯ → "Modo experto": el timer no se reinicia; deslizar a la gráfica; ⋯ → desactivar: vuelve a la página 1. Con `adb shell settings put system font_scale 1.3`, repetir la comprobación y volver a 1.0 |
 | 6 | Otra sesión → en `Active`, X → "Descartar" | Vuelve a Preparar; Historial no tiene esa preparación |
 | 7 | `adb shell cmd bluetooth_manager disable` → Preparar → "Activar" | La tarjeta muestra "Bluetooth apagado" con su acción y el enlace a la simulada; tras activar, "Conecta tu báscula" |
 | 8 | Sesión en `Active` → `adb shell settings put system accelerometer_rotation 0` y `user_rotation 1` → volver a 0 | La sesión sigue con el mismo timer y los mismos pasos |
-| 9 | Sesión en curso → `adb shell input keyevent KEYCODE_HOME` → `adb shell am kill dev.dotscale` → abrir | Preparar sin sesión |
+| 9 | Sesión en curso → `adb shell input keyevent KEYCODE_HOME` → `adb shell am kill dev.josueamaya.pourline` → abrir | Preparar sin sesión |
 | 10 | Recetas → V60 clásica | 5 pasos con 2 Esperar e instrucciones; añadir un paso Remover con instrucción → guardar → sesión: icono de Remover en la lista e instrucción en el paso actual |
 | 11 | Ajustes → Experto → Historial → la preparación del paso 5 | Gráfica, estabilidad, ajuste, "Comparar" y "Guardar como receta" visibles |
-| 12 | `adb shell dumpsys gfxinfo dev.dotscale reset` → sesión de 2 min en Experto, página 2 → `adb shell dumpsys gfxinfo dev.dotscale` | Contraste de R10: porcentaje de frames lentos y percentiles anotados junto a §7.2 |
-| 13 | Capturas: `./gradlew :app:installDebug :app:installDebugAndroidTest` y `adb shell am instrument -w -e class dev.dotscale.ui.session.SessionScreenshotCapture -e screenshots true dev.dotscale.test/androidx.test.runner.AndroidJUnitRunner`; `adb pull /sdcard/Android/data/dev.dotscale/files/screenshots` | 12 PNG (Preparar, sesión Básico, sesión Experto páginas 1 y 2, resumen Básico y Experto, en claro y oscuro), revisados a ojo. Se lanza con `am instrument` para que la desinstalación de `connectedDebugAndroidTest` no borre los archivos (D31 de SPEC-004) |
+| 12 | `adb shell dumpsys gfxinfo dev.josueamaya.pourline reset` → sesión de 2 min en Experto, página 2 → `adb shell dumpsys gfxinfo dev.josueamaya.pourline` | Contraste de R10: porcentaje de frames lentos y percentiles anotados junto a §7.2 |
+| 13 | Capturas: `./gradlew :app:installDebug :app:installDebugAndroidTest` y `adb shell am instrument -w -e class dev.josueamaya.pourline.ui.session.SessionScreenshotCapture -e screenshots true dev.josueamaya.pourline.test/androidx.test.runner.AndroidJUnitRunner`; `adb pull /sdcard/Android/data/dev.josueamaya.pourline/files/screenshots` | 12 PNG (Preparar, sesión Básico, sesión Experto páginas 1 y 2, resumen Básico y Experto, en claro y oscuro), revisados a ojo. Se lanza con `am instrument` para que la desinstalación de `connectedDebugAndroidTest` no borre los archivos (D31 de SPEC-004) |
 
 ## 8. Seguimiento fuera de este plan
 

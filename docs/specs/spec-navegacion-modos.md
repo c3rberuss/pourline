@@ -6,7 +6,7 @@
 | Fecha | 2026-11-14 |
 | Rama | `feat/navigation-modes`, creada desde `feat/coffee-catalog` (SPEC-004 aún sin fusionar) |
 | Deriva de | Uso real de la app tras SPEC-001 a SPEC-004 |
-| Módulos afectados | `:app`: navegación (`Navigation.kt`, `NavigationKeys.kt`), `DotScaleApp`, `settings`, `recipe`, `brew`, `history` (migración), `ui/scan`, `ui/scale`, `ui/recipes`, `ui/history`, `ui/settings`, `ui/components` |
+| Módulos afectados | `:app`: navegación (`Navigation.kt`, `NavigationKeys.kt`), `PourlineApp`, `settings`, `recipe`, `brew`, `history` (migración), `ui/scan`, `ui/scale`, `ui/recipes`, `ui/history`, `ui/settings`, `ui/components` |
 | Specs relacionados | [SPEC-001](spec-grafica-vertido.md), [SPEC-002](spec-historial.md), [SPEC-003](spec-curva-objetivo.md), [SPEC-004](spec-catalogo-cafes.md) |
 
 ## 1. Resumen y Contexto
@@ -129,7 +129,7 @@
 ### 3.2 Modo Básico/Experto y primer arranque
 
 - **Preferencias nuevas** en el `SharedPreferences "settings"` que ya comparten `BrewSettings`,
-  `ThemeSettings` y `TargetSettings`. Una instancia por proceso en `DotScaleApp`, expuesta como
+  `ThemeSettings` y `TargetSettings`. Una instancia por proceso en `PourlineApp`, expuesta como
   `StateFlow`.
 
   | Clave | Tipo | Defecto | Uso |
@@ -175,7 +175,7 @@
 - **Gestor de conexión a nivel de app:**
   - Hoy, la `ScaleConnection` y la `BrewSession` viven en el `ScaleViewModel` de la entrada `Scale`
     de la navegación, y salir de esa pantalla las destruye.
-  - Pasan a un objeto único en `DotScaleApp` (nombre orientativo: `ScaleSessionManager`) que tiene:
+  - Pasan a un objeto único en `PourlineApp` (nombre orientativo: `ScaleSessionManager`) que tiene:
     - la conexión activa;
     - la `BrewSession`;
     - el objetivo y el café elegidos;
@@ -301,7 +301,7 @@
 
 ### 3.5 Pasos de receta con tipo e instrucción
 
-- **Modelo de dominio** (`dev.dotscale.recipe.RecipeStage`), con dos campos nuevos:
+- **Modelo de dominio** (`dev.josueamaya.pourline.recipe.RecipeStage`), con dos campos nuevos:
   - `type: StageType`, con valores `POUR` (Verter), `SWIRL` (Remover) y `WAIT` (Esperar);
   - `instruction: String?`, texto libre de hasta 200 caracteres.
 - **Semántica:**
@@ -405,8 +405,8 @@ implementación. Los números de las fases (F0 a F8) y los apartados "§" citado
 
 | ID | Tema | Decisión | Motivo |
 |---|---|---|---|
-| D14 | Paquetes | Nuevo `dev.dotscale.session`: `ScaleSessionManager`, `ScaleTarget`, `ScaleMemory`, `AutoReconnect`, `PrepFlow`, `BrewPlan`. En F2 se mueven ahí `ScaleUiState.kt`, `ScaleCoffees.kt` y `TargetReferences.kt` (`git mv`, solo cambia el `package`). Nuevos `dev.dotscale.ui.prepare`, `dev.dotscale.ui.session` y `dev.dotscale.ui.onboarding`. `ui/scale` conserva las piezas de dibujo reutilizadas. | El gestor no es UI. Los archivos puros se comprueban con `grep "import android"`. |
-| D15 | Gestor de la app | `ScaleSessionManager` es un objeto por proceso en `DotScaleApp`, con `MainScope()` (`Dispatchers.Main.immediate`), igual que el hilo de `viewModelScope` de hoy. La conexión se crea al conectar: `fun interface ScaleConnectionFactory { fun create(target: ScaleTarget): ScaleConnection }` (`AndroidScaleConnections`: `Real` → `BleScaleConnection(context, address)`, `Simulated` → `SimulatedScaleConnection()`). Los flujos de la conexión se recogen con `flatMapLatest` sobre `MutableStateFlow<ScaleConnection?>`. | Cambiar de pestaña no desconecta (§3.3) y la rotación no afecta. Con la fábrica, los tests siguen con `FakeScaleConnection`. |
+| D14 | Paquetes | Nuevo `dev.josueamaya.pourline.session`: `ScaleSessionManager`, `ScaleTarget`, `ScaleMemory`, `AutoReconnect`, `PrepFlow`, `BrewPlan`. En F2 se mueven ahí `ScaleUiState.kt`, `ScaleCoffees.kt` y `TargetReferences.kt` (`git mv`, solo cambia el `package`). Nuevos `dev.josueamaya.pourline.ui.prepare`, `dev.josueamaya.pourline.ui.session` y `dev.josueamaya.pourline.ui.onboarding`. `ui/scale` conserva las piezas de dibujo reutilizadas. | El gestor no es UI. Los archivos puros se comprueban con `grep "import android"`. |
+| D15 | Gestor de la app | `ScaleSessionManager` es un objeto por proceso en `PourlineApp`, con `MainScope()` (`Dispatchers.Main.immediate`), igual que el hilo de `viewModelScope` de hoy. La conexión se crea al conectar: `fun interface ScaleConnectionFactory { fun create(target: ScaleTarget): ScaleConnection }` (`AndroidScaleConnections`: `Real` → `BleScaleConnection(context, address)`, `Simulated` → `SimulatedScaleConnection()`). Los flujos de la conexión se recogen con `flatMapLatest` sobre `MutableStateFlow<ScaleConnection?>`. | Cambiar de pestaña no desconecta (§3.3) y la rotación no afecta. Con la fábrica, los tests siguen con `FakeScaleConnection`. |
 | D16 | Compuerta de la sesión | El gestor solo pasa pesos, taras y estados del temporizador a la `BrewSession` mientras está **armado**: desde que `PrepFlow` llega al paso 4 hasta que la sesión pasa a `Finished`, se descarta o se cierra. Fuera de eso, los pesos solo actualizan la pantalla y `PrepFlow`. En F2–F6 la pantalla provisional (`ScaleScreen`) arma al entrar. | Sin compuerta, un vertido en Cafés o en Preparar empezaría y guardaría una sesión, y una tara en el resumen la rearmaría (hoy `onTared` en `Finished` rearma). |
 | D17 | Peso estable del paso Dosis (cierra §6, pregunta 3) | Se calcula en la app, en `PrepFlow`, sin depender de ninguna bandera BLE: ventana de 2 s con al menos 3 lecturas válidas, `máx − mín ≤ 0,3 g` y peso ≥ `max(1 g; 0,5 × dosis objetivo)`; la dosis es la media de la ventana redondeada a 0,1 g. La dosis objetivo es la nominal de la receta o la de Preparar. En el paso 3, antes de la tara, una nueva ventana estable entre `0,5 ×` y `1,5 ×` la dosis objetivo que difiera más de 0,3 g sustituye a la dosis (recaptura). Constantes en `PrepConfig`. | La DOT no envía bandera de estabilidad y el código no calcula estabilidad de peso. El 50 % evita capturar la primera cucharada; la recaptura corrige una captura temprana sin botón nuevo, y el 150 % impide que el agua de un vertido se tome como café. **Amplía** "el peso es > 0" del §3.4. |
 | D18 | Captura sin tara automática | En la sesión, la dosis se fija con `captureDose(tare = false)`; el paso 3 pide la tara. `captureDose()` sin argumento conserva el comportamiento de hoy (fija y tara) hasta que se borra `ScaleScreen` en F7. | Si la captura tarase, el paso 3 se confirmaría solo con esa tara y nunca se vería. |
@@ -423,7 +423,7 @@ implementación. Los números de las fases (F0 a F8) y los apartados "§" citado
 | D29 | Reconexión automática | `AutoReconnect` con tres disparadores: arranque de la app, vuelta a primer plano (`ON_START` de `MainActivity`) y Bluetooth que pasa a encendido (`BluetoothEnvironment.enabled`, un `BroadcastReceiver` de `ACTION_STATE_CHANGED` expuesto como `StateFlow`). Conecta solo si hay báscula real recordada, permisos, Bluetooth encendido, nada conectado ni conectando, y el usuario no pulsó "Desconectar" en esta ejecución. Un fallo no reintenta hasta el siguiente disparador. | §3.3 y §4: sin bucles en segundo plano. Tras un "Desconectar" explícito, reconectar al volver a la app molestaría. |
 | D30 | Pila por pestaña | `enum class Tab(root, label, icon, testTag)`; una `rememberNavBackStack(tab.root)` por pestaña y `var tab by rememberSaveable`. Las entradas de cada pila se decoran con `rememberDecoratedNavEntries` y un `entryProvider` cuyo `contentKey` lleva el prefijo de la pestaña (`"HISTORY/BrewDetail(id=5)"`). `NavDisplay` recibe las entradas de Preparar y, si la pestaña activa es otra, las suyas detrás; su `onBack` aplica `backAction` (D31). | Es la receta de pilas múltiples de Navigation 3. El prefijo evita que dos pilas compartan `ViewModel` o estado guardado. Con las entradas de Preparar debajo, "Atrás" en la raíz de otra pestaña tiene a dónde ir, y en Preparar raíz pasa al sistema (sale). |
 | D31 | Reglas de navegación | `TabNavigation.kt` (puro): `fun showsBottomBar(key: NavKey): Boolean` (falso en `Session`, `CoffeeEdit`, `RecipeEdit` y `BrewEdit`); `fun backAction(tab: Tab, stackSize: Int): BackAction` (`Pop`, `SelectPrepare`, `Exit`); tocar la pestaña activa vacía su pila hasta la raíz. Los accesos cruzados se apilan en la pestaña actual (también `ComparePick`, `BrewCompare`, `BrewEdit` y `RecipeEdit` desde un `BrewDetail` abierto en Cafés). "Gestionar recetas" del `TargetPicker` en Preparar selecciona la pestaña Recetas. | §3.1. La tabla del spec es orientativa en las pilas; la regla general es "dentro de la pestaña actual". |
-| D32 | Dependencias de la app | `AppDependencies` (nuevo) agrupa los singletons de `DotScaleApp` (repositorios, ajustes, gestor, `AutoReconnect`, `BluetoothEnvironment`, fábrica del escáner). `MainNavigation(deps)` los recibe en lugar de `appContext as DotScaleApp`. Las clases de ajustes ganan `prefsName: String = PREFS_NAME`. | Los tests de pestañas, del recorrido del usuario nuevo y de rendimiento montan la app con Room en memoria, preferencias propias (`"settings_test"`) y la báscula simulada. |
+| D32 | Dependencias de la app | `AppDependencies` (nuevo) agrupa los singletons de `PourlineApp` (repositorios, ajustes, gestor, `AutoReconnect`, `BluetoothEnvironment`, fábrica del escáner). `MainNavigation(deps)` los recibe en lugar de `appContext as PourlineApp`. Las clases de ajustes ganan `prefsName: String = PREFS_NAME`. | Los tests de pestañas, del recorrido del usuario nuevo y de rendimiento montan la app con Room en memoria, preferencias propias (`"settings_test"`) y la báscula simulada. |
 | D33 | Modo en la UI | `ExperienceMode.shows(feature: ExpertFeature): Boolean` (puro; todas las entradas de `ExpertFeature` son de Experto). `LocalExperienceMode` (`compositionLocalOf`), provisto en `MainActivity` desde `ExperienceSettings.mode`, con valor por defecto `EXPERT`. | Los tests de pantalla existentes, que no lo proveen, siguen viendo todo. El defecto de la preferencia sigue siendo `BASIC` (§3.2). |
 | D34 | Pasos con tipo: modelo | `enum class StageType { POUR, SWIRL, WAIT }` en `recipe/Recipe.kt`. `RecipeStage` gana `type: StageType = POUR` e `instruction: String? = null`. `fun List<RecipeStage>.withDerivedWater()` fija el `targetWaterG` de `SWIRL` y `WAIT` al acumulado del `POUR` anterior (0 si no hay). `Recipe.totalWaterG` es el del último `POUR`. `RecipeListItem.stageCount` cuenta solo `POUR`. | §3.5. Con el recuento de vertidos la fila de una receta migrada no cambia ("3 etapas"). |
 | D35 | Migración v3 → v4 | `val MIGRATION_3_4`: `ALTER TABLE recipe_stages ADD COLUMN type TEXT NOT NULL DEFAULT 'POUR'` y `ADD COLUMN instruction TEXT`. Por cada receta, lee sus pasos por `position`, aplica `StageGaps.fillWaits` y, si cambian, borra sus filas y las vuelve a insertar con `position` renumerada (la clave primaria es `(recipeId, position)`). La entidad declara `@ColumnInfo(defaultValue = "POUR")` para que `runMigrationsAndValidate` acepte el esquema. | Renumerar en el sitio chocaría con la clave primaria; borrar e insertar por receta no toca `recipes`. |

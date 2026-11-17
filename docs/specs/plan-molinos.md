@@ -139,7 +139,7 @@ Se aprueban junto con el plan. Al terminar se pasan al spec como §3.9, como en 
 
 | ID | Tema | Decisión | Motivo |
 |---|---|---|---|
-| D10 | Paquetes | `dev.dotscale.grinder`: dominio, Room, repositorio, sembrador y textos. **Puros** (sin `import android`, se comprueba con `grep` en F1 y F11): `GrindModels.kt`, `GrindMath.kt`, `GrindFormat.kt`, `GrindTexts.kt`, `GrindStepper.kt`, `GrindConverter.kt`, `GrinderValidator.kt`, `GrindSetting.kt`, `GrinderCatalogFile.kt`, `GrindRulerModel.kt`, `GrindCardState.kt` y `ConverterRows.kt`. `dev.dotscale.ui.grinders`: pantallas y componentes. `GrindSelection` en `dev.dotscale.session`. `GrinderSettings` en `dev.dotscale.settings`. | Como en `history` y `coffee` (D15 de SPEC-004). `ReferenceKey` vive en un archivo con `import android`, así que los archivos puros no la usan. |
+| D10 | Paquetes | `dev.josueamaya.pourline.grinder`: dominio, Room, repositorio, sembrador y textos. **Puros** (sin `import android`, se comprueba con `grep` en F1 y F11): `GrindModels.kt`, `GrindMath.kt`, `GrindFormat.kt`, `GrindTexts.kt`, `GrindStepper.kt`, `GrindConverter.kt`, `GrinderValidator.kt`, `GrindSetting.kt`, `GrinderCatalogFile.kt`, `GrindRulerModel.kt`, `GrindCardState.kt` y `ConverterRows.kt`. `dev.josueamaya.pourline.ui.grinders`: pantallas y componentes. `GrindSelection` en `dev.josueamaya.pourline.session`. `GrinderSettings` en `dev.josueamaya.pourline.settings`. | Como en `history` y `coffee` (D15 de SPEC-004). `ReferenceKey` vive en un archivo con `import android`, así que los archivos puros no la usan. |
 | D11 | Aritmética del valor | `GrindMath.snap(v, g) = g.scaleMin + round((v − g.scaleMin) / g.step) × g.step`, redondeado a 6 decimales para quitar el ruido de coma flotante (0,1 × 3). Igualdad con `EPS = 1e-9`. Decimales que se muestran: los del paso (1 → 0; 0,5 y 0,1 → 1; 0,25 → 2; máximo 3). `decompose` devuelve `List<Double>`: todas las partes son enteras salvo la última, que puede llevar el decimal del paso. Los multiplicadores son el producto de los `perParent` siguientes (`Long`). | §3.2 y §4 ("el valor nunca queda fuera de los múltiplos de `step`"). Kotlin no tiene el `Int|Double` del spec. |
 | D12 | Formato **(amplía la firma)** | `GrindFormat.format(value, grinder, texts: GrindTexts)`: una unidad → "30 clics" (plural del idioma); varias → "1 · 2 · 3". `describe(value, grinder, texts)` → "1 rotación, 2 números, 3 clics". `label(grinder, value, texts)` → `"<modelo> · <format>"` ("Chestnut S3 · 30 clics") o solo `"<modelo>"` sin valor. `interface GrindTexts { fun quantity(unit: GrindUnit, value: Double): String; fun unitName(unit: GrindUnit): String; fun number(value: Double, decimals: Int): String }`; `ResourcesGrindTexts(context)` usa `plurals` (`grind_unit_clicks`…, con `other` para los no enteros). | Los nombres de las unidades y los plurales dependen del idioma y el paquete es puro. El spec firma `format(value, grinder)`: el parámetro extra es la única forma de no importar Android. |
 | D13 | Acarreo (`GrindStepper`) | `GrindStepper.step(value: Double?, unitIndex: Int, delta: Int, grinder: Grinder, start: Double): Double`. En una unidad superior suma `delta × multiplicador`; en la base, `delta × step`. Como el valor es absoluto, el acarreo y el préstamo salen solos. Después, `snap` y límite a la escala. Con `value == null` devuelve `start` sin sumar: el primer toque fija el valor inicial, que es `GrindConverter.suggested(method, grinder)` o, sin rango, el centro de la escala ajustado al paso. | §3.2. Un primer toque que ya sumara partiría de un valor que el usuario no ha visto. |
@@ -152,7 +152,7 @@ Se aprueban junto con el plan. Al terminar se pasan al spec como §3.9, como en 
 | D20 | Entidades y conversores | `GrinderEntity` (`grinders`), `GrinderUnitEntity` (`grinder_units`), `GrinderMethodRangeEntity` (`grinder_method_ranges`, `method` con el conversor de `BrewMethod` de `HistoryConverters`), `GrinderAnchorEntity` (`grinder_anchors`) y `GrinderWithDetails` (`@Embedded` + tres `@Relation`, consultas con `@Transaction`). `GrinderConverters`: `GrindDirection`, `GrindUnit` y `GrindLevel` por nombre; un nombre desconocido se lee como `HIGHER_IS_COARSER`, `CLICKS` y la fila de ancla se ignora al mapear al dominio. | Mismo criterio que `HistoryConverters`: volver a una versión anterior no rompe la lectura. |
 | D21 | Repositorio y predeterminado | `GrinderRepository(db, defaults: DefaultGrinderStore, texts: GrindTexts)` con escrituras en `Dispatchers.IO + NonCancellable`. `setOwned(id, false)` y `delete(id)` ponen `default_grinder_id = null` si era ese. `save(grinder)` valida con `GrinderValidator` y rechaza los predefinidos (`catalogKey != null`). Una receta nueva preselecciona el predeterminado con valor `null` (D13): el ajuste lo fija el primer toque. | §4. Proponer un valor que nadie ha elegido lo guardaría sin que el usuario lo vea. |
 | D22 | Duplicar | "Duplicar para personalizar" abre `GrinderEdit(fromId = id)` con una copia en memoria: `id = 0`, `catalogKey = null`, `owned = true`, `retired = false`, `sourceUrl = null`, modelo "<modelo> (copia)" (`grinder_copy_name`) y `duplicatedFromKey = original.catalogKey ?: original.duplicatedFromKey`. Se inserta al pulsar "Guardar". | Si el usuario sale sin guardar no queda una copia huérfana en mis molinos. Con el mismo nombre, dos filas de mis molinos serían indistinguibles. |
-| D23 | Selección de "Moler con" y la sesión **(concreta)** | `GrindSelection` (objeto de la app, en `session/`): combina `manager.ui.map { it.target }` (con `distinctUntilChanged` sobre la fuente, D24), `SessionGrinders` (mis molinos y un molino por id), `DefaultGrinderStore` y la elección del usuario, y expone `state: StateFlow<GrindCardState>` con `SharingStarted.Eagerly` en `Dispatchers.Default`. La elección se guarda junto con la `ReferenceKey` de la receta: al cambiar de receta vuelve a la preselección del §3.7; sobrevive a cambiar de pestaña, a girar y al paso entre Preparar y la sesión, pero no a la muerte del proceso. El gestor recibe `grind: SessionGrind = NoSessionGrind` (`fun interface SessionGrind { fun current(): GrindSetting? }`) y congela `grind.current()` al pasar a `Active`, en el mismo punto que el café; `save` lo escribe en `details.grind`. En `DotScaleApp`, el gestor recibe `SessionGrind { grindSelection.current() }` para romper la dependencia circular. | Fuera del gestor, su camino caliente (10 Hz) no cambia: el rendimiento de la sesión no depende de la tarjeta (§4). Congelar en `Active` es coherente con el objetivo y el café, y la tarjeta ya no se ve después del paso 2. |
+| D23 | Selección de "Moler con" y la sesión **(concreta)** | `GrindSelection` (objeto de la app, en `session/`): combina `manager.ui.map { it.target }` (con `distinctUntilChanged` sobre la fuente, D24), `SessionGrinders` (mis molinos y un molino por id), `DefaultGrinderStore` y la elección del usuario, y expone `state: StateFlow<GrindCardState>` con `SharingStarted.Eagerly` en `Dispatchers.Default`. La elección se guarda junto con la `ReferenceKey` de la receta: al cambiar de receta vuelve a la preselección del §3.7; sobrevive a cambiar de pestaña, a girar y al paso entre Preparar y la sesión, pero no a la muerte del proceso. El gestor recibe `grind: SessionGrind = NoSessionGrind` (`fun interface SessionGrind { fun current(): GrindSetting? }`) y congela `grind.current()` al pasar a `Active`, en el mismo punto que el café; `save` lo escribe en `details.grind`. En `PourlineApp`, el gestor recibe `SessionGrind { grindSelection.current() }` para romper la dependencia circular. | Fuera del gestor, su camino caliente (10 Hz) no cambia: el rendimiento de la sesión no depende de la tarjeta (§4). Congelar en `Active` es coherente con el objetivo y el café, y la tarjeta ya no se ve después del paso 2. |
 | D24 | Origen de la tarjeta | La fuente es la referencia activa, sea una receta o una preparación (objetivo "desde el historial" de Experto): su método (`prefill.method`) y su ajuste (`ActiveTarget.sourceGrind`, campo nuevo). `prefill` deja de llevar la molienda: la preparación guarda la de "Moler con", no la de la referencia. | El spec habla de "receta", pero `TargetPicker` también admite preparaciones como objetivo. Copiar la molienda de la referencia contradiría el §3.7. |
 | D25 | Estados de la tarjeta | Función pura `grindCardState(source: GrindSource?, sourceGrinder: Grinder?, owned: List<Grinder>, chosenId: Long?, defaultId: Long?): GrindCardState`. `GrindOutcome`: `Value(value, exact, reasons, suggested)`; `NoSetting` ("La receta no indica molienda", sin rango para sugerir); `NoEquivalent(fix: GrindFix)` con `COMPLETE_RANGES` (propio) o `DUPLICATE` (predefinido); `Orphan` (la receta tiene "molino eliminado": "Asigna un molino a la receta para convertir"); `NoReference` (sin receta: solo "Moler con"). Sin molinos propios: la línea de la receta y el enlace "Añade tu molino para ver el equivalente", sin selector. `GrindCardState.snapshot(texts): GrindSetting?` es lo que se guarda: molino elegido, valor mostrado (convertido o sugerido, o `null`) y su copia. | §3.3 y §3.7. Una receta con molino eliminado no se puede convertir (§3.4): necesita un texto propio, no "Sin equivalencia", que invitaría a completar rangos de otro molino. |
 | D26 | Convertidor | Origen: `GrinderPicker` (`AntDrawer` con buscador) con dos secciones, "Mis molinos" y "Catálogo" (sin retirados). Método: `AntSelect` con los métodos y "Sin método" (respaldo por anclas). Ajuste: `GrindInput` del origen. Salida: función pura `converterRows(source, method, value, owned): List<ConverterRow>`, una fila por cada molino de mis molinos distinto del origen, en el orden de mis molinos. Sin mis molinos: `AntEmpty` con el enlace a Ajustes → Molinos. Cambiar el origen deja el valor en `null`. | §3.7. Un valor de otro molino no tiene sentido en el nuevo origen. |
@@ -168,7 +168,7 @@ Se aprueban junto con el plan. Al terminar se pasan al spec como §3.9, como en 
 | ID | Tema | Decisión | Motivo |
 |---|---|---|---|
 | D33 | Formato del archivo y dependencia | `app/src/main/assets/grinders/catalog.json`, leído con `kotlinx-serialization-json` (`implementation(libs.kotlinx.serialization.json)`, ya en la caché). Esquema: `{ "version": Int, "grinders": [ { "key", "brand", "model", "units": [ { "unit": "ROTATIONS" }, { "unit": "NUMBERS", "perParent": 10 }, … ], "scale": { "min", "max" }, "step", "direction", "micronRange": { "min", "max" } \| null, "ranges": { "V60": { "min", "max", "source": "13 – 22" }, … }, "anchors": { "FINE": 9.5, … }, "anchorsManual": false, "sourceUrl", "missing": [String], "notes": String? } ] }`. Valores en unidades base; `source` guarda el texto de la fuente ("2.2.0 – 3.8.1") para revisarlo. `GrinderCatalogFile.parse(json): Result<CatalogData>` rechaza el archivo **entero** si una entrada es inválida (`GrinderValidator`, clave repetida, método desconocido o `OTHER`, `sourceUrl` vacía). | Un solo lector, en `main` y probado en la JVM, que usa el test del archivo y el sembrador. Con `org.json` (simulado en la JVM) el test validaría un lector distinto del de la app. |
-| D34 | Sembrado | `GrinderCatalogSeeder(dao, source: CatalogSource, versions: CatalogVersionStore, defaults: DefaultGrinderStore)`, `suspend fun sync(): SyncResult` (`UpToDate`, `Synced(version, added, updated, retired, deleted)`, `Failed(reason)`). Todo en una transacción de `GrinderDao.syncCatalog`; la versión se escribe en las preferencias **después** del commit. Un predefinido "en uso" es el que tiene recetas o preparaciones, `owned = true` o es el predeterminado. Se llama desde `DotScaleApp.onCreate` en `applicationScope` con `Dispatchers.IO` (en F10, no antes). Los errores van a `Log.w`. | §3.6 y §4. Si el proceso muere entre el commit y la preferencia, el siguiente arranque repite la sincronización, que es idempotente. |
+| D34 | Sembrado | `GrinderCatalogSeeder(dao, source: CatalogSource, versions: CatalogVersionStore, defaults: DefaultGrinderStore)`, `suspend fun sync(): SyncResult` (`UpToDate`, `Synced(version, added, updated, retired, deleted)`, `Failed(reason)`). Todo en una transacción de `GrinderDao.syncCatalog`; la versión se escribe en las preferencias **después** del commit. Un predefinido "en uso" es el que tiene recetas o preparaciones, `owned = true` o es el predeterminado. Se llama desde `PourlineApp.onCreate` en `applicationScope` con `Dispatchers.IO` (en F10, no antes). Los errores van a `Log.w`. | §3.6 y §4. Si el proceso muere entre el commit y la preferencia, el siguiente arranque repite la sincronización, que es idempotente. |
 | D35 | Borrador y puerta | El borrador de F2 se escribe ya en la ruta final, pero **nada lo lee en la app** hasta F10 (el sembrador no se invoca al arrancar). `GrinderCatalogFileTest` lo valida desde F2. F10 solo empieza con la tabla aprobada. | La tabla vive solo en el JSON y en el informe (§3.6). Así el borrador se valida con el mismo test que el final y no se siembra nada antes de tiempo. |
 | D36 | Catálogo de prueba | `androidTest/.../grinder/TestGrinderCatalog.kt` y `test/.../grinder/GrinderFixtures.kt` con marcas ficticias ("Acme Uno" de clics, "Acme Dos" de clics con medio paso, "Acme Tres" compuesto de rotaciones, números y clics y "Acme Inverso" `HIGHER_IS_FINER`), con rangos y anclas inventados a propósito. `TestAppDependencies.seedGrinders(json = TestGrinderCatalog.JSON)` lo siembra con el sembrador real. | F5 a F9 avanzan sin los datos reales, y nadie confunde un dato de prueba con uno de la fuente. |
 | D37 | Escala, jerarquía y anclas de los predefinidos **(concreta)** | La fuente no da el total de clics ni la jerarquía. Regla: la **escala** es la del gráfico de la fuente, cuyo máximo corresponde al máximo en micras (el C2: 0–30 clics para 0–950 µm); si el fabricante publica otra, se anota en `notes` y en la tabla de la puerta para que decida el usuario (P3). La **jerarquía** sale del formato de la tabla de la fuente y de los máximos que aparecen en sus rangos, y se confirma con el manual del fabricante, citado en `notes`. Un dial que empieza en 1 (Fellow Ode) se modela con `scaleMin` > 0 y la descomposición absoluta (D11), y los pasos intermedios del Ode como unidad base `STEPS` con `perParent = 3`, sin fracciones de un tercio. Las **anclas** se calculan con `scaleMin + (µ − µmin) / (µmax − µmin) × (scaleMax − scaleMin)` sobre los puntos medios del §3.6, redondeadas a 1 decimal, y se omiten fuera del rango en micras; con `anchorsManual: true` se pueden ajustar a mano (§6 del spec). Nada se inventa: lo que falta va a `missing`. | Las anclas del §3.6 suponen un molino lineal entre su rango en micras y su escala: usar otra escala que la del gráfico de la fuente rompería esa correspondencia. |
@@ -417,7 +417,7 @@ molino". Opciones del selector: "Sin molino", mis molinos y, si el actual ya no 
 deshabilitado y repite al mantener pulsado; `AntTabs` llama a `onSelect` y marca `selected`.
 
 **Verificación:** `./gradlew :app:compileDebugKotlin`,
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.components.AntComponentsTest`,
+`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.components.AntComponentsTest`,
 `./gradlew :app:lintDebug` y revisión de las previews en claro y oscuro.
 
 Commit sugerido: `feat(ui): add stepper and tabs components for the grinder screens`.
@@ -466,9 +466,9 @@ y los cuatro métodos nuevos.
 francesa", "Espresso", "Cold brew" y "Moka" y guarda el elegido; `HistoryScreenTest`: con una preparación
 `FRENCH_PRESS`, el filtro de método la ofrece y filtra.
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.grinder.*" --tests "dev.dotscale.history.*" --tests "dev.dotscale.ui.recipes.*"`,
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.recipes.RecipeEditScreenTest,dev.dotscale.ui.history.BrewEditScreenTest,dev.dotscale.ui.history.HistoryScreenTest`,
-`./gradlew :app:lintDebug` y `grep -l "import android" app/src/main/kotlin/dev/dotscale/grinder/{GrindModels,GrindMath,GrindFormat,GrindTexts,GrindStepper,GrindConverter,GrinderValidator,GrindSetting,GrinderCatalogFile,GrindRulerModel}.kt`
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.grinder.*" --tests "dev.josueamaya.pourline.history.*" --tests "dev.josueamaya.pourline.ui.recipes.*"`,
+`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.recipes.RecipeEditScreenTest,dev.josueamaya.pourline.ui.history.BrewEditScreenTest,dev.josueamaya.pourline.ui.history.HistoryScreenTest`,
+`./gradlew :app:lintDebug` y `grep -l "import android" app/src/main/kotlin/dev/josueamaya/pourline/grinder/{GrindModels,GrindMath,GrindFormat,GrindTexts,GrindStepper,GrindConverter,GrinderValidator,GrindSetting,GrinderCatalogFile,GrindRulerModel}.kt`
 sin resultados.
 
 Commit sugerido: `feat(grinder): add the grind setting model, compound format and converter`.
@@ -501,7 +501,7 @@ igual; si no, dos, y se indica), `timemore-chestnut-s3`, `comandante-c40`, `1zpr
 5. Anclas con la fórmula de D37.
 6. Todo lo que falte va a `missing` (por ejemplo, `"COLD_BREW"`, `"scale.max: el gráfico no lo muestra"`). No se
    inventa ningún valor.
-7. `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.grinder.GrinderCatalogFileTest"` en verde.
+7. `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.grinder.GrinderCatalogFileTest"` en verde.
 
 **Informe de la puerta** (en la respuesta del implementador, sin documento aparte, §3.6). Una tabla por molino:
 
@@ -542,7 +542,7 @@ desaparece en esta fase.
 | `grinder/GrinderDao.kt` (nuevo, mínimo) | `observe(id)`, `get(id)`, `exists(id): Boolean` e `insert` de molino con sus hijos (lo necesitan los tests). El resto, en F4. |
 | `recipe/RecipeEntities.kt` | `RecipeEntity` sin `grind`; `grinderId: Long? = null`, `grindValue: Double? = null`, `grindLabel: String? = null`; `ForeignKey(GrinderEntity, ["id"], ["grinderId"], onDelete = SET_NULL)` e `Index("grinderId")`. |
 | `history/BrewEntities.kt` | `BrewEntity` igual; la FK y el índice nuevos junto a los de `coffeeId`. |
-| `history/HistoryDatabase.kt` | `version = 5`, las cuatro entidades nuevas, `abstract fun grinderDao(): GrinderDao`, `@TypeConverters(HistoryConverters::class, CoffeeConverters::class, GrinderConverters::class)`, `addMigrations(…, MIGRATION_4_5)` y la línea de la versión 5 en el KDoc. Se genera `app/schemas/dev.dotscale.history.HistoryDatabase/5.json`. |
+| `history/HistoryDatabase.kt` | `version = 5`, las cuatro entidades nuevas, `abstract fun grinderDao(): GrinderDao`, `@TypeConverters(HistoryConverters::class, CoffeeConverters::class, GrinderConverters::class)`, `addMigrations(…, MIGRATION_4_5)` y la línea de la versión 5 en el KDoc. Se genera `app/schemas/dev.josueamaya.pourline.history.HistoryDatabase/5.json`. |
 | `history/Migrations.kt` | `val MIGRATION_4_5` (D19). |
 | `recipe/Recipe.kt` | `grind: GrindSetting? = null`. |
 | `history/HistoryModels.kt` | `BrewDetails.grind: GrindSetting? = null`; `normalized()` deja `null` si las tres partes lo son y recorta `label`. |
@@ -573,8 +573,8 @@ desaparece en esta fase.
 | `test/.../session/ScaleSessionManagerTargetTest.kt`, `ScaleTestFakes.kt` | El `prefill` ya no lleva molienda; `ActiveTarget.sourceGrind` es el de la receta o el de la preparación de referencia. |
 
 **Verificación:** `./gradlew :app:compileDebugKotlin` (genera `5.json`),
-`./gradlew :app:testDebugUnitTest --tests "dev.dotscale.recipe.*" --tests "dev.dotscale.history.*" --tests "dev.dotscale.session.*" --tests "dev.dotscale.ui.recipes.*" --tests "dev.dotscale.ui.history.*"`
-y `ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.history.HistoryMigrationTest,dev.dotscale.recipe.RecipeDaoTest,dev.dotscale.history.BrewDaoTest,dev.dotscale.ui.history.BrewDetailScreenTest,dev.dotscale.ui.history.BrewEditScreenTest,dev.dotscale.ui.recipes.RecipeEditScreenTest`.
+`./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.recipe.*" --tests "dev.josueamaya.pourline.history.*" --tests "dev.josueamaya.pourline.session.*" --tests "dev.josueamaya.pourline.ui.recipes.*" --tests "dev.josueamaya.pourline.ui.history.*"`
+y `ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.history.HistoryMigrationTest,dev.josueamaya.pourline.recipe.RecipeDaoTest,dev.josueamaya.pourline.history.BrewDaoTest,dev.josueamaya.pourline.ui.history.BrewDetailScreenTest,dev.josueamaya.pourline.ui.history.BrewEditScreenTest,dev.josueamaya.pourline.ui.recipes.RecipeEditScreenTest`.
 Además, `grep -rn "\.grind\b\|grind =" app/src` solo encuentra el `GrindSetting`.
 
 Commit sugerido: `feat(history): add grinder tables and structured grind settings, migrating the database to v5`.
@@ -593,7 +593,7 @@ probados con el catálogo de prueba. El sembrador **no** se invoca al arrancar (
 | `grinder/GrinderCatalogSeeder.kt` (nuevo) | `fun interface CatalogSource { fun read(): String? }`, `class AssetCatalogSource(context: Context, path: String = "grinders/catalog.json")`, `sealed interface SyncResult` y `class GrinderCatalogSeeder` (D34). |
 | `grinder/ResourcesGrindTexts.kt` (nuevo) | `class ResourcesGrindTexts(context: Context) : GrindTexts`. |
 | `settings/GrinderSettings.kt` (nuevo) | `interface DefaultGrinderStore { val defaultGrinderId: StateFlow<Long?>; fun setDefaultGrinderId(id: Long?) }`, `interface CatalogVersionStore { val catalogVersion: Int; fun setCatalogVersion(version: Int) }` y `class GrinderSettings(context, prefsName = BrewSettings.PREFS_NAME) : DefaultGrinderStore, CatalogVersionStore`, claves `default_grinder_id` y `grinder_catalog_version`. |
-| `AppDependencies.kt`, `DotScaleApp.kt` | `grinderSettings`, `grinderRepository` y `grindTexts`. `grinderCatalogSeeder` se crea, sin llamarlo. |
+| `AppDependencies.kt`, `PourlineApp.kt` | `grinderSettings`, `grinderRepository` y `grindTexts`. `grinderCatalogSeeder` se crea, sin llamarlo. |
 | `androidTest/.../ui/TestAppDependencies.kt` | Lo mismo, y `seedGrinders(json: String = TestGrinderCatalog.JSON)`. |
 | `androidTest/.../grinder/TestGrinderCatalog.kt` (nuevo) | D36. |
 
@@ -606,8 +606,8 @@ probados con el catálogo de prueba. El sembrador **no** se invoca al arrancar (
 | `androidTest/.../grinder/GrinderCatalogSeederTest.kt` (nuevo) | Primer arranque: siembra y guarda la versión. Misma versión: no escribe. Versión mayor: actualiza por clave conservando el id y `owned` y reemplazando los hijos; no toca los propios ni los duplicados. Clave que desaparece: con receta, con preparación, `owned` o predeterminado → `retired`; sin uso → borrado. Clave que vuelve → `retired = false`. JSON roto, molino inválido o archivo ausente → `Failed`, sin cambios en la base ni en la versión. |
 | `androidTest/.../settings/GrinderSettingsTest.kt` (nuevo) | Sin valor, `null` y versión 0; persistencia entre instancias; `setDefaultGrinderId(null)` borra la clave. |
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.grinder.*"` y
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.grinder.GrinderDaoTest,dev.dotscale.grinder.GrinderRepositoryTest,dev.dotscale.grinder.GrinderCatalogSeederTest,dev.dotscale.settings.GrinderSettingsTest`.
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.grinder.*"` y
+`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.grinder.GrinderDaoTest,dev.josueamaya.pourline.grinder.GrinderRepositoryTest,dev.josueamaya.pourline.grinder.GrinderCatalogSeederTest,dev.josueamaya.pourline.settings.GrinderSettingsTest`.
 
 Commit sugerido: `feat(grinder): add the grinder repository, settings and catalog seeder`.
 
@@ -648,9 +648,9 @@ la introducción compuesta (§3.7), con el catálogo de prueba.
 | `androidTest/.../ui/grinders/GrindInputTest.kt` (nuevo) | Acarreo con toques en los dos sentidos; límite de la escala deshabilita el botón; descripción larga en la semántica. |
 | `androidTest/.../ui/SettingsScreenTest.kt`, `SettingsNavigationTest.kt` | La fila "Molinos" abre la lista. |
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.ui.grinders.*" --tests "dev.dotscale.TabNavigationTest"`,
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=dev.dotscale.ui.grinders`,
-la misma con `class=dev.dotscale.ui.SettingsScreenTest,dev.dotscale.ui.SettingsNavigationTest,dev.dotscale.ui.TabsNavigationTest`
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.ui.grinders.*" --tests "dev.josueamaya.pourline.TabNavigationTest"`,
+`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=dev.josueamaya.pourline.ui.grinders`,
+la misma con `class=dev.josueamaya.pourline.ui.SettingsScreenTest,dev.josueamaya.pourline.ui.SettingsNavigationTest,dev.josueamaya.pourline.ui.TabsNavigationTest`
 y `./gradlew :app:lintDebug`.
 
 Commit sugerido: `feat(grinder): add grinder list, catalog, detail and editor screens`.
@@ -684,8 +684,8 @@ Commit sugerido: `feat(grinder): add grinder list, catalog, detail and editor sc
 | `androidTest/.../ui/history/BrewDetailScreenTest.kt` | "Comandante C40 · 21 clics" con el molino vivo; copia con "molino eliminado"; aviso fuera de escala. |
 | `androidTest/.../ui/grinders/GrinderDeleteTest.kt` (nuevo) | **Criterio:** borrar un molino propio usado en una receta muestra "Se usa en 1 receta"; tras confirmar, el editor de esa receta muestra la copia con "molino eliminado" y la preparación que lo usaba también; el predeterminado queda a `null`. |
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.ui.recipes.*" --tests "dev.dotscale.ui.history.*"`,
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.recipes.RecipeEditScreenTest,dev.dotscale.ui.history.BrewEditScreenTest,dev.dotscale.ui.history.BrewDetailScreenTest,dev.dotscale.ui.grinders.GrinderDeleteTest`
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.ui.recipes.*" --tests "dev.josueamaya.pourline.ui.history.*"`,
+`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.recipes.RecipeEditScreenTest,dev.josueamaya.pourline.ui.history.BrewEditScreenTest,dev.josueamaya.pourline.ui.history.BrewDetailScreenTest,dev.josueamaya.pourline.ui.grinders.GrinderDeleteTest`
 y `./gradlew :app:lintDebug` (sin `UnusedResources` de las cadenas borradas en F3).
 
 Commit sugerido: `feat(recipes): pick the grinder and grind setting in recipes and brews`.
@@ -706,7 +706,7 @@ guardado en la preparación (§3.7, §3.8 pasos 4 a 7).
 | `ui/grinders/GrindCard.kt` (nuevo) | `GrindCard(state: GrindCardState, mode: ExperienceMode, onChoose: (Long) -> Unit, onAddGrinder: () -> Unit, onFix: (GrindFix, Long) -> Unit, onOpenConverter: ((ConverterArgs) -> Unit)?, modifier)`; "Moler con" con `AntSelect`. `onOpenConverter` es `null` hasta F8. |
 | `ui/prepare/PrepareViewModel.kt`, `PrepareScreen.kt` | El ViewModel recibe `GrindSelection` y expone `grind`; la tarjeta va entre `DoseCard` y "Empezar". |
 | `ui/session/SessionScreen.kt` | `SessionScreen(…, grind: GrindSelection, onAddGrinder, onFixGrinder, onOpenConverter)`; `PrepPanel` muestra la tarjeta en `PrepStep.DOSE`. |
-| `AppDependencies.kt`, `DotScaleApp.kt`, `TestAppDependencies.kt` | `grindSelection`; el gestor recibe `SessionGrind { grindSelection.current() }` (D23). |
+| `AppDependencies.kt`, `PourlineApp.kt`, `TestAppDependencies.kt` | `grindSelection`; el gestor recibe `SessionGrind { grindSelection.current() }` (D23). |
 | `Navigation.kt` | Entradas `Prepare` y `Session`: `onAddGrinder = { stack.add(Grinders) }` y `onFix` → `GrinderEdit(id, openRanges = true)` o `GrinderEdit(fromId = id, openRanges = true)`. |
 | `androidTest/.../ui/session/SessionPerformanceTest.kt` | El montaje siembra el catálogo de prueba, marca dos molinos como míos y da molino a la receta larga (D32). |
 | `res/values*/strings.xml` | `grind_card_*`. |
@@ -723,8 +723,8 @@ guardado en la preparación (§3.7, §3.8 pasos 4 a 7).
 | `androidTest/.../ui/session/GrindBrewFlowTest.kt` (nuevo) | **Criterio:** con la simulada, receta V60 con "Acme Uno · 30 clics", "Moler con" en "Acme Tres", sesión completa: la preparación guarda `grinderId` de "Acme Tres", el valor convertido y la copia, y `BrewDetailScreen` muestra "Acme Tres · …". |
 | `androidTest/.../ui/TabsNavigationTest.kt` | Desde el paso 2, "Añade tu molino" abre Molinos sin barra inferior; "Atrás" vuelve a la sesión en el paso 2. |
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.grinder.*" --tests "dev.dotscale.session.*" --tests "dev.dotscale.settings.*"`,
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.grinders.GrindCardTest,dev.dotscale.ui.prepare.PrepareScreenTest,dev.dotscale.ui.session.SessionScreenTest,dev.dotscale.ui.session.GrindBrewFlowTest,dev.dotscale.ui.TabsNavigationTest`,
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.grinder.*" --tests "dev.josueamaya.pourline.session.*" --tests "dev.josueamaya.pourline.settings.*"`,
+`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.grinders.GrindCardTest,dev.josueamaya.pourline.ui.prepare.PrepareScreenTest,dev.josueamaya.pourline.ui.session.SessionScreenTest,dev.josueamaya.pourline.ui.session.GrindBrewFlowTest,dev.josueamaya.pourline.ui.TabsNavigationTest`,
 una pasada de `SessionPerformanceTest` (aviso temprano, no cuenta para D32) y `./gradlew :app:lintDebug`.
 
 Commit sugerido: `feat(session): show the grind card with grinder conversion in Prepare and the dose step`.
@@ -755,8 +755,8 @@ fuente en el resultado (§3.7).
 | `androidTest/.../ui/grinders/GrindConverterScreenTest.kt` (nuevo) | **Criterio:** con origen, método y ajuste, una fila por cada molino mío con su equivalente. Estado vacío con el enlace; el selector de origen ofrece mis molinos y el catálogo sin retirados; cambiar el origen vacía el ajuste; la fuente aparece si interviene un predefinido (**criterio**) y no con solo propios. |
 | `androidTest/.../ui/grinders/GrindShortcutTest.kt` (nuevo) | **Criterio:** desde la tarjeta de Preparar y desde el editor de la receta, el atajo abre el convertidor con el molino, el método y el ajuste de origen; no aparece si la receta no tiene molino y ajuste. Con `TestAppDependencies` y `MainNavigation`. |
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.grinder.*"`,
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.grinders.GrindConverterScreenTest,dev.dotscale.ui.grinders.GrindShortcutTest,dev.dotscale.ui.grinders.GrindCardTest`
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.grinder.*"`,
+`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.grinders.GrindConverterScreenTest,dev.josueamaya.pourline.ui.grinders.GrindShortcutTest,dev.josueamaya.pourline.ui.grinders.GrindCardTest`
 y `./gradlew :app:lintDebug`.
 
 Commit sugerido: `feat(grinder): add the standalone grind converter and its shortcuts`.
@@ -781,7 +781,7 @@ Commit sugerido: `feat(grinder): add the standalone grind converter and its shor
 | `androidTest/.../ui/onboarding/OnboardingTest.kt` | Elegir modo lleva al paso 2; **criterio:** elegir un molino lo deja en mis molinos y como predeterminado y termina; **criterio:** "Omitir" termina sin molino ni predeterminado, con el modo elegido; "Saltar" del paso 1 termina en Básico sin pasar por el 2; "Atrás" del paso 2 vuelve al 1; con `onboarding_done = true` no aparece; con el catálogo vacío, el estado vacío y "Omitir". |
 | `androidTest/.../ui/session/NewUserJourneyTest.kt` | Pasa por el paso 2 con "Omitir". |
 
-**Verificación:** `ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.ui.onboarding.OnboardingTest,dev.dotscale.ui.session.NewUserJourneyTest`
+**Verificación:** `ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.onboarding.OnboardingTest,dev.josueamaya.pourline.ui.session.NewUserJourneyTest`
 y `./gradlew :app:lintDebug`.
 
 Commit sugerido: `feat(onboarding): ask for the user's grinder after choosing the mode`.
@@ -796,13 +796,13 @@ aplicadas en el JSON y aprobadas.
 | Archivo | Cambio |
 |---|---|
 | `app/src/main/assets/grinders/catalog.json` | La versión aprobada, `version: 1`. |
-| `DotScaleApp.kt` | `onCreate` lanza `grinderCatalogSeeder.sync()` en `applicationScope` con `Dispatchers.IO` (D34). |
+| `PourlineApp.kt` | `onCreate` lanza `grinderCatalogSeeder.sync()` en `applicationScope` con `Dispatchers.IO` (D34). |
 | `test/.../grinder/GrinderCatalogFileTest.kt` | Sin `assumeTrue`: el archivo es obligatorio. Comprueba además la lista exacta de claves aprobadas. |
 | `androidTest/.../grinder/RealCatalogSeedTest.kt` (nuevo) | Siembra el asset real (`AssetCatalogSource`) en una base en memoria: tantos predefinidos como claves aprobadas, cada uno igual al del JSON, y una segunda llamada da `UpToDate`. |
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.grinder.*"`,
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.grinder.RealCatalogSeedTest`
-y por adb: `./gradlew :app:installDebug`, `adb -s emulator-5556 shell pm clear dev.dotscale`, abrir, "Básico" y el
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.grinder.*"`,
+`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.grinder.RealCatalogSeedTest`
+y por adb: `./gradlew :app:installDebug`, `adb -s emulator-5556 shell pm clear dev.josueamaya.pourline`, abrir, "Básico" y el
 paso 2 lista los molinos aprobados; `adb -s emulator-5556 logcat -d -s GrinderCatalogSeeder` sin errores.
 
 Commit sugerido: `feat(grinder): seed the predefined grinder catalog on startup`.
@@ -871,7 +871,7 @@ el manifiesto fusionado en F11).
 | R3 | La fuente no tenga algún molino o método, no dé la escala o la jerarquía, o la página cambie. | Puerta de F2 con `missing` y `notes` (URL y fecha de consulta), D37 y P3; nada se inventa. F2 va antes de la base de datos para descubrir pronto si el modelo no basta. |
 | R4 | Ruido de coma flotante con pasos de 0,1 o de un tercio. | `snap` con redondeo a 6 decimales y `EPS` (D11); el Fellow Ode se modela con una unidad base entera (D37); ida y vuelta probada con pasos de 1, 0,5 y 0,1. |
 | R5 | La tarjeta o `GrindSelection` empeoren el rendimiento de la sesión. | La tarjeta no se compone en `Active`; `GrindSelection` vive fuera del gestor y solo reacciona a cambios de la fuente (D23); comparación de tres pasadas (D32). |
-| R6 | Dependencia circular entre `GrindSelection` y `ScaleSessionManager` en `DotScaleApp`. | El gestor recibe una lambda que lee `grindSelection` solo al congelar (D23). |
+| R6 | Dependencia circular entre `GrindSelection` y `ScaleSessionManager` en `PourlineApp`. | El gestor recibe una lambda que lee `grindSelection` solo al congelar (D23). |
 | R7 | `kotlinx-serialization-json` en `implementation` cambie la resolución del classpath de debug (el conflicto que documenta `app/build.gradle.kts` con `room-migration`). | Se conserva `debugImplementation(libs.kotlinx.serialization.core)`; F1 compila también `:app:compileDebugAndroidTestKotlin`. |
 | R8 | El sembrado asíncrono al arrancar llegue tarde al paso 2 del onboarding. | La lista observa un `Flow` de Room y se rellena al terminar; `AntSpin` mientras es `null` (F9). |
 | R9 | Tests antiguos que dependían del texto de la molienda queden rotos u olvidados. | Lista en el §1 y su destino en F3 y F6; `grep` de `.grind` en F3. |
@@ -932,7 +932,7 @@ ningún `import android` en los archivos puros de D10, ningún resto de `recipe_
 ### 7.3 E2E por adb (emulador, báscula simulada, sin ARTEMIS)
 
 Antes: `adb devices -l` (si hay más de uno además de `emulator-5554`, preguntar), `adb -s emulator-5556 shell wm size`
-(se anota el tamaño para convertir coordenadas), `./gradlew :app:installDebug` y `adb -s emulator-5556 shell pm clear dev.dotscale`. Se localiza con
+(se anota el tamaño para convertir coordenadas), `./gradlew :app:installDebug` y `adb -s emulator-5556 shell pm clear dev.josueamaya.pourline`. Se localiza con
 `uiautomator dump`, se toca con `input tap` y se captura con `screencap -d <display id>` (el id sale de
 `adb shell dumpsys SurfaceFlinger --display-id`). `adb logcat -b crash -d` debe quedar vacío en todo el recorrido.
 El emulador está en inglés: los textos esperados son los de `values-en`.
@@ -950,7 +950,7 @@ El emulador está en inglés: los textos esperados son los de `values-en`.
 | 9 | Detalle del C40 → "Duplicate to customize" → editar el rango de V60 → guardar | La copia está en mis molinos y es editable; el C40 sigue sin "Edit". Capturas del editor en las dos pestañas. |
 | 10 | "Add grinder" → "Create my own grinder": rotaciones, números (10) y clics (4), escala y rango de V60 → guardar; usarlo en una receta; borrarlo | "Used in 1 recipe"; tras confirmar, la receta muestra la copia con "grinder deleted". |
 | 11 | Girar la pantalla en el editor de molino con cambios | Los cambios siguen (`adb shell settings put system user_rotation 1` y volver a 0). |
-| 12 | `adb shell am force-stop dev.dotscale` y abrir | No vuelve el onboarding; el catálogo no se vuelve a sembrar (`logcat -s GrinderCatalogSeeder`: `UpToDate`). |
+| 12 | `adb shell am force-stop dev.josueamaya.pourline` y abrir | No vuelve el onboarding; el catálogo no se vuelve a sembrar (`logcat -s GrinderCatalogSeeder`: `UpToDate`). |
 
 ### 7.4 Capturas
 

@@ -20,7 +20,7 @@ que conviene revisarlas antes de empezar la fase 1.
 - `finishWith(reason, totalTimeMs)` es el único punto de fin. Ahí se emiten `Finished` y `PauseTimer`.
 - `ScaleViewModel.send(frame)` publica los fallos en `errors`, pero lanza una corrutina por trama. Para
   garantizar el orden `resetTimer` → `startTimer` hace falta un ejecutor secuencial (§3.5 del spec).
-- `DotScaleApp` ya es el contenedor de singletons (`brewSettings`). Ahí van la base de datos, el
+- `PourlineApp` ya es el contenedor de singletons (`brewSettings`). Ahí van la base de datos, el
   repositorio y `applicationScope`.
 - `BrewChart(samples, unit, …)`, con `testTag("brew_chart")`, y `BrewSummaryCard(summary, unit)` sirven
   tal cual para el detalle. La función privada `Chart` de `BrewChartCard.kt` (que construye la
@@ -108,7 +108,7 @@ mensaje al final de cada fase.
 
 `history/BrewCurveCodec.kt` y `history/BrewPreview.kt` no importan `android.*` ni `androidx.*`.
 
-**Tests** (`app/src/test/kotlin/dev/dotscale/`):
+**Tests** (`app/src/test/kotlin/dev/josueamaya/pourline/`):
 
 | Archivo | Casos |
 |---|---|
@@ -117,8 +117,8 @@ mensaje al final de cada fase.
 | `history/HistoryModelsTest.kt` | `canonicalCoffee` ("etiopía " → "Etiopía"; sin coincidencia, se queda como está; vacío → `null`) y `BrewDetails.normalized()`. |
 | `ui/history/BrewEditFormTest.kt` | Temperatura: "92", "92,5", "92.5", "100" y "0" son válidas; "100,1", "-1", "92,55", "abc" y "1e2" no. `isDirty` y `toDetails`. |
 
-**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.dotscale.history.*"` y
-`grep -n "import android" app/src/main/kotlin/dev/dotscale/history/BrewCurveCodec.kt app/src/main/kotlin/dev/dotscale/history/BrewPreview.kt`
+**Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.history.*"` y
+`grep -n "import android" app/src/main/kotlin/dev/josueamaya/pourline/history/BrewCurveCodec.kt app/src/main/kotlin/dev/josueamaya/pourline/history/BrewPreview.kt`
 no devuelve nada.
 
 Commit sugerido: `feat(history): add brew curve codec and preview`.
@@ -135,7 +135,7 @@ Commit sugerido: `feat(history): add brew curve codec and preview`.
   - `implementation(libs.androidx.room.runtime)` y `ksp(libs.androidx.room.compiler)`.
   - `androidTestImplementation(libs.kotlinx.coroutines.test)`.
 
-**Archivos** (`app/src/main/kotlin/dev/dotscale/history/`):
+**Archivos** (`app/src/main/kotlin/dev/josueamaya/pourline/history/`):
 
 | Archivo | Contenido |
 |---|---|
@@ -145,15 +145,15 @@ Commit sugerido: `feat(history): add brew curve codec and preview`.
 | `HistoryDatabase.kt` | `@Database(entities = [...], version = 1, exportSchema = true)` con `create(context)` (`history.db`) y `inMemory(context)` para los tests. Sin `fallbackToDestructiveMigration`. |
 | `BrewRepository.kt` | Contrato del §3.3 más `observe(id)` (D7). Implementa `BrewSaver`. `save` codifica y calcula la minicurva en `Dispatchers.Default` y escribe en una transacción. `list` mapea `BrewListRow` a `BrewListItem` (decodifica la minicurva). `get` y `observe` reconstruyen `BrewSummary` (los `levelShare` salen de las columnas `share*` y los vertidos, de la curva). `methods()` se ordena por el orden del enum. Aplica D8. |
 
-**Singletons** (`DotScaleApp.kt`):
+**Singletons** (`PourlineApp.kt`):
 - `val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)`.
 - `val historyDatabase by lazy { HistoryDatabase.create(this) }`.
 - `val brewRepository by lazy { BrewRepository(historyDatabase) }`.
 
-**Esquema:** `app/schemas/dev.dotscale.history.HistoryDatabase/1.json` se genera al compilar y se
+**Esquema:** `app/schemas/dev.josueamaya.pourline.history.HistoryDatabase/1.json` se genera al compilar y se
 añade al repositorio.
 
-**Tests:** `app/src/androidTest/kotlin/dev/dotscale/history/BrewDaoTest.kt`, con Room en memoria y
+**Tests:** `app/src/androidTest/kotlin/dev/josueamaya/pourline/history/BrewDaoTest.kt`, con Room en memoria y
 `runTest`. Casos del §5 del spec:
 - Insertar y leer.
 - `list` sin la curva y con la más reciente primero.
@@ -168,7 +168,7 @@ Un helper compartido `androidTest/.../history/TestBrews.kt` genera `FinishedBrew
 deterministas (con ruido de ±0,05 g para no sobrestimar la compresión). Lo usan también F5 y F6.
 
 **Verificación:** `./gradlew :app:compileDebugKotlin` (KSP genera el DAO y el esquema) y
-`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.dotscale.history.BrewDaoTest`.
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.history.BrewDaoTest`.
 
 Commit sugerido: `feat(history): add Room database and brew repository`.
 
@@ -252,7 +252,7 @@ Commit sugerido: `feat(ui): add select, autocomplete, modal and message action c
   - `onOpenHistory = { backStack.add(History) }` en Scan y en Scale.
   - `onAddDetails = { id -> backStack.add(BrewEdit(id)) }` en Scale.
 
-**Archivos** (`app/src/main/kotlin/dev/dotscale/ui/history/`):
+**Archivos** (`app/src/main/kotlin/dev/josueamaya/pourline/ui/history/`):
 
 | Archivo | Contenido |
 |---|---|
@@ -279,7 +279,7 @@ Commit sugerido: `feat(ui): add select, autocomplete, modal and message action c
 `brew_summary_add_details`, `history_open` y `scale_error_*` en `values/strings.xml` y
 `values-en/strings.xml`.
 
-**Tests de Compose** (`app/src/androidTest/kotlin/dev/dotscale/ui/history/`, con Room en memoria y
+**Tests de Compose** (`app/src/androidTest/kotlin/dev/josueamaya/pourline/ui/history/`, con Room en memoria y
 `TestBrews`):
 
 | Archivo | Casos |
@@ -299,7 +299,7 @@ Commit sugerido: `feat(history): add history, brew detail and edit screens`.
 1. **Dispositivo.** Ejecutar `adb devices -l`. Si hay más de uno, preguntar cuál usar. Después,
    `./gradlew :app:installDebug`. *No se usa ARTEMIS.*
 2. **E2E por adb** (`uiautomator dump`, `input` y `screencap`) con la báscula simulada:
-   - Antes: `adb shell pm clear dev.dotscale` y `pm grant` de `BLUETOOTH_SCAN` y `BLUETOOTH_CONNECT`.
+   - Antes: `adb shell pm clear dev.josueamaya.pourline` y `pm grant` de `BLUETOOTH_SCAN` y `BLUETOOTH_CONNECT`.
      "Fin automático" se pone en 30 s desde Ajustes.
 
    | Paso | Recorrido | Comprobaciones |
@@ -310,7 +310,7 @@ Commit sugerido: `feat(history): add history, brew detail and edit screens`.
    | 4 | Atrás hasta Scan → icono de historial | Dos filas, con minicurva, la más reciente primero, la etiqueta "Simulada" y la gráfica sustituida por el texto (las simuladas no puntúan) |
    | 5 | Filtrar por el café | Solo queda la fila del paso 2 |
    | 6 | Abrir la fila | Gráfica, resumen y detalles (dos toques desde Scan) |
-   | 7 | Inicio → `adb shell am kill dev.dotscale` → abrir de nuevo | El historial conserva las dos preparaciones |
+   | 7 | Inicio → `adb shell am kill dev.josueamaya.pourline` → abrir de nuevo | El historial conserva las dos preparaciones |
    | 8 | Detalle → "Borrar" → "Deshacer" | La fila vuelve |
    | 9 | Scale → simular vertido → atrás antes del fin → historial | Aparece con el motivo "Manual" (`onCleared`) |
 

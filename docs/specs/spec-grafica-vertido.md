@@ -5,7 +5,7 @@
 | Estado | Implementado en `feat/brew-chart`; pendiente de validación con la DOT física (§6) |
 | Fecha | 2026-11-12 |
 | Plan | [`plan-grafica-vertido.md`](plan-grafica-vertido.md) |
-| Módulos afectados | `:app` (nuevo paquete `dev.dotscale.brew`, `ui/scale`, `settings`, `sim`) |
+| Módulos afectados | `:app` (nuevo paquete `dev.josueamaya.pourline.brew`, `ui/scale`, `settings`, `sim`) |
 | Specs relacionados | [SPEC-002 Historial](spec-historial.md), [SPEC-003 Curva objetivo](spec-curva-objetivo.md), [SPEC-004 Catálogo de cafés y compartir imagen](spec-catalogo-cafes.md) |
 
 ## 1. Resumen y Contexto
@@ -91,10 +91,10 @@ textos de TIMEMORE.
 
 | Elemento | Ubicación | Tipo |
 |---|---|---|
-| Lógica de sesión, métricas, ejes y reducción de muestreo | `app/src/main/kotlin/dev/dotscale/brew/` | Kotlin puro, sin imports de `android.*` |
-| Preferencia de fin automático | `app/src/main/kotlin/dev/dotscale/settings/BrewSettings.kt` | `SharedPreferences`, mismo patrón que `ThemeSettings` |
-| Pantalla de ajustes | `app/src/main/kotlin/dev/dotscale/ui/settings/SettingsScreen.kt` | Compose |
-| Gráfica y tarjeta de resumen | `app/src/main/kotlin/dev/dotscale/ui/scale/` (`BrewChartCard`, `BrewChart`, `BrewSummaryCard`) | Compose, Canvas propio |
+| Lógica de sesión, métricas, ejes y reducción de muestreo | `app/src/main/kotlin/dev/josueamaya/pourline/brew/` | Kotlin puro, sin imports de `android.*` |
+| Preferencia de fin automático | `app/src/main/kotlin/dev/josueamaya/pourline/settings/BrewSettings.kt` | `SharedPreferences`, mismo patrón que `ThemeSettings` |
+| Pantalla de ajustes | `app/src/main/kotlin/dev/josueamaya/pourline/ui/settings/SettingsScreen.kt` | Compose |
+| Gráfica y tarjeta de resumen | `app/src/main/kotlin/dev/josueamaya/pourline/ui/scale/` (`BrewChartCard`, `BrewChart`, `BrewSummaryCard`) | Compose, Canvas propio |
 | Integración | `ScaleViewModel`, `ScaleUiState`, `ScaleScreen` | Existentes |
 | Simulador | `SimulatedScaleConnection` | Existente |
 
@@ -108,7 +108,7 @@ la báscula. La conversión de onzas usa 1 oz = 28,349523125 g. La UI convierte 
 (`ScaleUiState.unit`) solo al mostrar.
 
 ```kotlin
-package dev.dotscale.brew
+package dev.josueamaya.pourline.brew
 
 /** Una muestra de la sesión. `tMs` es relativo a t0 (primer instante sobre el umbral). */
 data class BrewSample(
@@ -291,7 +291,7 @@ Constantes en `BrewConfig`. Son valores iniciales que se calibrarán con hardwar
 
 **Reglas comunes de los ejes.**
 - Los escalones solo crecen durante una sesión; se reinician con la sesión nueva.
-- La lógica de escalones vive en `dev.dotscale.brew.ChartAxis` (Kotlin puro).
+- La lógica de escalones vive en `dev.josueamaya.pourline.brew.ChartAxis` (Kotlin puro).
 
 **Dibujo** (`BrewChart`, con `Canvas`):
 - **Agua:** línea con relleno suave, color `primary` del tema Ant.
@@ -391,10 +391,10 @@ identificadores coinciden con los del plan.
 | D4 | Recorte al terminar | Se descartan las muestras con `tMs > totalTimeMs + POUR_GAP_MS`. `totalWaterG` es el `waterG` de la última muestra válida conservada. Evita la línea plana final del fin por inactividad. |
 | D5 | Peso negativo | Una muestra es inválida si `outOfRange` o si su peso es menor que −`NEGATIVE_WEIGHT_TOLERANCE_G`, para que el ruido alrededor de 0 g tras una tara no abra huecos. |
 | D6 | Ponderación por tiempo | Cada muestra pesa el Δt respecto a la anterior, con tope `MAX_SAMPLE_GAP_MS`. Se aplica a `avgFlowGps`, `stabilityScore` y `levelShare`. |
-| D7 | Ámbito de `BrewSettings` | Una sola instancia por proceso, en `DotScaleApp : Application`, para que el cambio de ajuste llegue a la sesión en curso aunque se rote la pantalla. |
+| D7 | Ámbito de `BrewSettings` | Una sola instancia por proceso, en `PourlineApp : Application`, para que el cambio de ajuste llegue a la sesión en curso aunque se rote la pantalla. |
 | D8 | Textos | Todo en `values/strings.xml` y `values-en/strings.xml`, incluidos los textos que ya existían (ver §1, Alcance). |
 | D9 | Dosis | El ViewModel llama a `setDoseGrams` solo en `captureDose()` y `clearDose()`. `finalRatio` se fija al terminar, así que un cambio de unidad a mitad no pierde el ratio. |
-| D10 | Factor de onzas | `GRAMS_PER_OUNCE = 28.349523125` vive en `dev.dotscale.brew` y lo usa también el simulador. |
+| D10 | Factor de onzas | `GRAMS_PER_OUNCE = 28.349523125` vive en `dev.josueamaya.pourline.brew` y lo usa también el simulador. |
 | D11 | Tara | En `Armed` (o `Finished` rearmada), una tara descarta la racha de confirmación y la última muestra válida. En `Active`, `baselineG -= lastRawWeightG`. Supone que `Tared` llega antes de la primera muestra posterior a la tara (sin verificar con la DOT, §6). |
 | D12 | Simulador | `simulatePour` se ignora si ya hay un vertido simulado en curso. Perfil: bloom de 9 s a 5 g/s (~45 g), pausa de 20 s y vertido principal a 4 g/s hasta ~250 g. `IRREGULAR` multiplica el flujo objetivo por un factor U(0,35; 1,65) que cambia cada 5 ticks, con semilla fija. |
 | D13 | Publicación del estado | `BrewSession.state` es una instancia cacheada que solo se reconstruye cuando algo cambia; `samples` es una copia inmutable. |
@@ -450,7 +450,7 @@ identificadores coinciden con los del plan.
 - [x] Todos los textos nuevos existen en `values/` y `values-en/`.
 
 **Pruebas:**
-- [x] Unitarias de `BrewSession` en `app/src/test/kotlin/dev/dotscale/brew/`, que cubren:
+- [x] Unitarias de `BrewSession` en `app/src/test/kotlin/dev/josueamaya/pourline/brew/`, que cubren:
   - Confirmación de inicio y rechazo de picos.
   - Línea base y tara durante la sesión.
   - Segmentación de vertidos con `POUR_GAP_MS`.
@@ -469,7 +469,7 @@ identificadores coinciden con los del plan.
   - Escalones de los tres ejes en g y oz, incluida la regla del 85 % y que no decrecen.
   - La salida de la reducción tiene como máximo 2 × ancho puntos.
 - [x] Unitarias de contraste de los colores de las series, en claro y en oscuro.
-- [x] UI instrumentada (Compose, `app/src/androidTest/kotlin/dev/dotscale/ui/`) con la báscula
+- [x] UI instrumentada (Compose, `app/src/androidTest/kotlin/dev/josueamaya/pourline/ui/`) con la báscula
       simulada:
   - La gráfica aparece al simular un vertido.
   - "Terminar" muestra la tarjeta de resumen.

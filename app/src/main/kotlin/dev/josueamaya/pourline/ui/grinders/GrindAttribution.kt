@@ -1,0 +1,40 @@
+package dev.josueamaya.pourline.ui.grinders
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import dev.josueamaya.pourline.R
+import dev.josueamaya.pourline.grinder.Grinder
+import dev.josueamaya.pourline.ui.components.AntButton
+import dev.josueamaya.pourline.ui.components.AntButtonType
+import dev.josueamaya.pourline.ui.components.AntText
+import dev.josueamaya.pourline.ui.components.AntTextType
+import dev.josueamaya.pourline.ui.theme.AntTheme
+
+/**
+ * La fuente de los valores de los predefinidos (D9): "Fuente: <nombre de la fuente> · valores orientativos", con el
+ * `sourceName` de cada predefinido (sin repetir) y un enlace por cada uno de [grinders] con su modelo, que abre su
+ * `sourceUrl` en el navegador. No muestra nada si ninguno es predefinido.
+ */
+@Composable
+fun GrindAttribution(grinders: List<Grinder>, modifier: Modifier = Modifier, testTag: String = "grinder_attribution") {
+  val sources = grinders.filter { it.isPredefined && it.sourceUrl != null }.distinctBy { it.catalogKey }
+  if (sources.isEmpty()) return
+  val uriHandler = LocalUriHandler.current
+  val names = sources.mapNotNull { it.sourceName }.distinct().ifEmpty { listOf(stringResource(R.string.grinder_source_unknown)) }
+  Column(modifier, verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
+    AntText(stringResource(R.string.grinder_attribution, names.joinToString(", ")), Modifier.testTag(testTag), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
+    for (grinder in sources) {
+      AntButton(
+        text = grinder.model,
+        onClick = { grinder.sourceUrl?.let(uriHandler::openUri) },
+        modifier = Modifier.testTag("${testTag}_link_${grinder.catalogKey}"),
+        type = AntButtonType.Link,
+      )
+    }
+  }
+}
