@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado, pendiente de plan |
+| Estado | Aprobado. Plan aprobado: [`plan-sin-bascula.md`](plan-sin-bascula.md) |
 | Fecha | 2026-11-17 |
 | Rama | `feat-recipe-without-scale`, avanzada a `develop` (`0aa1829`) |
 | Deriva de | Uso real: la app solo sirve con la báscula conectada |
