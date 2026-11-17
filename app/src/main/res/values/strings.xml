@@ -759,4 +759,64 @@
     <string name="converter_picker_owned">Mis molinos</string>
     <string name="converter_picker_catalog">Catálogo</string>
     <string name="converter_picker_empty">Sin resultados</string>
+
+    <!-- Herramientas -->
+    <string name="tab_tools">Herramientas</string>
+    <string name="tools_title">Herramientas</string>
+    <string name="tools_ratio_title">Calculadora de ratio</string>
+    <string name="tools_ratio_description">Café, ratio y agua: cambia uno y se calculan los demás.</string>
+    <string name="tools_four_six_title">Generador 4:6</string>
+    <string name="tools_four_six_description">Los vertidos del método de Tetsu Kasuya según el sabor y la intensidad que busques.</string>
+    <string name="tools_converter_title">Convertidor de molienda</string>
+    <string name="tools_converter_description">El ajuste equivalente en tus molinos.</string>
+
+    <!-- Herramientas: calculadora de ratio -->
+    <string name="ratio_coffee">Café</string>
+    <string name="ratio_ratio">Ratio</string>
+    <string name="ratio_water">Agua</string>
+    <string name="ratio_hint">Con el café o el ratio se recalcula el agua; con el agua, el café.</string>
+    <string name="ratio_error">Escribe números mayores que 0. El ratio va de 1:1 a 1:50.</string>
+
+    <!-- Herramientas: generador 4:6 -->
+    <string name="four_six_title">Método 4:6</string>
+    <string name="four_six_range_error">La dosis va de 5 a 60 g y el ratio, de 1:10 a 1:20, con un decimal como mucho.</string>
+    <string name="four_six_water_error">El agua total no puede pasar de 1000 g.</string>
+    <string name="four_six_taste">Sabor</string>
+    <string name="four_six_taste_help">El 40 % del agua, en 2 vertidos: un 1.er vertido corto da una taza más dulce y uno largo, más ácida.</string>
+    <string name="four_six_strength">Intensidad</string>
+    <string name="four_six_strength_help">El 60 % restante: más vertidos dan una taza más cargada y menos, una más diluida.</string>
+    <string name="four_six_taste_sweet">Dulce</string>
+    <string name="four_six_taste_medium_sweet">Medio dulce</string>
+    <string name="four_six_taste_balanced">Balanceado</string>
+    <string name="four_six_taste_medium_bright">Medio ácido</string>
+    <string name="four_six_taste_bright">Ácido</string>
+    <string name="four_six_strength_lightest">Muy diluido</string>
+    <string name="four_six_strength_light">Diluido</string>
+    <string name="four_six_strength_standard">Estándar</string>
+    <string name="four_six_strength_strong">Cargado</string>
+    <string name="four_six_strength_strongest">Muy cargado</string>
+    <string name="four_six_pours">Vertidos</string>
+    <string name="four_six_time">Tiempo</string>
+    <string name="four_six_pour_detail">%1$s · hasta %2$s g</string>
+    <string name="four_six_pour_amount">+%1$s g</string>
+    <string name="four_six_end">Retirar el filtro</string>
+    <string name="four_six_note">Molienda gruesa y agua a 92 °C. Cada vertido empieza 45 s después del anterior y el filtro se retira 30 s después del último.</string>
+    <string name="four_six_save">Guardar como receta</string>
+    <string name="four_six_recipe_name">4:6 · %1$s · %2$s</string>
+    <string-array name="four_six_pour_names">
+        <item>1.er vertido</item>
+        <item>2.º vertido</item>
+        <item>3.er vertido</item>
+        <item>4.º vertido</item>
+        <item>5.º vertido</item>
+        <item>6.º vertido</item>
+        <item>7.º vertido</item>
+    </string-array>
+    <string name="four_six_pour_name_n">Vertido %1$d</string>
+    <string name="four_six_instruction_taste">Vierte despacio y de forma uniforme: este vertido define el dulzor y la acidez.</string>
+    <string name="four_six_instruction_strength">Vierte despacio y de forma uniforme: este vertido define la intensidad.</string>
+    <string name="four_six_instruction_last">Último vertido: sin prisa, hasta el agua total.</string>
+    <string name="four_six_instruction_wait">Espera a que baje el agua.</string>
+    <string name="four_six_instruction_drain">Deja que drene y retira el filtro.</string>
+    <string name="four_six_recipe_notes">Generada con el método 4:6: el 40 % del agua define el sabor y el 60 % restante, la intensidad. Molienda gruesa.</string>
 </resources>

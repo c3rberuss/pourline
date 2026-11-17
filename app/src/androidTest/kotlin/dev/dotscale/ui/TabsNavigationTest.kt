@@ -27,7 +27,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-/** Las cuatro pestañas con su pila, la barra inferior y "Atrás" (D30 y D31), con Room en memoria y la báscula simulada. */
+/** Las pestañas con su pila, la barra inferior y "Atrás" (D30 y D31), con Room en memoria y la báscula simulada. */
 class TabsNavigationTest {
   @get:Rule
   val rule = createAndroidComposeRule<ComponentActivity>()

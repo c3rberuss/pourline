@@ -11,6 +11,7 @@ enum class Tab(val root: NavKey, @StringRes val label: Int, val testTag: String)
   COFFEES(Coffees, R.string.tab_coffees, "tab_coffees"),
   RECIPES(Recipes, R.string.tab_recipes, "tab_recipes"),
   HISTORY(History, R.string.tab_history, "tab_history"),
+  TOOLS(Tools, R.string.tab_tools, "tab_tools"),
   ;
 
   val icon: ImageVector
@@ -19,5 +20,6 @@ enum class Tab(val root: NavKey, @StringRes val label: Int, val testTag: String)
       COFFEES -> AntIcons.Coffee
       RECIPES -> AntIcons.Recipe
       HISTORY -> AntIcons.History
+      TOOLS -> AntIcons.Calculator
     }
 }

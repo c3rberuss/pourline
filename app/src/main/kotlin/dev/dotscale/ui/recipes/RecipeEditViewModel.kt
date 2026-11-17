@@ -48,8 +48,9 @@ sealed interface RecipeEditStatus {
 }
 
 /**
- * Editor de recetas, con tres modos: crear (`id` y `fromBrewId` nulos), editar (`id`) y crear desde una
- * preparación (`fromBrewId`, con [RecipeFromBrew] y sin guardar nada hasta pulsar "Guardar").
+ * Editor de recetas, con cuatro modos: crear (`id`, `fromBrewId` y `draft` nulos), editar (`id`), crear desde una
+ * preparación (`fromBrewId`, con [RecipeFromBrew]) y crear desde un borrador ya hecho (`draft`, el del generador
+ * 4:6). Al crear no se guarda nada hasta pulsar "Guardar".
  */
 class RecipeEditViewModel(
   private val repository: RecipeRepository,
@@ -60,6 +61,7 @@ class RecipeEditViewModel(
   private val grindTexts: GrindTexts,
   private val id: Long?,
   private val fromBrewId: Long?,
+  private val draft: Recipe? = null,
 ) : ViewModel() {
   private val _status = MutableStateFlow<RecipeEditStatus>(RecipeEditStatus.Loading)
   val status: StateFlow<RecipeEditStatus> = _status.asStateFlow()
@@ -121,7 +123,7 @@ class RecipeEditViewModel(
         }
         val entity = record.entity
         val base = entity.name ?: formatBrewDateTime(entity.startedAtEpochMs)
-        val draft = RecipeFromBrew.convert(
+        val converted = RecipeFromBrew.convert(
           name = texts.fromBrewName(base),
           details = BrewDetails(
             method = entity.method,
@@ -135,15 +137,21 @@ class RecipeEditViewModel(
           totalTimeMs = record.summary.totalTimeMs,
           totalWaterG = record.summary.totalWaterG,
         )
-        _adjustments.value = draft.adjustments
-        start(RecipeEditForm.from(draft))
+        _adjustments.value = converted.adjustments
+        start(RecipeEditForm.from(converted))
       }
-      else -> {
-        // Una receta nueva preselecciona el molino predeterminado, sin ajuste: lo fija el primer toque (D21).
-        val preselected = defaultGrinder.defaultGrinderId.value?.let { grinderRepository.get(it) }
-        start(RecipeEditForm(grind = if (preselected != null) GrindChoice.Live(preselected.id, null) else GrindChoice.None))
+      draft != null -> {
+        val form = RecipeEditForm.from(draft)
+        start(if (draft.grind == null) form.copy(grind = preselectedGrind()) else form)
       }
+      else -> start(RecipeEditForm(grind = preselectedGrind()))
     }
+  }
+
+  /** Una receta nueva preselecciona el molino predeterminado, sin ajuste: lo fija el primer toque (D21). */
+  private suspend fun preselectedGrind(): GrindChoice {
+    val preselected = defaultGrinder.defaultGrinderId.value?.let { grinderRepository.get(it) }
+    return if (preselected != null) GrindChoice.Live(preselected.id, null) else GrindChoice.None
   }
 
   private fun start(form: RecipeEditForm) {

@@ -21,6 +21,7 @@ import dev.dotscale.settings.FreeBrewDefaults
 import dev.dotscale.settings.GrinderSettings
 import dev.dotscale.settings.TargetSettings
 import dev.dotscale.settings.ThemeSettings
+import dev.dotscale.tools.FourSixTexts
 
 /**
  * Los singletons de la app que usan las pantallas (D32). `DotScaleApp.dependencies` los arma para producción;
@@ -41,6 +42,7 @@ class AppDependencies(
   val grinderSettings: GrinderSettings,
   val grinderRepository: GrinderRepository,
   val grindTexts: GrindTexts,
+  val fourSixTexts: FourSixTexts,
   val grindSelection: GrindSelection,
   val coffeePhotoStore: CoffeePhotoStore,
   val coffeeImages: CoffeeImages,

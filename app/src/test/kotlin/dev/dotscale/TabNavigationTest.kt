@@ -1,6 +1,7 @@
 package dev.dotscale
 
 import androidx.navigation3.runtime.NavKey
+import dev.dotscale.tools.FourSixParams
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -24,12 +25,15 @@ class TabNavigationTest {
       Grinders,
       GrinderCatalog,
       GrinderDetail(1),
+      Tools,
+      RatioTool,
+      FourSixTool,
     ).forEach { assertTrue("$it debería llevar barra", showsBottomBar(listOf(Prepare, it))) }
   }
 
   @Test
   fun theBottomBarHidesInTheSessionAndFullScreenEditors() {
-    listOf<NavKey>(Session, CoffeeEdit(), CoffeeEdit(id = 3), RecipeEdit(), RecipeEdit(id = 2), BrewEdit(4), GrinderEdit(), GrinderEdit(id = 2, openRanges = true))
+    listOf<NavKey>(Session, CoffeeEdit(), CoffeeEdit(id = 3), RecipeEdit(), RecipeEdit(id = 2), RecipeEdit(fourSix = FourSixParams(20.0, 15.0)), BrewEdit(4), GrinderEdit(), GrinderEdit(id = 2, openRanges = true))
       .forEach { assertFalse("$it no debería llevar barra", showsBottomBar(listOf(Prepare, it))) }
   }
 
@@ -54,7 +58,7 @@ class TabNavigationTest {
 
   @Test
   fun backAtTheRootOfAnotherTabSelectsPrepare() {
-    listOf(Tab.COFFEES, Tab.RECIPES, Tab.HISTORY).forEach { assertEquals(BackAction.SelectPrepare, backAction(it, stackSize = 1)) }
+    listOf(Tab.COFFEES, Tab.RECIPES, Tab.HISTORY, Tab.TOOLS).forEach { assertEquals(BackAction.SelectPrepare, backAction(it, stackSize = 1)) }
   }
 
   @Test
@@ -64,8 +68,8 @@ class TabNavigationTest {
 
   @Test
   fun everyTabRootIsItsFirstKeyAndTagsAreUnique() {
-    assertEquals(listOf<NavKey>(Prepare, Coffees, Recipes, History), Tab.entries.map { it.root })
-    assertEquals(listOf("tab_prepare", "tab_coffees", "tab_recipes", "tab_history"), Tab.entries.map { it.testTag })
+    assertEquals(listOf<NavKey>(Prepare, Coffees, Recipes, History, Tools), Tab.entries.map { it.root })
+    assertEquals(listOf("tab_prepare", "tab_coffees", "tab_recipes", "tab_history", "tab_tools"), Tab.entries.map { it.testTag })
   }
 
   @Test
