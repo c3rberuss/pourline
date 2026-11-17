@@ -781,7 +781,8 @@ referencias a fases (F0 a F11) y a apartados "§" son las del plan.
   mano en la tabla.
 - **Rango de moka del Femobook A2 (enmienda 1).** 10–18 clics choca con el resto de sus rangos y
   desvía su curva implícita. Se decide en la puerta del §3.6: mantenerlo, corregirlo con otra
-  fuente o quitarlo.
+  fuente o quitarlo. **Decidido el 2026-11-17: se quita** (catálogo `version` 2, con el motivo en
+  `notes` y en `missing`). Con él quitado, S3 20 → A2 45.
 
 ## 7. Alternativas descartadas
 

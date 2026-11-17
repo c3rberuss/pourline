@@ -45,12 +45,12 @@ class GrinderCatalogFileTest {
   @Test
   fun theCatalogHoldsExactlyTheApprovedGrinders() {
     val data = load()
-    assertEquals(1, data.version)
+    assertEquals(2, data.version)
     assertEquals(APPROVED_KEYS, data.grinders.map { it.catalogKey })
   }
 
   @Test
-  fun theFemobookA2HasTheApprovedScaleRangesAndNoAnchors() {
+  fun theFemobookA2HasTheApprovedScaleRangesWithoutMokaAndNoAnchors() {
     val a2 = load().grinders.single { it.catalogKey == "femobook-a2" }
     assertEquals(listOf(GrindUnitLevel(GrindUnit.ROTATIONS, null), GrindUnitLevel(GrindUnit.CLICKS, 40)), a2.units)
     assertEquals(0.0, a2.scaleMin, 0.0)
@@ -62,7 +62,6 @@ class GrinderCatalogFileTest {
       BrewMethod.CHEMEX to GrindRange(50.0, 80.0),
       BrewMethod.ORIGAMI to GrindRange(50.0, 80.0),
       BrewMethod.AEROPRESS to GrindRange(40.0, 50.0),
-      BrewMethod.MOKA to GrindRange(10.0, 18.0),
       BrewMethod.FRENCH_PRESS to GrindRange(80.0, 120.0),
     )
     assertEquals(expected, a2.ranges)

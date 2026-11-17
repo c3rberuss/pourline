@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-molinos.md`](spec-molinos.md) (SPEC-006), **Enmienda 1** (§3.3, §3.3.1, §3.3.2, §3.4, §3.5, §3.6, §3.7, §4 y §5) |
-| Estado | Aprobado por el usuario (2026-11-17). Commits por fase autorizados. F3 y F4 pueden avanzar mientras F2 espera la decisión del usuario; F5 y las siguientes, no |
+| Estado | Aprobado por el usuario (2026-11-17). Commits por fase autorizados. F3 y F4 avanzaron mientras F2 esperaba la decisión del usuario; la puerta se resolvió el 2026-11-17 (se quita la moka del A2) y F5 en adelante siguen |
 | Fecha | 2026-11-17 |
 | Rama | `feat/grind-calibration`, desde `develop` (`1015b12`), con el commit del spec (`53548c1`) |
 | Módulos | `:app` (`:protocol` no cambia) |
@@ -168,7 +168,7 @@ de su decisión. F7 depende de F4 y de `CalibrationEditor`/`CalibrationSheet` (F
 |---|---|---|---|
 | F0 | Línea base, dispositivos y versión de la base de datos | S | Pendiente |
 | F1 | Dominio puro: `GrindCurve`, `METHOD_LEVELS`, pares, validador y la nueva `convert` | L | Pendiente |
-| F2 | **Puerta del Femobook A2** (parada) y catálogo | S | Pendiente |
+| F2 | **Puerta del Femobook A2** (parada) y catálogo | S | Hecha: decidido quitar la moka (catálogo versión 2) |
 | F3 | Datos v7: entidad, DAO, migración 6 → 7 e `isUsed` | M | Pendiente |
 | F4 | Repositorio y `SessionGrinders` | M | Pendiente |
 | F5 | Tarjeta y sesión con calibración | M | Pendiente |
@@ -573,6 +573,8 @@ pide; si no, va en los dos archivos.
 ## 6. Preguntas para el usuario
 
 Cada una tiene una propuesta; si se aprueba el plan sin comentarios, se aplica la propuesta.
+
+**Puerta de F2 (2026-11-17):** el usuario decidió **quitar el rango de moka del Femobook A2** (`MOKA 10–18` choca con V60 50–80 y AeroPress 40–50 y desviaba la curva implícita). `catalog.json` pasa a `"version": 2`, con el motivo en `notes` y en `missing`; `METHOD_LEVELS` no cambia (el A2 no tiene `micronRange`). La tabla aprobada es la columna "sin moka" de la estimación de F2 y `CatalogCurveTest` la afirma.
 
 **Respuestas (2026-11-17):** P1 y P2, el usuario eligió la propuesta (`AntModal`; formato del molino). P3, se aplica la propuesta. P4 sigue abierta: en F8 el implementador se para y pregunta el serial y el permiso de instalación.
 
