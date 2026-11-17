@@ -9,6 +9,7 @@ import dev.josueamaya.pourline.recipe.RecipeListItem
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /**
@@ -20,7 +21,8 @@ class TargetPickerViewModel(recipeRepository: RecipeRepository, brewRepository: 
     recipeRepository.list().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
 
   val brews: StateFlow<List<BrewListItem>> =
-    brewRepository.list(BrewFilter()).stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
+    // Las hechas sin báscula no tienen curva real: no sirven de referencia (SPEC-007 §3.6).
+    brewRepository.list(BrewFilter()).map { rows -> rows.filter { !it.scaleless } }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
 
   private companion object {
     const val STOP_TIMEOUT_MS = 5_000L

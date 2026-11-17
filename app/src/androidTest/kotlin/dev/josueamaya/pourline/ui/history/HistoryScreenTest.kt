@@ -28,6 +28,7 @@ import dev.josueamaya.pourline.settings.ExperienceMode
 import dev.josueamaya.pourline.settings.LocalExperienceMode
 import dev.josueamaya.pourline.ui.coffees.formatCoffeeDate
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -359,5 +360,70 @@ class HistoryScreenTest {
     rows()[0].assertTextContains("Borrable", substring = true)
     assertEquals(id, runBlocking { repository.get(id) }?.entity?.id)
     assertNotNull(runBlocking { repository.get(id) })
+  }
+
+  // --- Sin báscula (SPEC-007) ---
+
+  private fun seedScaleless(startedAt: Long, name: String? = null, coffeeId: Long? = null, rating: Int? = null): Long = runBlocking {
+    val id = repository.save(
+      TestBrews.scalelessFinished(totalTimeMs = 115_000),
+      TestBrews.scalelessContext(startedAtEpochMs = startedAt, coffee = coffeeId?.let { UsedCoffee(it, "x") }),
+    )
+    if (name != null || rating != null) repository.updateDetails(id, BrewDetails(name = name, rating = rating))
+    id
+  }
+
+  private fun checkScalelessRow(mode: ExperienceMode) {
+    seed(startedAt = 1_000, name = "Con báscula")
+    seedScaleless(startedAt = 2_000, name = "Sin báscula", rating = 4)
+    show(mode)
+    waitForRows(2)
+
+    // Newest first: la fila 0 es la sin báscula.
+    val row = rows()[0]
+    row.assertTextContains("Sin báscula", substring = true)
+    rule.onAllNodesWithTag("history_row_scaleless", useUnmergedTree = true).assertCountEquals(1)
+    rule.onNodeWithTag("history_row_scaleless", useUnmergedTree = true).assertIsDisplayed()
+    // Solo la fila con báscula dibuja su minicurva.
+    rule.onAllNodesWithTag("history_row_preview", useUnmergedTree = true).assertCountEquals(1)
+    // El agua, el tiempo y el ratio de lo planeado, y la valoración.
+    row.assertTextContains("250", substring = true)
+    row.assertTextContains("01:55", substring = true)
+    row.assertTextContains("1:16.7", substring = true)
+    rule.onAllNodesWithTag("history_row_rating", useUnmergedTree = true).assertCountEquals(1)
+    // Sin etiquetas de estabilidad ni de ajuste en la fila sin báscula, ni en Experto.
+    rule.onAllNodesWithTag("history_row_fit", useUnmergedTree = true).assertCountEquals(0)
+  }
+
+  @Test
+  fun scalelessBrewsAreLabeledAndHaveNoPreviewInBasic() = checkScalelessRow(ExperienceMode.BASIC)
+
+  @Test
+  fun scalelessBrewsAreLabeledAndHaveNoPreviewInExpert() = checkScalelessRow(ExperienceMode.EXPERT)
+
+  @Test
+  fun scalelessBrewsDoNotCountForProgress() {
+    seed(startedAt = 1_000)
+    seed(startedAt = 2_000)
+    seedScaleless(startedAt = 3_000)
+    show()
+    waitForRows(3)
+    rule.waitUntil(5_000) { rule.onAllNodesWithTag("progress_chart").fetchSemanticsNodes().isNotEmpty() }
+    // Con dos puntuadas reales hay gráfica; la sin báscula no suma un tercer punto.
+    runBlocking { assertEquals(2, db.brewDao().progress(null, null).first().size) }
+  }
+
+  @Test
+  fun filterByCoffeeIncludesScalelessBrews() {
+    val etiopia = coffee("Etiopía")
+    seed(startedAt = 1_000, name = "Real", coffeeId = coffee("Kenia"))
+    seedScaleless(startedAt = 2_000, name = "Sin báscula", coffeeId = etiopia)
+    show()
+    waitForRows(2)
+
+    rule.onNodeWithTag("history_filter_coffee").performClick()
+    clickMenuOption("Etiopía")
+    waitForRows(1)
+    rows()[0].assertTextContains("Sin báscula", substring = true)
   }
 }
