@@ -144,6 +144,10 @@
     <string name="brew_edit_method_none">Sin método</string>
     <string name="brew_edit_method_other">Nombre del método</string>
     <string name="brew_edit_temp">Temperatura (°C)</string>
+    <string name="brew_edit_dose">Dosis (g)</string>
+    <string name="brew_edit_dose_error">Entre 5 y 60 g, con un decimal como máximo.</string>
+    <string name="brew_edit_water">Agua (g)</string>
+    <string name="brew_edit_water_error">Más de 0 y hasta 1000 g, con un decimal como máximo.</string>
     <string name="brew_edit_temp_error">Escribe un valor de 0 a 100 con un decimal como máximo</string>
     <string name="brew_edit_notes">Notas de cata</string>
     <string name="brew_edit_rating">Valoración</string>

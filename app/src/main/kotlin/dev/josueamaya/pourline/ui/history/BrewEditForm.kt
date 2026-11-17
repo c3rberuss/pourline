@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline.ui.history
 
+import dev.josueamaya.pourline.brew.PlannedAmounts
 import dev.josueamaya.pourline.grinder.GrindChoice
 import dev.josueamaya.pourline.grinder.toChoice
 import dev.josueamaya.pourline.grinder.toSettingUnlabeled
@@ -8,6 +9,9 @@ import dev.josueamaya.pourline.grinder.withValue
 import dev.josueamaya.pourline.coffee.PickedCoffee
 import dev.josueamaya.pourline.history.BrewDetails
 import dev.josueamaya.pourline.history.BrewMethod
+import dev.josueamaya.pourline.recipe.RecipeValidator
+import dev.josueamaya.pourline.ui.prepare.parseFreeDose
+import dev.josueamaya.pourline.ui.prepare.parseOneDecimal
 
 sealed interface TempResult {
   data object Empty : TempResult
@@ -28,6 +32,9 @@ fun parseWaterTemp(text: String): TempResult {
   val value = normalized.toDouble()
   return if (value in 0.0..100.0) TempResult.Valid(value) else TempResult.Invalid
 }
+
+/** El agua de una preparación sin báscula en gramos: mayor que 0 y hasta [RecipeValidator.MAX_WATER_G], con un decimal. */
+fun parseBrewWater(text: String): Double? = parseOneDecimal(text)?.takeIf { it > 0.0 && it <= RecipeValidator.MAX_WATER_G }
 
 /**
  * El café de la preparación en la edición (D22): ninguno, uno del catálogo o, en una preparación antigua, el
@@ -65,10 +72,29 @@ data class BrewEditForm(
   val notes: String = "",
   /** Valoración de 1 a 5; `null` sin valorar. */
   val rating: Int? = null,
+  /** Preparación sin báscula (SPEC-007): la dosis y el agua, que son lo planeado, se corrigen aquí (D19). */
+  val scaleless: Boolean = false,
+  /** Gramos, como se escriben; vacía si la preparación no tiene dosis. Solo cuenta con [scaleless]. */
+  val dose: String = "",
+  val water: String = "",
 ) {
   val tempResult: TempResult get() = parseWaterTemp(waterTemp)
 
-  val isValid: Boolean get() = tempResult != TempResult.Invalid
+  val tempInvalid: Boolean get() = tempResult == TempResult.Invalid
+
+  /** Una dosis vacía vale (la preparación puede no tener dosis); escrita, de 5 a 60 g con un decimal. */
+  val doseInvalid: Boolean get() = scaleless && dose.isNotBlank() && parseFreeDose(dose) == null
+
+  val waterInvalid: Boolean get() = scaleless && parseBrewWater(water) == null
+
+  val isValid: Boolean get() = !tempInvalid && !doseInvalid && !waterInvalid
+
+  /** Las cantidades escritas; `null` sin báscula o si no valen. */
+  fun amounts(): PlannedAmounts? {
+    if (!scaleless || doseInvalid) return null
+    val waterG = parseBrewWater(water) ?: return null
+    return PlannedAmounts(parseFreeDose(dose), waterG)
+  }
 
   fun isDirty(initial: BrewEditForm): Boolean = this != initial
 
@@ -89,7 +115,8 @@ data class BrewEditForm(
   ).normalized()
 
   companion object {
-    fun from(details: BrewDetails, coffee: CoffeeChoice = CoffeeChoice.None) = BrewEditForm(
+    /** Con [amounts] (solo en una preparación sin báscula) el formulario también edita la dosis y el agua. */
+    fun from(details: BrewDetails, coffee: CoffeeChoice = CoffeeChoice.None, amounts: PlannedAmounts? = null) = BrewEditForm(
       name = details.name.orEmpty(),
       coffee = coffee,
       method = details.method,
@@ -98,6 +125,9 @@ data class BrewEditForm(
       waterTemp = details.waterTempC?.let(::formatTemp).orEmpty(),
       notes = details.notes.orEmpty(),
       rating = details.rating,
+      scaleless = amounts != null,
+      dose = amounts?.doseG?.let(::formatTemp).orEmpty(),
+      water = amounts?.let { formatTemp(it.waterG) }.orEmpty(),
     )
 
     private fun formatTemp(value: Double): String =

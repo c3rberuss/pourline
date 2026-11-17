@@ -145,6 +145,10 @@
     <string name="brew_edit_method_none">No method</string>
     <string name="brew_edit_method_other">Method name</string>
     <string name="brew_edit_temp">Temperature (°C)</string>
+    <string name="brew_edit_dose">Dose (g)</string>
+    <string name="brew_edit_dose_error">Between 5 and 60 g, with at most one decimal.</string>
+    <string name="brew_edit_water">Water (g)</string>
+    <string name="brew_edit_water_error">Above 0 and up to 1000 g, with at most one decimal.</string>
     <string name="brew_edit_temp_error">Enter a value from 0 to 100 with at most one decimal</string>
     <string name="brew_edit_notes">Tasting notes</string>
     <string name="brew_edit_rating">Rating</string>

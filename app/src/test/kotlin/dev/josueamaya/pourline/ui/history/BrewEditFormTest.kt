@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline.ui.history
 
+import dev.josueamaya.pourline.brew.PlannedAmounts
 import dev.josueamaya.pourline.coffee.PickedCoffee
 import dev.josueamaya.pourline.grinder.GrindChoice
 import dev.josueamaya.pourline.grinder.GrindSetting
@@ -144,5 +145,68 @@ class BrewEditFormTest {
   fun `setting a grind value on a live grinder and saving without a label`() {
     val form = BrewEditForm().withGrinder(7).withGrindValue(12.5)
     assertEquals(GrindSetting(7, 12.5, null), form.toDetails().grind)
+  }
+
+  // --- Sin báscula (SPEC-007) ---
+
+  private val scaleless = BrewEditForm(scaleless = true, dose = "15", water = "250")
+
+  @Test
+  fun `a scale brew form ignores dose and water`() {
+    val form = BrewEditForm(dose = "abc", water = "-1")
+    assertTrue(form.isValid)
+    assertNull(form.amounts())
+    assertFalse(form.doseInvalid)
+    assertFalse(form.waterInvalid)
+  }
+
+  @Test
+  fun `a scaleless form is valid with a dose from 5 to 60 g and water above 0 up to 1000 g`() {
+    assertTrue(scaleless.isValid)
+    for (dose in listOf("5", "60", "15,5", "9.9")) assertTrue(dose, scaleless.copy(dose = dose).isValid)
+    for (water in listOf("0,1", "1000", "250.5")) assertTrue(water, scaleless.copy(water = water).isValid)
+  }
+
+  @Test
+  fun `an empty dose is valid and gives a null ratio`() {
+    val form = scaleless.copy(dose = "")
+    assertTrue(form.isValid)
+    assertEquals(PlannedAmounts(doseG = null, waterG = 250.0), form.amounts())
+    assertNull(form.amounts()!!.ratio)
+  }
+
+  @Test
+  fun `an invalid dose or water makes the form invalid`() {
+    for (dose in listOf("0", "4,9", "61", "15,55", "abc")) {
+      assertFalse(dose, scaleless.copy(dose = dose).isValid)
+      assertTrue(dose, scaleless.copy(dose = dose).doseInvalid)
+    }
+    for (water in listOf("", "0", "-5", "1000,1", "250,55", "abc")) {
+      assertFalse(water, scaleless.copy(water = water).isValid)
+      assertTrue(water, scaleless.copy(water = water).waterInvalid)
+    }
+    assertNull(scaleless.copy(dose = "61").amounts())
+  }
+
+  @Test
+  fun `amounts round trip through from and amounts`() {
+    val form = BrewEditForm.from(BrewDetails(), amounts = PlannedAmounts(15.5, 250.0))
+    assertTrue(form.scaleless)
+    assertEquals("15.5", form.dose)
+    assertEquals("250", form.water)
+    assertEquals(PlannedAmounts(15.5, 250.0), form.amounts())
+
+    val noDose = BrewEditForm.from(BrewDetails(), amounts = PlannedAmounts(null, 240.0))
+    assertEquals("", noDose.dose)
+    assertEquals(PlannedAmounts(null, 240.0), noDose.amounts())
+
+    assertFalse(BrewEditForm.from(BrewDetails()).scaleless)
+  }
+
+  @Test
+  fun `changing dose or water makes the form dirty`() {
+    assertTrue(scaleless.copy(dose = "16").isDirty(scaleless))
+    assertTrue(scaleless.copy(water = "260").isDirty(scaleless))
+    assertFalse(scaleless.isDirty(scaleless))
   }
 }
