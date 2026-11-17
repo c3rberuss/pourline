@@ -1,7 +1,14 @@
 package dev.josueamaya.pourline.ui.session
 
 import dev.josueamaya.pourline.R
+import dev.josueamaya.pourline.brew.BrewPhase
+import dev.josueamaya.pourline.brew.GuideState
+import dev.josueamaya.pourline.brew.TargetConfig
+import dev.josueamaya.pourline.brew.TargetCurve
+import dev.josueamaya.pourline.brew.TargetGuide
 import dev.josueamaya.pourline.brew.TargetStage
+import dev.josueamaya.pourline.recipe.BuiltInRecipes
+import dev.josueamaya.pourline.recipe.FakeRecipeTexts
 import dev.josueamaya.pourline.recipe.StageType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -74,5 +81,78 @@ class SessionFormatTest {
   @Test
   fun `without a next step there is no text`() {
     assertNull(nextStepInfo(null, 0, null))
+  }
+
+  // --- timedStepView ---
+
+  private fun v60() = TargetCurve.fromRecipe(BuiltInRecipes.recipe(BuiltInRecipes.V60_CLASSIC, FakeRecipeTexts()))
+
+  private fun view(curve: TargetCurve, tMs: Long): TimedStepView? {
+    val guide = TargetGuide.at(curve, BrewPhase.Active(pouring = false), tMs, null, TargetConfig())
+    return timedStepView(guide, curve, tMs)
+  }
+
+  @Test
+  fun `a timed step at 5 seconds is step 1 of 5 with 5 seconds left and half the progress`() {
+    val view = view(v60(), 5_000)!!
+
+    assertEquals(1, view.number)
+    assertEquals(5, view.count)
+    assertEquals(5_000L, view.remainingMs)
+    assertEquals(0.5f, view.fraction, 1e-6f)
+  }
+
+  @Test
+  fun `a timed step at 45 seconds is step 3 of 5 with 20 seconds left and no progress`() {
+    val view = view(v60(), 45_000)!!
+
+    assertEquals(3, view.number)
+    assertEquals(20_000L, view.remainingMs)
+    assertEquals(0f, view.fraction, 1e-6f)
+  }
+
+  @Test
+  fun `the timed step view is null before the first step and with all steps done`() {
+    val curve = TargetCurve(
+      points = emptyList(),
+      stages = listOf(TargetStage(0, null, 5_000, 15_000, 40.0)),
+    )
+    assertNull(view(curve, 2_000))
+    assertNull(view(v60(), 115_000))
+    assertNull(timedStepView(null, curve, 1_000))
+    assertNull(timedStepView(GuideState(curve.stages[0], null, null, null, null), null, 1_000))
+  }
+
+  @Test
+  fun `a zero duration step has full progress`() {
+    val stage = TargetStage(0, null, 5_000, 5_000, 40.0)
+    val curve = TargetCurve(emptyList(), listOf(stage, TargetStage(1, null, 5_000, 15_000, 80.0)))
+    val guide = GuideState(stage, curve.stages[1], null, null, null)
+
+    val view = timedStepView(guide, curve, 5_000)!!
+
+    assertEquals(1f, view.fraction, 0f)
+    assertEquals(0L, view.remainingMs)
+  }
+
+  @Test
+  fun `the view agrees with TargetGuide every 100 ms`() {
+    for (key in BuiltInRecipes.keys) {
+      val curve = TargetCurve.fromRecipe(BuiltInRecipes.recipe(key, FakeRecipeTexts()))
+      var tMs = 0L
+      while (tMs <= 330_000) {
+        val guide = TargetGuide.at(curve, BrewPhase.Active(pouring = false), tMs, null, TargetConfig())
+        val view = timedStepView(guide, curve, tMs)
+        val stage = guide.stage
+        if (stage == null || guide.allStagesDone) {
+          assertNull("$key $tMs", view)
+        } else {
+          assertEquals("$key $tMs", stage.index + 1, view!!.number)
+          assertEquals("$key $tMs", stage.endMs - tMs, view.remainingMs)
+          assertEquals("$key $tMs", curve.stages.size, view.count)
+        }
+        tMs += 100
+      }
+    }
   }
 }

@@ -15,6 +15,9 @@ internal fun formatGuideAmount(grams: Double, unit: WeightUnit): String {
   return "$number ${unit.symbol}"
 }
 
+/** Gramos enteros, sin el símbolo: las cadenas de la sesión sin báscula ya llevan la "g". */
+internal fun guideGrams(grams: Double): String = grams.roundToLong().toString()
+
 /**
  * Desvío con "+" o "−" (U+2212), en gramos enteros o en onzas con 2 decimales. Un desvío que se redondea
  * a cero se escribe sin signo.
