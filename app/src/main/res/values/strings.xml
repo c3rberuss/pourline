@@ -856,4 +856,202 @@
     <string name="four_six_instruction_wait">Espera a que baje el agua.</string>
     <string name="four_six_instruction_drain">Deja que drene y retira el filtro.</string>
     <string name="four_six_recipe_notes">Generada con el método 4:6: el 40 % del agua define el sabor y el 60 % restante, la intensidad. Molienda gruesa.</string>
+
+    <!-- Recorrido guiado (SPEC-008) -->
+    <string name="tour_next">Siguiente</string>
+    <string name="tour_prev">Anterior</string>
+    <string name="tour_done">Listo</string>
+    <string name="tour_skip">Saltar</string>
+    <string name="tour_counter">%1$d/%2$d</string>
+    <string name="tour_skipped_hint">Puedes volver a verlo en Ajustes > Ver recorrido</string>
+    <string name="settings_tour_replay">Ver recorrido</string>
+    <string name="settings_tour_replay_hint">Vuelve a mostrar los recorridos de todas las pantallas.</string>
+
+    <!-- prepare -->
+    <string name="tour_prepare_welcome_title">Te damos la bienvenida</string>
+    <string name="tour_prepare_welcome_body">Pourline te guía en cada preparación con tu báscula. En un minuto te enseñamos lo básico.</string>
+    <string name="tour_prepare_scale_title">Tu báscula</string>
+    <string name="tour_prepare_scale_body">Conéctala aquí. Si no tienes una a mano, usa la báscula simulada.</string>
+    <string name="tour_prepare_recipe_title">Receta</string>
+    <string name="tour_prepare_recipe_body">Elige una receta y la sesión te guiará paso a paso. Sin receta, preparas libre.</string>
+    <string name="tour_prepare_coffee_title">Café</string>
+    <string name="tour_prepare_coffee_body">Indica qué café preparas: su bitácora y lo que queda en la bolsa se actualizan solos.</string>
+    <string name="tour_prepare_dose_title">Dosis y ratio</string>
+    <string name="tour_prepare_dose_body">La dosis y el ratio dan el agua. Con receta, vienen de ella.</string>
+    <string name="tour_prepare_grind_title">Molienda</string>
+    <string name="tour_prepare_grind_body">El ajuste para tu molino. Si eliges otro molino, Pourline convierte el ajuste.</string>
+    <string name="tour_prepare_grind_ruler_title">Regla de molienda</string>
+    <string name="tour_prepare_grind_ruler_body">Muestra dónde cae el ajuste dentro del rango de tu molino.</string>
+    <string name="tour_prepare_start_title">Empezar</string>
+    <string name="tour_prepare_start_body">Con la báscula conectada, Empezar abre la sesión guiada.</string>
+    <string name="tour_prepare_start_scaleless_title">Sin báscula</string>
+    <string name="tour_prepare_start_scaleless_body">Sigue la receta solo con el reloj.</string>
+    <string name="tour_prepare_settings_title">Ajustes</string>
+    <string name="tour_prepare_settings_body">Modo, apariencia, molinos, avisos y cuenta regresiva.</string>
+    <string name="tour_prepare_tab_coffees_title">Cafés</string>
+    <string name="tour_prepare_tab_coffees_body">Tus bolsas, con foto de la etiqueta, fecha de tueste y lo que queda.</string>
+    <string name="tour_prepare_tab_recipes_title">Recetas</string>
+    <string name="tour_prepare_tab_recipes_body">Las predefinidas y las tuyas, paso a paso.</string>
+    <string name="tour_prepare_tab_history_title">Historial</string>
+    <string name="tour_prepare_tab_history_body">Cada preparación, con su valoración y sus datos.</string>
+    <string name="tour_prepare_tab_tools_title">Herramientas</string>
+    <string name="tour_prepare_tab_tools_body">Calculadora de ratio, generador 4:6 y convertidor de molienda.</string>
+
+    <!-- session_prep -->
+    <string name="tour_session_prep_stepper_title">Antes de verter</string>
+    <string name="tour_session_prep_stepper_body">Cuatro pasos: tarar, pesar el café, tarar de nuevo y verter.</string>
+    <string name="tour_session_prep_weight_title">Peso en vivo</string>
+    <string name="tour_session_prep_weight_body">Lo que marca la báscula ahora mismo.</string>
+    <string name="tour_session_prep_actions_title">Tarar o saltar</string>
+    <string name="tour_session_prep_actions_body">Tara desde aquí o en la báscula. Cada paso se puede saltar.</string>
+    <string name="tour_session_prep_timer_title">El reloj</string>
+    <string name="tour_session_prep_timer_body">Empieza solo al detectar el vertido, o con Empezar timer tras la cuenta regresiva. Mientras viertes, el dial muestra el agua, el tiempo y el paso.</string>
+    <string name="tour_session_prep_options_title">Opciones</string>
+    <string name="tour_session_prep_options_body">Modo experto, unidad, reiniciar y, con la báscula simulada, vertidos de prueba.</string>
+    <string name="tour_session_prep_close_title">Salir</string>
+    <string name="tour_session_prep_close_body">Sal de la sesión cuando quieras.</string>
+
+    <!-- session_scaleless -->
+    <string name="tour_session_scaleless_plan_title">El plan</string>
+    <string name="tour_session_scaleless_plan_body">La dosis, el ratio y el agua objetivo.</string>
+    <string name="tour_session_scaleless_start_title">Empezar timer</string>
+    <string name="tour_session_scaleless_start_body">Púlsalo cuando estés listo. La cuenta regresiva se ajusta en Ajustes.</string>
+    <string name="tour_session_scaleless_dial_title">Sin báscula</string>
+    <string name="tour_session_scaleless_dial_body">El dial muestra el tiempo de cada paso y avisa al cambiar de paso, también con la pantalla apagada.</string>
+    <string name="tour_session_scaleless_close_title">Salir</string>
+    <string name="tour_session_scaleless_close_body">Sal de la sesión cuando quieras.</string>
+
+    <!-- summary -->
+    <string name="tour_summary_rating_title">Valora y anota</string>
+    <string name="tour_summary_rating_body">Dale estrellas a la preparación y anota lo que notaste.</string>
+    <string name="tour_summary_details_title">Añadir detalles</string>
+    <string name="tour_summary_details_body">Completa el nombre, el método, la temperatura y las notas de cata.</string>
+    <string name="tour_summary_share_title">Compartir</string>
+    <string name="tour_summary_share_body">Crea una imagen de la preparación para compartirla.</string>
+    <string name="tour_summary_expert_title">Métricas</string>
+    <string name="tour_summary_expert_body">Flujo, estabilidad y ajuste a la curva objetivo.</string>
+
+    <!-- coffees -->
+    <string name="tour_coffees_add_title">Registrar café</string>
+    <string name="tour_coffees_add_body">Añade una bolsa. Con una foto de la etiqueta, Pourline rellena los datos.</string>
+    <string name="tour_coffees_search_title">Buscar</string>
+    <string name="tour_coffees_search_body">Por nombre, tostador u origen.</string>
+    <string name="tour_coffees_tabs_title">Activos y archivados</string>
+    <string name="tour_coffees_tabs_body">Los cafés terminados se archivan aquí.</string>
+    <string name="tour_coffees_row_title">Un café</string>
+    <string name="tour_coffees_row_body">Ábrelo para ver los días desde el tueste, lo que queda y su bitácora.</string>
+
+    <!-- coffee_edit -->
+    <string name="tour_coffee_edit_photos_title">Fotos</string>
+    <string name="tour_coffee_edit_photos_body">Fotografía el frente y el reverso de la bolsa.</string>
+    <string name="tour_coffee_edit_read_label_title">Leer etiqueta</string>
+    <string name="tour_coffee_edit_read_label_body">Rellena los campos con el texto de las fotos. Revisa los que salen marcados como leídos.</string>
+    <string name="tour_coffee_edit_save_title">Guardar</string>
+    <string name="tour_coffee_edit_save_body">Guarda el café.</string>
+
+    <!-- coffee_detail -->
+    <string name="tour_coffee_detail_status_title">Estado</string>
+    <string name="tour_coffee_detail_status_body">Días desde el tueste y café que queda en la bolsa.</string>
+    <string name="tour_coffee_detail_log_title">Bitácora</string>
+    <string name="tour_coffee_detail_log_body">Las preparaciones hechas con este café.</string>
+    <string name="tour_coffee_detail_new_bag_title">Nueva bolsa</string>
+    <string name="tour_coffee_detail_new_bag_body">Empieza otra bolsa del mismo café, o archívalo cuando se acabe.</string>
+    <string name="tour_coffee_detail_share_title">Compartir</string>
+    <string name="tour_coffee_detail_share_body">Comparte una ficha del café.</string>
+
+    <!-- recipes -->
+    <string name="tour_recipes_builtin_title">Predefinidas</string>
+    <string name="tour_recipes_builtin_body">Úsalas tal cual o duplícalas para ajustarlas.</string>
+    <string name="tour_recipes_active_title">Activa</string>
+    <string name="tour_recipes_active_body">La receta elegida en Preparar.</string>
+    <string name="tour_recipes_add_title">Crear receta</string>
+    <string name="tour_recipes_add_body">Crea tu propia receta paso a paso.</string>
+
+    <!-- recipe_edit -->
+    <string name="tour_recipe_edit_method_title">Método</string>
+    <string name="tour_recipe_edit_method_body">El método de preparación.</string>
+    <string name="tour_recipe_edit_stage_title">Pasos</string>
+    <string name="tour_recipe_edit_stage_body">Cada paso es un vertido, un removido o una espera, con su tiempo.</string>
+    <string name="tour_recipe_edit_add_stage_title">Añadir paso</string>
+    <string name="tour_recipe_edit_add_stage_body">Añade más pasos a la receta.</string>
+    <string name="tour_recipe_edit_totals_title">Totales</string>
+    <string name="tour_recipe_edit_totals_body">El agua, el ratio y la duración de la receta.</string>
+    <string name="tour_recipe_edit_preview_title">Curva objetivo</string>
+    <string name="tour_recipe_edit_preview_body">La curva que seguirá la sesión.</string>
+
+    <!-- history -->
+    <string name="tour_history_filters_title">Filtros</string>
+    <string name="tour_history_filters_body">Filtra por café y por método.</string>
+    <string name="tour_history_progress_title">Progreso</string>
+    <string name="tour_history_progress_body">Cómo evoluciona la estabilidad de tus vertidos.</string>
+    <string name="tour_history_row_title">Una preparación</string>
+    <string name="tour_history_row_body">Ábrela para ver sus datos.</string>
+    <string name="tour_history_scaleless_title">Sin báscula</string>
+    <string name="tour_history_scaleless_body">Hechas sin báscula: sin curva y fuera de las comparaciones.</string>
+
+    <!-- brew_detail -->
+    <string name="tour_brew_detail_chart_title">Gráfica</string>
+    <string name="tour_brew_detail_chart_body">La curva real del vertido, o la objetivo si fue sin báscula.</string>
+    <string name="tour_brew_detail_details_title">Detalles</string>
+    <string name="tour_brew_detail_details_body">La molienda y el resto de datos de la preparación.</string>
+    <string name="tour_brew_detail_edit_title">Editar</string>
+    <string name="tour_brew_detail_edit_body">Cambia la valoración, las notas, el método y la temperatura. Sin báscula, también la dosis y el agua.</string>
+    <string name="tour_brew_detail_compare_title">Comparar</string>
+    <string name="tour_brew_detail_compare_body">Compárala con otra preparación.</string>
+    <string name="tour_brew_detail_save_recipe_title">Guardar como receta</string>
+    <string name="tour_brew_detail_save_recipe_body">Conviértela en una receta.</string>
+    <string name="tour_brew_detail_share_title">Compartir</string>
+    <string name="tour_brew_detail_share_body">Comparte una imagen de la preparación.</string>
+
+    <!-- compare -->
+    <string name="tour_compare_chart_title">Curvas</string>
+    <string name="tour_compare_chart_body">El agua de las dos preparaciones, superpuesta.</string>
+    <string name="tour_compare_legend_title">Leyenda</string>
+    <string name="tour_compare_legend_body">Qué color es cada preparación.</string>
+    <string name="tour_compare_table_title">Diferencias</string>
+    <string name="tour_compare_table_body">Los datos de las dos, uno a uno.</string>
+
+    <!-- tools -->
+    <string name="tour_tools_ratio_title">Calculadora de ratio</string>
+    <string name="tour_tools_ratio_body">Calcula el café, el ratio y el agua.</string>
+    <string name="tour_tools_four_six_title">Generador 4:6</string>
+    <string name="tour_tools_four_six_body">Genera una receta 4:6 según el sabor y la intensidad.</string>
+    <string name="tour_tools_converter_title">Convertidor de molienda</string>
+    <string name="tour_tools_converter_body">Pasa un ajuste de molienda de un molino a otro.</string>
+
+    <!-- ratio_calculator -->
+    <string name="tour_ratio_calculator_fields_title">Tres campos</string>
+    <string name="tour_ratio_calculator_fields_body">Edita cualquiera: con el café o el ratio se recalcula el agua, y con el agua, el café.</string>
+    <string name="tour_ratio_calculator_validation_title">Valores no válidos</string>
+    <string name="tour_ratio_calculator_validation_body">Un campo que no vale se marca, y el resto se calcula con los otros dos.</string>
+
+    <!-- four_six -->
+    <string name="tour_four_six_dose_title">Dosis y ratio</string>
+    <string name="tour_four_six_dose_body">La dosis y el ratio dan el agua total.</string>
+    <string name="tour_four_six_sliders_title">Sabor e intensidad</string>
+    <string name="tour_four_six_sliders_body" formatted="false">El sabor reparte el primer 40 %, más dulce o más brillante. La intensidad decide en cuántos vertidos va el 60 % restante.</string>
+    <string name="tour_four_six_pours_title">Vertidos</string>
+    <string name="tour_four_six_pours_body">Cada vertido con su tiempo y su peso acumulado.</string>
+    <string name="tour_four_six_save_title">Guardar como receta</string>
+    <string name="tour_four_six_save_body">Guárdalo como receta para usarlo en Preparar.</string>
+
+    <!-- converter -->
+    <string name="tour_converter_source_title">Origen</string>
+    <string name="tour_converter_source_body">El molino y el ajuste de partida.</string>
+    <string name="tour_converter_rows_title">Equivalencias</string>
+    <string name="tour_converter_rows_body">El ajuste equivalente en tus otros molinos.</string>
+
+    <!-- settings -->
+    <string name="tour_settings_mode_title">Modo</string>
+    <string name="tour_settings_mode_body">Básico o Experto. Experto añade gráficas, estabilidad y comparaciones.</string>
+    <string name="tour_settings_grinders_title">Molinos</string>
+    <string name="tour_settings_grinders_body">Tus molinos y el predeterminado.</string>
+    <string name="tour_settings_theme_title">Apariencia</string>
+    <string name="tour_settings_theme_body">Claro, oscuro o el del sistema.</string>
+    <string name="tour_settings_alerts_title">Guía de pasos</string>
+    <string name="tour_settings_alerts_body">Vibración y sonido al empezar cada paso.</string>
+    <string name="tour_settings_countdown_title">Cuenta regresiva</string>
+    <string name="tour_settings_countdown_body">Segundos antes de que arranque el reloj.</string>
+    <string name="tour_settings_replay_title">Ver recorrido</string>
+    <string name="tour_settings_replay_body">Vuelve a ver todos los recorridos.</string>
 </resources>

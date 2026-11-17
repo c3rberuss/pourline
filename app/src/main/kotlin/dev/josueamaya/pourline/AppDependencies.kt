@@ -21,6 +21,7 @@ import dev.josueamaya.pourline.settings.FreeBrewDefaults
 import dev.josueamaya.pourline.settings.GrinderSettings
 import dev.josueamaya.pourline.settings.TargetSettings
 import dev.josueamaya.pourline.settings.ThemeSettings
+import dev.josueamaya.pourline.settings.TourSettings
 import dev.josueamaya.pourline.tools.FourSixTexts
 
 /**
@@ -33,6 +34,7 @@ class AppDependencies(
   val targetSettings: TargetSettings,
   val themeSettings: ThemeSettings,
   val experienceSettings: ExperienceSettings,
+  val tourSettings: TourSettings,
   val freeBrewDefaults: FreeBrewDefaults,
   val scaleMemory: ScaleMemory,
   val brewRepository: BrewRepository,

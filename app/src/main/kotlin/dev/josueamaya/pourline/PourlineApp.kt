@@ -33,6 +33,7 @@ import dev.josueamaya.pourline.settings.ExperienceSettings
 import dev.josueamaya.pourline.settings.GrinderSettings
 import dev.josueamaya.pourline.settings.TargetSettings
 import dev.josueamaya.pourline.settings.ThemeSettings
+import dev.josueamaya.pourline.settings.TourSettings
 import dev.josueamaya.pourline.tools.ResourcesFourSixTexts
 import dev.josueamaya.pourline.ui.scale.AndroidStageNotifier
 import kotlinx.coroutines.CoroutineScope
@@ -58,6 +59,9 @@ class PourlineApp : Application() {
 
   /** Modo Básico/Experto y primer arranque; una sola instancia, como [brewSettings]. */
   val experienceSettings by lazy { ExperienceSettings(this) }
+
+  /** Pasos de los recorridos guiados ya vistos; una sola instancia, como [brewSettings]. */
+  val tourSettings by lazy { TourSettings(this) }
 
   /** Molino predeterminado y versión del catálogo; una sola instancia, como [brewSettings]. */
   val grinderSettings by lazy { GrinderSettings(this) }
@@ -159,6 +163,7 @@ class PourlineApp : Application() {
       targetSettings = targetSettings,
       themeSettings = themeSettings,
       experienceSettings = experienceSettings,
+      tourSettings = tourSettings,
       freeBrewDefaults = brewSettings,
       scaleMemory = connectionSettings,
       brewRepository = brewRepository,

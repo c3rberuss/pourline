@@ -857,4 +857,202 @@
     <string name="four_six_instruction_wait">Wait for the water to draw down.</string>
     <string name="four_six_instruction_drain">Let it drain and remove the filter.</string>
     <string name="four_six_recipe_notes">Generated with the 4:6 method: the first 40% of the water sets the taste and the remaining 60% the strength. Coarse grind.</string>
+
+    <!-- Guided tour (SPEC-008) -->
+    <string name="tour_next">Next</string>
+    <string name="tour_prev">Previous</string>
+    <string name="tour_done">Done</string>
+    <string name="tour_skip">Skip</string>
+    <string name="tour_counter">%1$d/%2$d</string>
+    <string name="tour_skipped_hint">You can see it again in Settings > Replay tour</string>
+    <string name="settings_tour_replay">Replay tour</string>
+    <string name="settings_tour_replay_hint">Shows the tours of every screen again.</string>
+
+    <!-- prepare -->
+    <string name="tour_prepare_welcome_title">Welcome to Pourline</string>
+    <string name="tour_prepare_welcome_body">Pourline guides every brew with your scale. Here are the basics, in a minute.</string>
+    <string name="tour_prepare_scale_title">Your scale</string>
+    <string name="tour_prepare_scale_body">Connect it here. No scale at hand? Use the simulated scale.</string>
+    <string name="tour_prepare_recipe_title">Recipe</string>
+    <string name="tour_prepare_recipe_body">Pick a recipe and the session guides you step by step. Without one, you brew freely.</string>
+    <string name="tour_prepare_coffee_title">Coffee</string>
+    <string name="tour_prepare_coffee_body">Choose the coffee you are brewing: its log and what is left in the bag update on their own.</string>
+    <string name="tour_prepare_dose_title">Dose and ratio</string>
+    <string name="tour_prepare_dose_body">Dose and ratio set the water. With a recipe, they come from it.</string>
+    <string name="tour_prepare_grind_title">Grind</string>
+    <string name="tour_prepare_grind_body">The setting for your grinder. Pick another grinder and Pourline converts it.</string>
+    <string name="tour_prepare_grind_ruler_title">Grind ruler</string>
+    <string name="tour_prepare_grind_ruler_body">Shows where the setting sits within your grinder\'s range.</string>
+    <string name="tour_prepare_start_title">Start</string>
+    <string name="tour_prepare_start_body">With the scale connected, Start opens the guided session.</string>
+    <string name="tour_prepare_start_scaleless_title">Without a scale</string>
+    <string name="tour_prepare_start_scaleless_body">Follow the recipe with just the timer.</string>
+    <string name="tour_prepare_settings_title">Settings</string>
+    <string name="tour_prepare_settings_body">Mode, appearance, grinders, alerts and countdown.</string>
+    <string name="tour_prepare_tab_coffees_title">Coffees</string>
+    <string name="tour_prepare_tab_coffees_body">Your bags, with label photos, roast date and what is left.</string>
+    <string name="tour_prepare_tab_recipes_title">Recipes</string>
+    <string name="tour_prepare_tab_recipes_body">Built-in recipes and your own, step by step.</string>
+    <string name="tour_prepare_tab_history_title">History</string>
+    <string name="tour_prepare_tab_history_body">Every brew, with its rating and details.</string>
+    <string name="tour_prepare_tab_tools_title">Tools</string>
+    <string name="tour_prepare_tab_tools_body">Ratio calculator, 4:6 generator and grind converter.</string>
+
+    <!-- session_prep -->
+    <string name="tour_session_prep_stepper_title">Before you pour</string>
+    <string name="tour_session_prep_stepper_body">Four steps: tare, weigh the coffee, tare again and pour.</string>
+    <string name="tour_session_prep_weight_title">Live weight</string>
+    <string name="tour_session_prep_weight_body">What the scale reads right now.</string>
+    <string name="tour_session_prep_actions_title">Tare or skip</string>
+    <string name="tour_session_prep_actions_body">Tare here or on the scale. You can skip any step.</string>
+    <string name="tour_session_prep_timer_title">The timer</string>
+    <string name="tour_session_prep_timer_body">It starts by itself when you pour, or with Start timer after the countdown. While you pour, the dial shows the water, the time and the step.</string>
+    <string name="tour_session_prep_options_title">Options</string>
+    <string name="tour_session_prep_options_body">Expert mode, unit, restart and, with the simulated scale, test pours.</string>
+    <string name="tour_session_prep_close_title">Leave</string>
+    <string name="tour_session_prep_close_body">Leave the session whenever you want.</string>
+
+    <!-- session_scaleless -->
+    <string name="tour_session_scaleless_plan_title">The plan</string>
+    <string name="tour_session_scaleless_plan_body">Dose, ratio and target water.</string>
+    <string name="tour_session_scaleless_start_title">Start timer</string>
+    <string name="tour_session_scaleless_start_body">Tap it when you are ready. You can set the countdown in Settings.</string>
+    <string name="tour_session_scaleless_dial_title">No scale</string>
+    <string name="tour_session_scaleless_dial_body">The dial shows the time of each step and alerts you when the step changes, even with the screen off.</string>
+    <string name="tour_session_scaleless_close_title">Leave</string>
+    <string name="tour_session_scaleless_close_body">Leave the session whenever you want.</string>
+
+    <!-- summary -->
+    <string name="tour_summary_rating_title">Rate it</string>
+    <string name="tour_summary_rating_body">Give the brew stars and note what you tasted.</string>
+    <string name="tour_summary_details_title">Add details</string>
+    <string name="tour_summary_details_body">Fill in the name, method, temperature and tasting notes.</string>
+    <string name="tour_summary_share_title">Share</string>
+    <string name="tour_summary_share_body">Create an image of the brew to share it.</string>
+    <string name="tour_summary_expert_title">Metrics</string>
+    <string name="tour_summary_expert_body">Flow, stability and fit to the target curve.</string>
+
+    <!-- coffees -->
+    <string name="tour_coffees_add_title">Add coffee</string>
+    <string name="tour_coffees_add_body">Add a bag. With a photo of the label, Pourline fills in the details.</string>
+    <string name="tour_coffees_search_title">Search</string>
+    <string name="tour_coffees_search_body">By name, roaster or origin.</string>
+    <string name="tour_coffees_tabs_title">Active and archived</string>
+    <string name="tour_coffees_tabs_body">Finished coffees are archived here.</string>
+    <string name="tour_coffees_row_title">A coffee</string>
+    <string name="tour_coffees_row_body">Open it to see days since roast, what is left and its log.</string>
+
+    <!-- coffee_edit -->
+    <string name="tour_coffee_edit_photos_title">Photos</string>
+    <string name="tour_coffee_edit_photos_body">Take a photo of the front and the back of the bag.</string>
+    <string name="tour_coffee_edit_read_label_title">Read label</string>
+    <string name="tour_coffee_edit_read_label_body">Fills in the fields from the photos. Check the ones marked as read.</string>
+    <string name="tour_coffee_edit_save_title">Save</string>
+    <string name="tour_coffee_edit_save_body">Save the coffee.</string>
+
+    <!-- coffee_detail -->
+    <string name="tour_coffee_detail_status_title">Status</string>
+    <string name="tour_coffee_detail_status_body">Days since roast and coffee left in the bag.</string>
+    <string name="tour_coffee_detail_log_title">Brew log</string>
+    <string name="tour_coffee_detail_log_body">The brews made with this coffee.</string>
+    <string name="tour_coffee_detail_new_bag_title">New bag</string>
+    <string name="tour_coffee_detail_new_bag_body">Start another bag of the same coffee, or archive it when it is finished.</string>
+    <string name="tour_coffee_detail_share_title">Share</string>
+    <string name="tour_coffee_detail_share_body">Share a card of the coffee.</string>
+
+    <!-- recipes -->
+    <string name="tour_recipes_builtin_title">Built-in</string>
+    <string name="tour_recipes_builtin_body">Use them as they are or duplicate them to adjust them.</string>
+    <string name="tour_recipes_active_title">Active</string>
+    <string name="tour_recipes_active_body">The recipe chosen in Brew.</string>
+    <string name="tour_recipes_add_title">Create recipe</string>
+    <string name="tour_recipes_add_body">Build your own recipe step by step.</string>
+
+    <!-- recipe_edit -->
+    <string name="tour_recipe_edit_method_title">Method</string>
+    <string name="tour_recipe_edit_method_body">The brewing method.</string>
+    <string name="tour_recipe_edit_stage_title">Steps</string>
+    <string name="tour_recipe_edit_stage_body">Each step is a pour, a swirl or a wait, with its timing.</string>
+    <string name="tour_recipe_edit_add_stage_title">Add step</string>
+    <string name="tour_recipe_edit_add_stage_body">Add more steps to the recipe.</string>
+    <string name="tour_recipe_edit_totals_title">Totals</string>
+    <string name="tour_recipe_edit_totals_body">The recipe\'s water, ratio and duration.</string>
+    <string name="tour_recipe_edit_preview_title">Target curve</string>
+    <string name="tour_recipe_edit_preview_body">The curve the session will follow.</string>
+
+    <!-- history -->
+    <string name="tour_history_filters_title">Filters</string>
+    <string name="tour_history_filters_body">Filter by coffee and by method.</string>
+    <string name="tour_history_progress_title">Progress</string>
+    <string name="tour_history_progress_body">How the stability of your pours evolves.</string>
+    <string name="tour_history_row_title">A brew</string>
+    <string name="tour_history_row_body">Open it to see its details.</string>
+    <string name="tour_history_scaleless_title">No scale</string>
+    <string name="tour_history_scaleless_body">Made without a scale: no curve, and left out of comparisons.</string>
+
+    <!-- brew_detail -->
+    <string name="tour_brew_detail_chart_title">Chart</string>
+    <string name="tour_brew_detail_chart_body">The actual pour curve, or the target one if it was made without a scale.</string>
+    <string name="tour_brew_detail_details_title">Details</string>
+    <string name="tour_brew_detail_details_body">The grind and the rest of the brew\'s details.</string>
+    <string name="tour_brew_detail_edit_title">Edit</string>
+    <string name="tour_brew_detail_edit_body">Change the rating, notes, method and temperature. Without a scale, also the dose and water.</string>
+    <string name="tour_brew_detail_compare_title">Compare</string>
+    <string name="tour_brew_detail_compare_body">Compare it with another brew.</string>
+    <string name="tour_brew_detail_save_recipe_title">Save as recipe</string>
+    <string name="tour_brew_detail_save_recipe_body">Turn it into a recipe.</string>
+    <string name="tour_brew_detail_share_title">Share</string>
+    <string name="tour_brew_detail_share_body">Share an image of the brew.</string>
+
+    <!-- compare -->
+    <string name="tour_compare_chart_title">Curves</string>
+    <string name="tour_compare_chart_body">The water of both brews, overlaid.</string>
+    <string name="tour_compare_legend_title">Legend</string>
+    <string name="tour_compare_legend_body">Which color is each brew.</string>
+    <string name="tour_compare_table_title">Differences</string>
+    <string name="tour_compare_table_body">Both brews, detail by detail.</string>
+
+    <!-- tools -->
+    <string name="tour_tools_ratio_title">Ratio calculator</string>
+    <string name="tour_tools_ratio_body">Work out coffee, ratio and water.</string>
+    <string name="tour_tools_four_six_title">4:6 generator</string>
+    <string name="tour_tools_four_six_body">Builds a 4:6 recipe from taste and strength.</string>
+    <string name="tour_tools_converter_title">Grind converter</string>
+    <string name="tour_tools_converter_body">Translates a grind setting from one grinder to another.</string>
+
+    <!-- ratio_calculator -->
+    <string name="tour_ratio_calculator_fields_title">Three fields</string>
+    <string name="tour_ratio_calculator_fields_body">Edit any of them: coffee or ratio recalculate the water, and water recalculates the coffee.</string>
+    <string name="tour_ratio_calculator_validation_title">Invalid values</string>
+    <string name="tour_ratio_calculator_validation_body">An invalid field is marked, and the rest is worked out from the other two.</string>
+
+    <!-- four_six -->
+    <string name="tour_four_six_dose_title">Dose and ratio</string>
+    <string name="tour_four_six_dose_body">Dose and ratio set the total water.</string>
+    <string name="tour_four_six_sliders_title">Taste and strength</string>
+    <string name="tour_four_six_sliders_body" formatted="false">Taste splits the first 40%, sweeter or brighter. Strength sets how many pours the remaining 60% takes.</string>
+    <string name="tour_four_six_pours_title">Pours</string>
+    <string name="tour_four_six_pours_body">Each pour with its time and running total.</string>
+    <string name="tour_four_six_save_title">Save as recipe</string>
+    <string name="tour_four_six_save_body">Save it as a recipe to use it in Brew.</string>
+
+    <!-- converter -->
+    <string name="tour_converter_source_title">Source</string>
+    <string name="tour_converter_source_body">The grinder and the setting to start from.</string>
+    <string name="tour_converter_rows_title">Equivalents</string>
+    <string name="tour_converter_rows_body">The matching setting on your other grinders.</string>
+
+    <!-- settings -->
+    <string name="tour_settings_mode_title">Mode</string>
+    <string name="tour_settings_mode_body">Basic or Expert. Expert adds charts, stability and comparisons.</string>
+    <string name="tour_settings_grinders_title">Grinders</string>
+    <string name="tour_settings_grinders_body">Your grinders and the default one.</string>
+    <string name="tour_settings_theme_title">Appearance</string>
+    <string name="tour_settings_theme_body">Light, dark or the system\'s.</string>
+    <string name="tour_settings_alerts_title">Step guide</string>
+    <string name="tour_settings_alerts_body">Vibration and sound when each step starts.</string>
+    <string name="tour_settings_countdown_title">Countdown</string>
+    <string name="tour_settings_countdown_body">Seconds before the timer starts.</string>
+    <string name="tour_settings_replay_title">Replay tour</string>
+    <string name="tour_settings_replay_body">See all the tours again.</string>
 </resources>
