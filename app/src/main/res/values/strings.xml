@@ -759,6 +759,10 @@
     <string name="converter_picker_owned">Mis molinos</string>
     <string name="converter_picker_catalog">Catálogo</string>
     <string name="converter_picker_empty">Sin resultados</string>
+    <string name="brew_notice_channel">Preparación en curso</string>
+    <string name="brew_notice_channel_description">Mantiene la preparación activa cuando sales de la app</string>
+    <string name="brew_notice_water">%1$s de %2$s</string>
+    <string name="brew_notice_saving">Guardando la preparación…</string>
 
     <!-- Herramientas -->
     <string name="tab_tools">Herramientas</string>

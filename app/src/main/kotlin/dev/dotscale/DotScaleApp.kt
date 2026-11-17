@@ -19,6 +19,8 @@ import dev.dotscale.recipe.RecipeRepository
 import dev.dotscale.recipe.ResourcesRecipeTexts
 import dev.dotscale.session.AndroidScaleConnections
 import dev.dotscale.session.AutoReconnect
+import dev.dotscale.session.BrewKeepAlive
+import dev.dotscale.session.BrewService
 import dev.dotscale.session.GrindSelection
 import dev.dotscale.session.RepositorySessionGrinders
 import dev.dotscale.session.SessionGrind
@@ -75,6 +77,8 @@ class DotScaleApp : Application() {
         else -> Log.i(SEEDER_TAG, "Catalog sync: $result")
       }
     }
+    // Con una preparación abierta, un servicio en primer plano evita que Android congele o mate el proceso al salir.
+    BrewKeepAlive(scaleSession.ui, MainScope()) { BrewService.start(this) }
   }
 
   /** Ámbito del proceso, para trabajo que no debe cancelarse al destruir una pantalla (p. ej. guardar una preparación). */

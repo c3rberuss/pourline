@@ -1,7 +1,11 @@
 package dev.dotscale.ui.prepare
 
+import android.Manifest
 import android.bluetooth.BluetoothAdapter
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -96,6 +101,9 @@ fun PrepareScreen(
     viewModel.refreshPermissions()
   }
   val enableLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
+  // La notificación de la preparación en curso; si se niega, la sesión sigue igual en segundo plano.
+  val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+  val context = LocalContext.current
   // El usuario puede cambiar los permisos desde Ajustes del sistema.
   LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshPermissions() }
 
@@ -172,6 +180,7 @@ fun PrepareScreen(
         AntButton(
           text = stringResource(R.string.prepare_start),
           onClick = {
+            if (context.needsNotificationPermission()) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             viewModel.startSession()
             onStart()
           },
@@ -338,3 +347,8 @@ private fun formatRatio(ratio: Double): String = String.format(Locale.getDefault
 
 /** El valor inicial de un campo, con un decimal ("15,0"). */
 private fun formatInput(value: Double): String = String.format(Locale.getDefault(), "%.1f", value)
+
+/** Android 13+ pide permiso para mostrar la notificación de la preparación en curso. */
+private fun Context.needsNotificationPermission(): Boolean =
+  Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+    ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED

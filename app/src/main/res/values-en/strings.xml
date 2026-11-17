@@ -760,6 +760,10 @@
     <string name="converter_picker_owned">My grinders</string>
     <string name="converter_picker_catalog">Catalog</string>
     <string name="converter_picker_empty">No results</string>
+    <string name="brew_notice_channel">Brew in progress</string>
+    <string name="brew_notice_channel_description">Keeps the brew running when you leave the app</string>
+    <string name="brew_notice_water">%1$s of %2$s</string>
+    <string name="brew_notice_saving">Saving the brew…</string>
 
     <!-- Tools -->
     <string name="tab_tools">Tools</string>
