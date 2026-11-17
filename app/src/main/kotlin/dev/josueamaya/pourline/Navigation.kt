@@ -73,6 +73,10 @@ import dev.josueamaya.pourline.ui.tools.FourSixViewModel
 import dev.josueamaya.pourline.ui.tools.RatioCalculatorScreen
 import dev.josueamaya.pourline.ui.tools.RatioCalculatorViewModel
 import dev.josueamaya.pourline.ui.tools.ToolsScreen
+import dev.josueamaya.pourline.ui.tour.TourBar
+import dev.josueamaya.pourline.ui.tour.TourRoot
+import dev.josueamaya.pourline.ui.tour.TourScreen
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
@@ -102,43 +106,60 @@ private fun TabsNavigation(deps: AppDependencies) {
     rememberDecoratedNavEntries(
       backStack = stacks.getValue(t),
       entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
-      entryProvider = tabEntryProvider(t, stacks.getValue(t), deps) { tab = it },
+      entryProvider = tabEntryProvider(t, stacks.getValue(t), deps, activeTab = { tab }) { tab = it },
     )
   }
   val activeStack = stacks.getValue(tab)
   val showBar = showsBottomBar(activeStack)
 
-  Column(Modifier.fillMaxSize()) {
-    NavDisplay(
-      // Con las entradas de Preparar debajo, "Atrás" en la raíz de otra pestaña tiene a dónde ir (D30).
-      entries = if (tab == Tab.PREPARE) entries.getValue(Tab.PREPARE) else entries.getValue(Tab.PREPARE) + entries.getValue(tab),
-      modifier = Modifier
-        .weight(1f)
-        // La barra inferior ya ocupa el inset de navegación: las pantallas de dentro no lo suman otra vez.
-        .then(if (showBar) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier),
-      onBack = {
-        when (backAction(tab, activeStack.size)) {
-          BackAction.Pop -> activeStack.removeLastOrNull()
-          BackAction.SelectPrepare -> tab = Tab.PREPARE
-          BackAction.Exit -> Unit
-        }
-      },
-    )
-    if (showBar) {
-      val items = Tab.entries.map { AntTabBarItem(it, stringResource(it.label), it.icon, it.testTag) }
-      AntTabBar(
-        items = items,
-        selected = tab,
-        // Tocar la pestaña activa vuelve a su raíz.
-        onSelect = { selected -> if (selected == tab) activeStack.popToRoot() else tab = selected },
+  TourRoot(deps.tourSettings) {
+    Column(Modifier.fillMaxSize()) {
+      NavDisplay(
+        // Con las entradas de Preparar debajo, "Atrás" en la raíz de otra pestaña tiene a dónde ir (D30).
+        entries = if (tab == Tab.PREPARE) entries.getValue(Tab.PREPARE) else entries.getValue(Tab.PREPARE) + entries.getValue(tab),
+        modifier = Modifier
+          .weight(1f)
+          // La barra inferior ya ocupa el inset de navegación: las pantallas de dentro no lo suman otra vez.
+          .then(if (showBar) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier),
+        onBack = {
+          when (backAction(tab, activeStack.size)) {
+            BackAction.Pop -> activeStack.removeLastOrNull()
+            BackAction.SelectPrepare -> tab = Tab.PREPARE
+            BackAction.Exit -> Unit
+          }
+        },
       )
+      if (showBar) {
+        val items = Tab.entries.map { AntTabBarItem(it, stringResource(it.label), it.icon, it.testTag) }
+        // Las pestañas son anclas del recorrido general: su registro es el de la raíz, no el de una pantalla.
+        TourBar {
+          AntTabBar(
+            items = items,
+            selected = tab,
+            // Tocar la pestaña activa vuelve a su raíz.
+            onSelect = { selected -> if (selected == tab) activeStack.popToRoot() else tab = selected },
+            itemModifier = { Modifier.tourAnchor(it.testTag) },
+          )
+        }
+      }
     }
   }
 }
 
-/** Una entrada cuyo `contentKey` lleva el prefijo de la pestaña: dos pilas con la misma clave no comparten `ViewModel` ni estado. */
-private inline fun <reified K : NavKey> EntryProviderScope<NavKey>.tabEntry(tab: Tab, noinline content: @Composable (K) -> Unit) {
-  entry<K>(clazzContentKey = { key -> "${tab.name}/$key" }, content = content)
+/**
+ * Una entrada cuyo `contentKey` lleva el prefijo de la pestaña: dos pilas con la misma clave no comparten `ViewModel` ni
+ * estado. Cada entrada tiene su registro de anclas del recorrido guiado, y es la visible si es la cima de la pila de la
+ * pestaña activa (D20).
+ */
+private inline fun <reified K : NavKey> EntryProviderScope<NavKey>.tabEntry(
+  tab: Tab,
+  stack: NavBackStack<NavKey>,
+  noinline activeTab: () -> Tab,
+  noinline content: @Composable (K) -> Unit,
+) {
+  entry<K>(clazzContentKey = { key -> "${tab.name}/$key" }) { key ->
+    TourScreen(visible = activeTab() == tab && stack.lastOrNull() == key) { content(key) }
+  }
 }
 
 /** Las pantallas de la pestaña [tab]; los accesos cruzados se apilan en su propia pila [stack] (D31). */
@@ -146,13 +167,14 @@ private fun tabEntryProvider(
   tab: Tab,
   stack: NavBackStack<NavKey>,
   deps: AppDependencies,
+  activeTab: () -> Tab,
   selectTab: (Tab) -> Unit,
 ): (NavKey) -> NavEntry<NavKey> = entryProvider {
   fun back() {
     stack.removeLastOrNull()
   }
 
-  tabEntry<Prepare>(tab) {
+  tabEntry<Prepare>(tab, stack, activeTab) {
     val viewModel = viewModel { PrepareViewModel(deps.scaleSession, deps.scaleMemory, deps.freeBrewDefaults, deps.bluetooth, deps.grindSelection) }
     PrepareScreen(
       viewModel = viewModel,
@@ -168,7 +190,7 @@ private fun tabEntryProvider(
       onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
     )
   }
-  tabEntry<Session>(tab) {
+  tabEntry<Session>(tab, stack, activeTab) {
     val session = deps.scaleSession
     val hasSession by remember { session.ui.map { it.hasSession }.distinctUntilChanged() }
       .collectAsStateWithLifecycle(remember { session.ui.value.hasSession })
@@ -188,7 +210,7 @@ private fun tabEntryProvider(
       onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
     )
   }
-  tabEntry<Coffees>(tab) {
+  tabEntry<Coffees>(tab, stack, activeTab) {
     CoffeesScreen(
       viewModel { CoffeesViewModel(deps.coffeeRepository) },
       onBack = null,
@@ -196,7 +218,7 @@ private fun tabEntryProvider(
       onAddCoffee = { stack.add(CoffeeEdit()) },
     )
   }
-  tabEntry<CoffeeDetail>(tab) { key ->
+  tabEntry<CoffeeDetail>(tab, stack, activeTab) { key ->
     CoffeeDetailScreen(
       viewModel { CoffeeDetailViewModel(deps.coffeeRepository, key.id) },
       onBack = ::back,
@@ -205,7 +227,7 @@ private fun tabEntryProvider(
       onOpenBrew = { id -> stack.add(BrewDetail(id)) },
     )
   }
-  tabEntry<CoffeeEdit>(tab) { key ->
+  tabEntry<CoffeeEdit>(tab, stack, activeTab) { key ->
     CoffeeEditScreen(
       viewModel { CoffeeEditViewModel(deps.coffeeRepository, deps.coffeePhotoStore, deps.labelOcr, key.id, key.fromCoffeeId) },
       newCameraTarget = deps.coffeePhotoStore::newCameraTarget,
@@ -218,7 +240,7 @@ private fun tabEntryProvider(
       isEdit = key.id != null,
     )
   }
-  tabEntry<Settings>(tab) {
+  tabEntry<Settings>(tab, stack, activeTab) {
     SettingsScreen(
       deps.brewSettings,
       deps.targetSettings,
@@ -228,10 +250,16 @@ private fun tabEntryProvider(
       grinderDefaults = deps.grinderSettings,
       onRestoreRecipes = { deps.recipeRepository.restoreBuiltIns() },
       onOpenGrinders = { stack.add(Grinders) },
+      // Ajustes solo se abre desde Preparar: su pila es la de Preparar y su raíz, donde sale el recorrido general.
+      onReplayTour = {
+        deps.tourSettings.reset()
+        stack.popToRoot()
+        selectTab(Tab.PREPARE)
+      },
       onBack = ::back,
     )
   }
-  tabEntry<Grinders>(tab) {
+  tabEntry<Grinders>(tab, stack, activeTab) {
     GrindersScreen(
       viewModel { GrindersViewModel(deps.grinderRepository, deps.grinderSettings) },
       onBack = ::back,
@@ -240,7 +268,7 @@ private fun tabEntryProvider(
       onOpenConverter = { stack.add(GrindConverter()) },
     )
   }
-  tabEntry<GrindConverter>(tab) { key ->
+  tabEntry<GrindConverter>(tab, stack, activeTab) { key ->
     GrindConverterScreen(
       viewModel { GrindConverterViewModel(deps.grinderRepository, key.sourceId, key.method, key.value) },
       onBack = ::back,
@@ -248,7 +276,7 @@ private fun tabEntryProvider(
       onFix = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
     )
   }
-  tabEntry<GrinderCatalog>(tab) {
+  tabEntry<GrinderCatalog>(tab, stack, activeTab) {
     GrinderCatalogScreen(
       viewModel { GrinderCatalogViewModel(deps.grinderRepository) },
       onBack = ::back,
@@ -256,7 +284,7 @@ private fun tabEntryProvider(
       onCreate = { stack.add(GrinderEdit()) },
     )
   }
-  tabEntry<GrinderDetail>(tab) { key ->
+  tabEntry<GrinderDetail>(tab, stack, activeTab) { key ->
     GrinderDetailScreen(
       viewModel { GrinderDetailViewModel(deps.grinderRepository, deps.grinderSettings, key.id) },
       onBack = ::back,
@@ -264,14 +292,14 @@ private fun tabEntryProvider(
       onDuplicate = { id -> stack.add(GrinderEdit(fromId = id)) },
     )
   }
-  tabEntry<GrinderEdit>(tab) { key ->
+  tabEntry<GrinderEdit>(tab, stack, activeTab) { key ->
     GrinderEditScreen(
       viewModel { GrinderEditViewModel(deps.grinderRepository, key.id, key.fromId) },
       openRanges = key.openRanges,
       onBack = ::back,
     )
   }
-  tabEntry<Recipes>(tab) {
+  tabEntry<Recipes>(tab, stack, activeTab) {
     RecipesScreen(
       viewModel { RecipesViewModel(deps.recipeRepository) },
       onBack = null,
@@ -279,7 +307,7 @@ private fun tabEntryProvider(
       onCreateRecipe = { stack.add(RecipeEdit()) },
     )
   }
-  tabEntry<RecipeEdit>(tab) { key ->
+  tabEntry<RecipeEdit>(tab, stack, activeTab) { key ->
     RecipeEditScreen(
       viewModel { RecipeEditViewModel(
           deps.recipeRepository, deps.brewRepository, deps.recipeTexts, deps.grinderRepository, deps.grinderSettings, deps.grindTexts, key.id, key.fromBrewId,
@@ -291,31 +319,31 @@ private fun tabEntryProvider(
       onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
     )
   }
-  tabEntry<Tools>(tab) {
+  tabEntry<Tools>(tab, stack, activeTab) {
     ToolsScreen(
       onOpenRatio = { stack.add(RatioTool) },
       onOpenFourSix = { stack.add(FourSixTool) },
       onOpenConverter = { stack.add(GrindConverter()) },
     )
   }
-  tabEntry<RatioTool>(tab) {
+  tabEntry<RatioTool>(tab, stack, activeTab) {
     RatioCalculatorScreen(viewModel { RatioCalculatorViewModel(deps.freeBrewDefaults) }, onBack = ::back)
   }
-  tabEntry<FourSixTool>(tab) {
+  tabEntry<FourSixTool>(tab, stack, activeTab) {
     FourSixScreen(
       viewModel { FourSixViewModel(deps.freeBrewDefaults) },
       onBack = ::back,
       onSaveAsRecipe = { params -> stack.add(RecipeEdit(fourSix = params)) },
     )
   }
-  tabEntry<History>(tab) {
+  tabEntry<History>(tab, stack, activeTab) {
     HistoryScreen(
       viewModel { HistoryViewModel(deps.brewRepository) },
       onBack = null,
       onOpenBrew = { id -> stack.add(BrewDetail(id)) },
     )
   }
-  tabEntry<BrewDetail>(tab) { key ->
+  tabEntry<BrewDetail>(tab, stack, activeTab) { key ->
     BrewDetailScreen(
       viewModel { BrewDetailViewModel(deps.brewRepository, deps.coffeeRepository, deps.grinderRepository, key.id) },
       onBack = ::back,
@@ -325,7 +353,7 @@ private fun tabEntryProvider(
       onSaveAsRecipe = { id -> stack.add(RecipeEdit(fromBrewId = id)) },
     )
   }
-  tabEntry<ComparePick>(tab) { key ->
+  tabEntry<ComparePick>(tab, stack, activeTab) { key ->
     ComparePickScreen(
       viewModel { ComparePickViewModel(deps.brewRepository, key.aId) },
       onBack = ::back,
@@ -333,13 +361,13 @@ private fun tabEntryProvider(
       onPick = { bId -> stack[stack.lastIndex] = BrewCompare(key.aId, bId) },
     )
   }
-  tabEntry<BrewCompare>(tab) { key ->
+  tabEntry<BrewCompare>(tab, stack, activeTab) { key ->
     BrewCompareScreen(
       viewModel { BrewCompareViewModel(deps.brewRepository, deps.coffeeRepository, key.aId, key.bId) },
       onBack = ::back,
     )
   }
-  tabEntry<BrewEdit>(tab) { key ->
+  tabEntry<BrewEdit>(tab, stack, activeTab) { key ->
     BrewEditScreen(
       viewModel { BrewEditViewModel(deps.brewRepository, deps.coffeeRepository, deps.grinderRepository, deps.grindTexts, key.id) },
       onBack = ::back,

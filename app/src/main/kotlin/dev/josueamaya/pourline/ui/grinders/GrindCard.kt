@@ -31,6 +31,7 @@ import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.components.AntTitle
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 /**
  * La tarjeta de molienda de Preparar y del paso 2 (§3.7): la línea de la receta, "Moler con", el ajuste del molino
@@ -81,7 +82,7 @@ fun GrindCard(
             state.source?.method,
             outcome.value,
             showAnchors = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().tourAnchor("grind_card_ruler"),
             testTag = "grind_card_ruler",
           )
         }

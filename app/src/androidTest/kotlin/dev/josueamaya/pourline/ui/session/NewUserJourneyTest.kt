@@ -33,6 +33,7 @@ class NewUserJourneyTest {
 
   @Test
   fun aNewUserGoesFromTheFirstLaunchToASavedBrew() {
+    env.skipTours()
     rule.setContent { TestApp(env) }
 
     // Primer arranque: elige "Básico".
