@@ -21,7 +21,7 @@ enum class FourSixTaste(val firstShare: Double) {
   BRIGHT(2.0 / 3),
 }
 
-/** Cargado ↔ diluido: en cuántos vertidos iguales se reparte el 60 % restante del agua. Más vertidos, más intensidad. */
+/** Suave ↔ intensa: en cuántos vertidos iguales se reparte el 60 % restante del agua. Más vertidos, más intensidad. */
 enum class FourSixStrength(val pours: Int) {
   LIGHTEST(1),
   LIGHT(2),
@@ -66,7 +66,7 @@ data class FourSixPlan(
  * El método 4:6 de Tetsu Kasuya. El agua total (café × ratio) se divide en un 40 % que define el sabor, en dos
  * vertidos ([FourSixTaste]), y un 60 % que define la intensidad, en uno a cinco vertidos iguales ([FourSixStrength]).
  * Cada vertido empieza 45 s después del anterior y el filtro se retira 30 s después del último: con 20 g a 1:15,
- * balanceado y estándar, son los cinco vertidos de 60 g de la receta original, en 3:30.
+ * equilibrado e intensidad media, son los cinco vertidos de 60 g de la receta original, en 3:30.
  *
  * Los pesos acumulados se redondean al gramo; cada vertido es la diferencia entre dos acumulados.
  */
@@ -172,7 +172,7 @@ object FourSix {
 
 /** Textos de las recetas que genera [FourSix]. Lo implementa `ResourcesFourSixTexts`; en los tests, un falso. */
 interface FourSixTexts {
-  /** "4:6 · Dulce · Cargado". */
+  /** "4:6 · Dulce · Intensa". */
   fun recipeName(taste: FourSixTaste, strength: FourSixStrength): String
 
   /** "1.er vertido", con [index] desde 0. */

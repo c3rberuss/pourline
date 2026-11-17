@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.ui.tools
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -8,13 +9,13 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.AnnotatedString
 import androidx.test.platform.app.InstrumentationRegistry
@@ -54,6 +55,11 @@ class ToolsScreenTest {
   fun tearDown() = env.close()
 
   private fun exists(tag: String) = rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+
+  /** Mueve el slider [tag] a la posición [level] (de 0 a 4). */
+  private fun setLevel(tag: String, level: Int) {
+    rule.onNodeWithTag(tag).performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(level.toFloat()) }
+  }
 
   private fun waitFor(tag: String) = rule.waitUntil(5_000) { exists(tag) }
 
@@ -95,15 +101,19 @@ class ToolsScreenTest {
     rule.onNodeWithTag("tools_four_six").performClick()
     waitFor("four_six")
     rule.onNodeWithTag("four_six_dose").performTextReplacement("20")
-    rule.onNodeWithTag("four_six_taste_balanced").assertIsOn()
-    rule.onNodeWithTag("four_six_strength_standard").assertIsOn()
+    rule.onNodeWithTag("four_six_taste_value").assertTextContains(context.getString(R.string.four_six_taste_balanced), substring = true)
+    rule.onNodeWithTag("four_six_taste_value").assertTextContains("60/60 g", substring = true)
+    rule.onNodeWithTag("four_six_strength_value").assertTextContains(context.getString(R.string.four_six_strength_standard), substring = true)
     rule.onNodeWithTag("four_six_water").assertTextContains("300", substring = true)
     rule.onNodeWithTag("four_six_pour_count").performScrollTo().assertTextContains("5", substring = true)
     rule.onNodeWithTag("four_six_time").assertTextContains("3:30", substring = true)
     rule.onNodeWithTag("four_six_pour_0").performScrollTo().assertTextContains("+60 g")
 
-    rule.onNodeWithTag("four_six_taste_sweet").performScrollTo().performClick()
-    rule.onNodeWithTag("four_six_strength_strongest").performScrollTo().performClick()
+    setLevel("four_six_taste", 0)
+    setLevel("four_six_strength", 4)
+    rule.onNodeWithTag("four_six_taste_value").assertTextContains(context.getString(R.string.four_six_taste_sweet), substring = true)
+    rule.onNodeWithTag("four_six_taste_value").assertTextContains("40/80 g", substring = true)
+    rule.onNodeWithTag("four_six_strength_value").assertTextContains(context.getString(R.string.four_six_strength_strongest), substring = true)
     rule.onNodeWithTag("four_six_pour_count").performScrollTo().assertTextContains("7", substring = true)
     rule.onNodeWithTag("four_six_time").assertTextContains("5:00", substring = true)
     rule.onNodeWithTag("four_six_pour_0").performScrollTo().assertTextContains("+40 g")
@@ -123,7 +133,7 @@ class ToolsScreenTest {
     rule.onNodeWithTag("tools_four_six").performClick()
     waitFor("four_six")
     rule.onNodeWithTag("four_six_dose").performTextReplacement("20")
-    rule.onNodeWithTag("four_six_strength_strong").performScrollTo().performClick()
+    setLevel("four_six_strength", 3)
     rule.onNodeWithTag("four_six_save").performScrollTo().assertIsEnabled().performClick()
 
     waitFor("recipe_edit_save")
