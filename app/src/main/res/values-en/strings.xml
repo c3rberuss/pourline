@@ -485,6 +485,7 @@
     <string name="prepare_empty_value">—</string>
     <string name="prepare_start">Start</string>
     <string name="prepare_start_disabled">Connect the scale to start.</string>
+    <string name="prepare_start_scaleless">Start without scale</string>
     <string name="prepare_range_error">The dose goes from 5 to 60 g and the ratio from 10 to 20.</string>
     <string name="scale_card_no_permission">We need Bluetooth permission</string>
     <string name="scale_card_grant">Grant permission</string>

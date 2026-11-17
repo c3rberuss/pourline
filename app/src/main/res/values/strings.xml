@@ -484,6 +484,7 @@
     <string name="prepare_empty_value">—</string>
     <string name="prepare_start">Empezar</string>
     <string name="prepare_start_disabled">Conecta la báscula para empezar.</string>
+    <string name="prepare_start_scaleless">Empezar sin báscula</string>
     <string name="prepare_range_error">La dosis va de 5 a 60 g y el ratio, de 10 a 20.</string>
     <string name="scale_card_no_permission">Necesitamos permiso de Bluetooth</string>
     <string name="scale_card_grant">Dar permisos</string>

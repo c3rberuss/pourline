@@ -1,7 +1,9 @@
 package dev.josueamaya.pourline.ui.prepare
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Los rangos de la dosis y el ratio de Preparar (D27). */
@@ -38,5 +40,28 @@ class FreeBrewInputTest {
   @Test
   fun surroundingSpacesAreIgnored() {
     assertEquals(18.0, parseFreeDose(" 18 ")!!, 1e-9)
+  }
+
+  // --- Empezar sin báscula (SPEC-007) ---
+
+  @Test
+  fun `with a recipe the scaleless start is always allowed`() {
+    assertTrue(canStartScaleless(hasTarget = true, doseText = "", ratioText = ""))
+    assertTrue(canStartScaleless(hasTarget = true, doseText = "80", ratioText = "5"))
+    assertTrue(canStartScaleless(hasTarget = true, doseText = "15", ratioText = "16"))
+  }
+
+  @Test
+  fun `without a recipe it needs a valid dose and ratio`() {
+    assertTrue(canStartScaleless(hasTarget = false, doseText = "15", ratioText = "16"))
+    assertTrue(canStartScaleless(hasTarget = false, doseText = " 18,5 ", ratioText = "16.7"))
+    // Vacío, fuera de rango y con dos decimales: la dosis o el ratio, cualquiera de los dos, lo deshabilita.
+    assertFalse(canStartScaleless(hasTarget = false, doseText = "", ratioText = "16"))
+    assertFalse(canStartScaleless(hasTarget = false, doseText = "15", ratioText = ""))
+    assertFalse(canStartScaleless(hasTarget = false, doseText = "80", ratioText = "16"))
+    assertFalse(canStartScaleless(hasTarget = false, doseText = "15", ratioText = "5"))
+    assertFalse(canStartScaleless(hasTarget = false, doseText = "15.55", ratioText = "16"))
+    assertFalse(canStartScaleless(hasTarget = false, doseText = "15", ratioText = "16.25"))
+    assertFalse(canStartScaleless(hasTarget = false, doseText = "abc", ratioText = "xyz"))
   }
 }

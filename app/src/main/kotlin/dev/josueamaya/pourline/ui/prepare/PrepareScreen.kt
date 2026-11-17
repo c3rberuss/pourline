@@ -96,6 +96,10 @@ fun PrepareScreen(
   var pickerOpen by rememberSaveable { mutableStateOf(false) }
   var coffeePickerOpen by rememberSaveable { mutableStateOf(false) }
   val simulatedName = stringResource(R.string.scale_simulation)
+  // Los textos de la dosis y el ratio libres viven aquí: "Empezar sin báscula" necesita saber si valen. La clave los
+  // reinicia al poner o quitar la receta, como cuando los campos salían de la composición.
+  var doseText by rememberSaveable(ui.target == null) { mutableStateOf(formatInput(ui.plan.doseG)) }
+  var ratioText by rememberSaveable(ui.target == null) { mutableStateOf(formatInput(ui.plan.ratio)) }
 
   val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
     viewModel.refreshPermissions()
@@ -167,7 +171,14 @@ fun PrepareScreen(
         label = stringResource(R.string.prepare_recipe),
       )
       CoffeeSelectRow(ui.coffee, enabled = true, onClick = { coffeePickerOpen = true }, modifier = Modifier.testTag("prepare_coffee"))
-      DoseCard(ui, viewModel)
+      DoseCard(
+        ui,
+        viewModel,
+        doseText = doseText,
+        onDoseText = { doseText = it },
+        ratioText = ratioText,
+        onRatioText = { ratioText = it },
+      )
       GrindCard(
         state = grind,
         mode = LocalExperienceMode.current,
@@ -196,6 +207,18 @@ fun PrepareScreen(
             type = AntTextType.Secondary,
           )
         }
+        // Sin báscula (SPEC-007): siempre visible, la báscula no interviene.
+        AntButton(
+          text = stringResource(R.string.prepare_start_scaleless),
+          onClick = {
+            if (context.needsNotificationPermission()) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            viewModel.startScalelessSession()
+            onStart()
+          },
+          modifier = Modifier.fillMaxWidth().testTag("prepare_start_scaleless"),
+          size = AntSize.Large,
+          enabled = canStartScaleless(ui.target != null, doseText, ratioText),
+        )
       }
     }
   }
@@ -259,7 +282,14 @@ fun PrepareScreen(
 
 /** Con receta, la dosis, el ratio y el agua son suyos y de solo lectura; sin receta se editan la dosis y el ratio. */
 @Composable
-private fun DoseCard(ui: PrepareUiState, viewModel: PrepareViewModel) {
+private fun DoseCard(
+  ui: PrepareUiState,
+  viewModel: PrepareViewModel,
+  doseText: String,
+  onDoseText: (String) -> Unit,
+  ratioText: String,
+  onRatioText: (String) -> Unit,
+) {
   AntCard(Modifier.fillMaxWidth()) {
     if (ui.target != null) {
       Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm)) {
@@ -277,15 +307,20 @@ private fun DoseCard(ui: PrepareUiState, viewModel: PrepareViewModel) {
         WaterStatistic(ui, Modifier.weight(1f))
       }
     } else {
-      FreeFields(ui, viewModel)
+      FreeFields(ui, viewModel, doseText, onDoseText, ratioText, onRatioText)
     }
   }
 }
 
 @Composable
-private fun FreeFields(ui: PrepareUiState, viewModel: PrepareViewModel) {
-  var doseText by rememberSaveable { mutableStateOf(formatInput(ui.plan.doseG)) }
-  var ratioText by rememberSaveable { mutableStateOf(formatInput(ui.plan.ratio)) }
+private fun FreeFields(
+  ui: PrepareUiState,
+  viewModel: PrepareViewModel,
+  doseText: String,
+  onDoseText: (String) -> Unit,
+  ratioText: String,
+  onRatioText: (String) -> Unit,
+) {
   val doseValid = parseFreeDose(doseText) != null
   val ratioValid = parseFreeRatio(ratioText) != null
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm)) {
@@ -294,7 +329,7 @@ private fun FreeFields(ui: PrepareUiState, viewModel: PrepareViewModel) {
       AntInput(
         value = doseText,
         onValueChange = {
-          doseText = it
+          onDoseText(it)
           viewModel.setDose(it)
         },
         modifier = Modifier.fillMaxWidth().testTag("prepare_dose"),
@@ -308,7 +343,7 @@ private fun FreeFields(ui: PrepareUiState, viewModel: PrepareViewModel) {
       AntInput(
         value = ratioText,
         onValueChange = {
-          ratioText = it
+          onRatioText(it)
           viewModel.setRatio(it)
         },
         modifier = Modifier.fillMaxWidth().testTag("prepare_ratio"),

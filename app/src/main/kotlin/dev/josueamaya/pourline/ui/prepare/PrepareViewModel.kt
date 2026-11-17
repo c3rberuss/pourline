@@ -128,6 +128,9 @@ class PrepareViewModel(
   /** "Empezar": abre la sesión guiada con la dosis y el ratio de Preparar. */
   fun startSession() = manager.startSession(ui.value.plan)
 
+  /** "Empezar sin báscula" (SPEC-007): abre la sesión cronometrada con el plan de Preparar. */
+  fun startScalelessSession() = manager.startScalelessSession(ui.value.plan)
+
   fun disconnect() = manager.disconnect()
 
   fun selectTarget(key: ReferenceKey?) = manager.selectTarget(key)

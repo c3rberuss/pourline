@@ -16,6 +16,13 @@ internal fun parseOneDecimal(text: String): Double? {
 internal fun parseFreeDose(text: String): Double? =
   parseOneDecimal(text)?.takeIf { it in FreeBrewDefaults.MIN_DOSE_G..FreeBrewDefaults.MAX_DOSE_G }
 
+/**
+ * "Empezar sin báscula" se habilita con receta, o sin ella si la dosis y el ratio escritos en Preparar son válidos
+ * (SPEC-007 §3.1). A diferencia de "Empezar", no depende de la báscula.
+ */
+internal fun canStartScaleless(hasTarget: Boolean, doseText: String, ratioText: String): Boolean =
+  hasTarget || (parseFreeDose(doseText) != null && parseFreeRatio(ratioText) != null)
+
 /** El ratio de Preparar: de 10,0 a 20,0 con un decimal (D27); `null` si el texto no vale. */
 internal fun parseFreeRatio(text: String): Double? =
   parseOneDecimal(text)?.takeIf { it in FreeBrewDefaults.MIN_RATIO..FreeBrewDefaults.MAX_RATIO }
