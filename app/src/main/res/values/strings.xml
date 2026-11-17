@@ -770,6 +770,9 @@
     <string name="brew_notice_channel_description">Mantiene la preparación activa cuando sales de la app</string>
     <string name="brew_notice_water">%1$s de %2$s</string>
     <string name="brew_notice_saving">Guardando la preparación…</string>
+    <string name="brew_notice_scaleless_ready">Lista para empezar</string>
+    <string name="brew_notice_step">Paso %1$d/%2$d · %3$s</string>
+    <string name="brew_notice_step_pour">Paso %1$d/%2$d · %3$s hasta %4$s</string>
 
     <!-- Herramientas -->
     <string name="tab_tools">Herramientas</string>

@@ -78,7 +78,7 @@ class PourlineApp : Application() {
       }
     }
     // Con una preparación abierta, un servicio en primer plano evita que Android congele o mate el proceso al salir.
-    BrewKeepAlive(scaleSession.ui, MainScope()) { BrewService.start(this) }
+    BrewKeepAlive(scaleSession.ui, MainScope()) { BrewService.start(this, scaleSession.ui.value.scaleless) }
   }
 
   /** Ámbito del proceso, para trabajo que no debe cancelarse al destruir una pantalla (p. ej. guardar una preparación). */

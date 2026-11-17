@@ -771,6 +771,9 @@
     <string name="brew_notice_channel_description">Keeps the brew running when you leave the app</string>
     <string name="brew_notice_water">%1$s of %2$s</string>
     <string name="brew_notice_saving">Saving the brew…</string>
+    <string name="brew_notice_scaleless_ready">Ready to start</string>
+    <string name="brew_notice_step">Step %1$d/%2$d · %3$s</string>
+    <string name="brew_notice_step_pour">Step %1$d/%2$d · %3$s to %4$s</string>
 
     <!-- Tools -->
     <string name="tab_tools">Tools</string>
