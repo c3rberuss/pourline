@@ -29,6 +29,8 @@ import dev.dotscale.R
 import dev.dotscale.brew.BrewConfig
 import dev.dotscale.coffee.CoffeeEntity
 import dev.dotscale.coffee.brewDaysSinceRoast
+import dev.dotscale.grinder.Grinder
+import dev.dotscale.grinder.toGrindSetting
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.history.BrewRecord
 import dev.dotscale.settings.ExpertFeature
@@ -58,6 +60,7 @@ import dev.dotscale.ui.components.AntTagColor
 import dev.dotscale.ui.components.AntText
 import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.components.AntTopBar
+import dev.dotscale.ui.grinders.GrindSettingText
 import dev.dotscale.ui.scale.BrewSummaryCard
 import dev.dotscale.ui.scale.Chart
 import dev.dotscale.ui.scale.FitBlock
@@ -118,6 +121,7 @@ fun BrewDetailScreen(
         DetailContent(
           record,
           coffee = loaded.coffee,
+          grinder = loaded.grinder,
           onOpenCoffee = onOpenCoffee,
           onEdit = { onEdit(record.entity.id) },
           onDelete = viewModel::delete,
@@ -158,6 +162,7 @@ private fun detailShareData(record: BrewRecord, coffee: CoffeeEntity?): BrewShar
 private fun DetailContent(
   record: BrewRecord,
   coffee: CoffeeEntity?,
+  grinder: Grinder?,
   onOpenCoffee: (Long) -> Unit,
   onEdit: () -> Unit,
   onDelete: () -> Unit,
@@ -191,7 +196,7 @@ private fun DetailContent(
   } else {
     BrewFactsCard(record, coffee, onOpenCoffee)
   }
-  DetailsCard(record)
+  DetailsCard(record, grinder)
   // Dos filas: cuatro botones no caben en una de 360 dp.
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
     AntButton(
@@ -248,22 +253,28 @@ private fun FitCard(record: BrewRecord) {
 
 /** Los campos manuales; los vacíos se omiten y, si no hay ninguno, la tarjeta no se muestra. */
 @Composable
-private fun DetailsCard(record: BrewRecord) {
+private fun DetailsCard(record: BrewRecord, grinder: Grinder?) {
   val entity = record.entity
   val method = entity.method?.let { m -> if (m == BrewMethod.OTHER) entity.methodOther ?: m.label() else m.label() }
-  val fields = listOfNotNull(
-    method?.let { stringResource(R.string.brew_detail_method) to it },
-    entity.grind?.let { stringResource(R.string.brew_detail_grind) to it },
-    entity.waterTempC?.let {
-      stringResource(R.string.brew_detail_temp) to stringResource(R.string.brew_detail_temp_value, formatTemp(it))
-    },
-  )
-  if (fields.isEmpty()) return
+  val grind = entity.toGrindSetting()
+  if (method == null && grind == null && entity.waterTempC == null) return
   AntCard(Modifier.fillMaxWidth().testTag("brew_detail_details"), title = stringResource(R.string.brew_detail_details)) {
-    fields.forEach { (label, value) ->
+    method?.let { value ->
       Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
-        AntText(label, type = AntTextType.Secondary)
+        AntText(stringResource(R.string.brew_detail_method), type = AntTextType.Secondary)
         AntText(value)
+      }
+    }
+    if (grind != null) {
+      Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
+        AntText(stringResource(R.string.brew_detail_grind), type = AntTextType.Secondary)
+        GrindSettingText(grind, grinder, testTag = "brew_detail_grind")
+      }
+    }
+    entity.waterTempC?.let {
+      Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
+        AntText(stringResource(R.string.brew_detail_temp), type = AntTextType.Secondary)
+        AntText(stringResource(R.string.brew_detail_temp_value, formatTemp(it)))
       }
     }
   }

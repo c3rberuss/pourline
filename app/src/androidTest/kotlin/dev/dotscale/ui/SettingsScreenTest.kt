@@ -10,6 +10,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
+import dev.dotscale.grinder.GrinderRepository
+import dev.dotscale.grinder.ResourcesGrindTexts
+import dev.dotscale.grinder.TestGrinders
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.recipe.BuiltInRecipes
 import dev.dotscale.recipe.RecipeRepository
@@ -17,6 +20,7 @@ import dev.dotscale.recipe.ResourcesRecipeTexts
 import dev.dotscale.settings.BrewSettings
 import dev.dotscale.settings.ExperienceMode
 import dev.dotscale.settings.ExperienceSettings
+import dev.dotscale.settings.GrinderSettings
 import dev.dotscale.settings.TargetSettings
 import dev.dotscale.settings.ThemeMode
 import dev.dotscale.settings.ThemeSettings
@@ -47,6 +51,9 @@ class SettingsScreenTest {
   private lateinit var db: HistoryDatabase
   private lateinit var recipes: RecipeRepository
   private var restoreCalls = 0
+  private var grindersOpened = 0
+  private lateinit var grinderSettings: GrinderSettings
+  private lateinit var grinders: GrinderRepository
 
   @Before
   fun setUp() {
@@ -58,6 +65,8 @@ class SettingsScreenTest {
     theme.setMode(ThemeMode.SYSTEM)
     db = HistoryDatabase.inMemory(context)
     recipes = RecipeRepository(db, ResourcesRecipeTexts(context))
+    grinderSettings = GrinderSettings(context, TEST_PREFS)
+    grinders = GrinderRepository(db, grinderSettings, ResourcesGrindTexts(context))
     rule.setContent {
       DotScaleTheme(darkTheme = false) {
         SettingsScreen(
@@ -65,6 +74,9 @@ class SettingsScreenTest {
           targetSettings,
           experience,
           theme,
+          grinderRepository = grinders,
+          grinderDefaults = grinderSettings,
+          onOpenGrinders = { grindersOpened++ },
           onRestoreRecipes = {
             restoreCalls++
             recipes.restoreBuiltIns()
@@ -116,6 +128,21 @@ class SettingsScreenTest {
 
     rule.onNodeWithText(context.getString(R.string.theme_light)).performClick()
     assertEquals("LIGHT", testPrefs().getString(ThemeSettings.KEY_MODE, null))
+  }
+
+  @Test
+  fun theGrindersRowShowsItsSummaryAndOpensTheList() {
+    rule.onNodeWithTag("settings_grinders").assertExists()
+    rule.onNodeWithText(context.getString(R.string.settings_grinders_none)).assertExists()
+
+    runBlocking { grinders.save(TestGrinders.uno.copy(model = "Uno")) }
+    rule.waitUntil(5_000) { rule.onAllNodesWithText("1", substring = true).fetchSemanticsNodes().isNotEmpty() }
+    val id = runBlocking { grinders.owned().first().single().id }
+    grinderSettings.setDefaultGrinderId(id)
+    rule.onNodeWithText("Uno", substring = true).assertExists()
+
+    rule.onNodeWithTag("settings_grinders").performClick()
+    assertEquals(1, grindersOpened)
   }
 
   @Test

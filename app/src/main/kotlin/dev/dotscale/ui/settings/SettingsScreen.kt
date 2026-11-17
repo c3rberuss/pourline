@@ -2,12 +2,15 @@ package dev.dotscale.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -21,10 +24,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
+import dev.dotscale.grinder.GrinderRepository
 import dev.dotscale.settings.BrewSettings
+import dev.dotscale.settings.DefaultGrinderStore
 import dev.dotscale.settings.ExperienceMode
 import dev.dotscale.settings.ExpertFeature
 import dev.dotscale.settings.ModeStore
@@ -35,6 +42,7 @@ import dev.dotscale.ui.components.AntButton
 import dev.dotscale.ui.components.AntCard
 import dev.dotscale.ui.components.AntIconButton
 import dev.dotscale.ui.components.AntIcons
+import dev.dotscale.ui.components.AntListItem
 import dev.dotscale.ui.components.AntMessageHost
 import dev.dotscale.ui.components.AntModal
 import dev.dotscale.ui.components.AntSegmented
@@ -50,7 +58,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Recibe los ajustes por parámetro (sin `CompositionLocal`) para poder probarla aislada.
- * [onRestoreRecipes] devuelve las recetas predefinidas a fábrica, tras confirmar. Con [onBack] `null` (es una
+ * [onRestoreRecipes] devuelve las recetas predefinidas a fábrica, tras confirmar; [onOpenGrinders] abre Molinos. Con [onBack] `null` (es una
  * pestaña) no hay flecha de volver.
  */
 @Composable
@@ -59,7 +67,10 @@ fun SettingsScreen(
   targetSettings: TargetSettings,
   experienceSettings: ModeStore,
   themeSettings: ThemeSettings,
+  grinderRepository: GrinderRepository,
+  grinderDefaults: DefaultGrinderStore,
   onRestoreRecipes: suspend () -> Unit,
+  onOpenGrinders: () -> Unit,
   onBack: (() -> Unit)?,
 ) {
   val autoFinish by settings.autoFinishSeconds.collectAsStateWithLifecycle()
@@ -90,6 +101,7 @@ fun SettingsScreen(
       Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(AntTheme.spacing.base),
       verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.base),
     ) {
+      GrindersRow(grinderRepository, grinderDefaults, onOpenGrinders)
       AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.mode_title)) {
         AntSegmented(
           options = listOf(
@@ -192,5 +204,32 @@ private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean
   ) {
     AntText(label, Modifier.weight(1f))
     AntSwitch(checked, onCheckedChange, Modifier.testTag(tag))
+  }
+}
+
+/** La fila "Molinos": el predeterminado y cuántos molinos hay (D7, F0.3). */
+@Composable
+private fun GrindersRow(repository: GrinderRepository, defaults: DefaultGrinderStore, onOpen: () -> Unit) {
+  val owned by repository.owned().collectAsStateWithLifecycle(initialValue = null)
+  val defaultId by defaults.defaultGrinderId.collectAsStateWithLifecycle()
+  val list = owned
+  val count = list?.size ?: 0
+  val default = list?.firstOrNull { it.id == defaultId }
+  val description = when {
+    list == null -> null
+    count == 0 -> stringResource(R.string.settings_grinders_none)
+    default != null -> stringResource(R.string.settings_grinders_default, default.model, pluralStringResource(R.plurals.settings_grinders_count, count, count))
+    else -> pluralStringResource(R.plurals.settings_grinders_count, count, count)
+  }
+  AntCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp)) {
+    AntListItem(
+      title = stringResource(R.string.settings_grinders),
+      description = description,
+      modifier = Modifier.testTag("settings_grinders"),
+      avatar = { Icon(AntIcons.Grinder, contentDescription = null, modifier = Modifier.size(24.dp), tint = AntTheme.colors.textSecondary) },
+      extra = { Icon(AntIcons.Right, contentDescription = null, modifier = Modifier.size(16.dp), tint = AntTheme.colors.textTertiary) },
+      divider = false,
+      onClick = onOpen,
+    )
   }
 }

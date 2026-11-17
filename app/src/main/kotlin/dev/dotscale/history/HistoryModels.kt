@@ -3,10 +3,11 @@ package dev.dotscale.history
 import dev.dotscale.brew.BrewFit
 import dev.dotscale.brew.FinishedBrew
 import dev.dotscale.brew.TargetCurve
+import dev.dotscale.grinder.GrindSetting
 import dev.dotscale.protocol.ScaleModel
 import dev.dotscale.protocol.WeightUnit
 
-enum class BrewMethod { V60, KALITA_WAVE, CHEMEX, ORIGAMI, AEROPRESS, OTHER }
+enum class BrewMethod { V60, KALITA_WAVE, CHEMEX, ORIGAMI, AEROPRESS, FRENCH_PRESS, ESPRESSO, COLD_BREW, MOKA, OTHER }
 
 /** [coffeeId] es el café del catálogo; las preparaciones antiguas sin vínculo solo salen con "Todos" (D33). */
 data class BrewFilter(val coffeeId: Long? = null, val method: BrewMethod? = null)
@@ -52,7 +53,8 @@ data class BrewDetails(
   val coffee: String? = null,
   val method: BrewMethod? = null,
   val methodOther: String? = null,
-  val grind: String? = null,
+  /** El molino y el ajuste de molienda, o `null` sin molienda (SPEC-006). */
+  val grind: GrindSetting? = null,
   val waterTempC: Double? = null,
   /** Las notas de cata. */
   val notes: String? = null,
@@ -65,7 +67,7 @@ data class BrewDetails(
     coffee = coffee.cleaned(),
     method = method,
     methodOther = if (method == BrewMethod.OTHER) methodOther.cleaned() else null,
-    grind = grind.cleaned(),
+    grind = grind?.let { it.copy(label = it.label.cleaned()) }?.takeUnless { it.isEmpty },
     waterTempC = waterTempC,
     notes = notes.cleaned(),
     rating = rating?.takeIf { it in 1..5 },

@@ -1,5 +1,10 @@
 package dev.dotscale.ui.recipes
 
+import dev.dotscale.grinder.GrindChoice
+import dev.dotscale.grinder.toChoice
+import dev.dotscale.grinder.toSettingUnlabeled
+import dev.dotscale.grinder.withGrinder
+import dev.dotscale.grinder.withValue
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.recipe.Adjustment
 import dev.dotscale.recipe.Recipe
@@ -106,7 +111,7 @@ data class RecipeEditForm(
   val name: String = "",
   val method: BrewMethod? = null,
   val methodOther: String = "",
-  val grind: String = "",
+  val grind: GrindChoice = GrindChoice.None,
   val waterTemp: String = "",
   val notes: String = "",
   val dose: String = "",
@@ -116,6 +121,11 @@ data class RecipeEditForm(
   val canRemoveStage: Boolean get() = stages.size > 1
 
   fun isDirty(initial: RecipeEditForm): Boolean = this != initial
+
+  /** Elegir otro molino deja el ajuste en `null` (D16); `null` es "Sin molino". */
+  fun withGrinder(grinderId: Long?): RecipeEditForm = copy(grind = grind.withGrinder(grinderId))
+
+  fun withGrindValue(value: Double): RecipeEditForm = copy(grind = grind.withValue(value))
 
   /** Un `POUR` que empieza donde acaba el paso anterior, con el agua del último `POUR` más 50 g y 10 s. */
   fun addStage(): RecipeEditForm {
@@ -248,7 +258,7 @@ data class RecipeEditForm(
       name = name.trim(),
       method = method,
       methodOther = if (method == BrewMethod.OTHER) methodOther.cleaned() else null,
-      grind = grind.cleaned(),
+      grind = grind.toSettingUnlabeled(),
       waterTempC = (tempResult as? TempResult.Valid)?.celsius,
       notes = notes.cleaned(),
       doseG = dose ?: 0.0,
@@ -265,7 +275,7 @@ data class RecipeEditForm(
       name = recipe.name,
       method = recipe.method,
       methodOther = recipe.methodOther.orEmpty(),
-      grind = recipe.grind.orEmpty(),
+      grind = recipe.grind.toChoice(),
       waterTemp = recipe.waterTempC?.let(::formatNumber).orEmpty(),
       notes = recipe.notes.orEmpty(),
       dose = formatNumber(recipe.doseG),

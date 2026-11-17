@@ -87,8 +87,6 @@ dependencies {
   // Local tests: jUnit, coroutines, Android runner
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
-  // Lee los fixtures JSON del OCR (las etiquetas reales)
-  testImplementation(libs.kotlinx.serialization.json)
 
   // Instrumented tests: jUnit rules and runners
   androidTestImplementation(libs.androidx.test.core)
@@ -96,6 +94,9 @@ dependencies {
   androidTestImplementation(libs.androidx.test.runner)
   androidTestImplementation(libs.androidx.test.espresso.core)
   androidTestImplementation(libs.kotlinx.coroutines.test)
+
+  // Catálogo de molinos (assets/grinders/catalog.json); también lee los fixtures JSON del OCR en los tests JVM
+  implementation(libs.kotlinx.serialization.json)
 
   // Room (historial de preparaciones)
   implementation(libs.androidx.room.runtime)

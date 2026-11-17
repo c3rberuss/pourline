@@ -1,5 +1,6 @@
 package dev.dotscale.recipe
 
+import dev.dotscale.grinder.GrindSetting
 import dev.dotscale.history.BrewMethod
 
 /** Todas las magnitudes van en gramos, milisegundos y °C. */
@@ -9,7 +10,8 @@ data class Recipe(
   val method: BrewMethod? = null,
   /** Solo con `method == OTHER`. */
   val methodOther: String? = null,
-  val grind: String? = null,
+  /** El molino y el ajuste de molienda, o `null` sin molienda (SPEC-006). */
+  val grind: GrindSetting? = null,
   val waterTempC: Double? = null,
   /** Instrucciones, no notas de cata. */
   val notes: String? = null,

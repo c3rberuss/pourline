@@ -10,6 +10,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.test.platform.app.InstrumentationRegistry
+import dev.dotscale.grinder.GrindSetting
+import dev.dotscale.grinder.TestGrinders
+import dev.dotscale.grinder.addGrinder
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.recipe.Recipe
 import dev.dotscale.recipe.RecipeStage
@@ -41,10 +44,14 @@ class SessionPerformanceTest {
   @After
   fun tearDown() = env.close()
 
-  /** Un solo vertido de 250 g en 200 s: dura más que el calentamiento más la medida. */
-  private fun longRecipe() = Recipe(
+  /**
+   * Un solo vertido de 250 g en 200 s: dura más que el calentamiento más la medida. Lleva molino y ajuste, y el montaje
+   * añade otro molino propio, para que la selección de molienda y la tarjeta trabajen (D32).
+   */
+  private fun longRecipe(grinderId: Long) = Recipe(
     name = "Rendimiento",
     method = BrewMethod.V60,
+    grind = GrindSetting(grinderId, 20.0, "Uno · 20 clics"),
     doseG = 15.0,
     stages = listOf(
       RecipeStage(name = "Vertido", startMs = 0L, targetWaterG = 250.0, durationMs = 200_000L, type = StageType.POUR, instruction = null),
@@ -61,7 +68,11 @@ class SessionPerformanceTest {
   }
 
   private fun measure(mode: ExperienceMode, chartPage: Boolean) {
-    runBlocking { env.recipes.save(longRecipe()) }
+    runBlocking {
+      val uno = env.db.addGrinder(TestGrinders.uno)
+      env.db.addGrinder(TestGrinders.dos, 2_000L)
+      env.recipes.save(longRecipe(uno))
+    }
     env.skipOnboarding(mode)
     rule.setContent { TestApp(env) }
     driver.connect()

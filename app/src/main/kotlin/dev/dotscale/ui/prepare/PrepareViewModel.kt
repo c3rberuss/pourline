@@ -4,12 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.dotscale.ble.BluetoothEnvironment
 import dev.dotscale.coffee.PickedCoffee
+import dev.dotscale.grinder.GrindCardState
 import dev.dotscale.scale.ConnectionState
 import dev.dotscale.session.ActiveTarget
 import dev.dotscale.session.BrewPlan
 import dev.dotscale.session.RememberedScale
 import dev.dotscale.session.ScaleError
 import dev.dotscale.session.ScaleMemory
+import dev.dotscale.session.GrindSelection
 import dev.dotscale.session.ScaleSessionManager
 import dev.dotscale.session.ScaleTarget
 import dev.dotscale.session.ScaleUiState
@@ -50,6 +52,7 @@ class PrepareViewModel(
   private val memory: ScaleMemory,
   private val defaults: FreeBrewDefaults,
   private val bluetooth: BluetoothEnvironment,
+  private val grindSelection: GrindSelection,
 ) : ViewModel() {
   private val permissions = MutableStateFlow(bluetooth.permissionsGranted())
 
@@ -70,6 +73,11 @@ class PrepareViewModel(
       BrewPlan(defaults.defaultDoseG.value, defaults.defaultRatio.value),
     ),
   )
+
+  /** La tarjeta de molienda: "Moler con" y el ajuste convertido (D23). */
+  val grind: StateFlow<GrindCardState> get() = grindSelection.state
+
+  fun chooseGrinder(id: Long) = grindSelection.choose(id)
 
   /** Los errores del gestor (`TargetRemoved`, `SaveFailed`, `Command`); los muestra la pantalla. */
   val errors: Flow<ScaleError> get() = manager.errors

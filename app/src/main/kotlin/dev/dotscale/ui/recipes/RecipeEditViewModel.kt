@@ -2,6 +2,13 @@ package dev.dotscale.ui.recipes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.dotscale.grinder.GrindChoice
+import dev.dotscale.grinder.GrindTexts
+import dev.dotscale.grinder.Grinder
+import dev.dotscale.grinder.GrinderRepository
+import dev.dotscale.grinder.liveGrinderId
+import dev.dotscale.grinder.toGrindSetting
+import dev.dotscale.grinder.toSetting
 import dev.dotscale.history.BrewDetails
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.recipe.Adjustment
@@ -9,10 +16,17 @@ import dev.dotscale.recipe.Recipe
 import dev.dotscale.recipe.RecipeFromBrew
 import dev.dotscale.recipe.RecipeRepository
 import dev.dotscale.recipe.RecipeTexts
+import dev.dotscale.settings.DefaultGrinderStore
 import dev.dotscale.ui.history.formatBrewDateTime
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -41,6 +55,9 @@ class RecipeEditViewModel(
   private val repository: RecipeRepository,
   private val brewRepository: BrewRepository,
   private val texts: RecipeTexts,
+  private val grinderRepository: GrinderRepository,
+  private val defaultGrinder: DefaultGrinderStore,
+  private val grindTexts: GrindTexts,
   private val id: Long?,
   private val fromBrewId: Long?,
 ) : ViewModel() {
@@ -57,6 +74,16 @@ class RecipeEditViewModel(
   /** Lo que se ajustó al convertir una preparación en receta; vacío en los otros modos. */
   private val _adjustments = MutableStateFlow<List<Adjustment>>(emptyList())
   val adjustments: StateFlow<List<Adjustment>> = _adjustments.asStateFlow()
+
+  /** Mis molinos, para el selector. */
+  val grinders: StateFlow<List<Grinder>> = grinderRepository.owned()
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+  /** El molino vivo de la elección, aunque ya no sea de mis molinos; `null` sin molino o si se borró. */
+  @OptIn(ExperimentalCoroutinesApi::class)
+  val currentGrinder: StateFlow<Grinder?> = _form.map { it.grind.liveGrinderId }.distinctUntilChanged()
+    .flatMapLatest { grinderRepository.grinder(it) }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
   /** Receta existente (se puede duplicar y borrar). */
   val isExisting: Boolean = id != null
@@ -99,7 +126,7 @@ class RecipeEditViewModel(
           details = BrewDetails(
             method = entity.method,
             methodOther = entity.methodOther,
-            grind = entity.grind,
+            grind = entity.toGrindSetting(),
             waterTempC = entity.waterTempC,
           ).normalized(),
           doseG = entity.doseG,
@@ -111,7 +138,11 @@ class RecipeEditViewModel(
         _adjustments.value = draft.adjustments
         start(RecipeEditForm.from(draft))
       }
-      else -> start(RecipeEditForm())
+      else -> {
+        // Una receta nueva preselecciona el molino predeterminado, sin ajuste: lo fija el primer toque (D21).
+        val preselected = defaultGrinder.defaultGrinderId.value?.let { grinderRepository.get(it) }
+        start(RecipeEditForm(grind = if (preselected != null) GrindChoice.Live(preselected.id, null) else GrindChoice.None))
+      }
     }
   }
 
@@ -127,10 +158,12 @@ class RecipeEditViewModel(
     val current = _form.value
     if (_status.value != RecipeEditStatus.Ready) return
     val keep = current.keepsLocalizedNames(_initial.value, wasLocalized = loaded?.localizedNames == true)
-    val recipe = current.toRecipe(id = id ?: 0, builtInKey = loaded?.builtInKey, localizedNames = keep) ?: return
+    val draft = current.toRecipe(id = id ?: 0, builtInKey = loaded?.builtInKey, localizedNames = keep) ?: return
     _status.value = RecipeEditStatus.Saving
     viewModelScope.launch {
-      repository.save(recipe)
+      // La copia de texto del ajuste se regenera con el molino vivo (D17).
+      val grinder = current.grind.liveGrinderId?.let { grinderRepository.get(it) }
+      repository.save(draft.copy(grind = current.grind.toSetting(grinder, grindTexts)))
       _status.value = RecipeEditStatus.Saved
     }
   }

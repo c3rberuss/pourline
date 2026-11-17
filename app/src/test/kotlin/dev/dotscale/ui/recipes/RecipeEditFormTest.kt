@@ -1,5 +1,7 @@
 package dev.dotscale.ui.recipes
 
+import dev.dotscale.grinder.GrindChoice
+import dev.dotscale.grinder.GrindSetting
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.recipe.Adjustment
 import dev.dotscale.recipe.Recipe
@@ -186,7 +188,7 @@ class RecipeEditFormTest {
     val initial = filled()
     assertTrue(initial.keepsLocalizedNames(initial, wasLocalized = true))
     // Solo cantidades.
-    val quantities = initial.copy(dose = "16", grind = "Fina").updateStage(0, initial.stages[0].copy(water = "45", start = "0:02"))
+    val quantities = initial.copy(dose = "16", grind = GrindChoice.Live(1, 20.0)).updateStage(0, initial.stages[0].copy(water = "45", start = "0:02"))
     assertTrue(quantities.keepsLocalizedNames(initial, wasLocalized = true))
     // El nombre de la receta.
     assertFalse(initial.copy(name = "Mi V60").keepsLocalizedNames(initial, wasLocalized = true))
@@ -254,7 +256,7 @@ class RecipeEditFormTest {
 
   @Test
   fun `texts are trimmed and empty ones become null, other keeps its text only with method other`() {
-    val form = filled().copy(name = "  Mi receta ", grind = "  ", notes = " Vierte despacio ", method = BrewMethod.V60, methodOther = "x")
+    val form = filled().copy(name = "  Mi receta ", grind = GrindChoice.None, notes = " Vierte despacio ", method = BrewMethod.V60, methodOther = "x")
     val recipe = form.toRecipe()!!
     assertEquals("Mi receta", recipe.name)
     assertNull(recipe.grind)
@@ -290,5 +292,41 @@ class RecipeEditFormTest {
     assertNull(filled().errors().temp)
     assertEquals(93.5, filled().copy(waterTemp = "93,5").toRecipe()!!.waterTempC!!, 0.0)
     assertNull(filled().copy(waterTemp = "").toRecipe()!!.waterTempC)
+  }
+
+  // --- Molienda (SPEC-006) ---
+
+  private val orphan = GrindSetting(null, 30.0, "Chestnut S3 · 30 clics")
+
+  @Test
+  fun `choosing a grinder leaves the setting null and the same grinder keeps it`() {
+    val form = filled().copy(grind = GrindChoice.Live(1, 20.0))
+    assertEquals(GrindChoice.Live(2, null), form.withGrinder(2).grind)
+    assertEquals(GrindChoice.Live(1, 20.0), form.withGrinder(1).grind)
+    assertEquals(GrindChoice.Live(3, null), filled().withGrinder(3).grind)
+  }
+
+  @Test
+  fun `no grinder clears the choice`() {
+    assertEquals(GrindChoice.None, filled().copy(grind = GrindChoice.Live(1, 20.0)).withGrinder(null).grind)
+  }
+
+  @Test
+  fun `an orphan is kept until a grinder is chosen and then disappears`() {
+    val form = RecipeEditForm.from(v60Classic().copy(grind = orphan))
+    assertEquals(GrindChoice.Orphan(orphan), form.grind)
+    assertEquals(orphan, form.toRecipe(id = 1)!!.grind)
+    assertEquals(GrindChoice.Live(4, null), form.withGrinder(4).grind)
+    assertEquals(GrindChoice.None, form.withGrinder(null).grind)
+    // Fijar un valor sin molino vivo no hace nada.
+    assertEquals(form, form.withGrindValue(10.0))
+  }
+
+  @Test
+  fun `the grind value is set on the live grinder and round trips with its id`() {
+    val form = filled().withGrinder(5).withGrindValue(21.0)
+    assertEquals(GrindChoice.Live(5, 21.0), form.grind)
+    assertEquals(GrindSetting(5, 21.0, null), form.toRecipe(id = 1)!!.grind)
+    assertEquals(GrindChoice.Live(5, 21.0), RecipeEditForm.from(form.toRecipe(id = 1)!!.copy(grind = GrindSetting(5, 21.0, "x"))).grind)
   }
 }

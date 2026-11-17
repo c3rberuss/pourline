@@ -53,9 +53,12 @@ import dev.dotscale.brew.BrewState
 import dev.dotscale.brew.DeviationLevel
 import dev.dotscale.brew.fromGrams
 import dev.dotscale.brew.toGrams
+import dev.dotscale.grinder.ConverterArgs
+import dev.dotscale.grinder.GrindFix
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.scale.ConnectionState
 import dev.dotscale.recipe.StageType
+import dev.dotscale.session.GrindSelection
 import dev.dotscale.session.PrepState
 import dev.dotscale.session.PrepStep
 import dev.dotscale.session.SavedBrew
@@ -91,6 +94,7 @@ import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.components.AntTitle
 import dev.dotscale.ui.components.AntTopBar
 import dev.dotscale.ui.components.showAntMessage
+import dev.dotscale.ui.grinders.GrindCard
 import dev.dotscale.ui.scale.Chart
 import dev.dotscale.ui.scale.formatDeviation
 import dev.dotscale.ui.scale.formatGuideAmount
@@ -122,6 +126,10 @@ fun SessionScreen(
   brews: BrewRepository,
   onAddDetails: (Long) -> Unit,
   onDone: () -> Unit,
+  grind: GrindSelection,
+  onAddGrinder: () -> Unit,
+  onFixGrinder: (GrindFix, Long) -> Unit,
+  onOpenConverter: ((ConverterArgs) -> Unit)? = null,
   shareSender: ShareSender? = null,
 ) {
   val ui by session.ui.collectAsStateWithLifecycle()
@@ -194,7 +202,7 @@ fun SessionScreen(
           )
         }
         phase is BrewPhase.Active -> ActivePanel(ui, mode, onFinish = session::finishBrew)
-        ui.prep != null -> PrepPanel(ui, ui.prep!!, session)
+        ui.prep != null -> PrepPanel(ui, ui.prep!!, session, grind, onAddGrinder, onFixGrinder, onOpenConverter)
         else -> Unit
       }
     }
@@ -307,7 +315,15 @@ private fun DisconnectedNotice(state: ConnectionState, onRetry: () -> Unit) {
 // --- Pasos previos ---
 
 @Composable
-private fun PrepPanel(ui: ScaleUiState, prep: PrepState, session: ScaleSessionManager) {
+private fun PrepPanel(
+  ui: ScaleUiState,
+  prep: PrepState,
+  session: ScaleSessionManager,
+  grind: GrindSelection,
+  onAddGrinder: () -> Unit,
+  onFixGrinder: (GrindFix, Long) -> Unit,
+  onOpenConverter: ((ConverterArgs) -> Unit)?,
+) {
   val unit = ui.unit
   val ready = ui.connection == ConnectionState.Ready
   val stepNumber = prep.step.ordinal + 1
@@ -352,11 +368,22 @@ private fun PrepPanel(ui: ScaleUiState, prep: PrepState, session: ScaleSessionMa
     )
     AntTitle(instruction, Modifier.fillMaxWidth().testTag("prep_instruction").semantics { liveRegion = LiveRegionMode.Polite }, level = 4)
     when (prep.step) {
-      PrepStep.DOSE -> AntProgress(
-        percent = prep.stableProgress * 100f,
-        modifier = Modifier.fillMaxWidth().testTag("prep_stability"),
-        showInfo = false,
-      )
+      PrepStep.DOSE -> {
+        AntProgress(
+          percent = prep.stableProgress * 100f,
+          modifier = Modifier.fillMaxWidth().testTag("prep_stability"),
+          showInfo = false,
+        )
+        val card by grind.state.collectAsStateWithLifecycle()
+        GrindCard(
+          state = card,
+          mode = LocalExperienceMode.current,
+          onChoose = grind::choose,
+          onAddGrinder = onAddGrinder,
+          onFix = onFixGrinder,
+          onOpenConverter = onOpenConverter,
+        )
+      }
       PrepStep.TARE_FOR_POUR -> AntText(
         prep.doseG?.let { stringResource(R.string.prep_dose_value, "${formatNumber(fromGrams(it, unit), unit)} ${unit.symbol}") }
           ?: stringResource(R.string.prep_no_dose),

@@ -40,6 +40,16 @@ abstract class RecipeDao {
   @Query("DELETE FROM recipes WHERE id = :id")
   protected abstract suspend fun deleteRecipeRow(id: Long)
 
+  @Query("SELECT EXISTS(SELECT 1 FROM grinders WHERE id = :id)")
+  protected abstract suspend fun grinderExists(id: Long): Boolean
+
+  /**
+   * Si el molino se borró mientras se editaba la receta (o antes de deshacer su borrado), la clave foránea
+   * fallaría: queda sin molino y conserva el ajuste y su copia de texto (D18).
+   */
+  private suspend fun RecipeEntity.withLiveGrinder(): RecipeEntity =
+    if (grinderId != null && !grinderExists(grinderId)) copy(grinderId = null) else this
+
   /**
    * Inserta (`id = 0`) o actualiza la fila y reemplaza sus etapas en una transacción. Nunca borra la
    * receta, así que quien la observe no ve `null` en medio. [stages] llevan `recipeId = 0` y se
@@ -47,12 +57,13 @@ abstract class RecipeDao {
    */
   @Transaction
   open suspend fun save(recipe: RecipeEntity, stages: List<RecipeStageEntity>): Long {
-    val id = if (recipe.id == 0L) {
-      insertRecipeRow(recipe)
+    val row = recipe.withLiveGrinder()
+    val id = if (row.id == 0L) {
+      insertRecipeRow(row)
     } else {
-      updateRecipeRow(recipe)
-      deleteStageRows(recipe.id)
-      recipe.id
+      updateRecipeRow(row)
+      deleteStageRows(row.id)
+      row.id
     }
     insertStageRows(stages.mapIndexed { i, stage -> stage.copy(recipeId = id, position = i) })
     return id
@@ -69,7 +80,7 @@ abstract class RecipeDao {
   /** Reinserta la fila y las etapas con el mismo id. */
   @Transaction
   open suspend fun restore(deleted: DeletedRecipe) {
-    insertRecipeRow(deleted.recipe)
+    insertRecipeRow(deleted.recipe.withLiveGrinder())
     insertStageRows(deleted.stages)
   }
 

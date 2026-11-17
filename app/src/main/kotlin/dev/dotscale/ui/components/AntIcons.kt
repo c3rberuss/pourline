@@ -17,6 +17,8 @@ object AntIcons {
   val Check: ImageVector by lazy { strokeIcon("Check", "M20 6L9 17L4 12") }
   val Close: ImageVector by lazy { strokeIcon("Close", "M18 6L6 18", "M6 6L18 18") }
   val Plus: ImageVector by lazy { strokeIcon("Plus", "M5 12H19", "M12 5V19") }
+  /** Restar: el trazo horizontal del más. */
+  val Minus: ImageVector by lazy { strokeIcon("Minus", "M5 12H19") }
   val Down: ImageVector by lazy { strokeIcon("Down", "M6 9L12 15L18 9") }
   val Reload: ImageVector by lazy {
     strokeIcon("Reload", "M21 12A9 9 0 1 1 12 3C14.52 3 16.93 4 18.74 5.74L21 8", "M21 3V8H16")
@@ -193,6 +195,20 @@ object AntIcons {
       "M5 4H19A1 1 0 0 1 20 5V19A1 1 0 0 1 19 20H5A1 1 0 0 1 4 19V5A1 1 0 0 1 5 4Z",
       "M8 10A4 4 0 0 1 16 10", "M12 10L13.5 7.5",
     )
+  }
+  /** Molino manual: tolva, cuerpo y manivela. */
+  val Grinder: ImageVector by lazy {
+    strokeIcon(
+      "Grinder",
+      "M8 3H16", "M9 3L10 7H14L15 3",
+      "M8 7H16V19A2 2 0 0 1 14 21H10A2 2 0 0 1 8 19Z",
+      "M12 7V3", "M16 5H20", "M20 5V7",
+      "M10 13H14",
+    )
+  }
+  /** Dos flechas opuestas: el convertidor. */
+  val Convert: ImageVector by lazy {
+    strokeIcon("Convert", "M4 8H20", "M16 4L20 8L16 12", "M20 16H4", "M8 12L4 16L8 20")
   }
 }
 

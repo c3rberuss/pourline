@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.brew.TargetCurve
+import dev.dotscale.grinder.ConverterArgs
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.recipe.Adjustment
@@ -55,17 +56,25 @@ import dev.dotscale.ui.components.AntStatus
 import dev.dotscale.ui.components.AntText
 import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.components.AntTopBar
+import dev.dotscale.ui.grinders.GrindSettingField
 import dev.dotscale.ui.history.label
 import dev.dotscale.ui.scale.BrewChart
 import dev.dotscale.ui.theme.AntSize
 import dev.dotscale.ui.theme.AntTheme
 
 @Composable
-fun RecipeEditScreen(viewModel: RecipeEditViewModel, onBack: () -> Unit, onDuplicated: (Long) -> Unit) {
+fun RecipeEditScreen(
+  viewModel: RecipeEditViewModel,
+  onBack: () -> Unit,
+  onDuplicated: (Long) -> Unit,
+  onOpenConverter: ((ConverterArgs) -> Unit)? = null,
+) {
   val status by viewModel.status.collectAsStateWithLifecycle()
   val form by viewModel.form.collectAsStateWithLifecycle()
   val initial by viewModel.initial.collectAsStateWithLifecycle()
   val adjustments by viewModel.adjustments.collectAsStateWithLifecycle()
+  val grinders by viewModel.grinders.collectAsStateWithLifecycle()
+  val currentGrinder by viewModel.currentGrinder.collectAsStateWithLifecycle()
   var confirmDiscard by rememberSaveable { mutableStateOf(false) }
 
   // `Saved` y `Gone` vuelven atrás; `Duplicated` abre la copia.
@@ -130,12 +139,15 @@ fun RecipeEditScreen(viewModel: RecipeEditViewModel, onBack: () -> Unit, onDupli
           placeholder = stringResource(R.string.recipe_edit_method_other),
         )
       }
-      LabeledInput(
-        label = stringResource(R.string.recipe_edit_grind),
-        value = form.grind,
-        onValueChange = { v -> viewModel.update { it.copy(grind = v) } },
-        placeholder = stringResource(R.string.recipe_edit_grind_hint),
-        tag = "recipe_edit_grind",
+      GrindSettingField(
+        choice = form.grind,
+        options = grinders,
+        current = currentGrinder,
+        method = form.method,
+        onChange = { choice -> viewModel.update { it.copy(grind = choice) } },
+        tagPrefix = "recipe_edit",
+        modifier = Modifier.fillMaxWidth(),
+        onOpenConverter = onOpenConverter,
       )
       LabeledInput(
         label = stringResource(R.string.recipe_edit_temp),

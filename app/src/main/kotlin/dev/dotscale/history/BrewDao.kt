@@ -64,6 +64,12 @@ abstract class BrewDao {
   @Query("DELETE FROM brews WHERE id = :id")
   protected abstract suspend fun deleteBrewRow(id: Long)
 
+  @Query("SELECT EXISTS(SELECT 1 FROM grinders WHERE id = :id)")
+  protected abstract suspend fun grinderExists(id: Long): Boolean
+
+  /** El id del molino si todavía existe; si se borró mientras tanto, `null` (la copia de texto se conserva, D18). */
+  private suspend fun liveGrinder(id: Long?): Long? = id?.takeIf { grinderExists(it) }
+
   @Query("SELECT name FROM coffees WHERE id = :id")
   protected abstract suspend fun coffeeName(id: Long): String?
 
@@ -79,14 +85,17 @@ abstract class BrewDao {
 
   @Query(
     "UPDATE brews SET name = :name, method = :method, methodOther = :methodOther, " +
-      "grind = :grind, waterTempC = :waterTempC, notes = :notes, rating = :rating WHERE id = :id",
+      "grinderId = :grinderId, grindValue = :grindValue, grindLabel = :grindLabel, waterTempC = :waterTempC, " +
+      "notes = :notes, rating = :rating WHERE id = :id",
   )
   protected abstract suspend fun updateDetailsRow(
     id: Long,
     name: String?,
     method: BrewMethod?,
     methodOther: String?,
-    grind: String?,
+    grinderId: Long?,
+    grindValue: Double?,
+    grindLabel: String?,
     waterTempC: Double?,
     notes: String?,
     rating: Int?,
@@ -105,11 +114,12 @@ abstract class BrewDao {
     coffee: UsedCoffee? = null,
   ): Long {
     val currentName = coffee?.let { coffeeName(it.id) }
-    val row = when {
+    val withCoffee = when {
       coffee == null -> brew
       currentName != null -> brew.copy(coffeeId = coffee.id, coffee = currentName)
       else -> brew.copy(coffeeId = null, coffee = coffee.name)
     }
+    val row = withCoffee.copy(grinderId = liveGrinder(withCoffee.grinderId))
     val id = insertBrewRow(row)
     insertCurveRow(BrewCurveEntity(id, curveData))
     if (targetData != null) insertTargetRow(BrewTargetEntity(id, targetData))
@@ -137,7 +147,9 @@ abstract class BrewDao {
       normalized.name,
       normalized.method,
       normalized.methodOther,
-      normalized.grind,
+      liveGrinder(normalized.grind?.grinderId),
+      normalized.grind?.value,
+      normalized.grind?.label,
       normalized.waterTempC,
       normalized.notes,
       normalized.rating,
@@ -160,7 +172,7 @@ abstract class BrewDao {
   open suspend fun restore(deleted: DeletedBrew) {
     // Si el café se borró mientras tanto, la clave foránea fallaría: queda sin vínculo y con el nombre.
     val coffeeId = deleted.entity.coffeeId?.takeIf { coffeeName(it) != null }
-    insertBrewRow(deleted.entity.copy(coffeeId = coffeeId))
+    insertBrewRow(deleted.entity.copy(coffeeId = coffeeId, grinderId = liveGrinder(deleted.entity.grinderId)))
     insertCurveRow(deleted.curve)
     deleted.target?.let { insertTargetRow(it) }
     coffeeId?.let { recomputeLastUsed(it) }

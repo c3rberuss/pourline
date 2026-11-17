@@ -16,6 +16,11 @@ import dev.dotscale.coffee.CoffeeRepository
 import dev.dotscale.coffee.photo.CoffeeImages
 import dev.dotscale.coffee.photo.CoffeePhotoStore
 import dev.dotscale.coffee.photo.LocalCoffeeImages
+import dev.dotscale.grinder.GrinderCatalogSeeder
+import dev.dotscale.grinder.GrinderRepository
+import dev.dotscale.grinder.ResourcesGrindTexts
+import dev.dotscale.grinder.SyncResult
+import dev.dotscale.grinder.TestGrinderCatalog
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.protocol.Frame
@@ -26,6 +31,9 @@ import dev.dotscale.scale.ConnectionState
 import dev.dotscale.scale.ConnectionStep
 import dev.dotscale.scale.ScaleConnection
 import dev.dotscale.session.AutoReconnect
+import dev.dotscale.session.GrindSelection
+import dev.dotscale.session.RepositorySessionGrinders
+import dev.dotscale.session.SessionGrind
 import dev.dotscale.session.RepositoryScaleCoffees
 import dev.dotscale.session.RepositoryTargetReferences
 import dev.dotscale.session.ScaleConnectionFactory
@@ -35,6 +43,7 @@ import dev.dotscale.settings.BrewSettings
 import dev.dotscale.settings.ConnectionSettings
 import dev.dotscale.settings.ExperienceMode
 import dev.dotscale.settings.ExperienceSettings
+import dev.dotscale.settings.GrinderSettings
 import dev.dotscale.settings.LocalExperienceMode
 import dev.dotscale.settings.TargetSettings
 import dev.dotscale.settings.ThemeMode
@@ -49,11 +58,13 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import java.io.File
 
 /** Permisos y Bluetooth a voluntad del test. */
@@ -148,12 +159,15 @@ class TestAppDependencies(
   val photoStore = CoffeePhotoStore(photosDir, context.cacheDir)
   val coffees = CoffeeRepository(db, photoStore)
   val recipes = RecipeRepository(db, texts)
+  val grinderSettings = GrinderSettings(context, PREFS)
+  val grindTexts = ResourcesGrindTexts(context)
+  val grinders = GrinderRepository(db, grinderSettings, grindTexts)
 
   /** Cada destino se conecta a una báscula simulada, también el "real"; un test puede cambiarlo. */
   @Volatile var connectionFor: (ScaleTarget) -> ScaleConnection = { SimulatedScaleConnection() }
   val connectionsMade = java.util.Collections.synchronizedList(mutableListOf<ScaleTarget>())
 
-  val scaleSession = ScaleSessionManager(
+  val scaleSession: ScaleSessionManager = ScaleSessionManager(
     connections = ScaleConnectionFactory { target ->
       connectionsMade += target
       connectionFor(target)
@@ -167,7 +181,16 @@ class TestAppDependencies(
     notifier = notifier,
     coffeeStore = brewSettings,
     coffees = RepositoryScaleCoffees(coffees),
+    grind = SessionGrind { grindSelection.current() },
     memory = connectionSettings,
+  )
+
+  val grindSelection = GrindSelection(
+    targets = scaleSession.ui.map { it.target },
+    grinders = RepositorySessionGrinders(grinders),
+    defaults = grinderSettings,
+    texts = grindTexts,
+    scope = appScope,
   )
 
   val autoReconnect = AutoReconnect(scaleSession, connectionSettings, bluetooth, MainScope())
@@ -183,6 +206,10 @@ class TestAppDependencies(
     coffeeRepository = coffees,
     recipeRepository = recipes,
     recipeTexts = texts,
+    grinderSettings = grinderSettings,
+    grinderRepository = grinders,
+    grindTexts = grindTexts,
+    grindSelection = grindSelection,
     coffeePhotoStore = photoStore,
     coffeeImages = CoffeeImages(photoStore, maxBytes = 1024 * 1024),
     labelOcr = FakeLabelOcr(),
@@ -191,6 +218,11 @@ class TestAppDependencies(
     bluetooth = bluetooth,
     scanner = scanner,
   )
+
+  /** Siembra el catálogo de [json] (por defecto el de prueba, con marcas ficticias) con el sembrador real. */
+  fun seedGrinders(json: String = TestGrinderCatalog.JSON): SyncResult = runBlocking {
+    GrinderCatalogSeeder(db.grinderDao(), { json }, grinderSettings, grinderSettings).sync()
+  }
 
   /** Marca el primer arranque como hecho (sin esto aparece la elección de modo). */
   fun skipOnboarding(mode: ExperienceMode = ExperienceMode.BASIC) =

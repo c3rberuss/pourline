@@ -4,6 +4,7 @@ import dev.dotscale.brew.BrewPhase
 import dev.dotscale.brew.DeviationLevel
 import dev.dotscale.brew.TargetConfig
 import dev.dotscale.brew.brewFit
+import dev.dotscale.grinder.GrindSetting
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.history.ReferenceType
 import dev.dotscale.protocol.ScaleMessage
@@ -177,7 +178,8 @@ class ScaleSessionManagerTargetTest {
     assertEquals(250.0, target.curve.finalWaterG, 1e-9)
     assertNull(target.prefill.coffee) // el café sale solo del selector (D21)
     assertEquals(BrewMethod.V60, target.prefill.method)
-    assertEquals("Media", target.prefill.grind)
+    assertNull(target.prefill.grind) // la molienda va en sourceGrind (D24)
+    assertEquals(GrindSetting(null, 21.0, "Acme · 21 clics"), target.sourceGrind)
     assertEquals(94.0, target.prefill.waterTempC!!, 0.0)
     assertNull(target.prefill.name)
     assertNull(target.prefill.notes) // las notas de cata no se copian
@@ -187,13 +189,15 @@ class ScaleSessionManagerTargetTest {
   }
 
   @Test
-  fun `a recipe prefill has the method grind and temperature but no name or notes`() {
-    val recipe = v60Classic().copy(grind = "Fina", waterTempC = 92.0, notes = "Instrucciones")
+  fun `a recipe prefill has the method and temperature but no grind, name or notes, and the target carries the source grind`() {
+    val setting = GrindSetting(5, 21.0, "Acme · 21 clics")
+    val recipe = v60Classic().copy(grind = setting, waterTempC = 92.0, notes = "Instrucciones")
     selectRecipe(recipe)
 
     val prefill = ui.target!!.prefill
     assertEquals(recipe.method, prefill.method)
-    assertEquals("Fina", prefill.grind)
+    assertNull(prefill.grind)
+    assertEquals(setting, ui.target!!.sourceGrind)
     assertEquals(92.0, prefill.waterTempC!!, 0.0)
     assertNull(prefill.coffee)
     assertNull(prefill.notes)
@@ -309,7 +313,7 @@ class ScaleSessionManagerTargetTest {
 
   @Test
   fun `a brew with a recipe is saved with target fit and prefilled details`() {
-    val recipe = v60Classic().copy(grind = "Media", waterTempC = 94.0)
+    val recipe = v60Classic().copy(grind = GrindSetting(5, 21.0, "Acme · 21 clics"), waterTempC = 94.0)
     selectRecipe(recipe)
     activePour()
     viewModel.finishBrew()
@@ -321,7 +325,8 @@ class ScaleSessionManagerTargetTest {
     assertEquals(recipe.name, used.name)
     assertEquals(brewFit(call.brew.samples, call.brew.summary.totalTimeMs, used.curve, TargetConfig()), used.fit)
     assertEquals(BrewMethod.V60, call.context.details!!.method)
-    assertEquals("Media", call.context.details!!.grind)
+    // La molienda de la preparación es la de "Moler con" (F7), no la de la referencia.
+    assertNull(call.context.details!!.grind)
     assertNull(call.context.details!!.name)
     assertNull(call.context.details!!.notes)
     // El resumen y lo guardado llevan el mismo ajuste.

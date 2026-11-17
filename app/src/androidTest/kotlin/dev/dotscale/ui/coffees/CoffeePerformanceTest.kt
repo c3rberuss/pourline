@@ -18,6 +18,7 @@ import dev.dotscale.coffee.label.SyntheticLabel
 import dev.dotscale.coffee.photo.CoffeeImages
 import dev.dotscale.coffee.photo.CoffeePhotoStore
 import dev.dotscale.coffee.photo.LocalCoffeeImages
+import dev.dotscale.grinder.grinderRepository
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
 import dev.dotscale.history.TestBrews
@@ -174,7 +175,7 @@ class CoffeePerformanceTest {
         TestBrews.context(startedAtEpochMs = 1_700_000_000_000, target = TestBrews.usedTarget(score = 92), coffee = UsedCoffee(photoCoffeeId, "Café 0")),
       )
     }
-    val viewModel = BrewDetailViewModel(brews, coffees, id)
+    val viewModel = BrewDetailViewModel(brews, coffees, db.grinderRepository(context), id)
     rule.setContent {
       DotScaleTheme(darkTheme = false) {
         CompositionLocalProvider(LocalCoffeeImages provides images) {

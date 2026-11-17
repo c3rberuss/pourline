@@ -6,6 +6,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -19,6 +20,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
 import dev.dotscale.Tab
 import dev.dotscale.brew.BrewPhase
+import dev.dotscale.grinder.TestGrinders
+import dev.dotscale.grinder.addGrinder
 import dev.dotscale.history.BrewFilter
 import dev.dotscale.recipe.StageType
 import dev.dotscale.session.PrepStep
@@ -27,6 +30,7 @@ import dev.dotscale.sim.FollowMode
 import dev.dotscale.ui.RecordingNotifier
 import dev.dotscale.ui.TestApp
 import dev.dotscale.ui.TestAppDependencies
+import dev.dotscale.ui.grinders.GrindersUi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -414,5 +418,49 @@ class SessionScreenTest {
       driver.node("session_dial").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
         ?.any { expected in it } == true
     }
+  }
+
+  // --- La tarjeta de molienda (SPEC-006) ---
+
+  @Test
+  fun theGrindCardShowsOnlyInTheDoseStepWithTheSameChoiceAsPrepare() {
+    runBlocking {
+      env.db.addGrinder(TestGrinders.uno)
+      env.db.addGrinder(TestGrinders.dos, 2_000L)
+    }
+    show(ExperienceMode.EXPERT)
+    driver.waitFor("grind_card")
+    // En Preparar se elige "Moler con" y la elección pasa a la sesión.
+    GrindersUi(rule, env).choose("grind_card_grinder", "Acme Dos")
+    rule.waitUntil(5_000) { env.grindSelection.state.value.chosen?.model == "Dos" }
+
+    driver.start()
+    assertTrue(!driver.exists("grind_card")) // paso 1
+    driver.tare()
+    driver.waitStep(PrepStep.DOSE)
+    driver.waitFor("grind_card")
+    driver.node("grind_card_grinder").assertTextContains("Acme Dos", substring = true)
+    // En Experto, con la regla.
+    driver.waitFor("grind_card_ruler")
+
+    driver.addWeight(15.0)
+    driver.waitStep(PrepStep.TARE_FOR_POUR)
+    assertTrue(!driver.exists("grind_card")) // paso 3
+    driver.tare()
+    driver.waitStep(PrepStep.POUR)
+    assertTrue(!driver.exists("grind_card")) // paso 4
+    driver.pourFollowingTarget()
+    assertTrue(!driver.exists("grind_card")) // vertido
+  }
+
+  @Test
+  fun inBasicModeTheDoseStepCardHasNoRuler() {
+    runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    show(ExperienceMode.BASIC)
+    driver.start()
+    driver.tare()
+    driver.waitStep(PrepStep.DOSE)
+    driver.waitFor("grind_card")
+    assertTrue(!driver.exists("grind_card_ruler"))
   }
 }

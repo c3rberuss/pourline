@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.coffee.CoffeeRepository
 import dev.dotscale.coffee.PhotoFiles
+import dev.dotscale.grinder.grinderRepository
 import dev.dotscale.history.BrewRecord
 import dev.dotscale.history.BrewRepository
 import dev.dotscale.history.HistoryDatabase
@@ -137,7 +138,7 @@ class ShareIntentTest {
   @Test
   fun brewDetailSharesAPng() {
     val id = saveBrew(saveCoffee(), startedAt = 1_000)
-    val viewModel = BrewDetailViewModel(brews, coffees, id)
+    val viewModel = BrewDetailViewModel(brews, coffees, db.grinderRepository(context), id)
     rule.setContent {
       DotScaleTheme(darkTheme = false) {
         BrewDetailScreen(viewModel, onBack = {}, onEdit = {}, onCompare = {}, onSaveAsRecipe = {}, shareSender = sender)

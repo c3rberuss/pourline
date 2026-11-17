@@ -129,6 +129,9 @@
     <string name="brew_detail_curve_error">No se pudo leer la curva de esta preparación</string>
     <string name="brew_detail_old_metric">Puntuación calculada con una versión anterior de la métrica</string>
     <string name="brew_method_other">Otro</string>
+    <string name="brew_method_french_press">Prensa francesa</string>
+    <string name="brew_method_cold_brew">Cold brew</string>
+    <string name="brew_method_moka">Moka</string>
 
     <!-- Edición de una preparación -->
     <string name="brew_summary_add_details">Añadir detalles</string>
@@ -138,8 +141,6 @@
     <string name="brew_edit_method">Método</string>
     <string name="brew_edit_method_none">Sin método</string>
     <string name="brew_edit_method_other">Nombre del método</string>
-    <string name="brew_edit_grind">Molienda</string>
-    <string name="brew_edit_grind_hint">p. ej. 21 clics</string>
     <string name="brew_edit_temp">Temperatura (°C)</string>
     <string name="brew_edit_temp_error">Escribe un valor de 0 a 100 con un decimal como máximo</string>
     <string name="brew_edit_notes">Notas de cata</string>
@@ -215,8 +216,6 @@
     <string name="recipe_edit_method">Método</string>
     <string name="recipe_edit_method_none">Sin método</string>
     <string name="recipe_edit_method_other">¿Cuál?</string>
-    <string name="recipe_edit_grind">Molienda</string>
-    <string name="recipe_edit_grind_hint">Media, 21 clics…</string>
     <string name="recipe_edit_temp">Temperatura del agua (°C)</string>
     <string name="recipe_edit_notes">Notas (instrucciones)</string>
     <string name="recipe_edit_dose">Dosis (g)</string>
@@ -504,6 +503,11 @@
     <string name="onboarding_title">¿Cómo preparas tu café?</string>
     <string name="onboarding_hint">Puedes cambiarlo cuando quieras en Ajustes.</string>
     <string name="onboarding_skip">Saltar</string>
+    <string name="onboarding_grinder_title">¿Qué molino usas?</string>
+    <string name="onboarding_grinder_hint">Lo usaremos para convertir los ajustes de las recetas a tu molino.</string>
+    <string name="onboarding_grinder_skip">Omitir</string>
+    <string name="onboarding_grinder_empty">Todavía no hay molinos en el catálogo. Puedes añadir el tuyo en Ajustes → Molinos.</string>
+    <string name="onboarding_grinder_footer">Si el tuyo no está, créalo en Ajustes → Molinos.</string>
     <!-- Sesión guiada -->
     <string name="session_close">Salir de la sesión</string>
     <string name="session_options">Opciones</string>
@@ -566,4 +570,193 @@
     <string name="exit_save">Terminar y guardar</string>
     <string name="exit_discard">Descartar</string>
     <string name="exit_continue">Seguir preparando</string>
+
+    <!-- Molinos (SPEC-006): unidades de ajuste -->
+    <plurals name="grind_unit_clicks">
+        <item quantity="one">%s clic</item>
+        <item quantity="other">%s clics</item>
+    </plurals>
+    <string name="grind_unit_name_clicks">Clics</string>
+    <plurals name="grind_unit_points">
+        <item quantity="one">%s punto</item>
+        <item quantity="other">%s puntos</item>
+    </plurals>
+    <string name="grind_unit_name_points">Puntos</string>
+    <plurals name="grind_unit_notches">
+        <item quantity="one">%s muesca</item>
+        <item quantity="other">%s muescas</item>
+    </plurals>
+    <string name="grind_unit_name_notches">Muescas</string>
+    <plurals name="grind_unit_numbers">
+        <item quantity="one">%s número</item>
+        <item quantity="other">%s números</item>
+    </plurals>
+    <string name="grind_unit_name_numbers">Números</string>
+    <plurals name="grind_unit_rotations">
+        <item quantity="one">%s rotación</item>
+        <item quantity="other">%s rotaciones</item>
+    </plurals>
+    <string name="grind_unit_name_rotations">Rotaciones</string>
+    <plurals name="grind_unit_steps">
+        <item quantity="one">%s paso</item>
+        <item quantity="other">%s pasos</item>
+    </plurals>
+    <string name="grind_unit_name_steps">Pasos</string>
+    <string name="grinder_copy_name">%1$s (copia)</string>
+
+    <!-- Molinos (SPEC-006): Ajustes, lista, catálogo y detalle -->
+    <string name="settings_grinders">Molinos</string>
+    <string name="settings_grinders_none">Aún no tienes molinos</string>
+    <plurals name="settings_grinders_count">
+        <item quantity="one">%d molino</item>
+        <item quantity="other">%d molinos</item>
+    </plurals>
+    <string name="settings_grinders_default">%1$s · %2$s</string>
+    <string name="grinders_title">Molinos</string>
+    <string name="grinders_add">Añadir molino</string>
+    <string name="grinders_empty">Aún no tienes molinos</string>
+    <string name="grinder_tag_default">Predeterminado</string>
+    <string name="grinder_tag_own">Propio</string>
+    <string name="grinder_tag_predefined">Predefinido</string>
+    <string name="grinder_tag_retired">Retirado del catálogo</string>
+    <string name="grinder_catalog_title">Añadir molino</string>
+    <string name="grinder_catalog_search_hint">Buscar marca o modelo</string>
+    <string name="grinder_catalog_search_clear">Borrar búsqueda</string>
+    <string name="grinder_catalog_own">Lo tengo</string>
+    <string name="grinder_catalog_owned">En mis molinos</string>
+    <string name="grinder_catalog_create">Crear molino propio</string>
+    <string name="grinder_catalog_empty">No hay molinos en el catálogo</string>
+    <string name="grinder_catalog_empty_search">Ningún molino coincide con «%s»</string>
+    <string name="grinder_detail_scale">Escala</string>
+    <string name="grinder_detail_scale_value">%1$s – %2$s · paso %3$s</string>
+    <string name="grinder_detail_direction">Dirección</string>
+    <string name="grinder_detail_units">Unidades</string>
+    <string name="grinder_detail_method">Método</string>
+    <string name="grinder_detail_ranges">Rangos</string>
+    <string name="grinder_detail_anchors">Anclas</string>
+    <string name="grinder_detail_no_ranges">Sin rangos por método</string>
+    <string name="grinder_detail_range_item">%1$s %2$s–%3$s</string>
+    <string name="grinder_detail_anchor_item">%1$s %2$s</string>
+    <string name="grinder_direction_coarser">Mayor = más grueso</string>
+    <string name="grinder_direction_finer">Mayor = más fino</string>
+    <string name="grinder_detail_default">Usar como predeterminado</string>
+    <string name="grinder_detail_duplicate">Duplicar para personalizar</string>
+    <string name="grinder_detail_unown">Quitar de mis molinos</string>
+    <string name="grinder_detail_own">Lo tengo</string>
+    <string name="grinder_detail_edit">Editar</string>
+    <string name="grinder_detail_delete">Borrar</string>
+    <string name="grinder_delete_title">¿Borrar %s?</string>
+    <plurals name="grinder_delete_usage">
+        <item quantity="one">Se usa en %d receta. Las recetas y preparaciones conservan el ajuste como copia.</item>
+        <item quantity="other">Se usa en %d recetas. Las recetas y preparaciones conservan el ajuste como copia.</item>
+    </plurals>
+    <string name="grinder_delete_unused">No se usa en ninguna receta.</string>
+    <string name="grinder_delete_confirm">Borrar</string>
+    <string name="grinder_delete_cancel">Cancelar</string>
+    <string name="grinder_source_unknown">catálogo</string>
+    <string name="grinder_attribution">Fuente: %1$s · valores orientativos</string>
+    <string name="grind_ruler_coarse">Grueso</string>
+    <string name="grind_ruler_fine">Fino</string>
+    <string name="grind_ruler_description">Regla de molienda, de grueso a fino.</string>
+    <string name="grind_ruler_range">%1$s de %2$s a %3$s.</string>
+    <string name="grind_ruler_value">Ajuste: %s</string>
+    <string name="grind_input_empty">Sin ajuste</string>
+    <string name="grind_input_placeholder">—</string>
+    <string name="grind_input_increase">Aumentar %s</string>
+    <string name="grind_input_decrease">Disminuir %s</string>
+    <string name="grind_level_extra_fine">Extrafino</string>
+    <string name="grind_level_fine">Fino</string>
+    <string name="grind_level_medium_fine">Medio-fino</string>
+    <string name="grind_level_medium">Medio</string>
+    <string name="grind_level_medium_coarse">Medio-grueso</string>
+    <string name="grind_level_coarse">Grueso</string>
+    <string name="grind_level_extra_coarse">Extragrueso</string>
+    <string name="grind_level_extra_fine_abbr">EF</string>
+    <string name="grind_level_fine_abbr">F</string>
+    <string name="grind_level_medium_fine_abbr">MF</string>
+    <string name="grind_level_medium_abbr">M</string>
+    <string name="grind_level_medium_coarse_abbr">MG</string>
+    <string name="grind_level_coarse_abbr">G</string>
+    <string name="grind_level_extra_coarse_abbr">EG</string>
+
+    <!-- Molinos (SPEC-006): editor -->
+    <string name="grinder_edit_title_new">Nuevo molino</string>
+    <string name="grinder_edit_title">Editar molino</string>
+    <string name="grinder_edit_save">Guardar</string>
+    <string name="grinder_edit_tab_description">Descripción</string>
+    <string name="grinder_edit_tab_ranges">Rangos</string>
+    <string name="grinder_edit_brand">Fabricante</string>
+    <string name="grinder_edit_model">Modelo</string>
+    <string name="grinder_edit_unit_primary">Unidad principal</string>
+    <string name="grinder_edit_unit_n">Unidad %d</string>
+    <string name="grinder_edit_per_parent">Por 1 %s</string>
+    <string name="grinder_edit_add_unit">Agregar unidad</string>
+    <string name="grinder_edit_remove_unit">Quitar unidad</string>
+    <string name="grinder_edit_step">Paso mínimo</string>
+    <string name="grinder_edit_direction">Dirección</string>
+    <string name="grinder_edit_scale">Escala total</string>
+    <string name="grinder_edit_from">de</string>
+    <string name="grinder_edit_to">a</string>
+    <string name="grinder_edit_ranges_title">Rangos por método</string>
+    <string name="grinder_edit_anchors_title">Anclas de grosor</string>
+    <string name="grinder_edit_add_range">Añadir rango</string>
+    <string name="grinder_edit_add_anchor">Añadir</string>
+    <string name="grinder_edit_remove">Quitar</string>
+    <string name="grinder_edit_discard_title">¿Descartar los cambios?</string>
+    <string name="grinder_edit_discard_text">Los cambios sin guardar se perderán.</string>
+    <string name="grinder_edit_discard">Descartar</string>
+    <string name="grinder_edit_keep">Seguir editando</string>
+    <string name="grinder_error_brand">Indica la marca</string>
+    <string name="grinder_error_model">Indica el modelo</string>
+    <string name="grinder_error_units">Añade al menos una unidad</string>
+    <string name="grinder_error_scale_order">El mínimo debe ser menor que el máximo</string>
+    <string name="grinder_error_step">El paso debe ser mayor que 0</string>
+    <string name="grinder_error_scale_step">La escala debe ser múltiplo del paso</string>
+    <string name="grinder_error_negative_scale">En un molino compuesto la escala no puede ser negativa</string>
+    <string name="grinder_error_duplicate_unit">Unidad repetida</string>
+    <string name="grinder_error_per_parent">Cada unidad debe contener al menos 2 de la siguiente</string>
+    <string name="grinder_error_missing">Falta un valor</string>
+    <string name="grinder_error_range_order">El mínimo debe ser menor que el máximo</string>
+    <string name="grinder_error_outside_scale">Fuera de la escala</string>
+    <string name="grinder_error_anchors_order">Las anclas deben ir de fino a grueso</string>
+
+    <!-- Molinos (SPEC-006): molienda en recetas y preparaciones -->
+    <string name="grind_none">Sin molino</string>
+    <string name="grind_choose">Elige un molino</string>
+    <string name="grind_grinder">Molino</string>
+    <string name="grind_value">Ajuste</string>
+    <string name="grind_value_hint">Toca + o − para empezar desde el valor sugerido</string>
+    <string name="grind_out_of_scale">Fuera de la escala</string>
+    <string name="grinder_tag_deleted">molino eliminado</string>
+    <string name="grind_card_title">Molienda</string>
+    <string name="grind_card_recipe">Receta: %s</string>
+    <string name="grind_card_recipe_none">La receta no indica molienda</string>
+    <string name="grind_card_grind_with">Moler con</string>
+    <string name="grind_card_approximate">aproximado</string>
+    <string name="grind_card_suggested">sugerido</string>
+    <string name="grind_card_at_limit">al límite del molino</string>
+    <string name="grind_card_no_equivalent">Sin equivalencia</string>
+    <string name="grind_card_fix_complete">Completar los rangos</string>
+    <string name="grind_card_fix_duplicate">Duplicar para personalizar</string>
+    <string name="grind_card_orphan">Asigna un molino a la receta para convertir</string>
+    <string name="grind_card_no_reference">Sin receta: no hay ajuste que convertir</string>
+    <string name="grind_card_add">Añade tu molino para ver el equivalente</string>
+    <string name="grind_card_converter">Ver en mis otros molinos</string>
+    <string name="converter_title">Convertidor</string>
+    <string name="converter_source">Molino de origen</string>
+    <string name="converter_source_placeholder">Elige un molino</string>
+    <string name="converter_method">Método</string>
+    <string name="converter_no_method">Sin método</string>
+    <string name="converter_value">Ajuste</string>
+    <string name="converter_results">En mis molinos</string>
+    <string name="converter_pick_source">Elige un molino de origen para empezar</string>
+    <string name="converter_pick_value">Elige el ajuste con + o −</string>
+    <string name="converter_no_others">No tienes otros molinos</string>
+    <string name="converter_empty">Añade tus molinos para ver el equivalente en cada uno</string>
+    <string name="converter_empty_action">Ir a Mis molinos</string>
+    <string name="converter_picker_title">Molino de origen</string>
+    <string name="converter_picker_search">Buscar marca o modelo</string>
+    <string name="converter_picker_owned">Mis molinos</string>
+    <string name="converter_picker_catalog">Catálogo</string>
+    <string name="converter_picker_empty">Sin resultados</string>
 </resources>

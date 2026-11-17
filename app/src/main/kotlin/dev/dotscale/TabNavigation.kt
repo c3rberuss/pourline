@@ -2,8 +2,15 @@ package dev.dotscale
 
 import androidx.navigation3.runtime.NavKey
 
-/** La barra inferior se oculta en la sesión y en los editores a pantalla completa (D31). */
-fun showsBottomBar(key: NavKey?): Boolean = key !is Session && key !is CoffeeEdit && key !is RecipeEdit && key !is BrewEdit
+/**
+ * La barra inferior se oculta en la sesión (esté donde esté en la pila: desde el paso 2 se puede abrir Molinos) y
+ * en los editores a pantalla completa de la cima (D31, D5).
+ */
+fun showsBottomBar(stack: List<NavKey>): Boolean {
+  if (stack.any { it is Session }) return false
+  val top = stack.lastOrNull()
+  return top !is CoffeeEdit && top !is RecipeEdit && top !is BrewEdit && top !is GrinderEdit && top !is GrindConverter
+}
 
 /** Qué hace "Atrás" en la pestaña [Tab] con una pila de [backAction] entradas. */
 sealed interface BackAction {

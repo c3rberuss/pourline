@@ -19,6 +19,8 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.R
 import dev.dotscale.coffee.CoffeeDraft
+import dev.dotscale.grinder.TestGrinders
+import dev.dotscale.grinder.addGrinder
 import dev.dotscale.scale.ConnectionState
 import dev.dotscale.session.ScaleTarget
 import dev.dotscale.settings.ReferenceKey
@@ -341,5 +343,22 @@ class PrepareScreenTest {
     rule.onNodeWithTag("target_chip").assert(hasText(context.getString(R.string.brew_setup_target_none)))
     // Sin receta vuelven la dosis y el ratio editables.
     rule.onNodeWithTag("prepare_dose").assertIsDisplayed()
+  }
+
+  // --- La tarjeta de molienda (SPEC-006) ---
+
+  @Test
+  fun theGrindCardShowsInPrepareWithAndWithoutARecipe() {
+    runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    show()
+
+    waitFor("grind_card")
+    waitFor("grind_card_no_reference")
+    rule.onNodeWithTag("grind_card_grinder").assertIsDisplayed()
+
+    val id = runBlocking { env.recipes.list().first().first { it.name.contains("V60") }.id }
+    rule.runOnUiThread { env.scaleSession.selectTarget(ReferenceKey.Recipe(id)) }
+    waitFor("grind_card_value")
+    assertTrue(!exists("grind_card_no_reference"))
   }
 }

@@ -38,6 +38,9 @@ class NewUserJourneyTest {
     // Primer arranque: elige "Básico".
     driver.waitFor("onboarding_basic")
     driver.node("onboarding_basic").performClick()
+    // Paso 2: "¿Qué molino usas?"; se omite.
+    driver.waitFor("onboarding_grinder_skip")
+    driver.node("onboarding_grinder_skip").performClick()
     driver.waitFor("prepare_start")
     assertEquals(ExperienceMode.BASIC, runBlocking { env.experienceSettings.mode.first() })
 

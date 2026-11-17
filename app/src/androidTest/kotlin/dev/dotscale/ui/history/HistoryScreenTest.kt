@@ -283,6 +283,19 @@ class HistoryScreenTest {
   }
 
   @Test
+  fun theMethodFilterOffersTheNewMethodsAndFiltersByThem() {
+    seed(startedAt = 1_000, name = "A", method = BrewMethod.V60)
+    seed(startedAt = 2_000, name = "B", method = BrewMethod.FRENCH_PRESS)
+    show()
+    waitForRows(2)
+
+    rule.onNodeWithTag("history_filter_method").performClick()
+    clickMenuOption(context.getString(R.string.brew_method_french_press))
+    waitForRows(1)
+    rows()[0].assertTextContains("B", substring = true)
+  }
+
+  @Test
   fun aFilterWithoutResultsShowsItsOwnEmptyState() {
     seed(startedAt = 1_000, coffeeId = coffee("Etiopía"), method = BrewMethod.V60)
     seed(startedAt = 2_000, coffeeId = coffee("Kenia"), method = BrewMethod.CHEMEX)

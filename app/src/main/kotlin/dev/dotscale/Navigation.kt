@@ -26,6 +26,7 @@ import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import dev.dotscale.grinder.GrindFix
 import dev.dotscale.ui.coffees.CoffeeDetailScreen
 import dev.dotscale.ui.coffees.CoffeeDetailViewModel
 import dev.dotscale.ui.coffees.CoffeeEditScreen
@@ -35,6 +36,16 @@ import dev.dotscale.ui.coffees.CoffeesScreen
 import dev.dotscale.ui.coffees.CoffeesViewModel
 import dev.dotscale.ui.components.AntTabBar
 import dev.dotscale.ui.components.AntTabBarItem
+import dev.dotscale.ui.grinders.GrindConverterScreen
+import dev.dotscale.ui.grinders.GrindConverterViewModel
+import dev.dotscale.ui.grinders.GrinderCatalogScreen
+import dev.dotscale.ui.grinders.GrinderCatalogViewModel
+import dev.dotscale.ui.grinders.GrinderDetailScreen
+import dev.dotscale.ui.grinders.GrinderDetailViewModel
+import dev.dotscale.ui.grinders.GrinderEditScreen
+import dev.dotscale.ui.grinders.GrinderEditViewModel
+import dev.dotscale.ui.grinders.GrindersScreen
+import dev.dotscale.ui.grinders.GrindersViewModel
 import dev.dotscale.ui.history.BrewCompareScreen
 import dev.dotscale.ui.history.BrewCompareViewModel
 import dev.dotscale.ui.history.BrewDetailScreen
@@ -46,6 +57,7 @@ import dev.dotscale.ui.history.ComparePickViewModel
 import dev.dotscale.ui.history.HistoryScreen
 import dev.dotscale.ui.history.HistoryViewModel
 import dev.dotscale.ui.onboarding.OnboardingScreen
+import dev.dotscale.ui.onboarding.OnboardingViewModel
 import dev.dotscale.ui.prepare.PrepareScreen
 import dev.dotscale.ui.prepare.PrepareViewModel
 import dev.dotscale.ui.recipes.RecipeEditScreen
@@ -68,7 +80,9 @@ fun MainNavigation(deps: AppDependencies) {
   if (onboardingDone) {
     TabsNavigation(deps)
   } else {
-    OnboardingScreen(onChoose = deps.experienceSettings::completeOnboarding)
+    val viewModel = viewModel { OnboardingViewModel(deps.grinderRepository, deps.grinderSettings, deps.experienceSettings) }
+    val catalog by viewModel.catalog.collectAsStateWithLifecycle()
+    OnboardingScreen(catalog = catalog, onFinish = viewModel::finish)
   }
 }
 
@@ -86,7 +100,7 @@ private fun TabsNavigation(deps: AppDependencies) {
     )
   }
   val activeStack = stacks.getValue(tab)
-  val showBar = showsBottomBar(activeStack.lastOrNull())
+  val showBar = showsBottomBar(activeStack)
 
   Column(Modifier.fillMaxSize()) {
     NavDisplay(
@@ -133,7 +147,7 @@ private fun tabEntryProvider(
   }
 
   tabEntry<Prepare>(tab) {
-    val viewModel = viewModel { PrepareViewModel(deps.scaleSession, deps.scaleMemory, deps.freeBrewDefaults, deps.bluetooth) }
+    val viewModel = viewModel { PrepareViewModel(deps.scaleSession, deps.scaleMemory, deps.freeBrewDefaults, deps.bluetooth, deps.grindSelection) }
     PrepareScreen(
       viewModel = viewModel,
       scanner = deps.scanner,
@@ -143,6 +157,9 @@ private fun tabEntryProvider(
       onStart = { stack.add(Session) },
       onManageRecipes = { selectTab(Tab.RECIPES) },
       onNewCoffee = { stack.add(CoffeeEdit()) },
+      onAddGrinder = { stack.add(Grinders) },
+      onFixGrinder = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
+      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
     )
   }
   tabEntry<Session>(tab) {
@@ -159,6 +176,10 @@ private fun tabEntryProvider(
       brews = deps.brewRepository,
       onAddDetails = { id -> stack.add(BrewEdit(id)) },
       onDone = { stack.popToRoot() },
+      grind = deps.grindSelection,
+      onAddGrinder = { stack.add(Grinders) },
+      onFixGrinder = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
+      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
     )
   }
   tabEntry<Coffees>(tab) {
@@ -197,7 +218,50 @@ private fun tabEntryProvider(
       deps.targetSettings,
       deps.experienceSettings,
       deps.themeSettings,
+      grinderRepository = deps.grinderRepository,
+      grinderDefaults = deps.grinderSettings,
       onRestoreRecipes = { deps.recipeRepository.restoreBuiltIns() },
+      onOpenGrinders = { stack.add(Grinders) },
+      onBack = ::back,
+    )
+  }
+  tabEntry<Grinders>(tab) {
+    GrindersScreen(
+      viewModel { GrindersViewModel(deps.grinderRepository, deps.grinderSettings) },
+      onBack = ::back,
+      onOpenGrinder = { id -> stack.add(GrinderDetail(id)) },
+      onAddGrinder = { stack.add(GrinderCatalog) },
+      onOpenConverter = { stack.add(GrindConverter()) },
+    )
+  }
+  tabEntry<GrindConverter>(tab) { key ->
+    GrindConverterScreen(
+      viewModel { GrindConverterViewModel(deps.grinderRepository, key.sourceId, key.method, key.value) },
+      onBack = ::back,
+      onOpenGrinders = { stack.add(Grinders) },
+      onFix = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
+    )
+  }
+  tabEntry<GrinderCatalog>(tab) {
+    GrinderCatalogScreen(
+      viewModel { GrinderCatalogViewModel(deps.grinderRepository) },
+      onBack = ::back,
+      onOpenGrinder = { id -> stack.add(GrinderDetail(id)) },
+      onCreate = { stack.add(GrinderEdit()) },
+    )
+  }
+  tabEntry<GrinderDetail>(tab) { key ->
+    GrinderDetailScreen(
+      viewModel { GrinderDetailViewModel(deps.grinderRepository, deps.grinderSettings, key.id) },
+      onBack = ::back,
+      onEdit = { id -> stack.add(GrinderEdit(id = id)) },
+      onDuplicate = { id -> stack.add(GrinderEdit(fromId = id)) },
+    )
+  }
+  tabEntry<GrinderEdit>(tab) { key ->
+    GrinderEditScreen(
+      viewModel { GrinderEditViewModel(deps.grinderRepository, key.id, key.fromId) },
+      openRanges = key.openRanges,
       onBack = ::back,
     )
   }
@@ -211,10 +275,13 @@ private fun tabEntryProvider(
   }
   tabEntry<RecipeEdit>(tab) { key ->
     RecipeEditScreen(
-      viewModel { RecipeEditViewModel(deps.recipeRepository, deps.brewRepository, deps.recipeTexts, key.id, key.fromBrewId) },
+      viewModel { RecipeEditViewModel(
+          deps.recipeRepository, deps.brewRepository, deps.recipeTexts, deps.grinderRepository, deps.grinderSettings, deps.grindTexts, key.id, key.fromBrewId,
+        ) },
       onBack = ::back,
       // Duplicar abre la copia en lugar de la original: atrás vuelve a la lista.
       onDuplicated = { copyId -> stack[stack.lastIndex] = RecipeEdit(id = copyId) },
+      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
     )
   }
   tabEntry<History>(tab) {
@@ -226,7 +293,7 @@ private fun tabEntryProvider(
   }
   tabEntry<BrewDetail>(tab) { key ->
     BrewDetailScreen(
-      viewModel { BrewDetailViewModel(deps.brewRepository, deps.coffeeRepository, key.id) },
+      viewModel { BrewDetailViewModel(deps.brewRepository, deps.coffeeRepository, deps.grinderRepository, key.id) },
       onBack = ::back,
       onOpenCoffee = { id -> stack.add(CoffeeDetail(id)) },
       onEdit = { id -> stack.add(BrewEdit(id)) },
@@ -250,10 +317,14 @@ private fun tabEntryProvider(
   }
   tabEntry<BrewEdit>(tab) { key ->
     BrewEditScreen(
-      viewModel { BrewEditViewModel(deps.brewRepository, deps.coffeeRepository, key.id) },
+      viewModel { BrewEditViewModel(deps.brewRepository, deps.coffeeRepository, deps.grinderRepository, deps.grindTexts, key.id) },
       onBack = ::back,
       coffeePickerViewModel = viewModel { CoffeePickerViewModel(deps.coffeeRepository) },
       onNewCoffee = { stack.add(CoffeeEdit()) },
     )
   }
 }
+
+/** Completar los rangos abre el editor del molino propio; en un predefinido, una copia suya con los rangos abiertos. */
+private fun fixGrinderKey(fix: GrindFix, id: Long): NavKey =
+  if (fix == GrindFix.COMPLETE_RANGES) GrinderEdit(id = id, openRanges = true) else GrinderEdit(fromId = id, openRanges = true)

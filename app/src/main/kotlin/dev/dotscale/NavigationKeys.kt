@@ -1,6 +1,7 @@
 package dev.dotscale
 
 import androidx.navigation3.runtime.NavKey
+import dev.dotscale.history.BrewMethod
 import kotlinx.serialization.Serializable
 
 /** Raíz de la pestaña Preparar: la tarjeta de báscula y la configuración de la preparación. */
@@ -33,3 +34,20 @@ import kotlinx.serialization.Serializable
 
 /** `id == null` crea un café; `fromCoffeeId` prellena una bolsa nueva a partir de otro ("Nueva bolsa"). */
 @Serializable data class CoffeeEdit(val id: Long? = null, val fromCoffeeId: Long? = null) : NavKey
+
+/** Ajustes → Molinos: mis molinos. */
+@Serializable data object Grinders : NavKey
+
+/** Ajustes → Molinos → Añadir molino: el catálogo con búsqueda. */
+@Serializable data object GrinderCatalog : NavKey
+
+@Serializable data class GrinderDetail(val id: Long) : NavKey
+
+/**
+ * `id == null` crea un molino propio; `fromId` abre una copia para personalizar ("Duplicar", D22);
+ * `openRanges` abre la pestaña de rangos.
+ */
+@Serializable data class GrinderEdit(val id: Long? = null, val fromId: Long? = null, val openRanges: Boolean = false) : NavKey
+
+/** El convertidor suelto (SPEC-006); los argumentos lo abren ya relleno con el origen, el método y el ajuste. */
+@Serializable data class GrindConverter(val sourceId: Long? = null, val method: BrewMethod? = null, val value: Double? = null) : NavKey

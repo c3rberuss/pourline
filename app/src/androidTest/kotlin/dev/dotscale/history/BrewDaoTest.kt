@@ -2,6 +2,9 @@ package dev.dotscale.history
 
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dotscale.brew.FinishReason
+import dev.dotscale.grinder.GrindSetting
+import dev.dotscale.grinder.TestGrinders
+import dev.dotscale.grinder.addGrinder
 import dev.dotscale.protocol.WeightUnit
 import dev.dotscale.recipe.StageType
 import kotlinx.coroutines.flow.first
@@ -301,9 +304,40 @@ class BrewDaoTest {
   }
 
   @Test
+  fun theGrindSettingIsSavedAndEditedAndAMissingGrinderLeavesGrinderIdNull() = runTest {
+    val grinderId = db.addGrinder(TestGrinders.uno)
+    val live = GrindSetting(grinderId, 21.0, "Acme Uno · 21 clics")
+    val id = repository.save(TestBrews.finished(), TestBrews.context(details = BrewDetails(grind = live)))
+    repository.get(id)!!.entity.let {
+      assertEquals(grinderId, it.grinderId)
+      assertEquals(21.0, it.grindValue!!, 0.0)
+      assertEquals("Acme Uno · 21 clics", it.grindLabel)
+    }
+
+    repository.updateDetails(id, BrewDetails(grind = GrindSetting(999L, 5.0, "Acme Uno · 5 clics")))
+    repository.get(id)!!.entity.let {
+      assertNull(it.grinderId)
+      assertEquals(5.0, it.grindValue!!, 0.0)
+      assertEquals("Acme Uno · 5 clics", it.grindLabel)
+    }
+
+    // Borrar el molino conserva valor y copia; "Deshacer" tras borrarlo no rompe la clave foránea.
+    repository.updateDetails(id, BrewDetails(grind = live))
+    repository.delete(id)
+    val deleted = repository.pendingUndo.value!!
+    db.openHelper.writableDatabase.execSQL("DELETE FROM grinders WHERE id = $grinderId")
+    repository.restore(deleted)
+    repository.get(id)!!.entity.let {
+      assertNull(it.grinderId)
+      assertEquals(21.0, it.grindValue!!, 0.0)
+      assertEquals("Acme Uno · 21 clics", it.grindLabel)
+    }
+  }
+
+  @Test
   fun aBrewWithAReferenceStoresTheColumnsAndTheTargetCurve() = runTest {
     val target = TestBrews.usedTarget(name = "V60 clásica", score = 86, factor = 16.4 / 15)
-    val details = BrewDetails(method = BrewMethod.V60, grind = "Media", waterTempC = 93.0, coffee = "Etiopía")
+    val details = BrewDetails(method = BrewMethod.V60, grind = GrindSetting(null, 21.0, "Acme · 21 clics"), waterTempC = 93.0, coffee = "Etiopía")
     val id = repository.save(TestBrews.finished(), TestBrews.context(target = target, details = details))
 
     val record = repository.get(id)!!
@@ -316,7 +350,9 @@ class BrewDaoTest {
     assertEquals(target.curve.endMs, entity.targetEndMs)
     // Datos prellenados desde la referencia.
     assertEquals(BrewMethod.V60, entity.method)
-    assertEquals("Media", entity.grind)
+    assertEquals(21.0, entity.grindValue!!, 0.0)
+    assertEquals("Acme · 21 clics", entity.grindLabel)
+    assertNull(entity.grinderId)
     assertEquals(93.0, entity.waterTempC!!, 0.0)
     assertEquals("Etiopía", entity.coffee)
     assertNull(entity.name)

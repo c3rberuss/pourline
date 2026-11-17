@@ -1,5 +1,6 @@
 package dev.dotscale.recipe
 
+import dev.dotscale.grinder.toGrindSetting
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.history.HistoryDatabase
 import kotlinx.coroutines.Dispatchers
@@ -128,7 +129,7 @@ class RecipeRepository(
       name = displayName(with),
       method = entity.method,
       methodOther = entity.methodOther,
-      grind = entity.grind,
+      grind = entity.toGrindSetting(),
       waterTempC = entity.waterTempC,
       notes = entity.notes,
       doseG = entity.doseG,
@@ -152,7 +153,9 @@ class RecipeRepository(
     name = recipe.name.trim(),
     method = recipe.method,
     methodOther = if (recipe.method == BrewMethod.OTHER) recipe.methodOther.cleaned() else null,
-    grind = recipe.grind.cleaned(),
+    grinderId = recipe.grind?.grinderId,
+    grindValue = recipe.grind?.value,
+    grindLabel = recipe.grind?.label.cleaned(),
     waterTempC = recipe.waterTempC,
     notes = recipe.notes.cleaned(),
     doseG = recipe.doseG,

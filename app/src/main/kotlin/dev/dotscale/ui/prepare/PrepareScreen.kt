@@ -33,6 +33,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dotscale.R
 import dev.dotscale.ble.BLUETOOTH_PERMISSIONS
 import dev.dotscale.ble.DeviceScanner
+import dev.dotscale.grinder.ConverterArgs
+import dev.dotscale.grinder.GrindFix
 import dev.dotscale.session.ScaleError
 import dev.dotscale.session.ScaleTarget
 import dev.dotscale.settings.ExpertFeature
@@ -53,6 +55,7 @@ import dev.dotscale.ui.components.AntText
 import dev.dotscale.ui.components.AntTextType
 import dev.dotscale.ui.components.AntTopBar
 import dev.dotscale.ui.components.showAntMessage
+import dev.dotscale.ui.grinders.GrindCard
 import dev.dotscale.ui.scale.CoffeeSelectRow
 import dev.dotscale.ui.scale.TargetPicker
 import dev.dotscale.ui.scale.TargetPickerViewModel
@@ -77,8 +80,12 @@ fun PrepareScreen(
   onStart: () -> Unit,
   onManageRecipes: () -> Unit,
   onNewCoffee: () -> Unit,
+  onAddGrinder: () -> Unit,
+  onFixGrinder: (GrindFix, Long) -> Unit,
+  onOpenConverter: ((ConverterArgs) -> Unit)? = null,
 ) {
   val ui by viewModel.ui.collectAsStateWithLifecycle()
+  val grind by viewModel.grind.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
   var sheetOpen by rememberSaveable { mutableStateOf(false) }
   var pickerOpen by rememberSaveable { mutableStateOf(false) }
@@ -153,6 +160,14 @@ fun PrepareScreen(
       )
       CoffeeSelectRow(ui.coffee, enabled = true, onClick = { coffeePickerOpen = true }, modifier = Modifier.testTag("prepare_coffee"))
       DoseCard(ui, viewModel)
+      GrindCard(
+        state = grind,
+        mode = LocalExperienceMode.current,
+        onChoose = viewModel::chooseGrinder,
+        onAddGrinder = onAddGrinder,
+        onFix = onFixGrinder,
+        onOpenConverter = onOpenConverter,
+      )
       Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
         AntButton(
           text = stringResource(R.string.prepare_start),

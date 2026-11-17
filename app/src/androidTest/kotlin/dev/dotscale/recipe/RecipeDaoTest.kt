@@ -1,6 +1,9 @@
 package dev.dotscale.recipe
 
 import androidx.test.platform.app.InstrumentationRegistry
+import dev.dotscale.grinder.GrindSetting
+import dev.dotscale.grinder.TestGrinders
+import dev.dotscale.grinder.addGrinder
 import dev.dotscale.history.BrewMethod
 import dev.dotscale.history.HistoryDatabase
 import kotlinx.coroutines.flow.first
@@ -40,7 +43,7 @@ class RecipeDaoTest {
   private fun mine(name: String = "Mi receta", dose: Double = 16.0) = Recipe(
     name = name,
     method = BrewMethod.V60,
-    grind = "Media",
+    grind = GrindSetting(null, 21.0, "Acme · 21 clics"),
     waterTempC = 93.0,
     notes = "Vierte despacio",
     doseG = dose,
@@ -175,6 +178,38 @@ class RecipeDaoTest {
     // La original sigue igual.
     assertEquals(BuiltInRecipes.V60_CLASSIC, repository.get(original.id)!!.builtInKey)
     assertNull(repository.duplicate(9_999))
+  }
+
+  @Test
+  fun theGrindSettingIsSavedAndReadBackWithALiveGrinder() = runTest {
+    val grinderId = db.addGrinder(TestGrinders.uno)
+    val setting = GrindSetting(grinderId, 21.0, "Acme Uno · 21 clics")
+    val id = repository.save(mine().copy(grind = setting))
+    assertEquals(setting, repository.get(id)!!.grind)
+  }
+
+  @Test
+  fun savingAndUndoingWithAGrinderThatNoLongerExistsLeavesGrinderIdNullAndKeepsValueAndLabel() = runTest {
+    val setting = GrindSetting(999L, 21.0, "Acme Uno · 21 clics")
+    val id = repository.save(mine().copy(grind = setting))
+    assertEquals(GrindSetting(null, 21.0, "Acme Uno · 21 clics"), repository.get(id)!!.grind)
+
+    // "Deshacer" tras borrar el molino mientras la receta estaba borrada: no rompe la clave foránea.
+    val grinderId = db.addGrinder(TestGrinders.uno)
+    repository.save(repository.get(id)!!.copy(grind = GrindSetting(grinderId, 10.0, "Acme Uno · 10 clics")))
+    repository.delete(id)
+    val deleted = repository.pendingUndo.value!!
+    db.openHelper.writableDatabase.execSQL("DELETE FROM grinders WHERE id = $grinderId")
+    repository.restore(deleted)
+    assertEquals(GrindSetting(null, 10.0, "Acme Uno · 10 clics"), repository.get(id)!!.grind)
+  }
+
+  @Test
+  fun deletingTheGrinderLeavesTheRecipeWithItsValueAndLabel() = runTest {
+    val grinderId = db.addGrinder(TestGrinders.uno)
+    val id = repository.save(mine().copy(grind = GrindSetting(grinderId, 21.0, "Acme Uno · 21 clics")))
+    db.openHelper.writableDatabase.execSQL("DELETE FROM grinders WHERE id = $grinderId")
+    assertEquals(GrindSetting(null, 21.0, "Acme Uno · 21 clics"), repository.get(id)!!.grind)
   }
 
   @Test
