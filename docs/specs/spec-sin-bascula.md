@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado. Plan aprobado: [`plan-sin-bascula.md`](plan-sin-bascula.md) |
+| Estado | Implementado en la rama. Pendiente de la prueba manual completa y de `/code-review`. Plan: [`plan-sin-bascula.md`](plan-sin-bascula.md) |
 | Fecha | 2026-11-17 |
 | Rama | `feat-recipe-without-scale`, avanzada a `develop` (`0aa1829`) |
 | Deriva de | Uso real: la app solo sirve con la báscula conectada |
@@ -115,7 +115,10 @@
   `startScalelessSession` hasta `endSession` o `discardSession`.
 - `startScalelessSession(plan: BrewPlan)`:
   - se ignora con una sesión `Active`, sea del tipo que sea;
-  - congela el objetivo, el café y la molienda, como `startSession`;
+  - congela el objetivo, el café, la molienda y las cantidades del plan al abrir la sesión
+    (`ScalelessFrozen`): lo que se cambie después en Preparar, o la receta borrada, no afecta a la
+    sesión en curso. El objetivo congelado es el que se veía en Preparar, con la dosis capturada
+    antes si la hubo;
   - no crea `PrepFlow`: `prep` queda en `null`;
   - deja la sesión en `Armed`.
 - `scalelessStartTimer()`: pasa a `Active`.
@@ -136,10 +139,23 @@
   - `scaleModel = null`;
   - `simulated = false`;
   - `scaleless = true` (campo nuevo, §3.5);
-  - `target = UsedTarget(…, fit = null)`. Sin ajuste, porque no hay curva.
+  - `target = UsedTarget(…, fit = BrewFit(score = null, …))`. El ajuste se guarda con
+    `score = null`, no como `fit = null`, para que la preparación conserve la referencia y la
+    copia de la curva objetivo; no hay puntuación porque no hay curva real.
 - `BrewKeepAlive.needsKeepAlive()` cubre la sesión sin báscula en `Active` y mientras se guarda.
   - `toBrewNotice()` muestra el tiempo y el paso.
   - No muestra los gramos vertidos, pero sí el objetivo del paso si es `POUR`.
+  - La notificación solo cambia con el paso, no con cada tick del reloj.
+- **Segundo plano (`BrewService`):**
+  - Sin báscula no hay conexión BLE que mantenga despierto el proceso, así que el servicio retiene
+    un `WakeLock` parcial (`pourline:scaleless`) mientras la sesión está en `Active`, con tiempo
+    máximo de `maxDurationMs` más 60 s.
+  - Desde Android 14 el servicio se declara con el tipo `specialUse` para la sesión sin báscula
+    (`FOREGROUND_SERVICE_SPECIAL_USE` y la `property` `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` con el
+    valor `brew_timer`), porque `connectedDevice` exige `BLUETOOTH_CONNECT` y el usuario sin
+    báscula puede no haberlo concedido. Con báscula sigue `connectedDevice`.
+  - Permisos nuevos: `WAKE_LOCK` y `FOREGROUND_SERVICE_SPECIAL_USE`. Si la app se publica en Play,
+    el tipo `specialUse` hay que justificarlo en la consola.
 
 ### 3.4 Pantalla de sesión
 
@@ -205,9 +221,15 @@
 - `brew_targets` guarda la copia de la curva objetivo, como hoy, cuando hay receta.
 - **Edición:** en `BrewEditScreen`/`BrewEditForm`, si `entity.scaleless`, aparecen los campos
   editables "Dosis (g)" y "Agua (g)" (`testTag("brew_edit_dose")`, `testTag("brew_edit_water")`).
-  - Usan los mismos rangos válidos que la dosis libre de Preparar para la dosis.
-  - Para el agua: mayor que 0 y como máximo `RecipeValidator.MAX_WATER_G` (1000 g).
-  - Al guardar se recalcula `finalRatio`.
+  - Las etiquetas llevan la unidad: "Dosis (g)" y "Agua (g)".
+  - Usan los mismos rangos válidos que la dosis libre de Preparar para la dosis (5 a 60 g, un
+    decimal). La dosis puede quedar vacía: la preparación no tiene dosis y su ratio queda en
+    `null`.
+  - Para el agua: mayor que 0 y como máximo `RecipeValidator.MAX_WATER_G` (1000 g), con un
+    decimal.
+  - Al guardar se recalcula `finalRatio`. Las cantidades solo se reescriben si cambiaron, y la
+    consulta lleva `WHERE scaleless = 1`, así que nunca toca los datos medidos de una preparación
+    con báscula.
   - En preparaciones con báscula, estos campos no aparecen.
 
 ### 3.6 Historial, detalle y exclusiones
@@ -223,19 +245,22 @@
   - `ComparePickViewModel` no las ofrece como B;
   - el detalle de una preparación sin báscula oculta la acción "Comparar".
 - **Referencia y recetas:**
-  - `TargetPickerViewModel.brews` las excluye;
-  - el detalle oculta "Usar como referencia" y "Guardar como receta" (`RecipeFromBrew`).
+  - `TargetPickerViewModel.brews` las excluye (una preparación se elige como referencia en el
+    selector de Preparar; el detalle no tiene "Usar como referencia");
+  - el detalle oculta "Guardar como receta" (`RecipeFromBrew`).
 - **Detalle (`BrewDetailScreen`):**
   - etiqueta "Sin báscula";
-  - los datos (`BrewFactsCard`);
-  - la curva objetivo guardada, si la hay, sin curva real, sin estabilidad, sin flujo y sin
-    ajuste;
+  - los datos (`BrewFactsCard`), en Básico y en Experto;
+  - la curva objetivo guardada, si la hay y solo en Experto (`brew_detail_target_chart`), sin
+    curva real, sin estabilidad, sin flujo y sin ajuste;
   - sin receta: sin gráfica.
 - **Compartir (`BrewShareCard`):**
   - sin gráfica ni estabilidad;
   - con el tiempo, la dosis, el agua, el ratio, el café, la valoración, las notas y la marca
     "Sin báscula".
-  - `BrewShareData` gana `scaleless: Boolean`.
+  - `BrewShareData` gana `scaleless: Boolean` y `doseG: Double?` (la dosis del plan, o la
+    corregida): el resumen de la sesión no la lleva y la imagen la necesita. En lugar de la
+    gráfica y de las cuatro métricas va una rejilla de 2 × 2 con dosis, agua, ratio y tiempo.
 
 ### 3.7 Textos
 
@@ -244,16 +269,22 @@ Las cadenas nuevas, en `values` (es) y `values-en`:
 | Clave | es | en |
 |---|---|---|
 | `prepare_start_scaleless` | Empezar sin báscula | Start without scale |
-| `scaleless_start` | Empezar timer | Start timer |
+| `prep_start_timer` (ya existía; no hay `scaleless_start`) | Empezar timer | Start timer |
 | `scaleless_pour_to` | Vierte hasta %1$s g | Pour to %1$s g |
 | `scaleless_step_progress` | paso %1$d/%2$d · quedan %3$s | step %1$d/%2$d · %3$s left |
 | `scaleless_water_goal` | Agua objetivo: %1$s g | Water goal: %1$s g |
 | `scaleless_done_hint` | Pasos completados. Pulsa Terminar cuando acabe de filtrar | All steps done. Tap Finish when it stops dripping |
 | `history_row_scaleless` | Sin báscula | No scale |
-| `brew_edit_dose` | Dosis | Dose |
-| `brew_edit_water` | Agua | Water |
+| `brew_edit_dose` | Dosis (g) | Dose (g) |
+| `brew_edit_water` | Agua (g) | Water (g) |
+| `brew_edit_dose_error` | Entre 5 y 60 g, con un decimal como máximo. | Between 5 and 60 g, with at most one decimal. |
+| `brew_edit_water_error` | Más de 0 y hasta 1000 g, con un decimal como máximo. | Above 0 and up to 1000 g, with at most one decimal. |
+| `scaleless_dial_description` | (descripción accesible del dial) | (accessible dial description) |
+| `brew_detail_target_chart` | Curva objetivo | Target curve |
+| `brew_notice_scaleless_ready`, `brew_notice_step`, `brew_notice_step_pour` | Lista para empezar; Paso n/N; Paso n/N hasta X g | Ready to start; Step n/N; Step n/N to X g |
 
-El plan puede reutilizar cadenas existentes equivalentes.
+Se reutilizan las cadenas existentes equivalentes, como `prep_start_timer`, `session_steps_done`
+y `session_step_waiting`.
 
 ### 3.8 Flujo de ejecución
 
@@ -291,42 +322,43 @@ El plan puede reutilizar cadenas existentes equivalentes.
 
 ## 5. Criterios de Aceptación (Definition of Done)
 
-- [ ] Sin báscula conectada, "Empezar sin báscula" está visible y habilitado con una receta, y con
+- [x] Sin báscula conectada, "Empezar sin báscula" está visible y habilitado con una receta, y con
       la báscula `Ready` también está visible.
-- [ ] Sin receta y con la dosis o el ratio inválidos, "Empezar sin báscula" está deshabilitado.
-- [ ] La sesión sin báscula no muestra los pasos de tara y dosis: muestra el primer paso y
+- [x] Sin receta y con la dosis o el ratio inválidos, "Empezar sin báscula" está deshabilitado.
+- [x] La sesión sin báscula no muestra los pasos de tara y dosis: muestra el primer paso y
       "Empezar timer".
-- [ ] En `Active` con receta, el dial avanza con el tiempo del paso, y la línea de acción y
+- [x] En `Active` con receta, el dial avanza con el tiempo del paso, y la línea de acción y
       "paso n/N · quedan m:ss" coinciden con `TargetGuide` en cada instante.
-- [ ] Los avisos de etapa (cuenta atrás y cambio de paso) se disparan en los mismos instantes que
+- [x] Los avisos de etapa (cuenta atrás y cambio de paso) se disparan en los mismos instantes que
       con la báscula simulada siguiendo la misma receta. Con la pantalla apagada, la notificación
       de `BrewService` muestra el tiempo y el paso.
-- [ ] Al completar el último paso aparece `scaleless_done_hint` y la sesión sigue en `Active`
+- [x] Al completar el último paso aparece `scaleless_done_hint` y la sesión sigue en `Active`
       hasta "Terminar".
-- [ ] A los 15 min la sesión termina sola con `MAX_DURATION` y se guarda.
-- [ ] La preparación guardada tiene `scaleless = 1`, la dosis y el agua del plan, el ratio
+- [x] A los 15 min la sesión termina sola con `MAX_DURATION` y se guarda.
+- [x] La preparación guardada tiene `scaleless = 1`, la dosis y el agua del plan, el ratio
       correcto, el flujo en 0, la estabilidad y el ajuste en `null`, `unit = GRAMS` y la copia de
       la curva objetivo si había receta.
-- [ ] Mientras dura la sesión sin báscula, los pesos que llegan de una báscula conectada no
+- [x] Mientras dura la sesión sin báscula, los pesos que llegan de una báscula conectada no
       cambian el estado de la sesión (test JVM con una conexión simulada que emite pesos).
-- [ ] La migración v5 → v6 conserva las preparaciones existentes con `scaleless = 0` (test de
+- [x] La migración v5 → v6 conserva las preparaciones existentes con `scaleless = 0` (test de
       migración de Room).
-- [ ] El historial muestra la etiqueta "Sin báscula" sin minicurva. Comparar, el selector de
+- [x] El historial muestra la etiqueta "Sin báscula" sin minicurva. Comparar, el selector de
       referencia y la gráfica de progreso no las incluyen. El detalle oculta "Comparar", "Usar
       como referencia" y "Guardar como receta".
-- [ ] En "Añadir detalles" de una preparación sin báscula se editan la dosis y el agua, y el ratio
+- [x] En "Añadir detalles" de una preparación sin báscula se editan la dosis y el agua, y el ratio
       se recalcula. En una con báscula esos campos no aparecen.
-- [ ] Compartir una preparación sin báscula genera la imagen sin gráfica y con la marca "Sin
+- [x] Compartir una preparación sin báscula genera la imagen sin gráfica y con la marca "Sin
       báscula".
-- [ ] Todos los tests JVM e instrumentados existentes pasan. Hay tests nuevos de:
+- [x] Todos los tests JVM e instrumentados existentes pasan. Hay tests nuevos de:
   - JVM:
     - la sesión cronometrada: transiciones, `MAX_DURATION`, resumen y descarte;
     - `ScaleSessionManager` en modo sin báscula: inicio, guardado, pesos ignorados y
       reinicio;
-    - `BrewRepository` y `BrewDao`: guardado, exclusiones y edición de dosis y agua;
-    - la migración 5 → 6.
+    - `BrewRepository`: el mapeo de la entidad (`brewEntity`, función pura);
+  - Instrumentados de Room (el proyecto no usa Robolectric): `BrewDao` (guardado, exclusiones y
+    edición de dosis y agua) y la migración 5 → 6.
   - Instrumentados de Compose: Preparar → "Empezar sin báscula" → "Empezar timer" → "Terminar" →
     resumen → "Añadir detalles" (valoración) → historial con la etiqueta.
 - [ ] Prueba manual en un dispositivo vía adb: una receta completa sin báscula, con la pantalla
       apagada a mitad, termina guardada y valorada.
-- [ ] detekt y lint sin avisos nuevos. Se compila solo el módulo `:app`.
+- [x] Lint sin avisos nuevos (el proyecto no usa detekt). Se compila solo el módulo `:app`.
