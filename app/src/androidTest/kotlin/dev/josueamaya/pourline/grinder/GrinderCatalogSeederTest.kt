@@ -150,6 +150,49 @@ class GrinderCatalogSeederTest {
     }
   }
 
+  // --- Pares de calibración (enmienda 1) ---
+
+  private fun repository() = GrinderRepository(db, settings, ResourcesGrindTexts(context))
+
+  @Test
+  fun aCatalogUpdateDoesNotTouchThePairs() = runTest {
+    seeder.sync()
+    val uno = byKey("acme-uno").id
+    val dos = byKey("acme-dos").id
+    val repository = repository()
+    repository.setOwned(uno, true)
+    repository.setOwned(dos, true)
+    repository.saveCalibration(uno, 20.0, dos, 30.0)
+    val before = repository.calibrations(uno).first()
+
+    json = TestGrinderCatalog.catalog(2, listOf(TestGrinderCatalog.uno(model = "Uno II"), TestGrinderCatalog.dos(), TestGrinderCatalog.tres(), TestGrinderCatalog.inverso()))
+    assertEquals(SyncResult.Synced(2, added = 0, updated = 4, retired = 0, deleted = 0), seeder.sync())
+    assertEquals(1, before.size)
+    assertEquals(before, repository.calibrations(uno).first())
+  }
+
+  @Test
+  fun aPredefinedWithPairsThatLeavesTheCatalogIsRetiredNotDeleted() = runTest {
+    seeder.sync()
+    val uno = byKey("acme-uno").id
+    val dos = byKey("acme-dos").id
+    val repository = repository()
+    repository.setOwned(uno, true)
+    repository.setOwned(dos, true)
+    repository.saveCalibration(uno, 20.0, dos, 30.0)
+    // Uno deja de ser mío: sin recetas, sin preparaciones y sin ser el predeterminado, se borraría si desapareciera.
+    repository.setOwned(uno, false)
+    val pairs = repository.calibrations(dos).first()
+    assertEquals(1, pairs.size)
+
+    json = TestGrinderCatalog.catalog(2, listOf(TestGrinderCatalog.dos(), TestGrinderCatalog.tres(), TestGrinderCatalog.inverso()))
+    assertEquals(SyncResult.Synced(2, added = 0, updated = 3, retired = 1, deleted = 0), seeder.sync())
+
+    assertTrue(dao.get(uno)!!.grinder.retired)
+    assertEquals(pairs, repository.calibrations(dos).first())
+    assertEquals(pairs, repository.calibrations(uno).first())
+  }
+
   private companion object {
     const val PREFS = "grinder_seeder_test"
   }

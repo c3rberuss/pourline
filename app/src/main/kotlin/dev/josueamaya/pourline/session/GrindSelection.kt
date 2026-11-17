@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline.session
 
+import dev.josueamaya.pourline.grinder.GrindCalibration
 import dev.josueamaya.pourline.grinder.GrindCardState
 import dev.josueamaya.pourline.grinder.GrindSetting
 import dev.josueamaya.pourline.grinder.GrindSource
@@ -37,12 +38,17 @@ interface SessionGrinders {
   fun owned(): Flow<List<Grinder>>
 
   fun grinder(id: Long?): Flow<Grinder?>
+
+  /** Los pares de calibración del molino [grinderId] (enmienda 1). */
+  fun calibrations(grinderId: Long): Flow<List<GrindCalibration>>
 }
 
 class RepositorySessionGrinders(private val repository: GrinderRepository) : SessionGrinders {
   override fun owned(): Flow<List<Grinder>> = repository.owned()
 
   override fun grinder(id: Long?): Flow<Grinder?> = repository.grinder(id)
+
+  override fun calibrations(grinderId: Long): Flow<List<GrindCalibration>> = repository.calibrations(grinderId)
 }
 
 /** Sin molinos: el valor por defecto para quien no los necesita. */
@@ -50,6 +56,8 @@ object NoSessionGrinders : SessionGrinders {
   override fun owned(): Flow<List<Grinder>> = flowOf(emptyList())
 
   override fun grinder(id: Long?): Flow<Grinder?> = flowOf(null)
+
+  override fun calibrations(grinderId: Long): Flow<List<GrindCalibration>> = flowOf(emptyList())
 }
 
 /**

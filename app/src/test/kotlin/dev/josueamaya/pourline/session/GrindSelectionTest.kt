@@ -2,6 +2,7 @@ package dev.josueamaya.pourline.session
 
 import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.grinder.FakeGrindTexts
+import dev.josueamaya.pourline.grinder.GrindCalibration
 import dev.josueamaya.pourline.grinder.GrindOutcome
 import dev.josueamaya.pourline.grinder.GrindSetting
 import dev.josueamaya.pourline.grinder.GrinderFixtures.dos
@@ -34,6 +35,11 @@ class GrindSelectionTest {
     override fun owned(): Flow<List<Grinder>> = owned
 
     override fun grinder(id: Long?): Flow<Grinder?> = owned.map { list -> list.firstOrNull { it.id == id } }
+
+    val calibrations = MutableStateFlow<List<GrindCalibration>>(emptyList())
+
+    override fun calibrations(grinderId: Long): Flow<List<GrindCalibration>> =
+      calibrations.map { list -> list.filter { it.involves(grinderId) } }
   }
 
   private class FakeDefaults(initial: Long? = null) : DefaultGrinderStore {
