@@ -154,7 +154,13 @@ fun SessionScreen(
   KeepScreenOn()
 
   val phase = ui.brew.phase
+  val countingDown = ui.countdownS != null
   fun leave() {
+    // La X y "Atrás" con la cuenta regresiva en marcha solo la cancelan.
+    if (countingDown) {
+      session.cancelCountdown()
+      return
+    }
     when (phase) {
       is BrewPhase.Active -> exitDialog = true
       is BrewPhase.Finished -> {
@@ -180,34 +186,37 @@ fun SessionScreen(
     },
     snackbarHost = { AntMessageHost(snackbar) },
   ) { padding ->
-    Column(Modifier.fillMaxSize().padding(padding)) {
-      // Sin báscula no hay nada que reconectar: la sesión va solo por el reloj.
-      if (!ui.scaleless) DisconnectedNotice(ui.connection, onRetry = session::retry)
-      when {
-        phase is BrewPhase.Finished -> {
-          val saved = ui.savedBrew as? SavedBrew.Saved
-          val record by remember(saved?.id) { saved?.let { brews.observe(it.id) } ?: flowOf(null) }
-            .collectAsStateWithLifecycle(null)
-          val shareData = summaryShareData(ui, phase.summary, record?.entity?.rating, record?.entity?.notes, record?.entity)
-          SessionSummary(
-            ui = ui,
-            summary = phase.summary,
-            record = record,
-            mode = mode,
-            onAddDetails = onAddDetails,
-            onShare = { launcher.share(ShareTarget.Summary, ShareContent.Brew(shareData)) },
-            onDone = {
-              session.endSession()
-              onDone()
-            },
-          )
+    Box(Modifier.fillMaxSize().padding(padding)) {
+      Column(Modifier.fillMaxSize()) {
+        // Sin báscula no hay nada que reconectar: la sesión va solo por el reloj.
+        if (!ui.scaleless) DisconnectedNotice(ui.connection, onRetry = session::retry)
+        when {
+          phase is BrewPhase.Finished -> {
+            val saved = ui.savedBrew as? SavedBrew.Saved
+            val record by remember(saved?.id) { saved?.let { brews.observe(it.id) } ?: flowOf(null) }
+              .collectAsStateWithLifecycle(null)
+            val shareData = summaryShareData(ui, phase.summary, record?.entity?.rating, record?.entity?.notes, record?.entity)
+            SessionSummary(
+              ui = ui,
+              summary = phase.summary,
+              record = record,
+              mode = mode,
+              onAddDetails = onAddDetails,
+              onShare = { launcher.share(ShareTarget.Summary, ShareContent.Brew(shareData)) },
+              onDone = {
+                session.endSession()
+                onDone()
+              },
+            )
+          }
+          phase is BrewPhase.Active && ui.scaleless -> ScalelessActivePanel(ui, onFinish = session::finishBrew)
+          phase is BrewPhase.Active -> ActivePanel(ui, mode, onFinish = session::finishBrew)
+          phase is BrewPhase.Armed && ui.scaleless -> ScalelessReadyPanel(ui, onStart = session::scalelessStartTimer)
+          ui.prep != null -> PrepPanel(ui, ui.prep!!, session, grind, onAddGrinder, onFixGrinder, onOpenConverter)
+          else -> Unit
         }
-        phase is BrewPhase.Active && ui.scaleless -> ScalelessActivePanel(ui, onFinish = session::finishBrew)
-        phase is BrewPhase.Active -> ActivePanel(ui, mode, onFinish = session::finishBrew)
-        phase is BrewPhase.Armed && ui.scaleless -> ScalelessReadyPanel(ui, onStart = session::scalelessStartTimer)
-        ui.prep != null -> PrepPanel(ui, ui.prep!!, session, grind, onAddGrinder, onFixGrinder, onOpenConverter)
-        else -> Unit
       }
+      ui.countdownS?.let { CountdownOverlay(it, onCancel = session::cancelCountdown) }
     }
   }
 

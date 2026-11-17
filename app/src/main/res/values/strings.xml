@@ -268,6 +268,10 @@
     <string name="recipe_error_no_pour">Añade al menos un paso de tipo Verter</string>
 
     <!-- Ajustes: guía de pasos y recetas -->
+    <string name="settings_countdown_title">Cuenta regresiva</string>
+    <string name="settings_countdown_off">No</string>
+    <string name="settings_countdown_value">%1$d s</string>
+    <string name="settings_countdown_hint">Segundos antes de que arranque el reloj al pulsar «Empezar timer», con o sin báscula. Con báscula, si empiezas a verter antes, la preparación empieza enseguida.</string>
     <string name="settings_stage_title">Guía de pasos</string>
     <string name="settings_stage_vibration">Vibrar al empezar cada paso</string>
     <string name="settings_stage_sound">Sonido al empezar cada paso</string>
@@ -564,6 +568,10 @@
     <string name="prep_capture">Capturar ahora</string>
     <string name="prep_skip_dose">Saltar (sin dosis)</string>
     <string name="prep_start_timer">Empezar timer</string>
+    <string name="countdown_title">Prepárate para verter</string>
+    <string name="countdown_hint">El reloj empieza al llegar a cero</string>
+    <string name="countdown_description">Empieza en %1$d</string>
+    <string name="countdown_cancel">Cancelar</string>
     <string name="prep_waiting_tare">Esperando la tara…</string>
     <string name="prep_dose_value">Dosis: %1$s</string>
     <string name="prep_no_dose">Sin dosis</string>

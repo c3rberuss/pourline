@@ -174,10 +174,15 @@ class FakeScaleCoffees : ScaleCoffees {
 
 class FakeNotifier : StageNotifier {
   val started = mutableListOf<TargetStage>()
+  val countdown = mutableListOf<Int>()
   var released = 0
 
   override fun stageStarted(stage: TargetStage) {
     started += stage
+  }
+
+  override fun countdownTick(remainingS: Int) {
+    countdown += remainingS
   }
 
   override fun release() {

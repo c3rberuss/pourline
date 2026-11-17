@@ -144,6 +144,8 @@ class TestAppDependencies(
   notifier: StageNotifier = SilentNotifier,
   /** El reloj monotónico del gestor; un test lo adelanta a mano para no esperar los minutos de una receta. */
   clock: () -> Long = SystemClock::elapsedRealtime,
+  /** Los segundos de la cuenta regresiva de "Empezar timer"; 0 (sin cuenta) salvo en los tests que la prueban. */
+  countdownSeconds: Int = 0,
 ) {
   init {
     context.deleteSharedPreferences(PREFS)
@@ -187,6 +189,7 @@ class TestAppDependencies(
     coffees = RepositoryScaleCoffees(coffees),
     grind = SessionGrind { grindSelection.current() },
     memory = connectionSettings,
+    countdownSeconds = MutableStateFlow(countdownSeconds),
     clock = clock,
   )
 

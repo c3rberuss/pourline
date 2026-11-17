@@ -110,6 +110,8 @@ data class ScaleUiState(
   val scaleless: Boolean = false,
   /** La dosis del plan de la sesión sin báscula, en gramos; `null` sin sesión sin báscula o sin dosis. */
   val plannedDoseG: Double? = null,
+  /** Los segundos que le quedan a la cuenta regresiva previa a la preparación; `null` sin cuenta en marcha. */
+  val countdownS: Int? = null,
 ) {
   /** La unidad de la sesión: la de la báscula, o gramos sin báscula. */
   val sessionUnit: WeightUnit get() = if (scaleless) WeightUnit.GRAMS else unit

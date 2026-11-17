@@ -63,6 +63,17 @@ class BrewSettings(
     _autoFinishSeconds.value = seconds
   }
 
+  private val _countdownSeconds = MutableStateFlow(readCountdown())
+
+  /** Segundos de cuenta regresiva antes de que arranque el reloj de la preparación; 0 la desactiva. */
+  val countdownSeconds: StateFlow<Int> = _countdownSeconds.asStateFlow()
+
+  fun setCountdownSeconds(seconds: Int) {
+    require(seconds in COUNTDOWN_ALLOWED) { "Valor no permitido: $seconds" }
+    prefs.edit { putInt(KEY_COUNTDOWN, seconds) }
+    _countdownSeconds.value = seconds
+  }
+
   private val _lastCoffeeId = MutableStateFlow(readLastCoffee())
 
   /** El último café elegido en Scale; `null` si no hay. Scale no lo preselecciona si está archivado o borrado. */
@@ -101,13 +112,19 @@ class BrewSettings(
 
   private fun readLastCoffee(): Long? = if (prefs.contains(KEY_LAST_COFFEE)) prefs.getLong(KEY_LAST_COFFEE, 0L) else null
 
+  private fun readCountdown(): Int =
+    prefs.getInt(KEY_COUNTDOWN, DEFAULT_COUNTDOWN_SECONDS).takeIf { it in COUNTDOWN_ALLOWED } ?: DEFAULT_COUNTDOWN_SECONDS
+
   private fun readAutoFinish(): Int = prefs.getInt(KEY_AUTO_FINISH, DEFAULT_SECONDS).takeIf { it in ALLOWED } ?: DEFAULT_SECONDS
 
   companion object {
     val ALLOWED = listOf(30, 45, 60, 90, 120)
     const val DEFAULT_SECONDS = 60
+    val COUNTDOWN_ALLOWED = listOf(0, 3, 5, 10)
+    const val DEFAULT_COUNTDOWN_SECONDS = 3
     const val PREFS_NAME = "settings"
     const val KEY_AUTO_FINISH = "auto_finish_seconds"
+    const val KEY_COUNTDOWN = "countdown_seconds"
     const val KEY_LAST_COFFEE = "last_coffee_id"
     const val KEY_DEFAULT_DOSE = "default_dose_g"
     const val KEY_DEFAULT_RATIO = "default_ratio"

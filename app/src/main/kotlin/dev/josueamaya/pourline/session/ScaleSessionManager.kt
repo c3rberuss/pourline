@@ -81,6 +81,8 @@ import java.util.concurrent.atomic.AtomicLong
  * @param coffees de dónde salen el café elegido y las altas nuevas (SPEC-004).
  * @param grind el ajuste de molienda de la tarjeta de Preparar; se congela al pasar a `Active` y es el que se guarda (SPEC-006).
  * @param memory dónde se recuerda la última báscula real que llegó a `Ready` (la simulada nunca).
+ * @param countdownSeconds segundos de cuenta regresiva antes de que "Empezar timer" arranque el reloj, con báscula o sin
+ * ella; 0 la desactiva. Se lee al pulsar el botón.
  * @param clock reloj monotónico en ms; se inyecta para poder probar la sesión sin reloj real.
  * @param wallClock hora de pared en ms desde la época, para fechar las preparaciones.
  */
@@ -98,6 +100,7 @@ class ScaleSessionManager(
   private val coffees: ScaleCoffees = NoScaleCoffees,
   private val grind: SessionGrind = NoSessionGrind,
   private val memory: ScaleMemory = NoScaleMemory,
+  private val countdownSeconds: StateFlow<Int> = MutableStateFlow(0),
   private val clock: () -> Long = SystemClock::elapsedRealtime,
   private val wallClock: () -> Long = System::currentTimeMillis,
   private val targetConfig: TargetConfig = TargetConfig(),
@@ -127,6 +130,12 @@ class ScaleSessionManager(
 
   /** El `t0` de la sesión sin báscula de la que ya se avisó de que no quedan pasos (D6). */
   private var doneAlertedFor: Long? = null
+
+  /** La cuenta regresiva previa a "Empezar timer"; `null` sin cuenta en marcha. */
+  private var countdownJob: Job? = null
+
+  /** Los segundos que le quedan a la cuenta regresiva; `null` sin cuenta en marcha. */
+  private var countdownRemaining: Int? = null
 
   private val _ui = MutableStateFlow(ScaleUiState())
   val ui: StateFlow<ScaleUiState> = _ui.asStateFlow()
@@ -205,6 +214,7 @@ class ScaleSessionManager(
         val effects = if (lost) session.onDisconnected(clock()) else emptyList()
         if (lost) {
           // Antes de `Active` no hay nada que guardar: la sesión vuelve al paso 1 y la compuerta se cierra.
+          if (!scaleless) stopCountdown()
           prep?.onDisconnected()
           if (session.state.phase is BrewPhase.Armed) armed = false
         } else if (s == ConnectionState.Ready) {
@@ -283,6 +293,8 @@ class ScaleSessionManager(
         else -> emptyList()
       }
     }
+    // El agua empezó la preparación antes de que acabara la cuenta regresiva: ya no hace falta.
+    if (!scaleless && session.state.phase !is BrewPhase.Armed) stopCountdown()
     publish { it.reduce(message) }
     handle(effects)
     applyPrep(prepEffects(message, now))
@@ -408,6 +420,7 @@ class ScaleSessionManager(
       targetWaterG = frozenScaleless?.amounts?.waterG ?: plan?.let { targetWaterG(target, dose?.let { d -> toGrams(d, unit) }, it) },
       scaleless = frozenScaleless != null,
       plannedDoseG = frozenScaleless?.amounts?.doseG,
+      countdownS = countdownRemaining,
     )
   }
 
@@ -588,6 +601,7 @@ class ScaleSessionManager(
     finished.forEach { save(it.brew) }
     connection.value = null
     current.disconnect()
+    if (!scaleless) stopCountdown()
     publish { it.copy(connection = ConnectionState.Disconnected) }
   }
 
@@ -607,6 +621,7 @@ class ScaleSessionManager(
    */
   fun startSession(plan: BrewPlan) {
     if (session.state.phase is BrewPhase.Active || timed.state.phase is BrewPhase.Active) return
+    stopCountdown()
     clearScaleless()
     session.reset()
     armed = false
@@ -623,6 +638,7 @@ class ScaleSessionManager(
    * antes de `Active` se conserva (D24). La compuerta ya estaba cerrada desde `Finished`.
    */
   fun endSession() {
+    stopCountdown()
     if (scaleless) {
       endScalelessSession()
       return
@@ -645,6 +661,7 @@ class ScaleSessionManager(
    * `Finished`; la dosis, el objetivo y el café congelados se olvidan.
    */
   fun discardSession() {
+    stopCountdown()
     if (scaleless) {
       discardScalelessSession()
       return
@@ -688,6 +705,7 @@ class ScaleSessionManager(
   fun startScalelessSession(plan: BrewPlan) {
     if (session.state.phase is BrewPhase.Active || timed.state.phase is BrewPhase.Active) return
     val state = _ui.value
+    stopCountdown()
     stopScalelessTicker()
     session.reset()
     armed = false
@@ -704,13 +722,60 @@ class ScaleSessionManager(
     publish { it.copy(savedBrew = null, lastFit = null, lastBrew = null) }
   }
 
-  /** "Empezar timer": la sesión sin báscula pasa a `Active` y arranca su reloj. */
+  /** "Empezar timer": tras la cuenta regresiva, la sesión sin báscula pasa a `Active` y arranca su reloj. */
   fun scalelessStartTimer() {
     if (!scaleless || timed.state.phase != BrewPhase.Armed) return
-    val effects = timed.start(clock())
+    afterCountdown {
+      if (!scaleless || timed.state.phase != BrewPhase.Armed) return@afterCountdown
+      val effects = timed.start(clock())
+      publish()
+      handle(effects)
+      startScalelessTicker()
+    }
+  }
+
+  /** "Cancelar" de la cuenta regresiva: la sesión sigue lista para empezar. */
+  fun cancelCountdown() {
+    if (stopCountdown()) publish()
+  }
+
+  /**
+   * Ejecuta [start] tras la cuenta regresiva de [countdownSeconds], con un tic del notificador por segundo; sin cuenta,
+   * enseguida. Se ignora si ya hay una en marcha.
+   */
+  private fun afterCountdown(start: () -> Unit) {
+    if (countdownJob != null) return
+    val seconds = countdownSeconds.value
+    if (seconds <= 0) {
+      start()
+      return
+    }
+    countdownRemaining = seconds
     publish()
-    handle(effects)
-    startScalelessTicker()
+    notifier.countdownTick(seconds)
+    countdownJob = scope.launch {
+      for (remaining in seconds - 1 downTo 0) {
+        delay(COUNTDOWN_STEP_MS)
+        notifier.countdownTick(remaining)
+        if (remaining > 0) {
+          countdownRemaining = remaining
+          publish()
+        }
+      }
+      countdownJob = null
+      countdownRemaining = null
+      start()
+      publish()
+    }
+  }
+
+  /** Corta la cuenta regresiva sin publicar; `true` si había una. */
+  private fun stopCountdown(): Boolean {
+    val job = countdownJob ?: return false
+    countdownJob = null
+    countdownRemaining = null
+    job.cancel()
+    return true
   }
 
   /** El reloj de la sesión sin báscula: cada [SCALELESS_TICK_MS] publica la guía y los avisos, y vigila el tope (D5). */
@@ -791,8 +856,11 @@ class ScaleSessionManager(
   /** "Saltar (sin dosis)". */
   fun prepSkipDose() = applyPrep(prep?.skipDose().orEmpty())
 
-  /** "Empezar timer": la sesión pasa a `Active` sin esperar al agua. */
-  fun prepStartTimer() = applyPrep(prep?.startTimer().orEmpty())
+  /** "Empezar timer": tras la cuenta regresiva, la sesión pasa a `Active` sin esperar al agua. */
+  fun prepStartTimer() {
+    if (prep?.state?.step != PrepStep.POUR) return
+    afterCountdown { applyPrep(prep?.startTimer().orEmpty()) }
+  }
 
   fun tare() = send(ScaleCommands.tare())
 
@@ -937,6 +1005,9 @@ class ScaleSessionManager(
   companion object {
     /** Cada cuánto corre el reloj de la sesión sin báscula (D5): el de los pesos de la báscula, para avisar a tiempo. */
     const val SCALELESS_TICK_MS = 100L
+
+    /** Lo que dura cada número de la cuenta regresiva. */
+    const val COUNTDOWN_STEP_MS = 1_000L
 
     private const val TAG = "ScaleSessionManager"
     private const val TICK_MS = 1_000L

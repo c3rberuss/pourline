@@ -269,6 +269,10 @@
     <string name="recipe_error_no_pour">Add at least one Pour step</string>
 
     <!-- Settings: step guide and recipes -->
+    <string name="settings_countdown_title">Countdown</string>
+    <string name="settings_countdown_off">Off</string>
+    <string name="settings_countdown_value">%1$d s</string>
+    <string name="settings_countdown_hint">Seconds before the timer starts when you tap “Start timer”, with or without a scale. With a scale, if you start pouring earlier, the brew starts right away.</string>
     <string name="settings_stage_title">Step guide</string>
     <string name="settings_stage_vibration">Vibrate when each step starts</string>
     <string name="settings_stage_sound">Beep when each step starts</string>
@@ -565,6 +569,10 @@
     <string name="prep_capture">Capture now</string>
     <string name="prep_skip_dose">Skip (no dose)</string>
     <string name="prep_start_timer">Start timer</string>
+    <string name="countdown_title">Get ready to pour</string>
+    <string name="countdown_hint">The timer starts when it reaches zero</string>
+    <string name="countdown_description">Starting in %1$d</string>
+    <string name="countdown_cancel">Cancel</string>
     <string name="prep_waiting_tare">Waiting for the tare…</string>
     <string name="prep_dose_value">Dose: %1$s</string>
     <string name="prep_no_dose">No dose</string>

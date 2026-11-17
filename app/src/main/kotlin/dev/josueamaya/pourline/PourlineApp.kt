@@ -129,6 +129,7 @@ class PourlineApp : Application() {
       coffees = RepositoryScaleCoffees(coffeeRepository),
       grind = SessionGrind { grindSelection.current() },
       memory = connectionSettings,
+      countdownSeconds = brewSettings.countdownSeconds,
     )
   }
 
