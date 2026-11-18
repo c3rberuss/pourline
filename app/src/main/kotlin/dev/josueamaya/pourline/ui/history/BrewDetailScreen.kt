@@ -68,6 +68,9 @@ import dev.josueamaya.pourline.ui.scale.TargetChart
 import dev.josueamaya.pourline.ui.scale.fitView
 import dev.josueamaya.pourline.ui.scale.summaryStability
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 import java.time.ZoneId
 import java.util.Locale
 
@@ -103,7 +106,7 @@ fun BrewDetailScreen(
               AntIcons.Share,
               contentDescription = stringResource(R.string.share_image_action),
               onClick = { launcher.share(ShareTarget.Brew(record.entity.id), ShareContent.Brew(shareData)) },
-              modifier = Modifier.testTag("brew_detail_share"),
+              modifier = Modifier.tourAnchor("brew_detail_share").testTag("brew_detail_share"),
             )
           }
         },
@@ -133,6 +136,7 @@ fun BrewDetailScreen(
     }
   }
   launcher.Host()
+  TourHost(Tours.brewDetail, ready = loaded != null)
 }
 
 /** La imagen del detalle: título, método, ajuste, valoración, nota de cata y el café vinculado con los días de la preparación. */
@@ -182,7 +186,7 @@ private fun DetailContent(
     Row { AntTag(stringResource(R.string.history_row_scaleless), Modifier.testTag("brew_detail_scaleless"), color = AntTagColor.Primary) }
     val curve = record.target
     if (mode.shows(ExpertFeature.BREW_DETAIL_CHART) && curve != null) {
-      AntCard(Modifier.fillMaxWidth().testTag("brew_detail_target_chart"), title = stringResource(R.string.brew_detail_target_chart)) {
+      AntCard(Modifier.fillMaxWidth().tourAnchor("brew_detail_chart").testTag("brew_detail_target_chart"), title = stringResource(R.string.brew_detail_target_chart)) {
         TargetChart(curve)
       }
     }
@@ -203,7 +207,7 @@ private fun ScaleBrewBody(record: BrewRecord, coffee: CoffeeEntity?, onOpenCoffe
     if (record.curveError) {
       AntAlert(message = stringResource(R.string.brew_detail_curve_error), type = AntStatus.Error)
     } else {
-      AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.brew_chart_title)) {
+      AntCard(Modifier.fillMaxWidth().tourAnchor("brew_detail_chart").testTag("brew_detail_chart"), title = stringResource(R.string.brew_chart_title)) {
         Chart(record.samples, entity.unit, summaryStability(record.summary), target = record.target)
       }
     }
@@ -237,7 +241,7 @@ private fun DetailButtons(
     AntButton(
       text = stringResource(R.string.brew_detail_edit),
       onClick = onEdit,
-      modifier = Modifier.weight(1f).testTag("brew_detail_edit"),
+      modifier = Modifier.weight(1f).tourAnchor("brew_detail_edit").testTag("brew_detail_edit"),
     )
     AntButton(
       text = stringResource(R.string.brew_detail_delete),
@@ -256,14 +260,14 @@ private fun DetailButtons(
         AntButton(
           text = stringResource(R.string.brew_detail_compare),
           onClick = onCompare,
-          modifier = Modifier.weight(1f).testTag("brew_detail_compare"),
+          modifier = Modifier.weight(1f).tourAnchor("brew_detail_compare").testTag("brew_detail_compare"),
         )
       }
       if (saveRecipe) {
         AntButton(
           text = stringResource(R.string.brew_detail_save_recipe),
           onClick = onSaveAsRecipe,
-          modifier = Modifier.weight(1f).testTag("brew_detail_save_recipe"),
+          modifier = Modifier.weight(1f).tourAnchor("brew_detail_save_recipe").testTag("brew_detail_save_recipe"),
           enabled = !record.curveError,
         )
       }
@@ -294,7 +298,7 @@ private fun DetailsCard(record: BrewRecord, grinder: Grinder?) {
   val method = entity.method?.let { m -> if (m == BrewMethod.OTHER) entity.methodOther ?: m.label() else m.label() }
   val grind = entity.toGrindSetting()
   if (method == null && grind == null && entity.waterTempC == null) return
-  AntCard(Modifier.fillMaxWidth().testTag("brew_detail_details"), title = stringResource(R.string.brew_detail_details)) {
+  AntCard(Modifier.fillMaxWidth().tourAnchor("brew_detail_details").testTag("brew_detail_details"), title = stringResource(R.string.brew_detail_details)) {
     method?.let { value ->
       Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
         AntText(stringResource(R.string.brew_detail_method), type = AntTextType.Secondary)

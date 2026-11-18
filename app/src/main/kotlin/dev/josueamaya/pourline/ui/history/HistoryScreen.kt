@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -36,6 +37,10 @@ import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.components.showAntMessage
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.TourLazyAnchor
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 @Composable
 fun HistoryScreen(viewModel: HistoryViewModel, onBack: (() -> Unit)?, onOpenBrew: (Long) -> Unit) {
@@ -60,6 +65,13 @@ fun HistoryScreen(viewModel: HistoryViewModel, onBack: (() -> Unit)?, onOpenBrew
   DisposableEffect(viewModel) { onDispose { viewModel.clearPendingUndo() } }
 
   val mode = LocalExperienceMode.current
+  val listState = rememberLazyListState()
+  // La lista perezosa solo compone lo que se ve: estos pasos se declaran para que el recorrido los busque desplazando.
+  val firstScaleless = items?.firstOrNull { it.scaleless }?.id
+  TourLazyAnchor("history_filter_coffee", listState, present = true)
+  TourLazyAnchor("history_progress", listState, present = progress != null && mode.shows(ExpertFeature.HISTORY_STABILITY_PROGRESS))
+  TourLazyAnchor("history_row", listState, present = !items.isNullOrEmpty())
+  TourLazyAnchor("history_row_scaleless", listState, present = firstScaleless != null)
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
@@ -76,15 +88,16 @@ fun HistoryScreen(viewModel: HistoryViewModel, onBack: (() -> Unit)?, onOpenBrew
   ) { padding ->
     LazyColumn(
       Modifier.fillMaxSize().padding(padding),
+      state = listState,
       contentPadding = PaddingValues(AntTheme.spacing.base),
       verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
     ) {
       item(key = "filters") {
-        HistoryFilters(filter, coffees, methods, onChange = { filter = it })
+        HistoryFilters(filter, coffees, methods, onChange = { filter = it }, modifier = Modifier.tourAnchor("history_filter_coffee"))
       }
       progress?.takeIf { mode.shows(ExpertFeature.HISTORY_STABILITY_PROGRESS) }?.let { points ->
         item(key = "progress") {
-          AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.history_progress_title)) {
+          AntCard(Modifier.fillMaxWidth().tourAnchor("history_progress").testTag("history_progress"), title = stringResource(R.string.history_progress_title)) {
             if (points.size >= 2) {
               StabilityProgressChart(points)
             } else {
@@ -106,9 +119,19 @@ fun HistoryScreen(viewModel: HistoryViewModel, onBack: (() -> Unit)?, onOpenBrew
             AntEmpty(stringResource(if (filtered) R.string.history_empty_filtered else R.string.history_empty))
           }
         } else {
-          items(rows, key = { it.id }) { item -> HistoryRow(item, onClick = { onOpenBrew(item.id) }, showMetrics = mode.shows(ExpertFeature.HISTORY_ROW_METRICS)) }
+          items(rows, key = { it.id }) { item ->
+            HistoryRow(
+              item,
+              onClick = { onOpenBrew(item.id) },
+              // Solo la primera fila es el ancla del paso "Una preparación".
+              modifier = if (item.id == rows.first().id) Modifier.tourAnchor("history_row") else Modifier,
+              showMetrics = mode.shows(ExpertFeature.HISTORY_ROW_METRICS),
+              scalelessAnchor = item.id == firstScaleless,
+            )
+          }
         }
       }
     }
   }
+  TourHost(Tours.history, ready = items != null)
 }

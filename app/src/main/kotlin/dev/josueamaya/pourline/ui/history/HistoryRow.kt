@@ -40,6 +40,7 @@ import dev.josueamaya.pourline.ui.scale.formatNumber
 import dev.josueamaya.pourline.ui.scale.levelText
 import dev.josueamaya.pourline.ui.scale.tagColor
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 private const val DISABLED_ALPHA = 0.45f
 
@@ -57,6 +58,8 @@ fun HistoryRow(
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
   showMetrics: Boolean = true,
+  /** La etiqueta "Sin báscula" es el ancla del recorrido de Historial: solo la de la primera fila sin báscula. */
+  scalelessAnchor: Boolean = false,
 ) {
   val state = if (enabled) Modifier else Modifier.alpha(DISABLED_ALPHA).semantics { disabled() }
   AntCard(modifier.testTag("history_row").then(state), size = AntCardSize.Small, onClick = if (enabled) onClick else null) {
@@ -93,7 +96,7 @@ fun HistoryRow(
             modifier = Modifier.fillMaxWidth(),
           ) {
             if (item.scaleless) {
-              AntTag(stringResource(R.string.history_row_scaleless), Modifier.testTag("history_row_scaleless"), color = AntTagColor.Primary)
+              AntTag(stringResource(R.string.history_row_scaleless), Modifier.tourAnchor("history_row_scaleless", enabled = scalelessAnchor).testTag("history_row_scaleless"), color = AntTagColor.Primary)
             } else if (showMetrics) {
               val score = item.stabilityScore
               val level = item.stabilityLevel

@@ -27,6 +27,8 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import dev.josueamaya.pourline.grinder.GrindFix
+import dev.josueamaya.pourline.session.ScaleUiState
+import dev.josueamaya.pourline.settings.ReferenceKey
 import dev.josueamaya.pourline.tools.FourSix
 import dev.josueamaya.pourline.ui.coffees.CoffeeDetailScreen
 import dev.josueamaya.pourline.ui.coffees.CoffeeDetailViewModel
@@ -300,11 +302,16 @@ private fun tabEntryProvider(
     )
   }
   tabEntry<Recipes>(tab, stack, activeTab) {
+    // D29: la receta elegida en Preparar se marca como "Activa" en la lista.
+    val session = deps.scaleSession
+    val activeRecipeId by remember { session.ui.map(::activeRecipeIdOf).distinctUntilChanged() }
+      .collectAsStateWithLifecycle(remember { activeRecipeIdOf(session.ui.value) })
     RecipesScreen(
       viewModel { RecipesViewModel(deps.recipeRepository) },
       onBack = null,
       onOpenRecipe = { id -> stack.add(RecipeEdit(id = id)) },
       onCreateRecipe = { stack.add(RecipeEdit()) },
+      activeRecipeId = activeRecipeId,
     )
   }
   tabEntry<RecipeEdit>(tab, stack, activeTab) { key ->
@@ -380,3 +387,6 @@ private fun tabEntryProvider(
 /** Completar los rangos abre el editor del molino propio; en un predefinido, una copia suya con los rangos abiertos. */
 private fun fixGrinderKey(fix: GrindFix, id: Long): NavKey =
   if (fix == GrindFix.COMPLETE_RANGES) GrinderEdit(id = id, openRanges = true) else GrinderEdit(fromId = id, openRanges = true)
+
+/** El id de la receta elegida en Preparar, o `null` si no hay objetivo o es una preparación anterior (D29). */
+private fun activeRecipeIdOf(ui: ScaleUiState): Long? = (ui.target?.key as? ReferenceKey.Recipe)?.id
