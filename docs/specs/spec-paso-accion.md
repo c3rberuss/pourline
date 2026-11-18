@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado (2026-11-18), pendiente de plan |
+| Estado | Aprobado (2026-11-18). Plan aprobado: [`plan-paso-accion.md`](plan-paso-accion.md). Pendiente de implementación |
 | Fecha | 2026-11-18 |
 | Rama | `feat/step-action` |
 | Deriva de | Uso real: recetas de AeroPress con pasos como "Pon la tapa", y recetas sin duración visible |
@@ -90,9 +90,10 @@
 - `stepTypeColors(ACTION)` es un rol nuevo `magenta` en `AntColors`, a partir del magenta de Ant Design `#EB2F96`,
   con su variante oscura en el tema de noche como `purple` y `cyan`. Se actualiza el KDoc de `stepTypeColors`:
   ningún tipo usa verde, naranja ni rojo.
-- El color y el icono aparecen en los mismos sitios que los de los otros tipos: el aro sin báscula, la tarjeta del
-  paso, la lista de pasos (`StepList`), la cuenta atrás de 5 s, el selector del editor, la pantalla de importar y la
-  tarjeta para compartir.
+- El color aparece donde ya lo usan los otros tipos, solo en la sesión: el aro sin báscula, la tarjeta del paso, la
+  lista de pasos (`StepList`) y la cuenta atrás de 5 s.
+- El icono aparece además, sin color, donde ya aparecen los de los otros tipos: el selector del editor, la pantalla
+  de importar y la tarjeta para compartir.
 
 ### 3.5 QR (`recipe/share/RecipeSharePayload.kt`)
 
@@ -100,15 +101,19 @@
   Ya no queda ningún código de tipo libre.
 - Como `SWIRL` y `WAIT`, `ACTION` no escribe agua.
 - La versión sigue en `v=1` (`RecipeShareCodec.VERSION`). **Riesgo aceptado:** una app sin este cambio rechaza un QR
-  con Acción como "receta no válida" (`MalformedPayload("tipo de paso desconocido")`), no como "versión más nueva".
+  con Acción como corrupto (`MalformedPayload("tipo de paso desconocido")` → `Corrupt` → "No se pudo leer la
+  receta del QR"), no como "versión más nueva". Se aparta de la regla de SPEC-009 §4 ("un código nuevo exige `v=2`"),
+  por decisión del usuario.
   Los QR sin Acción no cambian.
 - El recorte para que quepa en el QR (SPEC-009 y su enmienda 1) trata la instrucción de una Acción como cualquier otra.
 
 ### 3.6 Editor (`ui/recipes`)
 
-- El selector de tipo (`AntSegmented`, `RecipeEditScreen.kt:337`) gana una cuarta opción, Acción, con su icono.
-  Tiene que caber en el ancho mínimo soportado sin cortar etiquetas. Si las cuatro etiquetas no caben, el plan
-  propone cómo resolverlo (por ejemplo, solo iconos con `contentDescription`), sin quitar opciones.
+- El selector de tipo (`AntSegmented`, `RecipeEditScreen.kt:337`) gana una cuarta opción, Acción. Con cuatro
+  etiquetas no cabe a 360 dp ("Remover" ya se corta hoy con la letra a 1,3), así que la primera fila de cada paso
+  pasa a ser: a la izquierda, el nombre del tipo elegido; a la derecha, las cuatro opciones solo con icono, de 48 dp
+  cada una y con descripción para TalkBack. `AntSegmented` gana `iconOnly: Boolean = false`; sus otros usos no
+  cambian (D15 del plan).
 - `RecipeEditForm.setStageType(i, ACTION)` vacía el agua, como al cambiar a `SWIRL` o `WAIT`.
 - Con un paso Acción sin instrucción, el editor muestra un aviso no bloqueante bajo el campo de instrucción
   ("Describe la acción, por ejemplo «Pon la tapa»"). No impide guardar.
@@ -128,12 +133,15 @@
 ### 3.8 Tiempo total en lista, tarjeta e importación
 
 - Formato `m:ss` con `formatClock` (`ui/session/SessionFormat.kt:16`): `210_000` → `"3:30"`, `3_600_000` → `"60:00"`.
-- `RecipeRow`: `recipeSummary` gana el tiempo como último elemento, "15 g · 250 g · 1:16,7 · 3 etapas · 3:30". La
+- `RecipeRow`: `recipeSummary` gana el tiempo como último elemento, "15 g · 250 g · 1:16,7 · 6 pasos · 3:30". El
+  recuento "N pasos" cuenta todos los pasos (vertidos, remover, esperar y acción), no solo los vertidos como hasta
+  ahora (`RecipeRepository.list`). La
   fila no trunca el resumen: si no cabe, pasa a una segunda línea. Así se ve igual en la lista de Recetas y en el
   selector de objetivo de Scale.
 - `RecipeShareCard`: un elemento más junto al agua y el ratio, con icono de reloj y `testTag("share_recipe_duration")`.
   La tarjeta mantiene su tamaño (ver `ShareCardsLayoutTest`).
-- `RecipeImportScreen`: el tiempo, junto al agua y el ratio (`RecipeImportScreen.kt:158`).
+- `RecipeImportScreen`: el tiempo, junto al agua y el ratio (`RecipeImportScreen.kt:158`), con el mismo icono de
+  reloj que la tarjeta para que "1:55" no se confunda con el ratio (D9 del plan).
 
 ### 3.9 Textos nuevos
 
@@ -158,7 +166,7 @@
 - Acción de 0 s o de más de 120 s → `RecipeError.DurationOutOfRange` en ese paso, como en un `SWIRL`.
 - Receta solo con Acciones, o con Acciones y esperas → `RecipeError.NoPour`.
 - Cambiar un paso con agua a Acción → el agua se vacía. Volver a Verter propone un agua, como hoy.
-- QR con Acción leído por una app sin este cambio → "receta no válida" (riesgo aceptado, §3.5).
+- QR con Acción leído por una app sin este cambio → "No se pudo leer la receta del QR" (riesgo aceptado, §3.5).
 - QR con Acción e instrucciones recortadas → se importa como Acción sin instrucción y muestra "Acción", con el aviso
   de recorte parcial de SPEC-009.
 - Pasos con huecos entre ellos → el tiempo total incluye los huecos, porque es el fin del último paso.
@@ -182,7 +190,8 @@
 - [ ] Tests instrumentados (`app/src/androidTest`):
   - [ ] El editor ofrece Acción, guarda una Acción con instrucción y muestra el tiempo total en vivo.
   - [ ] La sesión, con y sin báscula, muestra la instrucción de la Acción, o "Acción" si no la tiene.
-  - [ ] `RecipeRow` muestra el tiempo total. `RecipeImportScreen` y `RecipeShareCard` muestran el tiempo total y
+  - [ ] `RecipeRow` muestra el tiempo total y el recuento de todos los pasos (una receta con 1 vertido y 5 pasos más
+        dice "6 pasos"). `RecipeImportScreen` y `RecipeShareCard` muestran el tiempo total y
         los pasos Acción.
   - [ ] `ShareCardsLayoutTest` sigue cabiendo con una receta con Acciones y el tiempo total.
 - [ ] **Ejecución de tests:** solo los tests relacionados con este spec (los anteriores y los que toquen los
@@ -195,9 +204,8 @@
 
 ## 6. Preguntas abiertas
 
-- Si el selector de tipo con cuatro opciones no cabe con etiquetas en el ancho mínimo, ¿solo iconos o etiquetas
-  abreviadas? El plan lo propone tras medirlo (§3.6).
-- El dibujo exacto del icono de mano se decide en la implementación, con el mismo estilo que los existentes.
+Ninguna. Las dos del borrador se resolvieron en el plan: el selector de tipo (§3.6, D15) y el dibujo del icono de
+mano (D12: 24×24, trazo de 1,75 con extremos redondeados, como los demás `AntIcons`).
 
 ## 7. Alternativas descartadas
 
