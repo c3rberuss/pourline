@@ -2,6 +2,8 @@ package dev.josueamaya.pourline.ui.session
 
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
+import dev.josueamaya.pourline.ui.theme.AntColorRole
+import dev.josueamaya.pourline.ui.theme.AntColors
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.brew.GuideState
 import dev.josueamaya.pourline.brew.TargetCurve
@@ -36,6 +38,16 @@ fun stepTypeIcon(type: StageType): ImageVector = when (type) {
   StageType.POUR -> AntIcons.Pour
   StageType.SWIRL -> AntIcons.Swirl
   StageType.WAIT -> AntIcons.Wait
+}
+
+/**
+ * El color de cada tipo de paso: Verter en el primario, Remover en morado y Esperar en cian. Ninguno es verde, naranja o
+ * rojo, que en la sesión significan estabilidad.
+ */
+fun stepTypeColors(type: StageType, colors: AntColors): AntColorRole = when (type) {
+  StageType.POUR -> colors.primary
+  StageType.SWIRL -> colors.purple
+  StageType.WAIT -> colors.cyan
 }
 
 /** Los últimos segundos antes del siguiente paso en que la cuenta atrás sale en grande (§3.4, `GuideState.countdownS`). */

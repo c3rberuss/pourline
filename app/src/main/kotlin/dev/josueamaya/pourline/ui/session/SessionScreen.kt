@@ -110,6 +110,7 @@ import dev.josueamaya.pourline.ui.scale.formatGuideAmount
 import dev.josueamaya.pourline.ui.scale.formatNumber
 import dev.josueamaya.pourline.ui.scale.levelText
 import dev.josueamaya.pourline.ui.scale.tagColor
+import dev.josueamaya.pourline.ui.theme.AntColorRole
 import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
 import dev.josueamaya.pourline.ui.tour.TourHost
@@ -671,6 +672,7 @@ internal fun CurrentStep(ui: ScaleUiState) {
   val instruction: String?
   val upTo: String?
   val icon = stage?.let { stepTypeIcon(it.type) } ?: AntIcons.Pour
+  val iconTint = stepTypeColors(stage?.type ?: StageType.POUR, AntTheme.colors).base
   val description: String
   when {
     target == null -> {
@@ -714,7 +716,7 @@ internal fun CurrentStep(ui: ScaleUiState) {
     verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
   ) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
-      Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = AntTheme.colors.primary.base)
+      Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = iconTint)
       AntText(title, Modifier.weight(1f), strong = true, maxLines = 1, overflow = TextOverflow.Ellipsis)
       upTo?.let { AntText(it, Modifier.testTag("session_step_up_to"), type = AntTextType.Secondary, maxLines = 1) }
     }
@@ -737,7 +739,7 @@ internal fun NextStep(ui: ScaleUiState, elapsedMs: Long) {
   val type = stringResource(stepTypeLabel(info.stage.type))
   val label = info.name?.let { stringResource(R.string.session_step_title, type, it) } ?: type
   info.countdownS?.let {
-    NextStepCountdown(label, it)
+    NextStepCountdown(label, it, stepTypeColors(info.stage.type, AntTheme.colors))
     return
   }
   val time = nextStepClock(info)
@@ -754,9 +756,12 @@ internal fun NextStep(ui: ScaleUiState, elapsedMs: Long) {
   }
 }
 
-/** La cuenta atrás de los últimos 5 s antes del siguiente paso: "Siguiente" y el paso a la izquierda, los segundos en grande. */
+/**
+ * La cuenta atrás de los últimos 5 s antes del siguiente paso: "Siguiente" y el paso a la izquierda, los segundos en
+ * grande. La tarjeta lleva el color del tipo del paso que viene ([colors]).
+ */
 @Composable
-private fun NextStepCountdown(label: String, seconds: Int) {
+private fun NextStepCountdown(label: String, seconds: Int, colors: AntColorRole) {
   val time = stringResource(R.string.session_next_seconds, seconds)
   val description = stringResource(R.string.session_next, label, time)
   // 1 → 0 a cada segundo: el número arranca más grande y el fondo más intenso, y vuelven a su tamaño y tono.
@@ -765,7 +770,6 @@ private fun NextStepCountdown(label: String, seconds: Int) {
     pulse.snapTo(1f)
     pulse.animateTo(0f, tween(durationMillis = 450, easing = FastOutSlowInEasing))
   }
-  val colors = AntTheme.colors.primary
   val shape = RoundedCornerShape(AntTheme.radius.lg)
   Row(
     Modifier
@@ -786,7 +790,7 @@ private fun NextStepCountdown(label: String, seconds: Int) {
       maxLines = 1,
     )
     AntText(label, Modifier.weight(1f), strong = true, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    // `Text` y no `AntText`: el color del tipo de `AntText` taparía el primario.
+    // `Text` y no `AntText`: el color del tipo de `AntText` taparía el del paso.
     Text(
       time,
       Modifier

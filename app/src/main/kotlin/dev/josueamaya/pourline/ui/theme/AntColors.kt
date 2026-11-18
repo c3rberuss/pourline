@@ -12,6 +12,9 @@ data class AntSeedColors(
   val warning: Color = Color(0xFFFAAD14),
   val error: Color = Color(0xFFFF4D4F),
   val info: Color = primary,
+  /** Colores de la paleta de antd sin significado de estado; los usan los tipos de paso de una receta. */
+  val purple: Color = Color(0xFF722ED1),
+  val cyan: Color = Color(0xFF13C2C2),
 )
 
 /**
@@ -48,6 +51,8 @@ data class AntColors(
   val warning: AntColorRole,
   val error: AntColorRole,
   val info: AntColorRole,
+  val purple: AntColorRole,
+  val cyan: AntColorRole,
   val text: Color,
   val textSecondary: Color,
   val textTertiary: Color,
@@ -78,6 +83,8 @@ fun antLightColors(seeds: AntSeedColors = AntSeedColors()): AntColors = AntColor
   warning = seeds.warning.toRole(dark = false, container = LIGHT_CONTAINER),
   error = seeds.error.toRole(dark = false, container = LIGHT_CONTAINER),
   info = seeds.info.toRole(dark = false, container = LIGHT_CONTAINER),
+  purple = seeds.purple.toRole(dark = false, container = LIGHT_CONTAINER),
+  cyan = seeds.cyan.toRole(dark = false, container = LIGHT_CONTAINER),
   text = Color.Black.copy(alpha = 0.88f),
   textSecondary = Color.Black.copy(alpha = 0.65f),
   textTertiary = Color.Black.copy(alpha = 0.45f),
@@ -104,6 +111,8 @@ fun antDarkColors(seeds: AntSeedColors = AntSeedColors()): AntColors = AntColors
   warning = seeds.warning.toRole(dark = true, container = DARK_CONTAINER),
   error = seeds.error.toRole(dark = true, container = DARK_CONTAINER),
   info = seeds.info.toRole(dark = true, container = DARK_CONTAINER),
+  purple = seeds.purple.toRole(dark = true, container = DARK_CONTAINER),
+  cyan = seeds.cyan.toRole(dark = true, container = DARK_CONTAINER),
   text = Color.White.copy(alpha = 0.85f),
   textSecondary = Color.White.copy(alpha = 0.65f),
   textTertiary = Color.White.copy(alpha = 0.45f),

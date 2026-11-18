@@ -121,6 +121,8 @@ internal fun ScalelessActivePanel(ui: ScaleUiState, onFinish: () -> Unit) {
     stage == null -> stringResource(R.string.session_step_waiting)
     else -> stageAction(stage)
   }
+  val ringColor = stage?.takeIf { target != null && !done }?.let { stepTypeColors(it.type, AntTheme.colors).base }
+    ?: AntTheme.colors.primary.base
   val fraction = when {
     target == null -> 0f
     done -> 1f
@@ -141,6 +143,7 @@ internal fun ScalelessActivePanel(ui: ScaleUiState, onFinish: () -> Unit) {
           action = action,
           description = stringResource(R.string.scaleless_dial_description, clock, action),
           modifier = Modifier.size(dialSize),
+          color = ringColor,
           actionTag = if (target == null) "scaleless_water_goal" else "scaleless_action",
         )
       }

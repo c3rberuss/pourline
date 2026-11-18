@@ -91,7 +91,7 @@ private fun StepRow(stage: TargetStage, state: StepState, unit: WeightUnit) {
     verticalAlignment = Alignment.CenterVertically,
   ) {
     StateIcon(state)
-    Icon(stepTypeIcon(stage.type), contentDescription = null, modifier = Modifier.size(IconSize), tint = colors.textSecondary)
+    Icon(stepTypeIcon(stage.type), contentDescription = null, modifier = Modifier.size(IconSize), tint = stepTypeColors(stage.type, colors).base)
     AntText(name, Modifier.weight(1f), type = textType, maxLines = 1, overflow = TextOverflow.Ellipsis)
     if (stage.type == StageType.POUR) {
       AntText(formatGuideAmount(stage.targetWaterG, unit), type = textType, textAlign = TextAlign.End)
