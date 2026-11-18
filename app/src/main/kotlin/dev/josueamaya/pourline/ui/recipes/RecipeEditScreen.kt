@@ -78,6 +78,8 @@ fun RecipeEditScreen(
   onBack: () -> Unit,
   onDuplicated: (Long) -> Unit,
   onOpenConverter: ((ConverterArgs) -> Unit)? = null,
+  /** Abre el generador 4:6; `null` lo oculta (solo se ofrece al crear una receta desde cero). */
+  onOpenFourSix: (() -> Unit)? = null,
   shareSender: ShareSender = rememberShareSender(),
 ) {
   val status by viewModel.status.collectAsStateWithLifecycle()
@@ -146,6 +148,14 @@ fun RecipeEditScreen(
       verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.base),
     ) {
       if (adjustments.isNotEmpty()) AdjustmentsAlert(adjustments)
+      if (onOpenFourSix != null) {
+        AntButton(
+          text = stringResource(R.string.recipe_edit_four_six),
+          onClick = onOpenFourSix,
+          modifier = Modifier.fillMaxWidth().testTag("recipe_edit_four_six"),
+          icon = AntIcons.Dripper,
+        )
+      }
 
       LabeledInput(
         label = stringResource(R.string.recipe_edit_name),

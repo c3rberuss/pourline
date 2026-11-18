@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -167,6 +168,7 @@ private val SparklineHeight = 24.dp
  * dentro van el reloj y, debajo, la línea de acción ([action]). No tiene agua, ratio ni flujo.
  *
  * @param fraction avance 0..1 del paso en curso.
+ * @param color el relleno del aro: el color del tipo del paso en curso ([stepTypeColors]).
  * @param description lo que lee el lector de pantalla (el reloj y la acción).
  * @param actionTag la etiqueta de pruebas de la línea de acción.
  */
@@ -177,10 +179,12 @@ fun TimedDial(
   action: String?,
   description: String,
   modifier: Modifier = Modifier,
+  color: Color = AntTheme.colors.primary.base,
   actionTag: String = "scaleless_action",
 ) {
   AntProgressCircle(
     fraction = fraction,
+    color = color,
     modifier = modifier.testTag("session_dial").semantics { contentDescription = description },
   ) {
     Column(

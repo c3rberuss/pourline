@@ -183,6 +183,37 @@ class ToolsScreenTest {
   }
 
   @Test
+  fun theNewRecipeEditorOpensTheFourSixGeneratorAndTheGeneratedRecipeReplacesIt() {
+    rule.onNodeWithTag(Tab.RECIPES.testTag).performClick()
+    waitFor("recipes_add")
+    rule.onNodeWithTag("recipes_add").performClick()
+    waitFor("recipe_edit_four_six")
+    rule.onNodeWithTag("recipe_edit_four_six").performClick()
+    waitFor("four_six")
+    rule.onNodeWithTag("four_six_dose").performTextReplacement("20")
+    rule.onNodeWithTag("four_six_save").performScrollTo().assertIsEnabled().performClick()
+
+    waitFor("recipe_edit_save")
+    val name = context.getString(
+      R.string.four_six_recipe_name,
+      context.getString(R.string.four_six_taste_balanced),
+      context.getString(R.string.four_six_strength_standard),
+    )
+    rule.onNodeWithTag("recipe_edit_name").assertTextContains(name, substring = true)
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    // El editor vacío se sustituyó: al guardar se vuelve a la lista, no a él ni al generador.
+    waitFor("recipes_add")
+    assertFalse(exists("recipe_edit_save"))
+    assertFalse(exists("four_six"))
+    val saved = runBlocking { env.recipes.list().first().single { it.name == name } }
+
+    // Una receta guardada no ofrece el generador.
+    rule.onNodeWithText(saved.name).performClick()
+    waitFor("recipe_edit_save")
+    assertFalse(exists("recipe_edit_four_six"))
+  }
+
+  @Test
   fun theGrindConverterOpensFromTheToolsAndBackReturns() {
     rule.onNodeWithTag("tools_converter").performClick()
     waitFor("converter")
