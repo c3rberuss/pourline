@@ -186,10 +186,12 @@ private fun TourSpotlight(presentation: TourPresentation) {
     val balloon = measurables.single().measure(Constraints(minWidth = balloonWidth, maxWidth = balloonWidth, maxHeight = safe.height.toInt().coerceAtLeast(0)))
     layout(width, height) {
       val hole = spotlight(current.bounds(), origin, Size(width.toFloat(), height.toFloat()), margin)
+      // El globo no se pega a los lados de la pantalla: la misma separación con la que se calcula su ancho.
+      val sideMarginPx = sideMargin.toPx()
       val placement = placeBalloon(
         hole = hole,
         balloon = Size(balloon.width.toFloat(), balloon.height.toFloat()),
-        safe = safe,
+        safe = Rect(safe.left + sideMarginPx, safe.top, safe.right - sideMarginPx, safe.bottom),
         gap = BalloonGap.toPx(),
         arrowInset = arrowInset.toPx(),
       )
