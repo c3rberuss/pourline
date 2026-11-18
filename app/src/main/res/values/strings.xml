@@ -543,6 +543,7 @@
     <string name="session_free_step">Verter hasta %1$s</string>
     <string name="session_next">Siguiente: %1$s en %2$s</string>
     <string name="session_next_seconds">%1$d s</string>
+    <string name="session_next_label">Siguiente:</string>
     <string name="session_deviation">Desvío %1$s</string>
     <string name="session_finish">Terminar</string>
     <string name="session_options_expert">Modo experto</string>

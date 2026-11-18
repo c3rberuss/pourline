@@ -544,6 +544,7 @@
     <string name="session_free_step">Pour up to %1$s</string>
     <string name="session_next">Next: %1$s in %2$s</string>
     <string name="session_next_seconds">%1$d s</string>
+    <string name="session_next_label">Next:</string>
     <string name="session_deviation">Deviation %1$s</string>
     <string name="session_finish">Finish</string>
     <string name="session_options_expert">Expert mode</string>

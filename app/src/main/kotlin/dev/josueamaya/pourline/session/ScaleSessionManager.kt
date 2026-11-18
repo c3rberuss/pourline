@@ -492,6 +492,7 @@ class ScaleSessionManager(
     val t0 = state.brew.t0MonoMs.takeIf { state.brew.phase is BrewPhase.Active }
     val stage = alerts.update(t0, state.target?.curve, t0?.let { clock() - it })
     if (stage != null) notifier.stageStarted(stage)
+    alerts.tick(t0, state.guide?.nextStage, state.guide?.countdownS)?.let(notifier::nextStepTick)
     // Sin báscula, un único aviso más cuando acaba el último paso (D6).
     if (state.scaleless && t0 != null && state.guide?.allStagesDone == true && doneAlertedFor != t0) {
       doneAlertedFor = t0

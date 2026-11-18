@@ -5,12 +5,14 @@ import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
@@ -20,6 +22,7 @@ import dev.josueamaya.pourline.brew.BrewPhase
 import dev.josueamaya.pourline.brew.FinishReason
 import dev.josueamaya.pourline.history.BrewFilter
 import dev.josueamaya.pourline.settings.ExperienceMode
+import dev.josueamaya.pourline.ui.RecordingNotifier
 import dev.josueamaya.pourline.ui.TestApp
 import dev.josueamaya.pourline.ui.TestAppDependencies
 import kotlinx.coroutines.flow.first
@@ -45,7 +48,8 @@ class ScalelessJourneyTest {
 
   private val context = InstrumentationRegistry.getInstrumentation().targetContext
   private val now = AtomicLong(10_000)
-  private val env = TestAppDependencies(context, clock = { now.get() })
+  private val notifier = RecordingNotifier()
+  private val env = TestAppDependencies(context, notifier = notifier, clock = { now.get() })
   private val driver = SessionDriver(rule, env)
   private val manager get() = env.scaleSession
 
@@ -79,6 +83,27 @@ class ScalelessJourneyTest {
     driver.waitFor("target_picker")
     rule.onAllNodesWithText(name)[0].performClick()
     rule.waitUntil(5_000) { manager.ui.value.target != null }
+  }
+
+  @Test
+  fun theLastFiveSecondsBeforeAStepShowABigCountdownAndTick() {
+    env.skipOnboarding(ExperienceMode.EXPERT)
+    rule.setContent { TestApp(env) }
+    pickRecipeFromPrepare()
+    driver.waitFor("prepare_start_scaleless")
+    driver.node("prepare_start_scaleless").performClick()
+    driver.waitFor("scaleless_ready")
+    driver.node("scaleless_start").performClick()
+    driver.waitFor("scaleless_active")
+
+    // La V60 clásica vierte a los 0:45: a los 0:30 aún queda la frase con "m:ss"; a los 0:41, la cuenta atrás.
+    at(30_000)
+    driver.node("session_next_time").assertTextEquals("0:15")
+    at(41_000)
+    // La tarjeta se lee entera ("Siguiente: Verter en 4 s"): el número va dentro, en el árbol sin fusionar.
+    rule.onNodeWithTag("session_next_time", useUnmergedTree = true).assertTextEquals(context.getString(R.string.session_next_seconds, 4))
+    rule.onAllNodesWithText(context.getString(R.string.session_next_label)).assertCountEquals(1)
+    rule.waitUntil(5_000) { 4 in notifier.nextStepTicks }
   }
 
   @Test
