@@ -9,7 +9,7 @@
 | Módulos | `:app` (`:protocol` no cambia) |
 | Base de datos | Sin cambios: `HistoryDatabase` sigue en `version = 7` y `app/schemas` no cambia (§3.2) |
 | Formato del QR | Sigue en `v=1`. El código de tipo `3`, que hoy es `Corrupt`, pasa a ser `ACTION` (§3.5) |
-| Línea base | Se mide en F0 con las clases afectadas. Referencia: la de F4 de [`plan-qr-grande.md`](plan-qr-grande.md) (`:app:lintDebug` con 2 errores y 21 avisos) |
+| Línea base (F0, sobre `5cb2207`) | JVM: 220 tests en 16 clases, 0 fallos. `emulator-5556`: 133 tests, 0 fallos. `emulator-5560`: 32 tests, 0 fallos. `:app:lintDebug`: 2 errores (`StringFormatInvalid`) y 21 avisos, los mismos de [`plan-qr-grande.md`](plan-qr-grande.md) |
 
 El spec cambia dos cosas independientes, y el plan las hace en este orden:
 
@@ -175,7 +175,7 @@ F4, F5 y F6 dependen de F3 y no dependen entre sí.
 
 | Fase | Contenido | Tamaño | Estado |
 |---|---|---|---|
-| F0 | Línea base y bytes congelados del QR | S | Pendiente |
+| F0 | Línea base y bytes congelados del QR | S | Hecha |
 | F1 | Tiempo total: cálculo en `Recipe`, `RecipeListItem` y el editor; recuento de todos los pasos | S | Pendiente |
 | F2 | Tiempo total: lista, editor, tarjeta e importación | M | Pendiente |
 | F3 | Tipo Acción: modelo, etiqueta, icono, color, línea de acción y QR | M | Pendiente |
