@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado. Plan aprobado, en implementación: [`plan-recorrido-guiado.md`](plan-recorrido-guiado.md) |
+| Estado | Implementado, pendiente de revisión de textos (D34) y code-review. Plan: [`plan-recorrido-guiado.md`](plan-recorrido-guiado.md) |
 | Fecha | 2026-11-17 |
-| Rama | Por crear desde `develop` (`1015b12`) |
+| Rama | `feat/guided-tour`, creada desde `develop` (`1015b12`) |
 | Deriva de | Petición del usuario: que quien abra la app la conozca sin explicación externa |
 | Módulos afectados | `:app`: `ui/tour` (nuevo), `settings`, `ui/onboarding`, `Navigation.kt`, todas las pantallas con recorrido (§3.7) |
 | Specs relacionados | [SPEC-005](spec-navegacion-modos.md) (pestañas, modos y primer arranque), [SPEC-006](spec-molinos.md), [SPEC-007](spec-sin-bascula.md) |
@@ -73,10 +73,21 @@
 
 ### 3.1 Anclas
 
-- Nuevo `Modifier.tourAnchor(id: String)` en `ui/tour`. Registra los límites del elemento en la
-  raíz (`onGloballyPositioned` / `boundsInRoot`) en un `TourAnchorRegistry` provisto por un
-  `CompositionLocal`. Al salir de la composición, el ancla se desregistra.
-- El registro se limpia por pantalla: dos pantallas de la pila no comparten anclas.
+- Nuevo `Modifier.tourAnchor(id: String, enabled: Boolean = true)` en `ui/tour`. Registra los
+  límites del elemento en la raíz (`onGloballyPositioned` / `boundsInRoot`) en un
+  `TourAnchorRegistry` provisto por un `CompositionLocal`. Al salir de la composición, el ancla
+  se desregistra. Con `enabled = false` no hace nada: así una sola fila de una lista, la primera,
+  lleva el ancla (§3.7). Fuera de la navegación (pantallas compuestas sueltas, previews) no hace
+  nada.
+- El registro se limpia por pantalla: cada entrada de la navegación tiene el suyo
+  (`TourScreen`), y dos pantallas de la pila no comparten anclas. La barra de pestañas tiene otro
+  (`TourBar`), para los pasos que la señalan.
+- **Anclas dentro de una `LazyColumn`:** una lista perezosa no compone lo que no se ve, así que
+  un ancla fuera de pantalla no estaría registrada. `TourLazyAnchor(id, state, present)` declara
+  el ancla como presente mientras `present`, aunque su elemento no esté compuesto, y el
+  recorrido la busca desplazando la lista (hasta 30 pasos del 80 % del alto) antes de dibujar el
+  hueco. Si tras ello no tiene límites válidos, el paso se trata como ausente (§4). Las cuatro
+  pantallas con lista (Cafés, detalle de café, Recetas e Historial) elevan su `LazyListState`.
 - Convención: el `id` del ancla es el `testTag` existente del elemento cuando lo tiene (§3.7).
   Cuando no lo tiene, se crea un `testTag` y un ancla con el mismo nombre, por ejemplo la tarjeta
   de dosis de Preparar.
@@ -139,8 +150,10 @@ data class Tour(val id: String, val steps: List<TourStep>)
   - El globo va debajo del hueco si hay espacio y encima si no, con una flecha hacia el elemento,
     y siempre dentro de la zona segura (`WindowInsets.safeDrawing`). Un paso sin ancla muestra el
     globo centrado y sin hueco.
-- testTags: `tour_overlay`, `tour_title`, `tour_body`, `tour_counter`, `tour_next`, `tour_prev`,
-  `tour_skip`.
+- testTags: `tour_overlay` (el velo), `tour_balloon` (el globo), `tour_title`, `tour_body`,
+  `tour_counter`, `tour_next`, `tour_prev`, `tour_skip`.
+- El globo mide como máximo 360 dp. Los botones están en un `FlowRow` y bajan de línea con
+  pantallas estrechas o letra grande.
 - **Interacción:** solo lectura.
   - Los toques sobre el velo y sobre el elemento resaltado no llegan a la app.
   - Solo responden los botones del globo.
@@ -150,6 +163,8 @@ data class Tour(val id: String, val steps: List<TourStep>)
   - TalkBack lee el título y el texto del globo al cambiar de paso.
   - Los botones tienen nombre accesible.
   - El velo no es enfocable.
+  - El globo es un panel (`paneTitle`) y su título y texto son una región viva. El contenido de
+    debajo se oculta a los servicios de accesibilidad mientras hay un paso en pantalla.
 
 ### 3.5 Ciclo de vida de un recorrido
 
@@ -167,14 +182,18 @@ data class Tour(val id: String, val steps: List<TourStep>)
   - no toca los pasos invisibles (por modo o por ancla ausente) ni otros recorridos;
   - muestra un aviso breve no bloqueante, con el estilo de `AntMessage`: "Puedes volver a verlo
     en Ajustes > Ver recorrido" (`tour_skipped_hint`). Sale en cada salto, sin acción;
-  - el plan decide dónde vive el host del aviso, para que se vea en cualquier pantalla.
+  - el host del aviso vive en la capa del recorrido y va arriba y centrado, para que se vea en
+    cualquier pantalla y no choque con los avisos de cada pantalla, que van abajo.
 - **Ancla que desaparece con el paso en pantalla:** el paso se salta sin marcarse como visto.
   Ocurre, por ejemplo, si la báscula se desconecta y la tarjeta cambia de estado.
 - **Ancla fuera de la vista:** si el elemento está dentro de un contenedor desplazable, la
   pantalla se desplaza hasta él (`bringIntoViewRequester` o equivalente) antes de dibujar el
   hueco.
-- **Rotación y muerte del proceso:** el índice del paso actual se guarda con `rememberSaveable`.
-  Lo ya marcado como visto persiste en `TourSettings`.
+- **Rotación y muerte del proceso:** los pasos de la apertura y el índice del paso actual se
+  guardan con `rememberSaveable`. Lo ya marcado como visto persiste en `TourSettings`. En los dos
+  casos se restaura el mismo estado guardado, con el mismo "n/N", y no se vuelve a evaluar. Como
+  Siguiente marca el paso antes de avanzar, ese paso es el primero sin marcar, salvo que el
+  usuario hubiera retrocedido con Anterior: entonces se restaura el paso al que retrocedió.
 - **Cambio de pestaña o navegación:** con el recorrido abierto no puede ocurrir, porque el velo
   bloquea los toques. "Atrás" retrocede pasos (ver §3.4).
 
@@ -194,6 +213,9 @@ data class Tour(val id: String, val steps: List<TourStep>)
     distinta de `Active` y `Finished`).
   - El de Sesión sin báscula se evalúa solo en el estado listo (`scaleless_ready`, fase `Armed`).
   - El de Resumen se evalúa solo con `session_summary` en pantalla (fase `Finished`).
+  - Los de Sesión usan `session_close` y `session_options`, que están en la barra superior. Esas
+    dos anclas solo se registran fuera de `Active` y sin cuenta regresiva, para que el vertido
+    no actualice el registro (§4, rendimiento).
   - Ninguno se evalúa ni se muestra mientras `session_countdown` está visible. Si la cuenta
     regresiva empieza con un recorrido abierto (no debería, porque el velo bloquea los botones),
     el recorrido se cierra sin marcar sus pasos pendientes.
@@ -209,6 +231,10 @@ Notación:
 - Los textos son un borrador de intención. El plan los redacta finales en `values` y
   `values-en`, ajustados al comportamiento real.
 - Las anclas son los testTags existentes, salvo las marcadas "(nueva)".
+- La implementación cambió algunas anclas del borrador. Las que difieren están anotadas en cada
+  tabla con "(era `…`)" y el motivo en una nota debajo de ella.
+- Las anclas de fila (`coffee_row`, `history_row`, `recipe_builtin_tag`, `history_row_scaleless`,
+  `converter_row`) se ponen solo en la primera fila que cumple, para que cada id sea único.
 
 **`prepare`: General, en Preparar.** Se ve tras el primer arranque y tras "Ver recorrido".
 
@@ -244,19 +270,23 @@ Notación:
 
 | Paso | Ancla | Contenido |
 |---|---|---|
-| `session_scaleless.plan` | `scaleless_plan_water` | El plan: dosis, ratio y agua objetivo. |
+| `session_scaleless.plan` | `scaleless_plan_water` | El plan: dosis, ratio y agua objetivo. Solo existe sin receta: con receta el paso queda pendiente hasta la primera sesión sin báscula y sin receta. |
 | `session_scaleless.start` | `scaleless_start` | Empieza cuando estés listo; la cuenta regresiva se configura en Ajustes. |
 | `session_scaleless.dial` | centrado | Sin báscula, el dial muestra el tiempo de cada paso y avisa al cambiar de paso, también con la pantalla apagada. |
 | `session_scaleless.close` | `session_close` | Sal de la sesión cuando quieras. |
+
+Las anclas `session_close` y `session_options` solo se registran fuera de `Active` y sin cuenta regresiva (§3.6).
 
 **`summary`: Resumen, al terminar una preparación.**
 
 | Paso | Ancla | Contenido |
 |---|---|---|
-| `summary.rating` | `summary_rating` | Valora la preparación y anota lo que notaste. |
+| `summary.rating` | `summary_details` (era `summary_rating`) | Valora la preparación y anota lo que notaste. |
 | `summary.details` | `summary_details` | Completa el nombre, el método, la temperatura y las notas de cata. |
 | `summary.share` | `summary_share` | Comparte una imagen de la preparación. |
-| `summary.expert` (E) | `summary_expert` | Flujo, estabilidad y ajuste a la curva objetivo. |
+| `summary.expert` (E) | `summary_expert`, solo con báscula | Flujo, estabilidad y ajuste a la curva objetivo. |
+
+`summary_rating` solo existe cuando la preparación guardada ya tiene valoración, así que no sirve de ancla al abrir el resumen: `rating` y `details` resaltan el mismo botón con dos textos. Sin báscula, `summary_expert` solo muestra el motivo de fin, y el paso queda pendiente hasta un resumen con báscula.
 
 **`coffees`: Cafés.**
 
@@ -279,8 +309,8 @@ Notación:
 
 | Paso | Ancla | Contenido |
 |---|---|---|
-| `coffee_detail.status` | `coffee_detail_days` | Días desde el tueste y café que queda en la bolsa. |
-| `coffee_detail.log` | ancla nueva en la cabecera de la bitácora | Las preparaciones hechas con este café. |
+| `coffee_detail.status` | `coffee_detail_status` (era `coffee_detail_days`) | Días desde el tueste y café que queda en la bolsa. |
+| `coffee_detail.log` | `coffee_detail_log` (nueva), en la cabecera de la bitácora | Las preparaciones hechas con este café. |
 | `coffee_detail.new_bag` | `coffee_detail_new_bag` | Empieza una bolsa nueva del mismo café, o archívalo al terminarlo. |
 | `coffee_detail.share` | `coffee_detail_share` | Comparte una ficha del café. |
 
@@ -289,7 +319,7 @@ Notación:
 | Paso | Ancla | Contenido |
 |---|---|---|
 | `recipes.builtin` | `recipe_builtin_tag` (la primera) | Recetas incluidas: úsalas tal cual o duplícalas para ajustarlas. |
-| `recipes.active` | `recipe_active_tag` | La receta elegida en Preparar. |
+| `recipes.active` | `recipe_active_tag` | La receta elegida en Preparar. Recetas la marca con la etiqueta "Activa" (antes solo salía en el selector de Preparar); `RecipeRow` la ancla solo si recibe `activeAnchor`, porque la misma etiqueta existe en otras listas. |
 | `recipes.add` | `recipes_add` | Crea tu propia receta por etapas. |
 
 **`recipe_edit`: Editar receta.**
@@ -297,7 +327,7 @@ Notación:
 | Paso | Ancla | Contenido |
 |---|---|---|
 | `recipe_edit.method` | `recipe_edit_method` | El método de preparación. |
-| `recipe_edit.stage` | `recipe_stage_1` | Cada etapa es un vertido, un removido o una espera, con su tiempo. |
+| `recipe_edit.stage` | `recipe_stage_0` (era `recipe_stage_1`) | Cada etapa es un vertido, un removido o una espera, con su tiempo. Es la primera etapa: los índices van desde 0. |
 | `recipe_edit.add_stage` | `recipe_add_stage` | Añade etapas. |
 | `recipe_edit.totals` | `recipe_edit_totals` | El agua, el ratio y la duración totales. |
 | `recipe_edit.preview` (E) | `recipe_edit_preview` | La curva objetivo que seguirá la sesión. |
@@ -307,15 +337,15 @@ Notación:
 | Paso | Ancla | Contenido |
 |---|---|---|
 | `history.filters` | `history_filter_coffee` | Filtra por café y por método. |
-| `history.progress` (E) | ancla nueva en la tarjeta de progreso | Cómo evoluciona tu estabilidad. |
+| `history.progress` (E) | `history_progress` (nueva), en la tarjeta de progreso | Cómo evoluciona tu estabilidad. |
 | `history.row` | `history_row` (la primera) | Abre una preparación para ver sus datos. |
-| `history.scaleless` | ancla nueva en la etiqueta "Sin báscula" (la primera) | Hechas sin báscula: sin curva y fuera de las comparaciones. |
+| `history.scaleless` | `history_row_scaleless` (ya existía, de SPEC-007), en la etiqueta "Sin báscula" de la primera fila sin báscula | Hechas sin báscula: sin curva y fuera de las comparaciones. |
 
 **`brew_detail`: Detalle de preparación.**
 
 | Paso | Ancla | Contenido |
 |---|---|---|
-| `brew_detail.chart` (E) | ancla nueva en la gráfica | La curva real del vertido (o la objetivo, si fue sin báscula). |
+| `brew_detail.chart` (E) | `brew_detail_chart` (nueva), en la tarjeta de la gráfica real y en la de la curva objetivo (`brew_detail_target_chart`); solo se compone una | La curva real del vertido (o la objetivo, si fue sin báscula). |
 | `brew_detail.details` | `brew_detail_details` | Molienda y otros detalles de la preparación. |
 | `brew_detail.edit` | `brew_detail_edit` | Edita la valoración, las notas, el método y la temperatura; sin báscula, también la dosis y el agua. |
 | `brew_detail.compare` (E) | `brew_detail_compare` | Compárala con otra preparación. |
@@ -342,7 +372,7 @@ Notación:
 
 | Paso | Ancla | Contenido |
 |---|---|---|
-| `ratio_calculator.fields` | `ratio_coffee` | Los tres campos se editan: con el café o el ratio se recalcula el agua; con el agua, el café. |
+| `ratio_calculator.fields` | `ratio_dose` (era `ratio_coffee`, que es el nombre de la cadena) | Los tres campos se editan: con el café o el ratio se recalcula el agua; con el agua, el café. |
 | `ratio_calculator.validation` | `ratio_water` | Si un campo no vale, se marca y el resto se calcula con los otros dos. |
 
 **`four_six`: 4:6.**
@@ -350,8 +380,8 @@ Notación:
 | Paso | Ancla | Contenido |
 |---|---|---|
 | `four_six.dose` | `four_six_dose` | La dosis y el ratio. |
-| `four_six.sliders` | ancla nueva en los sliders de sabor e intensidad | El sabor reparte el primer 40 % (más dulce o más brillante); la intensidad decide en cuántos vertidos va el 60 %. |
-| `four_six.pours` | `four_six_pour_1` | Cada vertido con su tiempo y su peso acumulado. |
+| `four_six.sliders` | `four_six_levels` (nueva), una `Column` que envuelve los dos sliders de sabor e intensidad | El sabor reparte el primer 40 % (más dulce o más brillante); la intensidad decide en cuántos vertidos va el 60 %. |
+| `four_six.pours` | `four_six_pour_0` (era `four_six_pour_1`) | Cada vertido con su tiempo y su peso acumulado. |
 | `four_six.save` | `four_six_save` | Guárdalo como receta. |
 
 **`converter`: Conversor de molienda.**
@@ -359,7 +389,7 @@ Notación:
 | Paso | Ancla | Contenido |
 |---|---|---|
 | `converter.source` | `converter_source` | El molino y el ajuste de partida. |
-| `converter.rows` | primera `converter_row_<id>` | El equivalente en tus otros molinos. |
+| `converter.rows` | `converter_row` (la primera fila; su `testTag` sigue siendo `converter_row_<id>`) | El equivalente en tus otros molinos. |
 
 **`settings`: Ajustes.**
 
@@ -383,6 +413,9 @@ Notación:
   - `tour_skipped_hint` ("Puedes volver a verlo en Ajustes > Ver recorrido");
   - `settings_tour_replay` ("Ver recorrido") con su texto de ayuda.
 - Sin emojis. Frases cortas: el cuerpo, como máximo dos frases.
+- La redacción final está en `values/strings.xml` y `values-en/strings.xml`, y en el §2.7 del
+  plan. El usuario la revisa sobre las capturas (D34 del plan).
+- `settings_tour_replay_hint` es el texto de ayuda de la fila "Ver recorrido".
 
 ### 3.9 Flujo de ejecución
 
@@ -411,7 +444,8 @@ Notación:
   globo recolocados. En horizontal, el globo puede ir a un lado o encima del elemento si no cabe
   debajo; nunca fuera de la zona segura.
 - El proceso muere con un recorrido abierto -> al volver, los pasos ya marcados no se repiten y
-  el recorrido sigue desde el primer paso pendiente.
+  el recorrido sigue en el mismo paso y con el mismo "n/N" (§3.5): es el primer paso sin marcar,
+  o el que el usuario había retrocedido con Anterior.
 - "Atrás" en el primer paso -> equivale a Saltar: marca la lista pendiente, cierra y muestra el
   aviso de "Ver recorrido".
 - Una hoja inferior o un modal está abierto al abrir la pantalla (por ejemplo, restaurado tras
@@ -424,55 +458,66 @@ Notación:
 - Un `tour_seen` con ids que ya no existen -> se ignoran.
 - Preferencias corruptas o ilegibles -> se tratan como conjunto vacío: el usuario vuelve a ver
   los recorridos y no hay error.
-- Rendimiento: el registro de anclas no debe recomponer las pantallas en cada frame. La sesión
-  activa no tiene anclas que actualicen el registro durante el vertido, para no afectar al umbral
-  de `SessionPerformanceTest`.
+- Rendimiento: el registro de anclas no debe recomponer las pantallas en cada frame: nada en
+  composición lee los límites, y se escriben solo si cambian. En la sesión, `session_close` y
+  `session_options` (la barra superior se compone también en `Active`) solo se registran fuera de
+  `Active` y sin cuenta regresiva, para no afectar al umbral de `SessionPerformanceTest`.
+- `summary_expert` solo es ancla con báscula, y `scaleless_plan_water` solo existe sin receta: en
+  esos casos el paso queda pendiente, no se marca.
 
 ## 5. Criterios de Aceptación (Definition of Done)
 
-- [ ] Tests JVM de `pendingSteps`:
+- [x] Tests JVM de `pendingSteps`:
   - vistos frente a no vistos;
   - Básico frente a Experto;
   - anclas ausentes;
   - paso centrado solitario;
   - orden y contador.
-- [ ] Tests JVM de la semántica de Saltar (solo los pasos visibles de esa apertura) y de `reset`.
-- [ ] Test instrumentado: tras el primer arranque aparece el recorrido general en Preparar
+- [x] Tests JVM de la semántica de Saltar (solo los pasos visibles de esa apertura) y de `reset`.
+- [x] Test instrumentado: tras el primer arranque aparece el recorrido general en Preparar
       (`tour_overlay`, contador "1/N"). Al completarlo y reiniciar la actividad, no reaparece.
-- [ ] Test instrumentado:
+- [x] Test instrumentado:
   - Saltar cierra el general;
   - muestra el aviso `tour_skipped_hint`;
   - el recorrido de Cafés aparece igualmente al abrir la pestaña.
-- [ ] Test instrumentado:
+- [x] Test instrumentado:
   - Anterior retrocede;
   - "Atrás" en el primer paso cierra el recorrido y muestra el aviso;
   - la siguiente apertura de la pantalla no lo vuelve a mostrar.
-- [ ] Test instrumentado: con el general completado en Básico, pasar a Experto y volver a
+- [x] Test instrumentado: con el general completado en Básico, pasar a Experto y volver a
       Preparar muestra solo `prepare.grind_ruler`.
-- [ ] Test instrumentado: "Ver recorrido" en Ajustes vuelve a Preparar y muestra el general desde
+- [x] Test instrumentado: "Ver recorrido" en Ajustes vuelve a Preparar y muestra el general desde
       el paso 1.
-- [ ] Test instrumentado: el recorrido de Sesión sin báscula aparece en el estado listo y no
+- [x] Test instrumentado: el recorrido de Sesión sin báscula aparece en el estado listo y no
       aparece mientras `session_countdown` está visible.
-- [ ] Test instrumentado: mientras el globo está visible, un toque sobre el elemento resaltado no
+- [x] Test instrumentado: mientras el globo está visible, un toque sobre el elemento resaltado no
       ejecuta su acción (por ejemplo, `prepare_recipe` no abre `target_picker`).
-- [ ] Cada recorrido de §3.7 tiene sus textos en `values` y `values-en`; una comprobación en test
+- [x] Cada recorrido de §3.7 tiene sus textos en `values` y `values-en`; una comprobación en test
       verifica que todos los `TourStep` apuntan a recursos existentes en ambos idiomas y que los
       ids de paso son únicos.
-- [ ] Los tests instrumentados existentes pasan, con `skipTours()` en su setup donde haga falta.
+- [x] Los tests instrumentados existentes pasan, con `skipTours()` en su setup donde haga falta.
       Las excepciones son los fallos previos conocidos ajenos a este spec (`CoffeeDetailScreenTest`
       por idioma y `SessionPerformanceTest` intermitente).
-- [ ] Verificación manual en el emulador con `adb` (`uiautomator dump`, `input tap`,
+- [x] Verificación manual en el emulador con `adb` (`uiautomator dump`, `input tap`,
       `screencap`), sin ARTEMIS: cada recorrido de §3.7 se ve en claro y en oscuro, con el globo
       dentro de la pantalla, en vertical y en un caso en horizontal.
 - [ ] Con TalkBack, el título y el texto del globo se anuncian al cambiar de paso.
+      Verificado en el emulador: al abrirse el recorrido TalkBack anuncia el título del panel
+      ("Welcome to Pourline" / "Your scale") y el árbol de accesibilidad solo contiene el globo.
+      La escucha completa (cambio de paso, foco inicial en el globo) queda para el teléfono
+      físico (D35).
 - [ ] `SessionPerformanceTest` no empeora respecto a `develop` (`1015b12`).
+      Medido contra el commit previo a los recorridos (`a652d16`): por medianas no empeora, pero
+      el emulador iba muy cargado y el p95 es ruidoso; hay que repetirlo en un equipo libre.
 
 ## 6. Preguntas abiertas
 
-- Redacción final de cada paso, ajustada al comportamiento real de cada pantalla. La redacta el plan; el usuario la revisa en la
-  verificación manual.
-- Mecanismo exacto para detectar que las anclas se estabilizaron (§3.5) y para desplazar hasta un
-  ancla dentro de `LazyColumn`: lo decide el plan.
+- Redacción final de cada paso, ajustada al comportamiento real de cada pantalla. La redactó el
+  plan (§2.7) y quedó en `values` y `values-en`. **Abierta:** el usuario la revisa sobre las
+  capturas de la verificación (D34 del plan).
+- Resueltas por el plan: las anclas se consideran estabilizadas tras 300 ms sin altas ni bajas
+  (D9), y las anclas de una `LazyColumn` se declaran con `TourLazyAnchor` y se buscan
+  desplazando la lista (D10).
 
 ## 7. Alternativas descartadas
 
