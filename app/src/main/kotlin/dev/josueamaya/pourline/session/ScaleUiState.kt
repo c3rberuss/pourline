@@ -52,7 +52,7 @@ data class ActiveTarget(
   val factor: Double,
   /** La dosis con la que se hizo la curva (la de la receta o de la preparación); `null` si no la había. */
   val nominalDoseG: Double? = null,
-  /** La dosis capturada, en gramos, con la que se escaló; `null` si el factor no sale de una dosis. */
+  /** La dosis (capturada o escrita en Preparar), en gramos, con la que se escaló; `null` si el factor no sale de una dosis. */
   val scaledDoseG: Double?,
   /** Datos manuales que se copian de la referencia al guardar (sin nombre ni notas). */
   val prefill: BrewDetails,

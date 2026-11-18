@@ -307,7 +307,8 @@ class PrepareScreenTest {
     rule.onNodeWithTag("prepare_dose").performTextReplacement("80")
     rule.onNodeWithTag("prepare_start_scaleless").assertIsNotEnabled()
     pickV60()
-    rule.onNodeWithTag("prepare_dose").assert(SemanticsMatcher.keyNotDefined(SemanticsActions.SetText))
+    // Con receta, la dosis es la suya (no el "80" libre).
+    rule.onNodeWithTag("prepare_dose").assert(hasText("15", substring = true))
     rule.onNodeWithTag("prepare_start_scaleless").assertIsEnabled()
 
     rule.onNodeWithTag("target_chip").performClick()
@@ -371,7 +372,7 @@ class PrepareScreenTest {
   }
 
   @Test
-  fun withARecipeTheValuesAreReadOnlyAndComeFromIt() {
+  fun withARecipeTheValuesComeFromItAndOnlyTheDoseIsEditable() {
     show()
     rule.onNodeWithTag("target_chip").performClick()
     waitFor("target_picker")
@@ -381,8 +382,32 @@ class PrepareScreenTest {
     rule.onNodeWithTag("prepare_water").assert(hasText("250", substring = true))
     rule.onNodeWithTag("prepare_dose").assert(hasText("15", substring = true))
     rule.onNodeWithTag("prepare_ratio").assert(hasText("1:16", substring = true))
-    rule.onNodeWithTag("prepare_dose").assert(SemanticsMatcher.keyNotDefined(SemanticsActions.SetText))
     rule.onNodeWithTag("prepare_ratio").assert(SemanticsMatcher.keyNotDefined(SemanticsActions.SetText))
+    assertTrue(!exists("prepare_recipe_scaled"))
+  }
+
+  @Test
+  fun aDoseTypedForTheRecipeScalesItAndTheScalelessBrew() {
+    show()
+    pickV60()
+
+    rule.onNodeWithTag("prepare_dose").performTextReplacement("12")
+
+    // 250 g para 15 g: con 12 g, 200 g y el mismo ratio.
+    rule.onNodeWithTag("prepare_water").assert(hasText("200", substring = true))
+    rule.onNodeWithTag("prepare_ratio").assert(hasText("1:16", substring = true))
+    rule.onNodeWithTag("prepare_recipe_scaled").assertIsDisplayed()
+
+    rule.onNodeWithTag("prepare_dose").performTextReplacement("80")
+    rule.onNodeWithTag("prepare_range_error").assertIsDisplayed()
+    rule.onNodeWithTag("prepare_start_scaleless").assertIsNotEnabled()
+
+    rule.onNodeWithTag("prepare_dose").performTextReplacement("12")
+    rule.onNodeWithTag("prepare_start_scaleless").performScrollTo().performClick()
+
+    waitFor("scaleless_start")
+    assertEquals(12.0, env.scaleSession.ui.value.plannedDoseG!!, 0.0)
+    assertEquals(200.0, env.scaleSession.ui.value.targetWaterG!!, 1e-9)
   }
 
   // --- receta y café ---
