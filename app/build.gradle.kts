@@ -21,6 +21,8 @@ android {
   buildTypes {
     release {
       isMinifyEnabled = false
+      // Signed with the debug key so it installs over the debug build and keeps the user data.
+      signingConfig = signingConfigs.getByName("debug")
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
   }
