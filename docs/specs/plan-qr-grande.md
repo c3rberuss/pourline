@@ -10,7 +10,7 @@
 | Plan anterior | [`plan-compartir-receta.md`](plan-compartir-receta.md) (D1 a D29). Este plan sigue desde D30 |
 | `MAX_URI_LENGTH` | **600** (QR versión 19, corrección M), medido en F0 sobre la tarjeta real (2026-11-18). El spec decía 700: falla al reducir y recomprimir (17 de 20). Ver "Resultado de F0" |
 | Línea base | La de F9 del plan anterior, que es este mismo código (`bbc96aa`): JVM 1039 (1 saltado, 0 fallos); instrumentados 681 por emulador; `emulator-5556` con 17 fallos (los 3 conocidos y 14 que necesitan el modelo de Play Services); `emulator-5560` con 6 (los 3 conocidos y 3 de UI intermitentes); `:app:lintDebug` con 2 errores y 21 avisos. F0 repite las clases afectadas antes de tocar código |
-| Resultado de la verificación | Pendiente (F4) |
+| Resultado de la verificación | Hecha (2026-11-18): JVM 1051 (1 saltado, 0 fallos); instrumentados sin regresiones sobre la línea base; lint 2 errores y 21 avisos. Falta la prueba manual en el Xiaomi. Ver "Resultado de F4" |
 
 La enmienda cambia tres cosas, y el plan las ordena de modo que la medición vaya primero:
 
@@ -165,7 +165,7 @@ la cadena nueva).
 | F1 | Códec: instrucciones de una en una, recuentos, `EncodeResult` y la receta 4:6 del usuario | M | Hecha |
 | F2 | Compartir: motivo de "sin QR", "algunos pasos" y aviso de datos no válidos | M | Hecha |
 | F3 | Importar: aviso de recorte parcial | S | Hecha |
-| F4 | Verificación: suites, comprobaciones, E2E por adb, capturas y cierre | M | Pendiente |
+| F4 | Verificación: suites, comprobaciones, E2E por adb, capturas y cierre | M | Hecha (falta la prueba manual en el Xiaomi) |
 
 Cada fase deja `:app` compilando y sus tests en verde. Se compila y se prueba solo `:app`, nunca con `./gradlew build`
 ni con builds limpios.
@@ -427,6 +427,21 @@ caso. Si F0 bajó el tope, también el valor del §3.2. La fila Estado del spec 
 **Verificación:** el §7.
 
 Commit sugerido: `test(recipes): verify the large recipe QR end to end`.
+
+#### Resultado de F4
+
+| Comprobación | Resultado |
+|---|---|
+| JVM (`:app:testDebugUnitTest`) | 1051 tests, 1 saltado, 0 fallos (línea base 1039; 12 nuevos). |
+| `emulator-5556` (sin las clases que necesitan el modelo de Play Services, `notClass`) | 652 tests, 5 saltados; solo fallan los 3 conocidos (`CoffeeDetailScreenTest.theFactsAreFoldedByDefaultAndOpenOnTap` y los 2 de `SessionPerformanceTest`). |
+| `emulator-5560` (suite completa, 699 tests) | 6 fallos: los 3 conocidos, `RecipeEditScreenTest.saveAsRecipeFromABrewFillsOneStagePerPourAndWarnsAboutAMissingDose` (intermitente de la línea base) y `BrewEditScreenTest.savingOtherDetailsLeavesTheAmountsAlone` y `anOrphanGrindIsKeptWhenSavingWithoutTouchingIt` (`waitUntil` de 5 s agotado, no están en la línea base). |
+| `BrewEditScreenTest` repetida sola en `emulator-5560` | 25 de 25 en verde: los dos fallos son de carga del emulador durante la suite larga, en una pantalla que esta enmienda no toca. |
+| `:app:lintDebug` | 2 errores y 21 avisos, como la línea base. |
+| `:app:processDebugManifest` | Correcto; `INTERNET` y `CAMERA` siguen como antes (comprobado también con `dumpsys package`). |
+| E2E por adb en `emulator-5560` | Compartir una receta de peor caso, importarla y ver la vista previa: todos los pasos correctos, en español e inglés. |
+| Capturas | `~/Downloads/pourline-recipe-share-large-qr/{en,es}/{light,dark}`: tarjeta de peor caso (`worst`), de 4:6 (`fourSix`), corta (`short`), diálogo de recorte parcial y vista previa de importación. Los PNG claro y oscuro son idénticos byte a byte. |
+
+Pendiente: la prueba manual del usuario en el Xiaomi con una versión release firmada con la clave de debug (D44).
 
 ### 3.1 Cadenas nuevas (`values` / `values-en`)
 

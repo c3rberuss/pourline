@@ -5,7 +5,7 @@
 | Estado | Implementado y fusionado a `develop` (2026-11-18, `bbc96aa`). Plan: [`plan-compartir-receta.md`](plan-compartir-receta.md). **Enmienda 1** (QR grande): Aprobado (2026-11-18). Plan aprobado: [`plan-qr-grande.md`](plan-qr-grande.md) (P1-P3 con la propuesta del plan). En implementación |
 | Fecha | 2026-11-17. Enmienda 1: 2026-11-18 |
 | Rama | `feat/share-recipe`, desde `develop` (`e64330a`). Enmienda 1: `feat/share-recipe-large-qr`, desde `develop` (`bbc96aa`) |
-| Enmienda 1 | El QR deja de tener una caja fija de 432 px: cada módulo mide 6 px exactos y la caja crece con la versión del QR, lo que sube `MAX_URI_LENGTH` de 331 a 700. El QR pasa a una franja propia al final de la tarjeta y el alto de la tarjeta se ajusta al contenido. Si aun así no cabe, las instrucciones se recortan de una en una desde el último paso, no todas de golpe. Cambia §3.1, §3.2, §3.3, §3.4, §3.6, §4, §5, §6 y §7. Motivo: la receta 4:6 generada por la app (10 pasos, con notas e instrucciones) ocupa 450 caracteres y perdía notas e instrucciones al compartirse |
+| Enmienda 1 | El QR deja de tener una caja fija de 432 px: cada módulo mide 6 px exactos y la caja crece con la versión del QR, lo que sube `MAX_URI_LENGTH` de 331 a 600 (el plan partía de 700 y la medición sobre la tarjeta real lo bajó). El QR pasa a una franja propia al final de la tarjeta y el alto de la tarjeta se ajusta al contenido. Si aun así no cabe, las instrucciones se recortan de una en una desde el último paso, no todas de golpe. Cambia §3.1, §3.2, §3.3, §3.4, §3.6, §4, §5, §6 y §7. Motivo: la receta 4:6 generada por la app (10 pasos, con notas e instrucciones) ocupa 450 caracteres y perdía notas e instrucciones al compartirse |
 | Deriva de | [SPEC-004](spec-catalogo-cafes.md) (alcance Out: "Compartir como texto o como archivo importable por otra instalación") |
 | Módulos afectados | `:app`: `recipe` (nuevo códec), `share` (nueva tarjeta y QR), `ui/recipes` (compartir, importar, vista previa), `grinder` (resolución de molienda), `MainActivity` y manifiesto (intents de entrada), navegación |
 | Specs relacionados | [SPEC-003](spec-curva-objetivo.md) (recetas), [SPEC-004](spec-catalogo-cafes.md) (imágenes para compartir), [SPEC-005](spec-navegacion-modos.md) (pestañas y modos), [SPEC-006](spec-molinos.md) (molinos y conversión) |
@@ -84,7 +84,7 @@
   - Con JSON, una receta de 20 pasos sin textos ocupaba entre 430 y 490 caracteres.
   - El binario la deja en torno a 200.
   - **Enmienda 1:** el límite real no era la capacidad del QR, sino el tamaño en píxeles de cada
-    módulo. Con módulos de 6 px exactos el QR se lee 20 de 20 hasta 700 caracteres (§3.3, §6).
+    módulo. Con módulos de 6 px exactos el QR se lee 20 de 20 hasta 600 caracteres sobre la tarjeta real (§3.3, §6).
 - **Primitivas del payload `v=1`:**
   - `uvar`: entero sin signo en LEB128 (7 bits por byte, el bit alto indica que sigue otro byte).
   - `svar`: entero con signo en zigzag sobre `uvar`.
@@ -205,10 +205,11 @@
   - Se mide sobre la longitud del URI: `MAX_URI_LENGTH`.
   - El plan fija su valor con el test de legibilidad (§5): el QR de un URI de esa longitud tiene que
     leerse tras reducir la imagen a la mitad y recomprimirla en JPEG calidad 70.
-  - **Enmienda 1:** `MAX_URI_LENGTH = 700` (QR versión 21, corrección M), con el QR dibujado a 6 px
-    por módulo (§3.3). Medido el 2026-11-18 en `emulator-5560` con el lector de Play Services:
-    20 de 20 tal cual y 20 de 20 reducido y en JPEG 70 para 600, 650 y 700 caracteres; a 750 ya
-    falla 1 de 20.
+  - **Enmienda 1:** `MAX_URI_LENGTH = 600` (QR versión 19, corrección M), con el QR dibujado a 6 px
+    por módulo (§3.3). Medido el 2026-11-18 en `emulator-5560` con el lector de Play Services, sobre la
+    tarjeta real (ver §6): 20 de 20 en las tres lecturas para 600 caracteres; a 625 y 650 falla 1 de 20
+    al reducir y recomprimir, a 675 también 1 y a 700 fallan 3. La primera versión de la enmienda
+    fijaba 700 con una medición sobre un lienzo de prueba, que no valía para la tarjeta.
 - **Orden del recorte** (reescrito por la enmienda 1), que se detiene en cuanto el URI cabe:
   1. Receta completa.
   2. Sin las notas.
@@ -255,7 +256,7 @@
     - La cabecera (nombre, método y datos) ocupa todo el ancho, porque el QR ya no va a su lado.
     - Cada módulo mide exactamente 2 dp, es decir 6 px enteros, sin antialias. La caja mide
       `(módulos + 8) × 6` px, zona de silencio de 4 módulos por lado incluida: unos 462 px en
-      versión 13 y 654 px en versión 21, el máximo con `MAX_URI_LENGTH`.
+      versión 13 y 606 px en versión 19, el máximo con `MAX_URI_LENGTH`.
     - Se dibuja en negro sobre blanco, también con tema oscuro.
   - **Orden:** cabecera, datos, pasos, franja del QR y pie. Sin QR (`encode` devolvió `null`), la
     franja no aparece.
@@ -524,12 +525,25 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
       de píxeles.
     - Con módulos de píxeles enteros: a 4 px se pierden lecturas desde 400 caracteres. A 6 px, 20 de
       20 hasta 700 y 19 de 20 a 750. A 8 px, 20 de 20 de 650 a 900, pero con una caja de hasta 968 px.
-    - Se eligen 6 px y 700 caracteres.
+    - Se eligen 6 px y 700 caracteres (el valor final es 600: ver el cierre de la enmienda).
   - **Enmienda 1, riesgo:** la muestra es de 20 URIs aleatorias por longitud y en un solo emulador.
     El plan vuelve a medir con 20 muestras por longitud alrededor de `MAX_URI_LENGTH` sobre la
     tarjeta real, y si falla alguna, baja el valor.
-  - **Al cerrar la enmienda 1:** anotar aquí el valor final de `MAX_URI_LENGTH` y el alto de la
-    tarjeta con la receta de peor caso.
+  - **Cierre de la enmienda 1 (2026-11-18):**
+    - Medición sobre la tarjeta real (`RecipeQrLegibilityTest#cardSweep`, receta de peor caso, 20
+      muestras por longitud con semillas nuevas y tres lecturas: tal cual, 50 % + JPEG 70 y reducida a
+      2048 px como la lee la importación): 600 caracteres, 20/20 en las tres. 625 y 650: 20/20, 19/20 y
+      20/20. 675: 20/20, 19/20 y 20/20. 700: 20/20, 17/20 y 20/20. De 300 a 550 acierta todo (10
+      muestras). Por la regla del plan se fija **`MAX_URI_LENGTH` = 600**, no 700. Los fallos son solo de
+      la lectura tras reducir y recomprimir y no son monótonos con la longitud.
+    - La receta 4:6 del usuario mide 450 caracteres (versión 16) y se comparte sin recortar nada.
+    - Alto de la tarjeta de peor caso (20 pasos, nombre de 2 líneas, molienda de 2 líneas, URI de 576 a
+      600 caracteres, QR de versión 19): **1080 × 2328 px**. Sin la molienda en dos líneas (E2E con URI de
+      576 caracteres), 1080 × 2226 px. La receta 4:6 del usuario: 1080 × 1656 px. La receta corta: 1080 ×
+      1350 px.
+    - La caja del QR se coloca en píxeles pares (hasta 1 px a la izquierda del centro) y la captura de
+      Compose mezcla un 1 % en el primer píxel de cada módulo, por lo que los tests comprueban "negro" y
+      "blanco" con 8 niveles de margen.
 
 ## 7. Alternativas descartadas
 
