@@ -144,7 +144,7 @@ class RecipeImportScreenTest {
   @Test
   fun showsTheTrimmedWarning() {
     val long = recipe(
-      notes = randomText(300, 99),
+      notes = randomText(600, 99),
       stages = stages().map { it.copy(instruction = randomText(100, it.startMs)) },
     )
     val encoded = RecipeShareCodec.encode(long, null)!!

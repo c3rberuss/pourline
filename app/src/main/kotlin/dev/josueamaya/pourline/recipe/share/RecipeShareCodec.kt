@@ -22,11 +22,24 @@ object RecipeShareCodec {
   const val URI_PREFIX = "pourline://recipe"
 
   /**
-   * Longitud máxima del URI del QR (D8). Medida en F0 con `QrLegibilityTest`, el lector de Play Services y el QR de
-   * 432 px: es la capacidad en modo byte con corrección M de la versión 13. La regla del plan daría 362 (versión 14),
-   * pero con 362 la lectura tras reducir al 50 % y JPEG 70 falla en 1 de 20 muestras; con 331 acierta 20 de 20.
+   * Longitud máxima del URI del QR (D8, enmienda 1 de SPEC-009). Medida el 2026-11-18 en `emulator-5560` con el lector de
+   * Play Services, sobre la tarjeta real de la receta de peor caso (20 pasos, nombre de 60 caracteres, molienda en 2 líneas;
+   * QR con módulos de 6 px, caja alineada a píxeles pares), con URIs aleatorios y tres lecturas por muestra: tal cual,
+   * reducida al 50 % y en JPEG 70, y reducida a 2048 px de lado mayor como la lee la importación
+   * (`RecipeQrLegibilityTest.cardSweep`, 20 muestras por longitud):
+   *
+   * | Longitud | Versión | Tal cual | 50 % + JPEG 70 | Importación |
+   * |---|---|---|---|---|
+   * | 600 | 19 | 20/20 | 20/20 | 20/20 |
+   * | 625 | 20 | 20/20 | 19/20 | 20/20 |
+   * | 650 | 20 | 20/20 | 19/20 | 20/20 |
+   * | 675 | 21 | 20/20 | 19/20 | 20/20 |
+   * | 700 | 21 | 20/20 | 17/20 | 20/20 |
+   *
+   * De 300 a 550 (10 muestras) acierta todo. Los 700 caracteres del spec fallan al reducir y recomprimir, así que, por la
+   * regla del plan (la mayor longitud con 20 de 20 en las tres lecturas, y todas las menores también), el tope es 600.
    */
-  const val MAX_URI_LENGTH = 331
+  const val MAX_URI_LENGTH = 600
 
   /** Tope del payload ya inflado: un QR legítimo ocupa unos cientos de bytes. Evita una bomba de descompresión. */
   internal const val MAX_INFLATED_BYTES = 65_536

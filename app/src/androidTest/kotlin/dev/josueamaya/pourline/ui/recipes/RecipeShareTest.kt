@@ -38,7 +38,10 @@ import dev.josueamaya.pourline.settings.ExperienceMode
 import dev.josueamaya.pourline.settings.LocalExperienceMode
 import dev.josueamaya.pourline.share.MlKitQrImageReader
 import dev.josueamaya.pourline.share.ShareSender
+import dev.josueamaya.pourline.share.assertQrModules
 import dev.josueamaya.pourline.share.awaitQrModel
+import dev.josueamaya.pourline.share.findQrBox
+import dev.josueamaya.pourline.share.qrMatrix
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -232,7 +235,7 @@ class RecipeShareTest {
 
   @Test
   fun aLongRecipeListsWhatWillBeMissingAndCancelSendsNothing() {
-    show(save(stageCount = 5, notes = randomText(300, 99), instructionLength = 100))
+    show(save(name = randomText(400, 3), stageCount = 5, notes = randomText(300, 99), instructionLength = 200))
     tapShare()
     rule.waitUntil(10_000) { exists("ant_modal") }
     val missing = context.getString(
@@ -249,12 +252,14 @@ class RecipeShareTest {
 
   @Test
   fun confirmingTheTrimDialogShares() {
-    show(save(stageCount = 5, notes = randomText(300, 99), instructionLength = 100))
+    show(save(name = randomText(400, 3), stageCount = 5, notes = randomText(300, 99), instructionLength = 200))
     tapShare()
     rule.waitUntil(10_000) { exists("ant_modal") }
     rule.onNodeWithTag("ant_modal_confirm").performClick()
     waitForChooser()
-    assertEquals(1080 to 1350, pngBounds())
+    val (width, height) = pngBounds()
+    assertEquals(1080, width)
+    assertTrue("alto de $height px", height >= 1350)
     assertTrue(!exists("ant_modal"))
   }
 
@@ -263,7 +268,7 @@ class RecipeShareTest {
     val reader = MlKitQrImageReader(context)
     try {
       awaitQrModel(reader)
-      show(save(name = randomText(400, 5)))
+      show(save(name = randomText(800, 5)))
       tapShare()
       rule.waitUntil(10_000) { exists("ant_modal") }
       assertTrue(showsText(context.getString(R.string.recipe_share_too_long_text)))
@@ -297,7 +302,7 @@ class RecipeShareTest {
   }
 
   @Test
-  fun aTwentyStepRecipeIsSharedAt1080x1920() {
+  fun aTwentyStepRecipeGrowsAndItsQrDecodes() {
     val reader = MlKitQrImageReader(context)
     try {
       awaitQrModel(reader)
@@ -305,12 +310,31 @@ class RecipeShareTest {
       show(id)
       tapShare()
       waitForChooser()
-      assertEquals(1080 to 1920, pngBounds())
+      val (width, height) = pngBounds()
+      assertEquals(1080, width)
+      assertTrue("alto de $height px", height > 1350)
       val decoded = RecipeShareCodec.decode((runBlocking { reader.read(sentStream()) } as QrReadResult.Found).text) as DecodeResult.Ok
       assertEquals(20, decoded.shared.recipe.stages.size)
     } finally {
       reader.close()
     }
+  }
+
+  @Test
+  fun theSharedPngHas6x6QrModules() {
+    val id = save(name = "Mi V60", stageCount = 12)
+    show(id)
+    tapShare()
+    waitForChooser()
+    val saved = runBlocking { recipes.get(id) }!!
+    val uri = RecipeShareCodec.encode(saved, grinder = null)!!.uri
+    val matrix = qrMatrix(uri)
+    val png = BitmapFactory.decodeFile(sharedDir.listFiles().orEmpty().single().path)
+    val box = findQrBox(png, 6)
+    assertEquals("x par de la caja", 0, box.x % 2)
+    assertQrModules(png, matrix, box.x, box.y, 6)
+    assertEquals(1080, png.width)
+    assertTrue(box.x + matrix.cells * 6 <= png.width)
   }
 
   @Test

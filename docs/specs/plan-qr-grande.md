@@ -8,7 +8,7 @@
 | Rama | `feat/share-recipe-large-qr`, desde `develop` (`bbc96aa`), con el spec modificado sin commitear |
 | Módulos | `:app` (`:protocol` no cambia) |
 | Plan anterior | [`plan-compartir-receta.md`](plan-compartir-receta.md) (D1 a D29). Este plan sigue desde D30 |
-| `MAX_URI_LENGTH` | 700 según el spec (QR versión 21, corrección M). F0 lo confirma sobre la tarjeta real o lo baja (D34) |
+| `MAX_URI_LENGTH` | **600** (QR versión 19, corrección M), medido en F0 sobre la tarjeta real (2026-11-18). El spec decía 700: falla al reducir y recomprimir (17 de 20). Ver "Resultado de F0" |
 | Línea base | La de F9 del plan anterior, que es este mismo código (`bbc96aa`): JVM 1039 (1 saltado, 0 fallos); instrumentados 681 por emulador; `emulator-5556` con 17 fallos (los 3 conocidos y 14 que necesitan el modelo de Play Services); `emulator-5560` con 6 (los 3 conocidos y 3 de UI intermitentes); `:app:lintDebug` con 2 errores y 21 avisos. F0 repite las clases afectadas antes de tocar código |
 | Resultado de la verificación | Pendiente (F4) |
 
@@ -161,7 +161,7 @@ la cadena nueva).
 
 | Fase | Contenido | Tamaño | Estado |
 |---|---|---|---|
-| F0 | Línea base, tarjeta con el QR de 6 px y alto variable, medición sobre la tarjeta real y `MAX_URI_LENGTH` | L | Pendiente |
+| F0 | Línea base, tarjeta con el QR de 6 px y alto variable, medición sobre la tarjeta real y `MAX_URI_LENGTH` | L | Hecha |
 | F1 | Códec: instrucciones de una en una, recuentos, `EncodeResult` y la receta 4:6 del usuario | M | Pendiente |
 | F2 | Compartir: motivo de "sin QR", "algunos pasos" y aviso de datos no válidos | M | Pendiente |
 | F3 | Importar: aviso de recorte parcial | S | Pendiente |
@@ -255,6 +255,54 @@ está vacío.
 pasadas en "Resultado de F0"; todo lo anterior en verde; lint como la línea base.
 
 Commit sugerido: `feat(share): draw the recipe QR with 6 px modules on a card that grows with its content`.
+
+#### Resultado de F0
+
+**Línea base** (antes de tocar código, 2026-11-18): JVM 1039 tests, 1 saltado, 0 fallos; `:app:lintDebug` con 2 errores y 21 avisos;
+`emulator-5556` con `ShareCardsLayoutTest` y `ShareIntentTest` en verde; `emulator-5560` con las seis clases de legibilidad,
+compartir e importar (53 tests, 0 fallos).
+
+**Medición de D31 en el lienzo** (700 caracteres, versión 21, 20 muestras, módulos de 6 px): caja en x = 212 (par, la de la
+tarjeta): 20/20 tal cual y **18/20** reducida y en JPEG 70; x = 213 (impar): 20/20 y **14/20**; x = 378 (la del lienzo del
+2026-11-18): 20/20 y 20/20. Una x par ayuda frente a una impar, pero la lectura reducida depende también de dónde caen los
+bloques de 8 px del JPEG, así que el lienzo viejo no valía para la tarjeta.
+
+**Medición sobre la tarjeta real** (`RecipeQrLegibilityTest#cardSweep`, receta de peor caso: 20 pasos, nombre de 60, molienda en
+2 líneas; QR en y = 1518, x = 212; semillas `10_000 + i`; tres lecturas por muestra):
+
+| Longitud | Versión | Alto de la tarjeta | Muestras | Tal cual | 50 % + JPEG 70 | Importación (2048 px) |
+|---|---|---|---|---|---|---|
+| 300 | 13 | 2184 | 10 | 10/10 | 10/10 | 10/10 |
+| 350 | 14 | 2208 | 10 | 10/10 | 10/10 | 10/10 |
+| 400 | 15 | 2232 | 10 | 10/10 | 10/10 | 10/10 |
+| 450 | 16 | 2256 | 10 | 10/10 | 10/10 | 10/10 |
+| 500 | 17 | 2280 | 10 | 10/10 | 10/10 | 10/10 |
+| 550 | 18 | 2304 | 10 | 10/10 | 10/10 | 10/10 |
+| 600 | 19 | 2328 | 20 | 20/20 | **20/20** | 20/20 |
+| 625 | 20 | 2352 | 20 | 20/20 | 19/20 | 20/20 |
+| 650 | 20 | 2352 | 20 | 20/20 | 19/20 | 20/20 |
+| 675 | 21 | 2376 | 20 | 20/20 | 19/20 | 20/20 |
+| 700 | 21 | 2376 | 20 | 20/20 | 17/20 | 20/20 |
+| 725 (informa) | 22 | 2400 | 20 | 20/20 | 14/20 | 20/20 |
+| 750 (informa) | 22 | 2400 | 20 | 20/20 | 19/20 | 20/20 |
+
+**Regla de D34:** ni 700, ni 675, ni 650 dan 20 de 20 en las tres lecturas; 625 tampoco; 600 sí, y todas las menores también.
+`MAX_URI_LENGTH` = **600** (entre 600 y 700: se aplica la regla sin preguntar, P2). Ningún fallo en la pasada gruesa, y la
+lectura por la ruta de importación (reducida a 2048 px) acierta siempre: no hace falta tocar `QR_IMAGE_MAX_SIDE`.
+Los únicos fallos son de la lectura tras reducir al 50 % y recomprimir en JPEG, y no son monótonos con la longitud
+(725 falla más que 750), por la alineación de los bloques del JPEG.
+
+**Tarjeta de peor caso con `MAX_URI_LENGTH` = 600:** 1080 × 2328 px (QR de versión 19, caja de 606 px). Con 331 caracteres
+(versión 13, el valor anterior) medía 1080 × 2184. Alturas con el mismo nombre y 4, 10 y 20 pasos: 1350, 1512 y 2016 px.
+
+**Cambios de F0 respecto al plan:**
+
+- `MAX_URI_LENGTH` es 600, no 700. El spec, el §3.2 y la nota del §6 quedan para F4.
+- La captura de Compose no es exacta al bit en el borde de un módulo (`#020202` en vez de `#000000` en la primera fila y
+  columna), así que `findQrBox` y `assertQrModules` admiten 8 niveles de margen. Los textos de la tarjeta no caen dentro.
+- `RecipeShareTest`: con el tope de 600, el nombre de las pruebas de recorte es de 400 caracteres (no 500, que ya no cabía
+  tras quitar notas e instrucciones).
+- `CardCapturer` (en `QrTestSupport.kt`) captura varias tarjetas con una sola composición (D35).
 
 ### F1. Códec: instrucciones de una en una, recuentos y `EncodeResult`
 
