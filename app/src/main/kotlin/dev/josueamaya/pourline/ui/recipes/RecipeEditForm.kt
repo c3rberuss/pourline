@@ -161,8 +161,38 @@ data class RecipeEditForm(
   fun removeStage(index: Int): RecipeEditForm =
     if (!canRemoveStage || index !in stages.indices) this else copy(stages = stages.filterIndexed { i, _ -> i != index })
 
-  fun updateStage(index: Int, stage: StageForm): RecipeEditForm =
-    if (index !in stages.indices) this else copy(stages = stages.mapIndexed { i, old -> if (i == index) stage else old })
+  /**
+   * Reemplaza un paso. Si cambia su duración, los inicios de los pasos siguientes se desplazan lo mismo, de modo que
+   * los huecos entre pasos se conservan. Una duración vacía cuenta como 0 s para que borrar y reescribir la cifra
+   * desplace en total la diferencia real; con una duración ilegible, o en un inicio ilegible, no se desplaza nada.
+   */
+  fun updateStage(index: Int, stage: StageForm): RecipeEditForm {
+    if (index !in stages.indices) return this
+    val shiftMs = durationShiftMs(stages[index].duration, stage.duration)
+    return copy(
+      stages = stages.mapIndexed { i, old ->
+        when {
+          i == index -> stage
+          i > index && shiftMs != 0L -> old.shiftedBy(shiftMs)
+          else -> old
+        }
+      },
+    )
+  }
+
+  private fun durationShiftMs(old: String, new: String): Long {
+    if (old == new) return 0
+    val before = durationForShift(old) ?: return 0
+    val after = durationForShift(new) ?: return 0
+    return after - before
+  }
+
+  private fun durationForShift(text: String): Long? = if (text.isBlank()) 0 else parseSeconds(text)
+
+  private fun StageForm.shiftedBy(shiftMs: Long): StageForm {
+    val startMs = parseStart(start) ?: return this
+    return copy(start = formatStart((startMs + shiftMs).coerceAtLeast(0)))
+  }
 
   /**
    * `true` si la receta sigue con los textos traducidos: venía así y ni el nombre ni los nombres, tipos e
