@@ -10,12 +10,16 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.platform.app.InstrumentationRegistry
+import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.coffee.CoffeeProcess
 import dev.josueamaya.pourline.coffee.CoffeeRepository
 import dev.josueamaya.pourline.coffee.PhotoFiles
@@ -30,6 +34,7 @@ import dev.josueamaya.pourline.protocol.WeightUnit
 import dev.josueamaya.pourline.recipe.Recipe
 import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.aeroPressWithActions
 import dev.josueamaya.pourline.recipe.share.RecipeShareCodec
 import dev.josueamaya.pourline.ui.session.formatClock
 import kotlinx.coroutines.runBlocking
@@ -366,6 +371,21 @@ class ShareCardsLayoutTest {
     brandInside()
     assertEquals(formatClock(recipe.totalDurationMs), textOf("share_recipe_duration"))
     assertEquals(node("share_recipe_ratio").positionInRoot.y, node("share_recipe_duration").positionInRoot.y, 0f)
+  }
+
+  @Test
+  fun aRecipeCardWithActionsKeepsTheMinimumSizeAndShowsTheTotalTime() {
+    val recipe = aeroPressWithActions()
+    capture(ShareRequest.Recipe(recipeData(recipe)))
+
+    assertSize()
+    brandInside()
+    stepsAbove("share_recipe_qr_strip", 6)
+    val action = context.getString(R.string.step_type_action)
+    for (i in listOf(2, 4, 5)) {
+      rule.onNode(hasTestTag("share_recipe_step_$i") and hasAnyDescendant(hasText(action)), useUnmergedTree = true).assertExists()
+    }
+    assertEquals("2:00", textOf("share_recipe_duration"))
   }
 
   @Test
