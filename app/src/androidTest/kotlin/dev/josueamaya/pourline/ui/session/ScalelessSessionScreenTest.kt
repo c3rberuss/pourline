@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.performClick
@@ -15,6 +16,7 @@ import dev.josueamaya.pourline.brew.BrewPhase
 import dev.josueamaya.pourline.brew.FinishReason
 import dev.josueamaya.pourline.history.BrewFilter
 import dev.josueamaya.pourline.protocol.WeightUnit
+import dev.josueamaya.pourline.recipe.aeroPressWithActions
 import dev.josueamaya.pourline.session.BrewPlan
 import dev.josueamaya.pourline.settings.ExperienceMode
 import dev.josueamaya.pourline.ui.TestApp
@@ -48,11 +50,11 @@ class ScalelessSessionScreenTest {
   @After
   fun tearDown() = env.close()
 
-  private fun show(mode: ExperienceMode = ExperienceMode.BASIC, recipe: Boolean = true) {
+  private fun show(mode: ExperienceMode = ExperienceMode.BASIC, recipe: Boolean = true, recipePart: String = "V60") {
     env.skipOnboarding(mode)
     rule.setContent { TestApp(env) }
     driver.connect()
-    if (recipe) driver.selectRecipe() else rule.runOnUiThread { manager.selectTarget(null) }
+    if (recipe) driver.selectRecipe(recipePart) else rule.runOnUiThread { manager.selectTarget(null) }
     // La sesión guiada se abre con la báscula simulada y pasa a sin báscula desde el gestor.
     driver.start()
     rule.runOnUiThread { manager.startScalelessSession(plan) }
@@ -137,6 +139,28 @@ class ScalelessSessionScreenTest {
     driver.node("scaleless_action").assertIsDisplayed()
     driver.node("scaleless_action").assert(!hasText(text(R.string.scaleless_pour_to, "40")))
     driver.node("scaleless_action").assert(!hasText(text(R.string.scaleless_pour_to, "150")))
+  }
+
+  @Test
+  fun anActionStepShowsItsInstructionOrItsType() {
+    runBlocking { env.recipes.save(aeroPressWithActions()) }
+    show(recipePart = "AeroPress")
+    startTimer()
+    val action = text(R.string.step_type_action)
+
+    // En el remover, el siguiente paso es la Acción (a 4 s ya es la cuenta atrás, con la descripción "Siguiente: Acción en 4 s").
+    at(16_000)
+    driver.node("session_next_step").assert(hasContentDescription(action, substring = true))
+
+    // La Acción con instrucción dice la instrucción, sin objetivo de agua, en el paso 3 de 6 con 4 s por delante.
+    at(21_000)
+    driver.node("scaleless_action").assert(hasText("Pon la tapa"))
+    driver.node("scaleless_step_progress").assert(hasText(text(R.string.scaleless_step_progress, 3, 6, "0:04")))
+    assertFalse(driver.exists("session_step_up_to"))
+
+    // La Acción sin instrucción dice su tipo.
+    at(95_000)
+    driver.node("scaleless_action").assert(hasText(action))
   }
 
   private fun assertNoFlowChartOrDeviation() {

@@ -3,12 +3,15 @@ package dev.josueamaya.pourline.session
 import dev.josueamaya.pourline.brew.BrewPhase
 import dev.josueamaya.pourline.brew.FinishReason
 import dev.josueamaya.pourline.brew.StageNotifier
+import dev.josueamaya.pourline.brew.TargetStage
 import dev.josueamaya.pourline.coffee.PickedCoffee
 import dev.josueamaya.pourline.grinder.GrindSetting
 import dev.josueamaya.pourline.history.ReferenceType
 import dev.josueamaya.pourline.protocol.ScaleMessage
 import dev.josueamaya.pourline.protocol.TimerStatus
 import dev.josueamaya.pourline.protocol.WeightUnit
+import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.aeroPressWithActions
 import dev.josueamaya.pourline.recipe.recipeOf
 import dev.josueamaya.pourline.recipe.stage
 import dev.josueamaya.pourline.recipe.v60Classic
@@ -364,6 +367,34 @@ class ScaleSessionManagerScalelessTest {
     assertEquals(scaleCountdown, scalelessCountdown)
     assertTrue(scalelessCountdown.any { it == 5 } && scalelessCountdown.any { it == 1 })
     scaleManager.disconnect()
+  }
+
+  @Test
+  fun `an action step alerts at its start like the other steps`() {
+    val alerts = mutableListOf<Triple<Int, StageType, Long>>()
+    val recorder = object : StageNotifier {
+      override fun stageStarted(stage: TargetStage) {
+        alerts += Triple(stage.index, stage.type, scheduler.currentTime)
+      }
+
+      override fun release() = Unit
+    }
+    manager.disconnect()
+    manager = build(recorder)
+    targets.putRecipe(1, aeroPressWithActions())
+    references.setReference(ReferenceKey.Recipe(1))
+    manager.startScalelessSession(plan)
+    manager.scalelessStartTimer()
+
+    advanceSeconds(95)
+    // El reloj de prueba arranca en 1 s: los avisos caen a los 10, 20, 25, 85 y 90 s de la sesión.
+    assertEquals(listOf(1, 2, 3, 4, 5), alerts.map { it.first })
+    assertEquals(listOf(11_000L, 21_000L, 26_000L, 86_000L, 91_000L), alerts.map { it.third })
+    assertEquals(StageType.ACTION, alerts[1].second)
+    assertEquals(
+      listOf(StageType.SWIRL, StageType.ACTION, StageType.WAIT, StageType.ACTION, StageType.ACTION),
+      alerts.map { it.second },
+    )
   }
 
   @Test

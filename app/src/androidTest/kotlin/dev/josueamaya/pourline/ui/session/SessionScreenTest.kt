@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.assert
@@ -23,7 +24,9 @@ import dev.josueamaya.pourline.brew.BrewPhase
 import dev.josueamaya.pourline.grinder.TestGrinders
 import dev.josueamaya.pourline.grinder.addGrinder
 import dev.josueamaya.pourline.history.BrewFilter
+import dev.josueamaya.pourline.recipe.Recipe
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.actionFirstRecipe
 import dev.josueamaya.pourline.session.PrepStep
 import dev.josueamaya.pourline.settings.ExperienceMode
 import dev.josueamaya.pourline.sim.FollowMode
@@ -35,6 +38,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -56,11 +60,17 @@ class SessionScreenTest {
   @After
   fun tearDown() = env.close()
 
-  private fun show(mode: ExperienceMode = ExperienceMode.BASIC) {
+  private fun show(mode: ExperienceMode = ExperienceMode.BASIC, recipePart: String = "V60") {
     env.skipOnboarding(mode)
     rule.setContent { TestApp(env) }
     driver.connect()
-    driver.selectRecipe()
+    driver.selectRecipe(recipePart)
+  }
+
+  /** Guarda [recipe] y abre la sesión con ella como objetivo. */
+  private fun showWith(recipe: Recipe) {
+    runBlocking { env.recipes.save(recipe) }
+    show(recipePart = recipe.name)
   }
 
   private fun back() = rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
@@ -97,6 +107,37 @@ class SessionScreenTest {
     rule.waitUntil(5_000) { manager.ui.value.target == null }
     driver.start()
     rule.onNode(hasText(context.getString(R.string.session_title_free))).assertIsDisplayed()
+  }
+
+  // --- Paso Acción (SPEC-010) ---
+
+  @Test
+  fun anActionStepShowsItsTypeAndInstructionWithTheScale() {
+    showWith(actionFirstRecipe("Pon la tapa"))
+    driver.reachPourStep()
+    driver.node("prep_start_timer").performClick()
+    driver.waitFor("session_timer")
+
+    val label = context.getString(R.string.step_type_action)
+    driver.waitFor("session_current_step")
+    driver.node("session_current_step").assert(hasContentDescription(label, substring = true))
+    driver.node("session_instruction").assertTextContains("Pon la tapa")
+    assertFalse(driver.exists("session_step_up_to"))
+    // La lista tiene una fila (la del paso en curso) con la etiqueta de la Acción.
+    rule.onNode(hasTestTag("session_step_current") and hasContentDescription(label, substring = true)).assertExists()
+  }
+
+  @Test
+  fun anActionWithoutInstructionShowsItsTypeWithTheScale() {
+    showWith(actionFirstRecipe(null))
+    driver.reachPourStep()
+    driver.node("prep_start_timer").performClick()
+    driver.waitFor("session_timer")
+
+    driver.waitFor("session_current_step")
+    driver.node("session_current_step").assert(hasContentDescription(context.getString(R.string.step_type_action), substring = true))
+    assertFalse(driver.exists("session_instruction"))
+    assertFalse(driver.exists("session_step_up_to"))
   }
 
   // --- Pasos previos ---
