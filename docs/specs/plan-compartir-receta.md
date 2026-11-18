@@ -192,7 +192,7 @@ Orden: F0 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9. F2 y F
 | F2 | Reglas de importación JVM: idéntica, sufijo, `routeImport` y `PendingRecipeImport` | S | Hecha |
 | F3 | Resolución de molienda JVM | S | Hecha |
 | F4 | Tarjeta de receta con QR y tamaño variable | M | Hecha |
-| F5 | Compartir desde el editor | M | Pendiente |
+| F5 | Compartir desde el editor | M | Hecha |
 | F6 | Vista previa, guardado, navegación común y mensajes | L | Pendiente |
 | F7 | Entradas internas: escáner y galería | M | Pendiente |
 | F8 | Entradas externas: `ACTION_SEND`, `ACTION_VIEW`, `singleTask` y aplazamiento | M | Pendiente |
@@ -598,6 +598,13 @@ tarjeta es un bitmap de hardware: los tests que leen píxeles lo copian antes a 
 **Criterio de salida:** todo en verde y `RecipeEditScreenTest` sin cambios.
 
 Commit sugerido: `feat(recipes): share a recipe as an image from the editor`.
+
+**Resultado de F5 (2026-11-18).** `RecipeShareTest` (13 tests, todos en `emulator-5560` porque los que decodifican el PNG necesitan
+el modelo de Play Services): verde. `RecipeEditScreenTest`, `RecipesScreenTest` y `ShareIntentTest` (37 tests) en `emulator-5556`: verdes y
+sin cambios. Unitarios de `:app` (1031): verdes. `:app:lintDebug`: 2 errores y 21 avisos, igual que la línea base. Un test que antes
+estaba pensado para "desde preparación y desde el 4:6" se partió en dos (`theIconIsDisabledWhenCreatingFromABrew` y
+`theIconIsDisabledForAFourSixDraft`). El diálogo reutiliza los tags de `AntModal` (`ant_modal`, `ant_modal_confirm`,
+`ant_modal_cancel`): `AntModal` fija su propio `testTag` y no admite uno propio.
 
 ### F6. Vista previa, guardado, navegación común y mensajes
 

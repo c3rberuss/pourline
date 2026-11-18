@@ -3,6 +3,7 @@ package dev.josueamaya.pourline.ui.recipes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.josueamaya.pourline.grinder.GrindChoice
+import dev.josueamaya.pourline.grinder.GrindFormat
 import dev.josueamaya.pourline.grinder.GrindTexts
 import dev.josueamaya.pourline.grinder.Grinder
 import dev.josueamaya.pourline.grinder.GrinderRepository
@@ -15,10 +16,17 @@ import dev.josueamaya.pourline.recipe.Adjustment
 import dev.josueamaya.pourline.recipe.Recipe
 import dev.josueamaya.pourline.recipe.RecipeFromBrew
 import dev.josueamaya.pourline.recipe.RecipeRepository
+import dev.josueamaya.pourline.protocol.WeightUnit
 import dev.josueamaya.pourline.recipe.RecipeTexts
+import dev.josueamaya.pourline.recipe.share.RecipeShareCodec
+import dev.josueamaya.pourline.recipe.share.TrimmedPart
 import dev.josueamaya.pourline.settings.DefaultGrinderStore
+import dev.josueamaya.pourline.share.RecipeShareData
+import dev.josueamaya.pourline.share.qrMatrix
 import dev.josueamaya.pourline.ui.history.formatBrewDateTime
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +37,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed interface RecipeEditStatus {
   data object Loading : RecipeEditStatus
@@ -45,6 +54,15 @@ sealed interface RecipeEditStatus {
 
   /** La receta (o la preparación de origen) ya no existe, o se acaba de borrar: la pantalla vuelve atrás. */
   data object Gone : RecipeEditStatus
+}
+
+/**
+ * Lo que hay que enseñar antes de compartir la receta [id] como imagen: la tarjeta ya preparada ([data]), lo que el
+ * QR no pudo llevar ([trimmed]) y si ni recortando cabe ([withoutQr], la tarjeta va sin QR).
+ */
+data class RecipeSharePrompt(val id: Long, val data: RecipeShareData, val trimmed: Set<TrimmedPart>, val withoutQr: Boolean) {
+  /** Con recorte o sin QR hay que avisar y esperar a que el usuario acepte; si no, se comparte directamente. */
+  val needsConfirmation: Boolean get() = withoutQr || trimmed.isNotEmpty()
 }
 
 /**
@@ -86,6 +104,13 @@ class RecipeEditViewModel(
   val currentGrinder: StateFlow<Grinder?> = _form.map { it.grind.liveGrinderId }.distinctUntilChanged()
     .flatMapLatest { grinderRepository.grinder(it) }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+  private val _share = MutableStateFlow<RecipeSharePrompt?>(null)
+
+  /** La imagen preparada para compartir, hasta que la pantalla la usa o el usuario cancela. */
+  val share: StateFlow<RecipeSharePrompt?> = _share.asStateFlow()
+
+  private var sharing: Job? = null
 
   /** Receta existente (se puede duplicar y borrar). */
   val isExisting: Boolean = id != null
@@ -185,6 +210,36 @@ class RecipeEditViewModel(
       val copy = repository.duplicate(recipeId)
       _status.value = if (copy == null) RecipeEditStatus.Gone else RecipeEditStatus.Duplicated(copy)
     }
+  }
+
+  /**
+   * Prepara la imagen de la receta **guardada** (se vuelve a leer, D12). Solo con una receta existente, cargada y sin
+   * cambios sin guardar. El resultado llega por [share].
+   */
+  fun prepareShare() {
+    val recipeId = id ?: return
+    if (_status.value != RecipeEditStatus.Ready || _form.value.isDirty(_initial.value) || sharing?.isActive == true) return
+    sharing = viewModelScope.launch {
+      _share.value = withContext(Dispatchers.Default) { buildSharePrompt(recipeId) }
+    }
+  }
+
+  fun clearShare() {
+    _share.value = null
+  }
+
+  private suspend fun buildSharePrompt(recipeId: Long): RecipeSharePrompt? {
+    val recipe = repository.get(recipeId) ?: return null
+    val setting = recipe.grind
+    val grinder = setting?.grinderId?.let { grinderRepository.get(it) }
+    val encoded = RecipeShareCodec.encode(recipe, grinder)
+    val grindText = when {
+      setting == null || setting.isEmpty -> null
+      grinder != null -> GrindFormat.label(grinder, setting.value, grindTexts)
+      else -> setting.label
+    }
+    val data = RecipeShareData(recipe, grindText, WeightUnit.GRAMS, encoded?.let { qrMatrix(it.uri) })
+    return RecipeSharePrompt(recipeId, data, encoded?.trimmed.orEmpty(), withoutQr = encoded == null)
   }
 
   /** Borra sin confirmar: la lista ofrece "Deshacer". */

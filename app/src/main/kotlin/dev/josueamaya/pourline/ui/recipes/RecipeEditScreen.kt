@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,6 +38,11 @@ import dev.josueamaya.pourline.recipe.RecipeValidator
 import dev.josueamaya.pourline.recipe.StageType
 import dev.josueamaya.pourline.settings.ExpertFeature
 import dev.josueamaya.pourline.settings.LocalExperienceMode
+import dev.josueamaya.pourline.share.ShareContent
+import dev.josueamaya.pourline.share.ShareSender
+import dev.josueamaya.pourline.share.ShareTarget
+import dev.josueamaya.pourline.share.rememberShareLauncher
+import dev.josueamaya.pourline.share.rememberShareSender
 import dev.josueamaya.pourline.ui.components.AntAlert
 import dev.josueamaya.pourline.ui.components.AntButton
 import dev.josueamaya.pourline.ui.components.AntButtonType
@@ -46,6 +52,7 @@ import dev.josueamaya.pourline.ui.components.AntIconButton
 import dev.josueamaya.pourline.ui.components.AntIcons
 import dev.josueamaya.pourline.ui.components.AntInput
 import dev.josueamaya.pourline.ui.components.AntInputStatus
+import dev.josueamaya.pourline.ui.components.AntMessageHost
 import dev.josueamaya.pourline.ui.components.AntModal
 import dev.josueamaya.pourline.ui.components.AntSegmented
 import dev.josueamaya.pourline.ui.components.AntSegmentedOption
@@ -71,6 +78,7 @@ fun RecipeEditScreen(
   onBack: () -> Unit,
   onDuplicated: (Long) -> Unit,
   onOpenConverter: ((ConverterArgs) -> Unit)? = null,
+  shareSender: ShareSender = rememberShareSender(),
 ) {
   val status by viewModel.status.collectAsStateWithLifecycle()
   val form by viewModel.form.collectAsStateWithLifecycle()
@@ -78,7 +86,10 @@ fun RecipeEditScreen(
   val adjustments by viewModel.adjustments.collectAsStateWithLifecycle()
   val grinders by viewModel.grinders.collectAsStateWithLifecycle()
   val currentGrinder by viewModel.currentGrinder.collectAsStateWithLifecycle()
+  val sharePrompt by viewModel.share.collectAsStateWithLifecycle()
   var confirmDiscard by rememberSaveable { mutableStateOf(false) }
+  val snackbar = remember { SnackbarHostState() }
+  val launcher = rememberShareLauncher(shareSender, snackbar)
 
   // `Saved` y `Gone` vuelven atrás; `Duplicated` abre la copia.
   LaunchedEffect(status) {
@@ -94,6 +105,15 @@ fun RecipeEditScreen(
   val requestBack = { if (dirty) confirmDiscard = true else onBack() }
   BackHandler(enabled = dirty) { confirmDiscard = true }
 
+  // Sin recorte ni aviso se comparte directamente; con él, se espera a que el usuario acepte el diálogo.
+  LaunchedEffect(sharePrompt) {
+    val prompt = sharePrompt ?: return@LaunchedEffect
+    if (!prompt.needsConfirmation) {
+      launcher.share(ShareTarget.Recipe(prompt.id), ShareContent.Recipe(prompt.data))
+      viewModel.clearShare()
+    }
+  }
+
   val errors = remember(form) { form.errors() }
 
   Scaffold(
@@ -104,8 +124,18 @@ fun RecipeEditScreen(
         navigationIcon = {
           AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = requestBack)
         },
+        actions = {
+          AntIconButton(
+            AntIcons.Share,
+            contentDescription = stringResource(R.string.recipe_share_action),
+            onClick = viewModel::prepareShare,
+            modifier = Modifier.testTag("recipe_edit_share"),
+            enabled = viewModel.isExisting && ready && !dirty,
+          )
+        },
       )
     },
+    snackbarHost = { AntMessageHost(snackbar) },
   ) { padding ->
     if (status == RecipeEditStatus.Loading) {
       AntSpin(Modifier.padding(padding).padding(AntTheme.spacing.xl))
@@ -229,6 +259,25 @@ fun RecipeEditScreen(
   }
 
   TourHost(Tours.recipeEdit, ready = status != RecipeEditStatus.Loading)
+  launcher.Host()
+
+  sharePrompt?.takeIf { it.needsConfirmation }?.let { prompt ->
+    AntModal(
+      title = stringResource(R.string.recipe_share_dialog_title),
+      text = if (prompt.withoutQr) {
+        stringResource(R.string.recipe_share_too_long_text)
+      } else {
+        stringResource(R.string.recipe_share_trimmed_text, trimmedPartsText(prompt.trimmed))
+      },
+      confirmText = stringResource(R.string.recipe_share_confirm),
+      cancelText = stringResource(R.string.recipe_share_cancel),
+      onConfirm = {
+        launcher.share(ShareTarget.Recipe(prompt.id), ShareContent.Recipe(prompt.data))
+        viewModel.clearShare()
+      },
+      onDismiss = viewModel::clearShare,
+    )
+  }
 
   if (confirmDiscard) {
     AntModal(

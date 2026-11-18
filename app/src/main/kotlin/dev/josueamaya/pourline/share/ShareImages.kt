@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.share
 
 import android.content.ClipData
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -41,11 +42,16 @@ class ShareImages(private val context: Context) {
       clipData = ClipData.newRawUri(null, uri)
       addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    return Intent.createChooser(send, title).apply { addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+    return Intent.createChooser(send, title).apply {
+      addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      // El filtro `SEND image/*` de Pourline la haría aparecer como destino de sus propias imágenes (D13).
+      putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(context.packageName, MAIN_ACTIVITY)))
+    }
   }
 
   private companion object {
     const val SHARED_DIR = "shared"
+    const val MAIN_ACTIVITY = "dev.josueamaya.pourline.MainActivity"
     const val PNG_QUALITY = 100
   }
 }
