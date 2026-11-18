@@ -7,7 +7,7 @@
 | Fecha | 2026-11-17 |
 | Rama | `feat/share-recipe` desde `develop` (`e64330a`, que ya incluye el recorrido guiado de SPEC-008). |
 | Módulos | `:app` (`:protocol` no cambia) |
-| `MAX_URI_LENGTH` | Pendiente de F0. |
+| `MAX_URI_LENGTH` | **Provisional: 331** (QR de 432 px, versión 13). F0 no cumple el mínimo de 500: el plan se detuvo y la decisión es del usuario. Ver "Resultado de F0". |
 
 El spec no trae fases, así que este plan las define. El orden va de dentro afuera. Primero, un spike en el dispositivo
 (F0) que cierra los dos riesgos del §6 y fija `MAX_URI_LENGTH`. Si F0 falla, el plan se detiene y se consulta al
@@ -156,7 +156,7 @@ Orden: F0 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9. F2 y F
 
 | Fase | Contenido | Tamaño | Estado |
 |---|---|---|---|
-| F0 | Spike en el dispositivo: línea base, dependencias, manifiesto sin `INTERNET`, Code Scanner y `MAX_URI_LENGTH` | M | Pendiente |
+| F0 | Spike en el dispositivo: línea base, dependencias, manifiesto sin `INTERNET`, Code Scanner y `MAX_URI_LENGTH` | M | Hecha en parte: detenida, `MAX_URI_LENGTH < 500` y escáner sin verificar |
 | F1 | Códec JVM puro: `RecipeShareCodec`, recorte y errores | M | Pendiente |
 | F2 | Reglas de importación JVM: idéntica, sufijo, `routeImport` y `PendingRecipeImport` | S | Pendiente |
 | F3 | Resolución de molienda JVM | S | Pendiente |
@@ -275,6 +275,56 @@ En el repo solo queda lo que se reutiliza: las dependencias, `QrCode.kt`, `QrIma
 - Si `MAX_URI_LENGTH < 500`, o si no se lee con el escáner: agrandar el QR (160 a 180 dp), usar siempre 9:16, o bajar
   la corrección a L (§6). La decisión es del usuario.
 - Si las `.so` nuevas no están alineadas a 16 KB: buscar una versión alineada antes de seguir.
+
+### Resultado de F0 (2026-11-18)
+
+**Línea base** (`develop` en `e64330a`, `emulator-5556`): 932 tests JVM (1 saltado, 0 fallos); 608 instrumentados (5
+saltados, 3 fallos conocidos: `CoffeeDetailScreenTest.theFactsAreFoldedByDefaultAndOpenOnTap` y los dos de
+`SessionPerformanceTest`); `lintDebug` con 2 errores (`StringFormatInvalid` en `four_six_split_*`, previos) y 21 avisos;
+APK de debug de 60 403 569 bytes.
+
+**Dependencias:** `com.google.zxing:core` 3.5.4, `com.google.mlkit:barcode-scanning` 17.3.0 y
+`com.google.android.gms:play-services-code-scanner` 16.1.0 (las últimas estables de Maven Central y Google Maven).
+
+| Criterio de salida | Resultado |
+|---|---|
+| 1. Manifiestos sin `INTERNET` ni `CAMERA`, idénticos a la línea base | Cumple. `uses-permission` y `uses-feature` de debug y release idénticos a la línea base; el informe del fusionador muestra `INTERNET` rechazado en `transport-backend-cct` por el `tools:node="remove"`; `apkanalyzer` da la misma lista. |
+| 2. El Code Scanner devuelve el URI sin `INTERNET` | **Sin verificar.** Hace falta una cámara que vea un QR (lo apunta una persona o una escena virtual del emulador). El teléfono físico es el móvil personal del usuario y estaba en uso; no se le lanzó nada más. |
+| 3. `MAX_URI_LENGTH >= 500` | **No cumple.** Ver abajo. |
+| 4. `zipalign -P 16` da `OK` en las `.so` | Cumple (también `libbarhopper_v3.so`). |
+
+El APK crece de 60 403 569 a 81 167 759 bytes (+20,8 MB, el modelo incluido de ML Kit `barcode-scanning`).
+
+**Legibilidad (`QrLegibilityTest.sweep`, 5 muestras por longitud, QR de 432 px, 1080 x 1350):** tal cual, todas las
+muestras se leen hasta la versión 24. Tras reducir al 50 % y JPEG 70, solo se leen siempre hasta la versión 15 (375 y 400
+caracteres); desde la 16 falla de forma irregular (no monótona, depende de cómo caen los píxeles al reducir):
+
+| Longitud | 300 | 350 | 375 | 400 | 425 | 475 | 525 | 600 | 700 |
+|---|---|---|---|---|---|---|---|---|---|
+| Versión | 13 | 14 | 15 | 15 | 16 | 17 | 18 | 19 | 21 |
+| Aciertos reducido + JPEG 70 | 5/5 | 5/5 | 5/5 | 5/5 | 2/5 | 0/5 | 3/5 | 0/5 | 0/5 |
+
+La regla de D8 (`Vmax = 15`, una versión de margen) da 362 (capacidad de la versión 14), pero con 362 el test
+`maxUriLengthIsLegible` falla en 1 de 20 muestras (19/20 con la reducción y JPEG 70). Por eso el valor provisional es
+**331** (versión 13, 20/20).
+
+Otras medidas, con el QR en el borde derecho del lienzo y las mismas muestras (aciertos reducido + JPEG 70):
+
+- QR de 504 px (168 dp): se lee de forma irregular desde la versión 14.
+- QR de 540 px (180 dp): todas las muestras hasta la versión 17 (500 caracteres), mezcla en la 18 y 19, irregular después.
+- QR de 576 px (192 dp): peor que el de 540 px por el mismo efecto del redimensionado.
+- Corrección L con 432 px: más capacidad por versión, pero no mejora la lectura reducida (falla desde la versión 12 o 13 a
+  ratos).
+
+**Receta de 20 pasos sin textos** (script en el scratchpad con el esquema del §3.1, nombre de 60, método, temperatura y
+molienda): 430 a 490 caracteres, según los valores. La V60 clásica ocupa unos 232. Con 331, **una receta de 20 pasos no
+cabe aunque se quiten todos los textos**; y con 362 tampoco.
+
+**Alternativas del §6 (decide el usuario):** (a) agrandar el QR a 180 dp (540 px), con lo que la versión 17 se lee con
+fiabilidad (hasta unos 500 caracteres) y una receta de 20 pasos sin textos cabe justo, sin margen; (b) usar siempre 9:16
+y un QR aún mayor (hay que medirlo: el redimensionado hace que más grande no sea siempre mejor); (c) relajar el criterio
+de lectura del spec (reducción al 50 % es más duro que lo que hace WhatsApp con una imagen de 1080 px); (d) bajar la
+corrección a L no ayuda con el criterio actual.
 
 Commit sugerido: `build(deps): add QR generation and reading libraries for recipe sharing`.
 

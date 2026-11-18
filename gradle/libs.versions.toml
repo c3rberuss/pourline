@@ -17,6 +17,9 @@ room = "2.8.5"
 ksp = "2.3.12"
 kotlinxSerialization = "1.8.1"
 mlkitTextRecognition = "16.0.1"
+mlkitBarcodeScanning = "17.3.0"
+playServicesCodeScanner = "16.1.0"
+zxing = "3.5.4"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -46,6 +49,9 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkitTextRecognition" }
+mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcodeScanning" }
+play-services-code-scanner = { module = "com.google.android.gms:play-services-code-scanner", version.ref = "playServicesCodeScanner" }
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelNav3" }
 
 [plugins]
