@@ -792,6 +792,11 @@
     <string name="grind_calibration_replace">Reemplazar</string>
     <string name="grind_calibration_invalid">Revisa los ajustes: cada uno tiene que estar en la escala de su molino</string>
     <string name="grind_calibration_pair">%1$s %2$s = %3$s %4$s</string>
+    <string name="grinder_detail_calibrations">Equivalencias</string>
+    <string name="grinder_detail_calibrations_empty">Guarda los ajustes que muelen igual en tus molinos para afinar la conversión</string>
+    <string name="grind_calibration_delete_title">¿Borrar la equivalencia %s?</string>
+    <string name="grind_calibration_edit_description">Editar %s</string>
+    <string name="grind_calibration_delete_description">Borrar %s</string>
     <string name="brew_notice_channel">Preparación en curso</string>
     <string name="brew_notice_channel_description">Mantiene la preparación activa cuando sales de la app</string>
     <string name="brew_notice_water">%1$s de %2$s</string>

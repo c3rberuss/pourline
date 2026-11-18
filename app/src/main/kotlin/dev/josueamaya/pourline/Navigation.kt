@@ -262,6 +262,7 @@ private fun tabEntryProvider(
       onBack = ::back,
       onEdit = { id -> stack.add(GrinderEdit(id = id)) },
       onDuplicate = { id -> stack.add(GrinderEdit(fromId = id)) },
+      toCalibrations = key.toCalibrations,
     )
   }
   tabEntry<GrinderEdit>(tab) { key ->

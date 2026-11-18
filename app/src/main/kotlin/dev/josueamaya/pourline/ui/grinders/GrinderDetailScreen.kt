@@ -1,6 +1,8 @@
 package dev.josueamaya.pourline.ui.grinders
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,10 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -31,21 +35,26 @@ import dev.josueamaya.pourline.ui.components.AntButton
 import dev.josueamaya.pourline.ui.components.AntButtonType
 import dev.josueamaya.pourline.ui.components.AntIconButton
 import dev.josueamaya.pourline.ui.components.AntIcons
+import dev.josueamaya.pourline.ui.components.AntMessageHost
 import dev.josueamaya.pourline.ui.components.AntModal
 import dev.josueamaya.pourline.ui.components.AntSelect
 import dev.josueamaya.pourline.ui.components.AntSelectOption
 import dev.josueamaya.pourline.ui.components.AntSpin
+import dev.josueamaya.pourline.ui.components.AntStatus
 import dev.josueamaya.pourline.ui.components.AntTag
 import dev.josueamaya.pourline.ui.components.AntTagColor
 import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.components.AntTopBar
+import dev.josueamaya.pourline.ui.components.showAntMessage
 import dev.josueamaya.pourline.ui.history.label
 import dev.josueamaya.pourline.ui.theme.AntTheme
 
 /**
- * El detalle de un molino (D7): escala, dirección, unidades, la regla con el rango de un método, rangos, anclas, la
- * fuente (si es predefinido) y las acciones según de quién sea.
+ * El detalle de un molino (D7): escala, dirección, unidades, la regla con el rango de un método, rangos, anclas, sus
+ * equivalencias con otros molinos (D54), la fuente (si es predefinido) y las acciones según de quién sea.
+ *
+ * @param toCalibrations lleva la sección de equivalencias a la vista, una sola vez ("Añade otra equivalencia").
  */
 @Composable
 fun GrinderDetailScreen(
@@ -53,13 +62,29 @@ fun GrinderDetailScreen(
   onBack: () -> Unit,
   onEdit: (Long) -> Unit,
   onDuplicate: (Long) -> Unit,
+  toCalibrations: Boolean = false,
 ) {
   val ui by viewModel.ui.collectAsStateWithLifecycle()
+  val draft by viewModel.editor.draft.collectAsStateWithLifecycle()
+  val texts = rememberGrindTexts()
   var confirmDelete by rememberSaveable { mutableStateOf(false) }
+  var deletingPair by rememberSaveable { mutableStateOf<Long?>(null) }
+  var broughtIntoView by rememberSaveable { mutableStateOf(false) }
+  val calibrationsRequester = remember { BringIntoViewRequester() }
+  val snackbar = remember { SnackbarHostState() }
+  val updatedText = stringResource(R.string.grind_calibration_updated)
   LaunchedEffect(ui) { if (ui == GrinderDetailUi.Gone) onBack() }
+  LaunchedEffect(viewModel) {
+    viewModel.editor.events.collect { event ->
+      when (event) {
+        CalibrationEvent.Updated -> snackbar.showAntMessage(updatedText, AntStatus.Success)
+      }
+    }
+  }
 
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
+    snackbarHost = { AntMessageHost(snackbar) },
     topBar = {
       AntTopBar(
         title = (ui as? GrinderDetailUi.Ready)?.grinder?.model.orEmpty(),
@@ -75,6 +100,13 @@ fun GrinderDetailScreen(
       return@Scaffold
     }
     val grinder = ready.grinder
+    val showCalibrations = grinder.owned || ready.groups.isNotEmpty()
+    LaunchedEffect(toCalibrations, showCalibrations) {
+      if (toCalibrations && showCalibrations && !broughtIntoView) {
+        broughtIntoView = true
+        calibrationsRequester.bringIntoView()
+      }
+    }
     Column(
       Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(AntTheme.spacing.base),
       verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.base),
@@ -82,6 +114,18 @@ fun GrinderDetailScreen(
       Header(grinder, ready.isDefault)
       Facts(grinder)
       Ranges(grinder)
+      if (showCalibrations) {
+        GrinderCalibrations(
+          grinder = grinder,
+          groups = ready.groups,
+          canAdd = ready.canAddCalibration,
+          texts = texts,
+          onAdd = viewModel::addCalibration,
+          onEdit = viewModel::editCalibration,
+          onDelete = { deletingPair = it.id },
+          modifier = Modifier.bringIntoViewRequester(calibrationsRequester),
+        )
+      }
       GrindAttribution(listOf(grinder), testTag = "grinder_attribution")
       Actions(
         ready = ready,
@@ -91,6 +135,38 @@ fun GrinderDetailScreen(
         onEdit = { onEdit(grinder.id) },
         onDuplicate = { onDuplicate(grinder.id) },
         onDelete = { confirmDelete = true },
+      )
+    }
+    val sheet = draft
+    if (sheet != null) {
+      // Al editar, el otro molino puede ser uno retirado: no está entre los que se ofrecen al añadir, pero la hoja lo necesita.
+      val editingOther = ready.groups.map { it.other }.filter { g -> g.id == sheet.otherId && ready.others.none { it.id == g.id } }
+      CalibrationSheet(
+        draft = sheet,
+        grinder = grinder,
+        others = ready.others + editingOther,
+        texts = texts,
+        onChange = viewModel.editor::update,
+        onSave = viewModel.editor::save,
+        onReplace = viewModel.editor::replace,
+        onDismiss = viewModel.editor::dismiss,
+      )
+    }
+    val pending = deletingPair?.let { id -> ready.groups.firstNotNullOfOrNull { g -> g.pairs.firstOrNull { it.id == id }?.let { pair -> g to pair } } }
+    if (pending != null) {
+      val (group, pair) = pending
+      AntModal(
+        title = stringResource(R.string.grind_calibration_delete_title, calibrationPairText(pair, grinder, group.other, texts)),
+        text = "",
+        confirmText = stringResource(R.string.grinder_delete_confirm),
+        cancelText = stringResource(R.string.grinder_delete_cancel),
+        onConfirm = {
+          deletingPair = null
+          viewModel.deleteCalibration(pair.id)
+        },
+        onDismiss = { deletingPair = null },
+        modifier = Modifier.testTag("grinder_calibration_delete_dialog"),
+        danger = true,
       )
     }
     if (confirmDelete) {

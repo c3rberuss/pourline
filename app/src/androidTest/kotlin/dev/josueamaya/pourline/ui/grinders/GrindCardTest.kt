@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.ui.grinders
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -140,8 +141,9 @@ class GrindCardTest {
     ui.waitFor("grind_card_fix")
     ui.node("grind_card_fix").assertTextContains(context.getString(R.string.grind_card_fix_calibration), substring = true)
     ui.click("grind_card_fix")
-    // El detalle del molino elegido (la sección "Equivalencias" llega en F7).
-    ui.waitFor("grinder_detail_scale")
+    // El detalle del molino elegido, con la sección "Equivalencias" ya a la vista.
+    ui.waitFor("grinder_calibrations")
+    ui.node("grinder_calibrations").assertIsDisplayed()
   }
 
   @Test

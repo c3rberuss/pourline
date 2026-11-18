@@ -793,6 +793,11 @@
     <string name="grind_calibration_replace">Replace</string>
     <string name="grind_calibration_invalid">Check the settings: each one must be within its grinder\'s scale</string>
     <string name="grind_calibration_pair">%1$s %2$s = %3$s %4$s</string>
+    <string name="grinder_detail_calibrations">Equivalences</string>
+    <string name="grinder_detail_calibrations_empty">Save the settings that grind the same on your grinders to fine-tune the conversion</string>
+    <string name="grind_calibration_delete_title">Delete the equivalence %s?</string>
+    <string name="grind_calibration_edit_description">Edit %s</string>
+    <string name="grind_calibration_delete_description">Delete %s</string>
     <string name="brew_notice_channel">Brew in progress</string>
     <string name="brew_notice_channel_description">Keeps the brew running when you leave the app</string>
     <string name="brew_notice_water">%1$s of %2$s</string>
