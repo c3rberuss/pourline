@@ -115,6 +115,39 @@ class RecipeEditFormTest {
   }
 
   @Test
+  fun `changing a duration shifts the start of the following steps and keeps the gaps`() {
+    val form = filled() // 0:00 (10 s), 0:10 (35 s), 0:45 (20 s), 1:05 (25 s), 1:30 (25 s)
+    val longer = form.updateStage(1, form.stages[1].copy(duration = "45"))
+    assertEquals(listOf("0:00", "0:10", "0:55", "1:15", "1:40"), longer.stages.map { it.start })
+    assertTrue(longer.isValid)
+
+    val withGap = form.updateStage(3, form.stages[3].copy(start = "1:10")) // 5 s de hueco antes del último
+    val shorter = withGap.updateStage(2, withGap.stages[2].copy(duration = "15"))
+    assertEquals(listOf("0:00", "0:10", "0:45", "1:05", "1:25"), shorter.stages.map { it.start })
+  }
+
+  @Test
+  fun `retyping a duration shifts by the real difference and the last step shifts nothing`() {
+    val form = filled()
+    val retyped = listOf("1", "", "3", "30").fold(form) { f, d -> f.updateStage(1, f.stages[1].copy(duration = d)) }
+    assertEquals(listOf("0:00", "0:10", "0:40", "1:00", "1:25"), retyped.stages.map { it.start })
+
+    val last = form.updateStage(4, form.stages[4].copy(duration = "40"))
+    assertEquals(form.stages.dropLast(1), last.stages.dropLast(1))
+  }
+
+  @Test
+  fun `an unreadable duration or start is not shifted`() {
+    val form = filled()
+    val unreadable = form.updateStage(1, form.stages[1].copy(duration = "3a"))
+    assertEquals(form.stages.map { it.start }, unreadable.stages.map { it.start })
+
+    val badStart = form.updateStage(3, form.stages[3].copy(start = "abc"))
+    val shifted = badStart.updateStage(1, badStart.stages[1].copy(duration = "40"))
+    assertEquals(listOf("0:00", "0:10", "0:50", "abc", "1:35"), shifted.stages.map { it.start })
+  }
+
+  @Test
   fun `add stage after a wait takes the water of the last pour`() {
     val form = RecipeEditForm(dose = "15", name = "x").copy(
       stages = listOf(
