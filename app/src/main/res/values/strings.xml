@@ -495,6 +495,8 @@
     <string name="prepare_start_disabled">Conecta la báscula para empezar.</string>
     <string name="prepare_start_scaleless">Empezar sin báscula</string>
     <string name="prepare_range_error">La dosis va de 5 a 60 g y el ratio, de 10 a 20.</string>
+    <string name="prepare_dose_range_error">La dosis va de 5 a 60 g.</string>
+    <string name="prepare_recipe_scaled">La receta es para %1$s g: el agua y los pasos se ajustan a tu dosis.</string>
     <string name="scale_card_no_permission">Necesitamos permiso de Bluetooth</string>
     <string name="scale_card_grant">Dar permisos</string>
     <string name="scale_card_bluetooth_off">Bluetooth apagado</string>

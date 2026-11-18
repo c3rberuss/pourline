@@ -69,9 +69,19 @@
 - Debajo de "Empezar" aparece un botón secundario **"Empezar sin báscula"**
   (`testTag("prepare_start_scaleless")`), **siempre visible**, con la báscula lista o sin ella.
 - Se habilita con las mismas condiciones que el plan de "Empezar", salvo la báscula:
-  - con receta, siempre;
+  - con receta, siempre que su dosis escrita (si se puede editar) sea válida;
   - sin receta, solo si la dosis y el ratio de Preparar son válidos (los campos libres sin error
     de rango).
+- **Dosis con receta (enmienda 2026-11-17):** si la receta tiene dosis, el campo "Dosis" de
+  Preparar es editable (`testTag("prepare_dose")`, mismo rango que la dosis libre: 5 a 60 g, un
+  decimal). La receta se escala a esa dosis igual que con una dosis capturada (agua de cada paso
+  × dosis / dosis de la receta; los tiempos no cambian), y el ratio queda igual.
+  - `ScaleSessionManager.setRecipeDose(grams)` la guarda atada a la receta elegida; al elegir otra
+    se olvida. Una dosis capturada por la báscula manda sobre ella.
+  - Con la dosis distinta de la de la receta se muestra "La receta es para X g: el agua y los
+    pasos se ajustan a tu dosis." (`testTag("prepare_recipe_scaled")`).
+  - Con la dosis inválida, "Empezar sin báscula" se deshabilita y sale `prepare_dose_range_error`.
+  - Con báscula, esa dosis es también el objetivo del paso de dosis de `PrepFlow`.
 - El texto de ayuda `prepare_start_disabled` se mantiene para "Empezar". Con la báscula sin
   conectar, el botón nuevo es el camino visible.
 - Al pulsarlo:

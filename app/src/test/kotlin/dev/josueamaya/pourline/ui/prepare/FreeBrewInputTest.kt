@@ -52,6 +52,14 @@ class FreeBrewInputTest {
   }
 
   @Test
+  fun `with a scalable recipe its typed dose has to be valid`() {
+    assertTrue(canStartScaleless(hasTarget = true, doseText = "", ratioText = "", recipeDoseText = "15"))
+    assertTrue(canStartScaleless(hasTarget = true, doseText = "", ratioText = "", recipeDoseText = "12,5"))
+    assertFalse(canStartScaleless(hasTarget = true, doseText = "15", ratioText = "16", recipeDoseText = ""))
+    assertFalse(canStartScaleless(hasTarget = true, doseText = "15", ratioText = "16", recipeDoseText = "80"))
+  }
+
+  @Test
   fun `without a recipe it needs a valid dose and ratio`() {
     assertTrue(canStartScaleless(hasTarget = false, doseText = "15", ratioText = "16"))
     assertTrue(canStartScaleless(hasTarget = false, doseText = " 18,5 ", ratioText = "16.7"))

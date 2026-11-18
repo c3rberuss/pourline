@@ -149,6 +149,48 @@ class ScaleSessionManagerScalelessTest {
   }
 
   @Test
+  fun `a dose typed for the recipe scales its water and steps`() {
+    selectV60()
+    val nominal = ui.target!!.curve
+    manager.setRecipeDose(12.0)
+
+    assertEquals(12.0, ui.target!!.scaledDoseG!!, 1e-9)
+    assertEquals(200.0, ui.target!!.curve.finalWaterG, 1e-9)
+    manager.startScalelessSession(plan)
+
+    assertEquals(12.0, ui.plannedDoseG!!, 1e-9)
+    assertEquals(200.0, ui.targetWaterG!!, 1e-9)
+    nominal.stages.zip(ui.target!!.curve.stages).forEach { (before, after) ->
+      assertEquals(before.targetWaterG * 0.8, after.targetWaterG, 1e-9)
+      assertEquals(before.startMs, after.startMs)
+    }
+    manager.scalelessStartTimer()
+    advanceSeconds(10)
+    manager.finishBrew()
+    assertEquals(12.0, saver.calls.single().brew.doseG!!, 1e-9)
+  }
+
+  @Test
+  fun `the typed dose is forgotten when another recipe is picked`() {
+    selectV60()
+    manager.setRecipeDose(12.0)
+    targets.putRecipe(2, v60Classic())
+    references.setReference(ReferenceKey.Recipe(2))
+    references.setReference(ReferenceKey.Recipe(1))
+
+    assertNull(ui.target!!.scaledDoseG)
+    assertEquals(250.0, ui.target!!.curve.finalWaterG, 1e-9)
+  }
+
+  @Test
+  fun `the typed dose does nothing without a recipe`() {
+    manager.setRecipeDose(12.0)
+    manager.startScalelessSession(plan)
+
+    assertEquals(15.0, ui.plannedDoseG!!, 1e-9)
+  }
+
+  @Test
   fun `it freezes the recipe, the coffee and the grind at the start`() {
     selectV60()
     coffees.put(PickedCoffee(7, "Etiopía", null, null))

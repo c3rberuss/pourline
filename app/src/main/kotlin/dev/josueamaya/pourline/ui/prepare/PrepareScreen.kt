@@ -100,6 +100,11 @@ fun PrepareScreen(
   // reinicia al poner o quitar la receta, como cuando los campos salían de la composición.
   var doseText by rememberSaveable(ui.target == null) { mutableStateOf(formatInput(ui.plan.doseG)) }
   var ratioText by rememberSaveable(ui.target == null) { mutableStateOf(formatInput(ui.plan.ratio)) }
+  // La dosis de una receta que se puede escalar; se reinicia al elegir otra receta.
+  var recipeDoseText by rememberSaveable(ui.target?.key, ui.recipeNominalDoseG) {
+    mutableStateOf(ui.recipeDoseG?.let(::formatInput).orEmpty())
+  }
+  val recipeDoseEditable = ui.target != null && ui.recipeNominalDoseG != null
 
   val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
     viewModel.refreshPermissions()
@@ -178,6 +183,8 @@ fun PrepareScreen(
         onDoseText = { doseText = it },
         ratioText = ratioText,
         onRatioText = { ratioText = it },
+        recipeDoseText = recipeDoseText.takeIf { recipeDoseEditable },
+        onRecipeDoseText = { recipeDoseText = it },
       )
       GrindCard(
         state = grind,
@@ -217,7 +224,7 @@ fun PrepareScreen(
           },
           modifier = Modifier.fillMaxWidth().testTag("prepare_start_scaleless"),
           size = AntSize.Large,
-          enabled = canStartScaleless(ui.target != null, doseText, ratioText),
+          enabled = canStartScaleless(ui.target != null, doseText, ratioText, recipeDoseText.takeIf { recipeDoseEditable }),
         )
       }
     }
@@ -280,7 +287,10 @@ fun PrepareScreen(
   }
 }
 
-/** Con receta, la dosis, el ratio y el agua son suyos y de solo lectura; sin receta se editan la dosis y el ratio. */
+/**
+ * Con receta, el ratio y el agua son suyos y de solo lectura; la dosis se edita si la receta la tiene ([recipeDoseText]
+ * no es `null`) y la receta se escala a ella. Sin receta se editan la dosis y el ratio.
+ */
 @Composable
 private fun DoseCard(
   ui: PrepareUiState,
@@ -289,22 +299,54 @@ private fun DoseCard(
   onDoseText: (String) -> Unit,
   ratioText: String,
   onRatioText: (String) -> Unit,
+  recipeDoseText: String?,
+  onRecipeDoseText: (String) -> Unit,
 ) {
   AntCard(Modifier.fillMaxWidth()) {
     if (ui.target != null) {
       Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm)) {
-        AntStatistic(
-          value = ui.recipeDoseG?.let { formatGrams(it) } ?: stringResource(R.string.prepare_empty_value),
-          modifier = Modifier.weight(1f).testTag("prepare_dose"),
-          title = stringResource(R.string.prepare_dose),
-          suffix = ui.recipeDoseG?.let { stringResource(R.string.prepare_grams) },
-        )
+        if (recipeDoseText != null) {
+          Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
+            AntText(stringResource(R.string.prepare_dose), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
+            AntInput(
+              value = recipeDoseText,
+              onValueChange = {
+                onRecipeDoseText(it)
+                viewModel.setRecipeDose(it)
+              },
+              modifier = Modifier.fillMaxWidth().testTag("prepare_dose"),
+              suffix = { AntText(stringResource(R.string.prepare_grams), type = AntTextType.Secondary) },
+              status = if (parseFreeDose(recipeDoseText) != null) AntInputStatus.Default else AntInputStatus.Error,
+              keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            )
+          }
+        } else {
+          AntStatistic(
+            value = stringResource(R.string.prepare_empty_value),
+            modifier = Modifier.weight(1f).testTag("prepare_dose"),
+            title = stringResource(R.string.prepare_dose),
+          )
+        }
         AntStatistic(
           value = ui.recipeRatio?.let { stringResource(R.string.prepare_ratio_value, formatRatio(it)) } ?: stringResource(R.string.prepare_empty_value),
           modifier = Modifier.weight(1f).testTag("prepare_ratio"),
           title = stringResource(R.string.prepare_ratio),
         )
         WaterStatistic(ui, Modifier.weight(1f))
+      }
+      when {
+        recipeDoseText != null && parseFreeDose(recipeDoseText) == null -> AntText(
+          stringResource(R.string.prepare_dose_range_error),
+          Modifier.testTag("prepare_range_error"),
+          type = AntTextType.Danger,
+          style = AntTheme.typography.textSM,
+        )
+        ui.recipeScaled -> AntText(
+          stringResource(R.string.prepare_recipe_scaled, formatGrams(ui.recipeNominalDoseG ?: 0.0)),
+          Modifier.testTag("prepare_recipe_scaled"),
+          type = AntTextType.Secondary,
+          style = AntTheme.typography.textSM,
+        )
       }
     } else {
       FreeFields(ui, viewModel, doseText, onDoseText, ratioText, onRatioText)

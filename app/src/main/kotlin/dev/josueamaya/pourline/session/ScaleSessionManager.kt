@@ -125,6 +125,12 @@ class ScaleSessionManager(
 
   private var scalelessFrozen: ScalelessFrozen? = null
 
+  /**
+   * La dosis que el usuario escribió en Preparar para la receta elegida (en gramos), atada a su referencia: al elegir
+   * otra deja de aplicar. Escala la receta como una dosis capturada, que manda si la hay.
+   */
+  private var plannedDose: Pair<ReferenceKey, Double>? = null
+
   /** El reloj de 100 ms de la sesión sin báscula mientras está en `Active` (D5). */
   private var scalelessTicker: Job? = null
 
@@ -341,7 +347,11 @@ class ScaleSessionManager(
   private fun onResolution(resolution: Resolution) {
     when (resolution) {
       Resolution.None -> base = null
-      is Resolution.Resolved -> base = resolution.base
+      is Resolution.Resolved -> {
+        base = resolution.base
+        // La dosis escrita era para otra receta.
+        if (plannedDose?.first != resolution.base.key) plannedDose = null
+      }
       Resolution.Removed, Resolution.Unreadable -> {
         base = null
         references.setReference(null)
@@ -455,7 +465,7 @@ class ScaleSessionManager(
 
   private fun scaledTarget(dose: Double?, unit: WeightUnit): ActiveTarget? {
     val base = base ?: return null
-    val doseG = dose?.let { toGrams(it, unit) }
+    val doseG = dose?.let { toGrams(it, unit) } ?: plannedDose?.takeIf { it.first == base.key }?.second
     if (memoBase === base && memoDoseG == doseG) return memoTarget
     val nominal = base.nominalDoseG
     val factor = if (doseG != null && doseG > 0 && nominal != null && nominal > 0) doseG / nominal else 1.0
@@ -627,7 +637,7 @@ class ScaleSessionManager(
     armed = false
     forgetFrozen()
     sessionPlan = plan
-    val objective = _ui.value.target?.nominalDoseG ?: plan.doseG
+    val objective = _ui.value.target?.let { it.scaledDoseG ?: it.nominalDoseG } ?: plan.doseG
     prep = PrepFlow(objective).also { flow -> flow.start(_ui.value.dose?.let { toGrams(it, _ui.value.unit) }) }
     if (_ui.value.savedBrew != null) saveGeneration.incrementAndGet()
     publish { it.copy(savedBrew = null, lastFit = null, lastBrew = null) }
@@ -696,6 +706,17 @@ class ScaleSessionManager(
       BrewPhase.Armed -> clearDose()
     }
     startSession(plan)
+  }
+
+  /**
+   * La dosis de Preparar para la receta elegida (en gramos): la receta se escala a ella (agua y pasos) mientras no haya
+   * una dosis capturada. `null` vuelve a la dosis de la receta. Sin receta, o con una que no tiene dosis, no hace nada.
+   */
+  fun setRecipeDose(grams: Double?) {
+    val current = base ?: return
+    if (current.nominalDoseG == null) return
+    plannedDose = grams?.let { current.key to it }
+    publish()
   }
 
   /**
