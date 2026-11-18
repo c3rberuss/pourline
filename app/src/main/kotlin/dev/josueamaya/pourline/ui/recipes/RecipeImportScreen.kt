@@ -105,7 +105,7 @@ fun RecipeImportScreen(viewModel: RecipeImportViewModel, onDone: () -> Unit, uni
     ) {
       if (ready.shared.trimmed.isNotEmpty()) {
         AntAlert(
-          message = stringResource(R.string.recipe_import_trimmed, trimmedPartsText(ready.shared.trimmed)),
+          message = stringResource(R.string.recipe_import_trimmed, trimmedPartsText(ready.shared.trimmed, ready.shared.partialInstructions)),
           type = AntStatus.Warning,
           modifier = Modifier.testTag("recipe_import_trimmed"),
         )

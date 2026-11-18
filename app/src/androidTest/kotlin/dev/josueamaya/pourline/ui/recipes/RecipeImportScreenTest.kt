@@ -155,6 +155,56 @@ class RecipeImportScreenTest {
     assertFalse(exists("recipe_import_notes"))
   }
 
+  /** [count] pasos que alternan `POUR` y `WAIT`, todos con una instrucción aleatoria de [instructionLength] caracteres. */
+  private fun stagesWithInstructions(count: Int, instructionLength: Int): List<RecipeStage> {
+    var startMs = 0L
+    var water = 0.0
+    return List(count) { i ->
+      val pour = i % 2 == 0
+      if (pour) water += 20.0
+      RecipeStage(
+        name = if (pour) "Vertido ${i + 1}" else null,
+        startMs = startMs,
+        targetWaterG = water,
+        durationMs = 20_000,
+        type = if (pour) StageType.POUR else StageType.WAIT,
+        instruction = randomText(instructionLength, 10L + i),
+      ).also { startMs += 25_000 }
+    }
+  }
+
+  private fun trimmedMessage(vararg parts: Int): String {
+    val names = parts.map { context.getString(it) }
+    val list = if (names.size == 1) names[0] else context.getString(R.string.recipe_trimmed_list_two, names[0], names[1])
+    return context.getString(R.string.recipe_import_trimmed, list)
+  }
+
+  @Test
+  fun showsThePartialInstructionsWarning() {
+    val long = recipe(notes = randomText(300, 99), stages = stagesWithInstructions(10, 60))
+    val encoded = RecipeShareCodec.encode(long, null)!!
+    assertTrue("el recorte debía ser parcial: ${encoded.droppedInstructions} quitadas y ${encoded.keptInstructions} conservadas", encoded.partialInstructions)
+    show(encoded.uri)
+
+    rule.onNodeWithTag("recipe_import_trimmed").assertIsDisplayed()
+    rule.onNode(hasText(trimmedMessage(R.string.recipe_trimmed_notes, R.string.recipe_trimmed_some_instructions))).assertExists()
+    // Las instrucciones que cupieron siguen en la vista previa; las del final no.
+    rule.onNodeWithTag("recipe_import_step_instruction_0").performScrollTo().assertIsDisplayed()
+    assertFalse(exists("recipe_import_step_instruction_9"))
+  }
+
+  @Test
+  fun aQrWithEveryInstructionRemovedSaysTheStepInstructions() {
+    val long = recipe(name = randomText(400, 5), stages = stagesWithInstructions(3, 200))
+    val encoded = RecipeShareCodec.encode(long, null)!!
+    assertEquals(3 to 0, encoded.droppedInstructions to encoded.keptInstructions)
+    show(encoded.uri)
+
+    rule.onNodeWithTag("recipe_import_trimmed").assertIsDisplayed()
+    rule.onNode(hasText(trimmedMessage(R.string.recipe_trimmed_instructions))).assertExists()
+    assertFalse(exists("recipe_import_step_instruction_0"))
+  }
+
   @Test
   fun anIdenticalRecipeWarnsAndStillSavesWithASuffix() {
     val builtIn = runBlocking { recipes.all() }.first { it.builtInKey == "v60_classic" }

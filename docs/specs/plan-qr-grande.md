@@ -164,7 +164,7 @@ la cadena nueva).
 | F0 | Línea base, tarjeta con el QR de 6 px y alto variable, medición sobre la tarjeta real y `MAX_URI_LENGTH` | L | Hecha |
 | F1 | Códec: instrucciones de una en una, recuentos, `EncodeResult` y la receta 4:6 del usuario | M | Hecha |
 | F2 | Compartir: motivo de "sin QR", "algunos pasos" y aviso de datos no válidos | M | Hecha |
-| F3 | Importar: aviso de recorte parcial | S | Pendiente |
+| F3 | Importar: aviso de recorte parcial | S | Hecha |
 | F4 | Verificación: suites, comprobaciones, E2E por adb, capturas y cierre | M | Pendiente |
 
 Cada fase deja `:app` compilando y sus tests en verde. Se compila y se prueba solo `:app`, nunca con `./gradlew build`
@@ -409,6 +409,12 @@ instrucción.
 **Criterio de salida:** todo en verde.
 
 Commit sugerido: `feat(recipes): warn about partially trimmed instructions on import`.
+
+#### Resultado de F3
+
+- `emulator-5560`: `RecipeImportScreenTest` y `RecipeImportNavigationTest`, 22 de 22 (los dos nuevos incluidos).
+- `:app:lintDebug`: 2 errores y 21 avisos, como la línea base.
+- Con el tope de 600, `aQrWithEveryInstructionRemovedSaysTheStepInstructions` usa un nombre de 400 caracteres (no 500).
 
 ### F4. Verificación y cierre
 
