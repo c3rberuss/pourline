@@ -62,7 +62,7 @@ data class RecipeFormErrors(
 
 /**
  * Una fila de paso tal como se escribe: inicio `m:ss` o segundos, "Hasta" en g (solo en `POUR`) y duración en s.
- * En `SWIRL` y `WAIT`, [water] va vacío: el agua es la del vertido anterior y no se pide.
+ * En `SWIRL`, `WAIT` y `ACTION`, [water] va vacío: el agua es la del vertido anterior y no se pide.
  */
 data class StageForm(
   val name: String = "",
@@ -142,7 +142,7 @@ data class RecipeEditForm(
   }
 
   /**
-   * Cambia el tipo de un paso. A `SWIRL` y `WAIT` vacía el agua (no se pide); a `POUR` propone el agua del último
+   * Cambia el tipo de un paso. A `SWIRL`, `WAIT` y `ACTION` vacía el agua (no se pide); a `POUR` propone el agua del último
    * `POUR` anterior más 50 g. Si el tipo no cambia, no toca nada.
    */
   fun setStageType(index: Int, type: StageType): RecipeEditForm {

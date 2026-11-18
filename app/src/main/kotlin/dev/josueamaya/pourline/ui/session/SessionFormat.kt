@@ -35,22 +35,25 @@ fun stepTypeLabel(type: StageType): Int = when (type) {
   StageType.POUR -> R.string.step_type_pour
   StageType.SWIRL -> R.string.step_type_swirl
   StageType.WAIT -> R.string.step_type_wait
+  StageType.ACTION -> R.string.step_type_action
 }
 
 fun stepTypeIcon(type: StageType): ImageVector = when (type) {
   StageType.POUR -> AntIcons.Pour
   StageType.SWIRL -> AntIcons.Swirl
   StageType.WAIT -> AntIcons.Wait
+  StageType.ACTION -> AntIcons.Action
 }
 
 /**
- * El color de cada tipo de paso: Verter en el primario, Remover en morado y Esperar en cian. Ninguno es verde, naranja o
- * rojo, que en la sesión significan estabilidad.
+ * El color de cada tipo de paso: Verter en el primario, Remover en morado, Esperar en cian y Acción en magenta. Ninguno es
+ * verde, naranja ni rojo, que en la sesión significan estabilidad.
  */
 fun stepTypeColors(type: StageType, colors: AntColors): AntColorRole = when (type) {
   StageType.POUR -> colors.primary
   StageType.SWIRL -> colors.purple
   StageType.WAIT -> colors.cyan
+  StageType.ACTION -> colors.magenta
 }
 
 /** Los últimos segundos antes del siguiente paso en que la cuenta atrás sale en grande (§3.4, `GuideState.countdownS`). */

@@ -5,7 +5,9 @@ import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.recipe.BuiltInRecipes
 import dev.josueamaya.pourline.recipe.FakeRecipeTexts
 import dev.josueamaya.pourline.recipe.Recipe
+import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.aeroPressWithActions
 import dev.josueamaya.pourline.recipe.v60Classic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -481,7 +483,7 @@ class RecipeShareCodecTest {
   }
 
   @Test
-  fun `an unknown method code or stage type is corrupt`() {
+  fun `an unknown method code is corrupt`() {
     fun withMethod(code: Long) = write {
       uvar(ShareFormat.F_METHOD.toLong())
       str("Café")
@@ -496,7 +498,93 @@ class RecipeShareCodecTest {
     assertTrue(decodePayload(withMethod(9)) is DecodeResult.Ok)
     assertEquals(DecodeResult.Corrupt, decodePayload(withMethod(10)))
     assertEquals(DecodeResult.Corrupt, decodePayload(withMethod(255)))
-    assertEquals(DecodeResult.Corrupt, decodePayload(minimal(stageFlags = 3)))
+  }
+
+  @Test
+  fun `type code 3 is an action`() {
+    // Un POUR de 40 g y un paso con sflags = 3 (ACTION, sin agua): se decodifican con el agua derivada.
+    val payload = write {
+      uvar(0)
+      str("Café")
+      uvar(150)
+      uvar(2)
+      uvar(0)
+      uvar(0)
+      uvar(10)
+      uvar(400)
+      uvar(3)
+      uvar(0)
+      uvar(5)
+    }
+    val shared = (decodePayload(payload) as DecodeResult.Ok).shared
+    assertEquals(listOf(StageType.POUR, StageType.ACTION), shared.recipe.stages.map { it.type })
+    assertEquals(listOf(40.0, 40.0), shared.recipe.stages.map { it.targetWaterG })
+    // Con una sola Acción no hay vertido: la receta no es válida.
+    assertEquals(DecodeResult.Invalid, decodePayload(minimal(stageFlags = 3)))
+  }
+
+  @Test
+  fun `a recipe with actions round trips`() {
+    val recipe = aeroPressWithActions()
+    val encoded = RecipeShareCodec.encode(recipe, null, Int.MAX_VALUE)!!
+    // El URI para la prueba de extremo a extremo por adb (plan §7.4).
+    println("AEROPRESS_URI=${encoded.uri}")
+    assertEquals(expected(recipe), decoded(encoded.uri).recipe)
+    val types = decoded(encoded.uri).recipe.stages.map { it.type }
+    assertEquals(
+      listOf(StageType.POUR, StageType.SWIRL, StageType.ACTION, StageType.WAIT, StageType.ACTION, StageType.ACTION),
+      types,
+    )
+    assertEquals(listOf(null, null, "Pon la tapa", null, "Invierte", null), decoded(encoded.uri).recipe.stages.map { it.instruction })
+  }
+
+  @Test
+  fun `an action writes no water`() {
+    val recipe = Recipe(
+      name = "Café",
+      doseG = 15.0,
+      stages = listOf(
+        RecipeStage(null, 0, 40.0, 10_000),
+        RecipeStage(null, 10_000, 40.0, 5_000, StageType.ACTION, "Pon la tapa"),
+      ),
+    )
+    val expected = write {
+      uvar(0) // flags: unidad de 1 s (código 0), sin nada más
+      str("Café")
+      uvar(150)
+      uvar(2)
+      uvar(0) // POUR sin nombre ni instrucción
+      uvar(0)
+      uvar(10)
+      uvar(400) // agua del vertido
+      uvar((3 or ShareFormat.S_INSTRUCTION).toLong()) // ACTION con instrucción, sin agua
+      uvar(0)
+      uvar(5)
+      str("Pon la tapa")
+    }
+    assertEquals(hex(expected), hex(encodePayload(recipe, null, TrimPlan.NONE).bytes))
+  }
+
+  @Test
+  fun `an action instruction is trimmed like any other`() {
+    val recipe = Recipe(
+      name = "AeroPress",
+      doseG = 15.0,
+      stages = listOf(
+        RecipeStage(null, 0, 200.0, 10_000),
+        RecipeStage(null, 10_000, 200.0, 5_000, StageType.ACTION, randomText(80, seed = 5)),
+        RecipeStage(null, 15_000, 200.0, 30_000, StageType.WAIT),
+        RecipeStage(null, 45_000, 200.0, 5_000, StageType.ACTION, randomText(80, seed = 6)),
+      ),
+    )
+    val limit = lengthAt(recipe, TrimPlan.NONE) - 1
+    val encoded = RecipeShareCodec.encode(recipe, null, limit)!!
+    assertEquals(setOf(TrimmedPart.INSTRUCTIONS), encoded.trimmed)
+    assertEquals(1 to 1, encoded.droppedInstructions to encoded.keptInstructions)
+    val shared = decoded(encoded.uri)
+    assertEquals(StageType.ACTION, shared.recipe.stages.last().type)
+    assertNull(shared.recipe.stages.last().instruction)
+    assertEquals(recipe.stages[1].instruction, shared.recipe.stages[1].instruction)
   }
 
   @Test

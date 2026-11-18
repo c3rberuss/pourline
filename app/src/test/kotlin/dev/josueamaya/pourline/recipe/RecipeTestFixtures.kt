@@ -39,3 +39,23 @@ fun stage(
 
 fun recipeOf(vararg stages: RecipeStage, dose: Double = 15.0, method: BrewMethod? = BrewMethod.V60) =
   Recipe(name = "Prueba", method = method, doseG = dose, stages = stages.toList())
+
+/**
+ * "AeroPress invertida" (SPEC-010): 15 g, 85 °C y seis pasos con tres Acciones: un vertido de 0 a 10 s hasta 200 g, un
+ * remover, "Pon la tapa" (20-25 s), una espera de 60 s, "Invierte" (85-90 s) y una Acción de 30 s sin nombre ni
+ * instrucción. Dura 2:00, con 200 g y ratio 1:13,3.
+ */
+fun aeroPressWithActions(): Recipe = Recipe(
+  name = "AeroPress invertida",
+  method = BrewMethod.AEROPRESS,
+  waterTempC = 85.0,
+  doseG = 15.0,
+  stages = listOf(
+    stage(0, 200.0, 10),
+    stage(10, 0.0, 10, type = StageType.SWIRL),
+    stage(20, 0.0, 5, type = StageType.ACTION, instruction = "Pon la tapa"),
+    stage(25, 0.0, 60, type = StageType.WAIT),
+    stage(85, 0.0, 5, type = StageType.ACTION, instruction = "Invierte"),
+    stage(90, 0.0, 30, type = StageType.ACTION),
+  ).withDerivedWater(),
+)

@@ -6,6 +6,7 @@ import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.recipe.Adjustment
 import dev.josueamaya.pourline.recipe.Recipe
 import dev.josueamaya.pourline.recipe.RecipeDraft
+import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.StageType
 import dev.josueamaya.pourline.recipe.v60Classic
 import org.junit.Assert.assertEquals
@@ -397,5 +398,38 @@ class RecipeEditFormTest {
     val broken = form.updateStage(1, form.stages[1].copy(start = "1:7"))
     assertNull(broken.totalDurationMs())
     assertEquals(40_000L, broken.updateStage(1, broken.stages[1].copy(start = "0:30")).totalDurationMs())
+  }
+
+  @Test
+  fun `changing a step to an action empties the water and back to a pour proposes the last pour plus 50 g`() {
+    val form = RecipeEditForm(
+      stages = listOf(
+        StageForm(start = "0:00", water = "50", duration = "10"),
+        StageForm(start = "0:10", water = "100", duration = "10"),
+      ),
+    )
+    val action = form.setStageType(1, StageType.ACTION)
+    assertEquals(StageType.ACTION, action.stages[1].type)
+    assertEquals("", action.stages[1].water)
+    val back = action.setStageType(1, StageType.POUR)
+    assertEquals("100", back.stages[1].water)
+  }
+
+  @Test
+  fun `an action round trips with its instruction and without water`() {
+    val recipe = Recipe(
+      name = "AeroPress",
+      method = BrewMethod.AEROPRESS,
+      doseG = 15.0,
+      stages = listOf(
+        RecipeStage(null, 0, 200.0, 10_000),
+        RecipeStage("Tapa", 10_000, 200.0, 5_000, StageType.ACTION, "Pon la tapa"),
+      ),
+    )
+    val form = RecipeEditForm.from(recipe)
+    assertEquals(StageType.ACTION, form.stages[1].type)
+    assertEquals("", form.stages[1].water)
+    assertEquals("Pon la tapa", form.stages[1].instruction)
+    assertEquals(recipe, form.toRecipe())
   }
 }

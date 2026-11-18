@@ -93,6 +93,7 @@ internal fun encodePayload(recipe: Recipe, grinder: Grinder?, trim: TrimPlan): E
       StageType.POUR -> 0
       StageType.SWIRL -> 1
       StageType.WAIT -> 2
+      StageType.ACTION -> 3
     }
     if (name != null) sflags = sflags or ShareFormat.S_NAME
     if (instruction != null) sflags = sflags or ShareFormat.S_INSTRUCTION
@@ -187,6 +188,7 @@ private fun parsePayload(reader: ByteReader): DecodeResult {
       0 -> StageType.POUR
       1 -> StageType.SWIRL
       2 -> StageType.WAIT
+      3 -> StageType.ACTION
       else -> throw MalformedPayload("tipo de paso desconocido")
     }
     val gap = reader.uvarNonNegative()

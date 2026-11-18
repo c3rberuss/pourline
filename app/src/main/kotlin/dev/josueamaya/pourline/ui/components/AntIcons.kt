@@ -192,6 +192,16 @@ object AntIcons {
       "M17 3V6A5 5 0 0 1 12 12A5 5 0 0 1 17 18V21",
     )
   }
+  /** Una mano que toca: paso Acción. */
+  val Action: ImageVector by lazy {
+    strokeIcon(
+      "Action",
+      "M6.5 4.5A4.5 4.5 0 0 1 13.5 4.5",
+      "M8.5 15.5V6.5A1.5 1.5 0 0 1 11.5 6.5V12",
+      "M11.5 11A1.5 1.5 0 0 1 14.5 11V12",
+      "M14.5 11.5A1.5 1.5 0 0 1 17.5 11.5V15.5A5.5 5.5 0 0 1 12 21H11.5A5 5 0 0 1 7.6 19.1L5.2 16A1.4 1.4 0 0 1 7.4 14.3L8.5 15.5",
+    )
+  }
   /** Círculo con una "i": abre una explicación. */
   val Info: ImageVector by lazy {
     strokeIcon("Info", "M21 12A9 9 0 1 1 3 12A9 9 0 1 1 21 12Z", "M12 11V16", "M12 8V8.01")

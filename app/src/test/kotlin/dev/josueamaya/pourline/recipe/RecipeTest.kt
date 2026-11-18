@@ -38,4 +38,30 @@ class RecipeTest {
     assertEquals(curve.lastStepEndMs, recipe.totalDurationMs)
     assertNotEquals(curve.endMs, recipe.totalDurationMs)
   }
+
+  @Test
+  fun `an action takes the water of the previous pour`() {
+    val derived = listOf(
+      stage(0, 0.0, 10, type = StageType.ACTION),
+      stage(10, 40.0, 10),
+      stage(20, 999.0, 5, type = StageType.ACTION),
+      stage(25, 0.0, 5, type = StageType.WAIT),
+      stage(30, 100.0, 10),
+      stage(40, 7.0, 5, type = StageType.ACTION),
+    ).withDerivedWater()
+    assertEquals(listOf(0.0, 40.0, 40.0, 40.0, 100.0, 100.0), derived.map { it.targetWaterG })
+  }
+
+  @Test
+  fun `an action adds no water and does not change the ratio`() {
+    val recipe = aeroPressWithActions()
+    assertEquals(listOf(200.0, 200.0, 200.0, 200.0, 200.0, 200.0), recipe.stages.map { it.targetWaterG })
+    assertEquals(200.0, recipe.totalWaterG, 0.0)
+    assertEquals(200.0 / 15.0, recipe.ratio, 1e-9)
+  }
+
+  @Test
+  fun `the total duration of the aeropress is two minutes`() {
+    assertEquals(120_000L, aeroPressWithActions().totalDurationMs)
+  }
 }

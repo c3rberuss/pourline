@@ -10,6 +10,9 @@ import dev.josueamaya.pourline.brew.TargetStage
 import dev.josueamaya.pourline.recipe.BuiltInRecipes
 import dev.josueamaya.pourline.recipe.FakeRecipeTexts
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.ui.components.AntIcons
+import dev.josueamaya.pourline.ui.theme.antDarkColors
+import dev.josueamaya.pourline.ui.theme.antLightColors
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -73,7 +76,24 @@ class SessionFormatTest {
     assertEquals(R.string.step_type_pour, stepTypeLabel(StageType.POUR))
     assertEquals(R.string.step_type_swirl, stepTypeLabel(StageType.SWIRL))
     assertEquals(R.string.step_type_wait, stepTypeLabel(StageType.WAIT))
-    assertEquals(3, StageType.entries.map { stepTypeIcon(it) }.distinct().size)
+    assertEquals(R.string.step_type_action, stepTypeLabel(StageType.ACTION))
+    assertEquals(AntIcons.Action, stepTypeIcon(StageType.ACTION))
+    assertEquals(4, StageType.entries.map { stepTypeIcon(it) }.distinct().size)
+  }
+
+  @Test
+  fun `each step type has its own color and none is a status color`() {
+    for (colors in listOf(antLightColors(), antDarkColors())) {
+      val mode = if (colors.isDark) "dark" else "light"
+      assertEquals(colors.magenta, stepTypeColors(StageType.ACTION, colors))
+      val roles = StageType.entries.map { stepTypeColors(it, colors) }
+      assertEquals("$mode: cuatro roles distintos", 4, roles.distinct().size)
+      for (role in roles) {
+        assertFalse("$mode: no es success", role == colors.success)
+        assertFalse("$mode: no es warning", role == colors.warning)
+        assertFalse("$mode: no es error", role == colors.error)
+      }
+    }
   }
 
   @Test

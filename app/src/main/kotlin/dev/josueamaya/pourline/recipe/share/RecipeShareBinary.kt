@@ -99,6 +99,7 @@ internal object ShareFormat {
   const val G_LABEL = 1 shl 3
   const val GFLAGS_DEFINED = 0xF
 
+  /** El tipo de paso: 0 `POUR`, 1 `SWIRL`, 2 `WAIT` y 3 `ACTION`. */
   const val S_TYPE_MASK = 0b11
   const val S_NAME = 1 shl 2
   const val S_INSTRUCTION = 1 shl 3

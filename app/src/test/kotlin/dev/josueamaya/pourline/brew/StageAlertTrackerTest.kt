@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.brew
 
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.aeroPressWithActions
 import dev.josueamaya.pourline.recipe.recipeOf
 import dev.josueamaya.pourline.recipe.stage
 import dev.josueamaya.pourline.recipe.v60Classic
@@ -44,6 +45,18 @@ class StageAlertTrackerTest {
     assertNull(tracker.update(1_000, withSwirl, 9_000))
     val swirl = tracker.update(1_000, withSwirl, 10_000)
     assertEquals(StageType.SWIRL, swirl?.type)
+  }
+
+  @Test
+  fun `an action alerts like any other step`() {
+    val withAction = TargetCurve.fromRecipe(aeroPressWithActions())
+    val tracker = StageAlertTracker()
+    assertNull(tracker.update(1_000, withAction, 5_000))
+    assertEquals(StageType.SWIRL, tracker.update(1_000, withAction, 10_000)?.type)
+    assertNull(tracker.update(1_000, withAction, 19_999))
+    val action = tracker.update(1_000, withAction, 20_000)
+    assertEquals(2, action?.index)
+    assertEquals(StageType.ACTION, action?.type)
   }
 
   @Test

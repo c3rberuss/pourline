@@ -186,9 +186,12 @@ internal fun ScalelessActivePanel(ui: ScaleUiState, onFinish: () -> Unit) {
   }
 }
 
-/** La línea de acción de un paso: "Vierte hasta X g" en un vertido; en un remover o una espera, su instrucción o su tipo. */
+/**
+ * La línea de acción de un paso: "Vierte hasta X g" en un vertido; en un remover, una espera o una acción, su instrucción
+ * o su tipo.
+ */
 @Composable
 private fun stageAction(stage: TargetStage): String = when (stage.type) {
   StageType.POUR -> stringResource(R.string.scaleless_pour_to, guideGrams(stage.targetWaterG))
-  StageType.SWIRL, StageType.WAIT -> stage.instruction?.takeIf { it.isNotBlank() } ?: stringResource(stepTypeLabel(stage.type))
+  StageType.SWIRL, StageType.WAIT, StageType.ACTION -> stage.instruction?.takeIf { it.isNotBlank() } ?: stringResource(stepTypeLabel(stage.type))
 }

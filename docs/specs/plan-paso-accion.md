@@ -178,7 +178,7 @@ F4, F5 y F6 dependen de F3 y no dependen entre sí.
 | F0 | Línea base y bytes congelados del QR | S | Hecha |
 | F1 | Tiempo total: cálculo en `Recipe`, `RecipeListItem` y el editor; recuento de todos los pasos | S | Hecha |
 | F2 | Tiempo total: lista, editor, tarjeta e importación | M | Hecha |
-| F3 | Tipo Acción: modelo, etiqueta, icono, color, línea de acción y QR | M | Pendiente |
+| F3 | Tipo Acción: modelo, etiqueta, icono, color, línea de acción y QR | M | Hecha |
 | F4 | Editor: selector de cuatro tipos, aviso y recorrido | M | Pendiente |
 | F5 | Sesión con y sin báscula, aviso de paso y notificación | M | Pendiente |
 | F6 | Tarjeta, QR e importación con Acción | S | Pendiente |
