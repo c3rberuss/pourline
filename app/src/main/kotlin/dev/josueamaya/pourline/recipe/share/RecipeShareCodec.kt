@@ -8,10 +8,9 @@ object RecipeShareCodec {
   const val URI_PREFIX = "pourline://recipe"
 
   /**
-   * Longitud máxima del URI del QR. Valor PROVISIONAL de F0 (D8), medido con `QrLegibilityTest` y el QR de 432 px:
-   * capacidad en modo byte con corrección M de la versión 13. La regla del plan daría 362 (versión 14), pero con
-   * 362 la lectura tras reducir al 50 % y JPEG 70 falla en 1 de 20 muestras. Es menor que el mínimo de 500: el
-   * usuario decide cómo seguir (spec §6).
+   * Longitud máxima del URI del QR (D8). Medida en F0 con `QrLegibilityTest`, el lector de Play Services y el QR de
+   * 432 px: es la capacidad en modo byte con corrección M de la versión 13. La regla del plan daría 362 (versión 14),
+   * pero con 362 la lectura tras reducir al 50 % y JPEG 70 falla en 1 de 20 muestras; con 331 acierta 20 de 20.
    */
   const val MAX_URI_LENGTH = 331
 }

@@ -29,6 +29,22 @@ class QrLegibilityTest {
   @Before
   fun setUp() {
     reader = MlKitQrImageReader(context)
+    awaitModel()
+  }
+
+  /** El modelo de Play Services se descarga bajo demanda: se espera a que lea un QR antes de medir. */
+  private fun awaitModel() {
+    val uri = uriOfLength(300, 0)
+    val deadline = System.nanoTime() + 240_000_000_000L
+    while (true) {
+      try {
+        if (runBlocking { reader.readBitmap(canvasWithQr(uri)) }.contains(uri)) return
+      } catch (e: Exception) {
+        Log.i(TAG, "modelo no listo: ${e.message}")
+      }
+      check(System.nanoTime() < deadline) { "el modelo de lectura de QR no se descargó en 240 s" }
+      Thread.sleep(3_000)
+    }
   }
 
   @After
@@ -41,7 +57,7 @@ class QrLegibilityTest {
     val outDir = File(context.getExternalFilesDir(null), "qr-legibility").apply { mkdirs() }
     val saved = mutableSetOf<Int>()
     Log.i(TAG, "length version asIs reduced (samples=$SAMPLES, qr=${QR_SIZE_PX}px)")
-    for (length in 300..1_000 step 25) {
+    for (length in 200..800 step 25) {
       val outcomes = (0 until SAMPLES).map { check(uriOfLength(length, it)) }
       val version = outcomes.first().version
       Log.i(TAG, "$length v$version ${outcomes.count { it.asIs }}/$SAMPLES ${outcomes.count { it.reduced }}/$SAMPLES")

@@ -109,10 +109,11 @@ dependencies {
   // OCR de las etiquetas: reconocimiento de texto latino con el modelo incluido en el APK (sin red)
   implementation(libs.mlkit.text.recognition)
 
-  // Compartir recetas con QR (SPEC-009): zxing genera la matriz (Java puro); la variante de barcode-scanning incluida
-  // en el APK lee QR de imágenes sin red; el Code Scanner lo ejecuta Google Play Services y no pide el permiso CAMERA
+  // Compartir recetas con QR (SPEC-009): zxing genera la matriz (Java puro); la variante de Play Services de
+  // barcode-scanning lee QR de imágenes y descarga su modelo Play Services (no va en el APK); el Code Scanner lo
+  // ejecuta Google Play Services y no pide el permiso CAMERA
   implementation(libs.zxing.core)
-  implementation(libs.mlkit.barcode.scanning)
+  implementation(libs.play.services.mlkit.barcode.scanning)
   implementation(libs.play.services.code.scanner)
 
   // Navigation

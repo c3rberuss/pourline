@@ -3,11 +3,11 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-compartir-receta.md`](spec-compartir-receta.md) (SPEC-009) |
-| Estado | Aprobado el 2026-11-17 con las propuestas P1 a P6. Commits por fase autorizados. |
+| Estado | Aprobado el 2026-11-17 con las propuestas P1 a P6. Commits por fase autorizados. Revisado el 2026-11-18 tras F0: formato del QR binario, lector de imágenes de Play Services y escáner verificado por el usuario (ver "Cambios acordados tras F0"). |
 | Fecha | 2026-11-17 |
 | Rama | `feat/share-recipe` desde `develop` (`e64330a`, que ya incluye el recorrido guiado de SPEC-008). |
 | Módulos | `:app` (`:protocol` no cambia) |
-| `MAX_URI_LENGTH` | **Provisional: 331** (QR de 432 px, versión 13). F0 no cumple el mínimo de 500: el plan se detuvo y la decisión es del usuario. Ver "Resultado de F0". |
+| `MAX_URI_LENGTH` | **331** (QR de 432 px, versión 13, corrección M, lector de Play Services). Fijado en F0. |
 
 El spec no trae fases, así que este plan las define. El orden va de dentro afuera. Primero, un spike en el dispositivo
 (F0) que cierra los dos riesgos del §6 y fija `MAX_URI_LENGTH`. Si F0 falla, el plan se detiene y se consulta al
@@ -29,6 +29,35 @@ este plan. Lo más importante:
 - `MainActivity` no tiene `launchMode`. Con la hoja de compartir, Android crearía una segunda instancia en la tarea de
   la otra app (D17).
 - No hay detekt en el proyecto. Como en los planes anteriores, el control es `:app:lintDebug`.
+
+## Cambios acordados tras F0 (2026-11-18)
+
+F0 midió que con JSON una receta de 20 pasos no cabía en el QR legible (§3.1 antiguo: 430 a 490 caracteres frente a 331).
+El usuario decidió tres cosas, y el spec ya las recoge (commit `9bc9b44`):
+
+1. **Formato binario** en lugar de JSON (§3.1): LEB128, zigzag, cadenas con longitud, `flags` con bits de presencia, de
+   recorte y de unidad de tiempo, códigos fijos de `BrewMethod`, huecos y duraciones en la unidad elegida y agua
+   incremental en décimas de gramo. F1 implementa ese códec (D1 a D8 y D23 reescritas). El QR sigue a 432 px (144 dp) con
+   corrección M.
+2. **Lector de QR desde imagen** con `play-services-mlkit-barcode-scanning`: el modelo lo descarga Play Services y no va
+   en el APK (D18). Falta el caso "modelo sin descargar" (§4): `ImportError.READER_NOT_READY`, `QrReadResult.ModelNotReady`
+   y la cadena `recipe_import_reader_preparing`, que afectan a F2, F7 y F8.
+3. **Code Scanner:** lo verifica el usuario con su móvil (comandos al final de este documento, "Prueba del escáner de F0").
+   F1 no empieza hasta que lo confirme.
+
+**Emulador para los tests que leen QR.** `emulator-5556` (AVD `SG_API34`, imagen `google_apis` con GMS 23.18) **no descarga**
+el modelo de Play Services (`ZappDownloader: No successful module downloads`). Para esos tests se creó en F0 el AVD
+`SG_API36_play` (Android 16, imagen `google_apis_playstore`, GMS 25.08), que descarga el modelo en unos segundos:
+
+```
+~/Library/Android/sdk/emulator/emulator -avd SG_API36_play -port 5560 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect &
+```
+
+Los tests instrumentados que usan `MlKitQrImageReader` (`QrLegibilityTest`, `RecipeQrLegibilityTest`,
+`RecipeShareTest` en el caso de decodificar el PNG, `RecipesImportTest` y `RecipeIntentImportTest` en los casos con imagen)
+van con `ANDROID_SERIAL=emulator-5560` y esperan al modelo con un helper (`awaitQrModel()`, que reintenta hasta 240 s). El
+resto sigue en `emulator-5556`. Los pasos 6 a 10 del §7.4 también van en `emulator-5560`. Nunca dos suites a la vez en el
+mismo emulador.
 
 ## 1. Punto de partida
 
@@ -55,8 +84,7 @@ este plan. Lo más importante:
 
 ### 1.2 Falta o hay que corregir
 
-- No hay códec de recetas ni paquete `recipe/share`.
-- No hay generación ni lectura de QR. Las dependencias del §3.8 no están en `libs.versions.toml`.
+- No hay códec de recetas ni generación de QR (F0 trae `QrCode.kt`, `QrImageReader.kt` y las tres dependencias del §3.8, con el lector de Play Services).
 - `ShareCaptureHost` mide con `Constraints.fixed` a `SHARE_SIZE`, y `ShareFrame` hace `size(SHARE_SIZE)`.
 - `RecipeEditScreen` no tiene acciones en la barra superior, ni `SnackbarHost`, ni `ShareLauncher`.
 - `RecipesScreen` solo tiene el icono "Crear receta". No hay icono de importar en `AntIcons`.
@@ -94,15 +122,15 @@ spec no dice.
 
 | ID | Tema | Decisión | Motivo |
 |---|---|---|---|
-| D1 | Archivos del paquete (concreta §3.2) | `recipe/share/SharedRecipe.kt` (nuevo): `EncodedRecipe`, `TrimmedPart`, `SharedRecipe`, `SharedGrind` y `DecodeResult`, con las firmas exactas del §3.2. `recipe/share/RecipeSharePayload.kt` (nuevo): los DTO internos `PayloadV1`, `GrindV1` y `StageV1`, `@Serializable` con `@SerialName` cortos (`n`, `m`, `mo`, `t`, `no`, `d`, `g`, `s`, `x`; `k`, `b`, `md`, `v`, `l`; `y`, `n`, `a`, `u`, `w`, `i`). `recipe/share/RecipeShareCodec.kt` (nuevo): `object RecipeShareCodec` con `const val VERSION = 1`, `const val SCHEME = "pourline"`, `const val HOST = "recipe"`, `const val URI_PREFIX = "pourline://recipe"`, `const val MAX_URI_LENGTH` (valor de F0), `internal const val MAX_INFLATED_BYTES = 65_536`, `fun encode(recipe: Recipe, grinder: Grinder?): EncodedRecipe?`, `internal fun encode(recipe: Recipe, grinder: Grinder?, maxLength: Int): EncodedRecipe?` y `fun decode(text: String): DecodeResult`. | La sobrecarga con `maxLength` deja probar el orden del recorte con topes pequeños, sin depender del valor real. Los DTO quedan `internal`: el contrato público es el del §3.2. |
-| D2 | JSON (concreta §3.1) | kotlinx-serialization (ya en el proyecto) con `Json { explicitNulls = false; encodeDefaults = false; ignoreUnknownKeys = false; isLenient = false; allowSpecialFloatingPointValues = false }`. Los opcionales son `T? = null` y no se escriben si faltan. `m`, `y` y los elementos de `x` van como `String` y se traducen a mano: un valor desconocido es `Corrupt`. `a` y `u` son `Long` (un decimal es `Corrupt`). `d`, `t`, `w` y `v` son `Double`. | `ignoreUnknownKeys = false` da exactamente "una clave desconocida es un error de formato", también dentro de `g` y de `s[i]`. Traducir los enums a mano evita que un `BrewMethod` nuevo se cuele sin subir `v`. |
-| D3 | Compresión y base64 (concreta §3.1) | `java.util.zip.Deflater(9, true)` (raw) y `Inflater(true)`, con el byte de relleno que pide `nowrap` al inflar. `java.util.Base64.getUrlEncoder().withoutPadding()` y `getUrlDecoder()`. Al inflar, más de `MAX_INFLATED_BYTES` es `Corrupt`. El JSON se lee como UTF-8 con `CodingErrorAction.REPORT`. | Todo es JVM puro y existe desde API 26 (`minSdk`). El tope evita una bomba de descompresión: un QR de 1 KB no puede producir más de unos pocos KB de receta legítima. |
-| D4 | Lectura del URI y orden de los errores (concreta §3.2 y §4) | `decode` hace `trim()` y usa `java.net.URI`. Un texto que no es URI, un esquema distinto de `pourline` o un host distinto de `recipe` (sin distinguir mayúsculas) dan `NotPourline`. Sin `d`, o con `d` vacío, también. Los parámetros se leen de `rawQuery`; los desconocidos se ignoran. Sin `v`, `v` no entero o `v < 1`: `Corrupt`. `v > VERSION`: `NewerVersion`, **antes** de mirar `d`. Después, base64, inflado, UTF-8 y JSON: `Corrupt`. Un campo obligatorio ausente (`n`, `d`, `s`, y en cada paso `y`, `a` y `u`, y `w` en `"P"`) es `Corrupt`. La receta construida que no pasa `RecipeValidator` es `Invalid`. | Una versión futura puede cambiar la codificación de `d`, así que se rechaza sin leerlo. Un campo obligatorio ausente es un error de formato, no una receta inválida. |
-| D5 | Campos fuera de sitio (concreta §3.1) | `mo` solo se usa con `m = "OTHER"`; con otro método se ignora (el repositorio ya lo descarta al guardar). `w` en `"S"` o `"W"` se ignora: `withDerivedWater()` lo fija. Un `n` o un `i` vacíos o en blanco se leen como `null`. `encode` ordena los pasos por `startMs` y no escribe `n` ni `i` nulos o en blanco. | Son claves conocidas con un valor que el modelo ya sabe derivar. Rechazarlas no protege nada. |
-| D6 | Recorte (concreta §3.2) | Cada paso del recorte quita lo suyo **acumulado** sobre el anterior, y solo cuenta si había algo que quitar. `x` y `trimmed` listan lo que se quitó de verdad: una receta sin notas que necesita quitar instrucciones da `trimmed = {INSTRUCTIONS}`. El tope se mide sobre el URI completo, con `x` incluido. Pasos, tiempos, agua, dosis, temperatura, método y molienda nunca se tocan. `encode` devuelve `null` si ni el paso 4 cabe. | Anotar "las notas" cuando no había notas confundiría al receptor. |
-| D7 | Molienda al codificar (concreta §3.1) | Sin `grind` o con `isEmpty`: sin `g`. Con `grinderId` y el molino vivo: `k` (si tiene `catalogKey`), `b`, `md` y `v` (si hay ajuste). Con `grinderId = null`: solo `l`. Con `grinderId` pero sin molino (borrado entre leer y compartir): como eliminado. Si `g` quedaría vacío (eliminado sin `label`), no se escribe. | El §3.1 no prevé un `g` vacío, y decodificarlo daría un `SharedGrind` sin nada útil. |
-| D8 | `MAX_URI_LENGTH` (cierra §3.2 y §6) | Lo fija F0 con `QrLegibilityTest`: para cada longitud de 300 a 1 000 caracteres, de 25 en 25, cinco URI con un `d` aleatorio (semilla fija) se dibujan como en la tarjeta y se leen con ML Kit tal cual y tras reducir al 50 % y recomprimir en JPEG calidad 70. `Vmax` es la versión de QR más alta en la que pasan todas las muestras de todas sus longitudes. `MAX_URI_LENGTH` es la capacidad en modo byte con corrección M de `Vmax − 1` (una versión de margen). Mínimo exigido: 500. F1 confirma con el códec real que la receta de referencia de 20 pasos sin textos cabe (§6). | Legibilidad depende de la versión del QR (del número de módulos), no de la longitud exacta. La versión de margen cubre lo que el test sintético no mide: una cámara que lee otra pantalla (US-3). La estimación con el esquema del §3.1 da unos 475 caracteres para 20 pasos sin textos, con nombre de 60 y molienda. |
-| D23 | Contrato del formato (amplía) | `RecipeShareCodecTest` guarda como constante un URI `v=1` de la V60 clásica (`GOLDEN_V60_URI`), generado una vez en F1 y congelado. El test comprueba que **se decodifica** a la receta esperada. No se compara la salida de `encode` byte a byte. La verificación por adb (§7.4) usa ese mismo URI. | El §3.1 es un contrato entre versiones de la app: una app futura tiene que leer los QR ya compartidos. La salida de `Deflater` puede variar entre versiones de zlib (JVM y Android), así que comparar bytes daría falsos fallos. |
+| D1 | Archivos del paquete (concreta §3.2) | `recipe/share/SharedRecipe.kt` (nuevo): `EncodedRecipe`, `TrimmedPart`, `SharedRecipe`, `SharedGrind` y `DecodeResult`, con las firmas exactas del §3.2. `recipe/share/RecipeShareBinary.kt` (nuevo): `internal class ByteWriter` (`uvar`, `svar`, `str`, `toByteArray`), `internal class ByteReader` (`uvar`, `svar`, `str`, `remaining`; leer más allá del final, un `uvar` de más de 10 bytes o una cadena con UTF-8 inválido lanza `MalformedPayload`) y `internal object ShareFormat` con los bits de `flags`, `gflags` y `sflags`, la unidad de tiempo (`SECONDS` = 1000 ms, código 0; `TENTHS` = 100 ms, código 1; `MILLIS` = 1 ms, código 2) y la tabla fija de códigos de `BrewMethod` (`methodCode`, `methodFromCode`). `recipe/share/RecipeSharePayload.kt` (nuevo): `internal fun encodePayload(recipe, grinder, trim: TrimLevel): ByteArray` y `internal fun decodePayload(bytes: ByteArray): DecodeResult`. `recipe/share/RecipeShareCodec.kt`: `object RecipeShareCodec` con `const val VERSION = 1`, `SCHEME`, `HOST`, `URI_PREFIX`, `MAX_URI_LENGTH = 331` (ya fijados en F0), `internal const val MAX_INFLATED_BYTES = 65_536`, `fun encode(recipe, grinder): EncodedRecipe?`, `internal fun encode(recipe, grinder, maxLength: Int): EncodedRecipe?` y `fun decode(text: String): DecodeResult`. | La sobrecarga con `maxLength` deja probar el orden del recorte con topes pequeños, sin depender del valor real. `encodePayload` es interna para probar el formato byte a byte sin pasar por `Deflater` (D23). El contrato público es el del §3.2. |
+| D2 | Formato binario (concreta §3.1) | Se implementa el §3.1 tal cual: campos en el orden de la tabla, sin separadores. `uvar` es LEB128 sin signo sobre `Long` (hasta 10 bytes) y `svar`, zigzag. `str` es la longitud en bytes y los bytes UTF-8. Dosis y temperatura: `Math.round(x * 10)`. Agua: incremento sobre el acumulado del `POUR` anterior, `Math.round(incremento * 10)`. Ajuste de molienda: `Math.round(v * 100)` con `svar`. **Unidad de tiempo:** la mayor de s, 0,1 s y ms que divide todos los `startMs` y `durationMs` (por tanto también los huecos). `gap` = `startMs` menos el `endMs` del paso anterior (`startMs` en el primero). Al decodificar, `startMs = endMs anterior + gap * unidad`; un valor que desborde (más de 10^9 unidades) es `Corrupt`. `encode` devuelve `null` si la receta no pasa `RecipeValidator`: no se comparte algo que el receptor rechazaría. | Un solo camino de bytes, comprobable a mano. Con tiempos en segundos (todo lo que crea la app: el editor y `RecipeFromBrew` redondean a segundos) el payload de una receta de 20 pasos queda en unos 150 bytes. |
+| D3 | Compresión y base64 (concreta §3.1) | `java.util.zip.Deflater(9, true)` (raw) y `Inflater(true)`, con el byte de relleno que pide `nowrap` al inflar. `java.util.Base64.getUrlEncoder().withoutPadding()` y `getUrlDecoder()`. Al inflar, más de `MAX_INFLATED_BYTES` es `Corrupt`. Las cadenas se decodifican como UTF-8 con `CodingErrorAction.REPORT`. | Todo es JVM puro y existe desde API 26 (`minSdk`). El tope evita una bomba de descompresión. |
+| D4 | Lectura del URI y orden de los errores (concreta §3.2 y §4) | `decode` hace `trim()` y usa `java.net.URI`. Un texto que no es URI, un esquema distinto de `pourline` o un host distinto de `recipe` (sin distinguir mayúsculas) dan `NotPourline`. Sin `d`, o con `d` vacío, también. Los parámetros se leen de `rawQuery`; los desconocidos se ignoran. Sin `v`, `v` no entero o `v < 1`: `Corrupt`. `v > VERSION`: `NewerVersion`, **antes** de mirar `d`. Después, base64 y inflado: `Corrupt`. Del binario son `Corrupt`: lectura más allá del final (truncado), bytes sobrantes, un bit de `flags`, `gflags` o `sflags` no definido, unidad de tiempo 3, código de método desconocido, tipo de paso 3, `methodOther` sin `method = OTHER`, y un desbordamiento (D2). `stageCount` fuera de 1 a 20 es `Invalid` y se comprueba antes de leer los pasos. La receta construida que no pasa `RecipeValidator` (nombre en blanco incluido) es `Invalid`. | Una versión futura puede cambiar la codificación de `d`, así que se rechaza sin leerlo. Un byte o un bit inesperado es un error de formato (§3.1), no una receta inválida. |
+| D5 | Textos en blanco y agua derivada (concreta §3.1) | `encode` ordena los pasos por `startMs` y no marca `name` ni `instruction` si son nulos o en blanco. Al decodificar, un nombre o instrucción en blanco se lee como `null`. El agua de `SWIRL` y `WAIT` no viaja: `withDerivedWater()` la fija. | Es lo que ya hace el repositorio al guardar (`cleaned()`), así que una receta guardada y su QR comparan igual. |
+| D6 | Recorte (concreta §3.2) | Cada paso del recorte quita lo suyo **acumulado** sobre el anterior (`TrimLevel`: `NONE`, `NOTES`, `INSTRUCTIONS`, `STAGE_NAMES`), y solo cuenta si había algo que quitar. Los bits 5 a 7 de `flags` y `trimmed` listan lo que se quitó de verdad: una receta sin notas que necesita quitar instrucciones da `trimmed = {INSTRUCTIONS}`. El tope se mide sobre el URI completo. Pasos, tiempos, agua, dosis, temperatura, método y molienda nunca se tocan. `encode` devuelve `null` si ni el paso 4 cabe. | Anotar "las notas" cuando no había notas confundiría al receptor. |
+| D7 | Molienda al codificar (concreta §3.1) | Sin `grind` o con `isEmpty`: sin bloque (bit 4 de `flags` a 0). Con `grinderId` y el molino vivo: `gflags` con `catalogKey` (si tiene), marca y modelo, y ajuste (si hay). Con `grinderId = null`: solo `label`. Con `grinderId` pero sin molino (borrado entre leer y compartir): como eliminado. Si el bloque quedaría vacío (eliminado sin `label`), no se escribe. Al decodificar, un `gflags` en 0 o con bits no definidos es `Corrupt`. | El §3.1 no prevé un bloque vacío, y decodificarlo daría un `SharedGrind` sin nada útil. |
+| D8 | `MAX_URI_LENGTH` (cierra §3.2 y §6) | **Fijado en F0: 331.** `QrLegibilityTest.sweep` dibuja, como en la tarjeta (432 px), cinco URI de cada longitud y los lee con ML Kit de Play Services tal cual y tras reducir al 50 % y JPEG 70. Solo se leen siempre hasta la versión 15 de QR (375 y 400 caracteres). La regla "una versión de margen" daría 362 (capacidad de la versión 14), pero `maxUriLengthIsLegible` con 362 acierta 19 de 20; con 331 (versión 13) acierta 20 de 20. **Margen que exige F1:** la receta de peor caso (20 pasos sin textos, nombre de 60, método, temperatura y molienda de catálogo) tiene que quedar al menos 60 caracteres por debajo (271 o menos). La simulación de F0 da entre 231 y 267 con tiempos en segundos, y hasta 348 con milisegundos aleatorios, que la app no genera. | La legibilidad depende de la versión del QR y, tras reducir, de cómo caen los píxeles: no es monótona. 331 es el valor medido que no falla. |
+| D23 | Contrato del formato (amplía) | `RecipeShareCodecTest` guarda dos constantes de la V60 clásica, generadas una vez en F1 con el codificador y revisadas a mano contra el §3.1: `GOLDEN_V60_PAYLOAD` (los bytes **antes** de `deflate`, en hexadecimal) y `GOLDEN_V60_URI` (el URI `v=1` completo, congelado). Los tests comprueban que `encodePayload` da exactamente `GOLDEN_V60_PAYLOAD` y que `GOLDEN_V60_URI` **se decodifica** a la receta esperada. No se compara la salida de `encode` byte a byte. `RecipeShareFixtures.WORST_CASE_URI` guarda además el URI de 331 caracteres de la prueba del escáner de F0 (sección "Prueba del escáner de F0"), que decodifica a 20 pasos, un nombre de 60 caracteres y notas de 78. La verificación por adb (§7.4) usa `GOLDEN_V60_URI`. | El §3.1 es un contrato entre versiones de la app: una app futura tiene que leer los QR ya compartidos. Los bytes previos a `deflate` no dependen de la versión de zlib (JVM y Android), así que comparan sin falsos fallos; el URI completo solo se decodifica. |
 
 ### 2.2 QR, tarjeta y compartir
 
@@ -118,7 +146,7 @@ spec no dice.
 
 | ID | Tema | Decisión | Motivo |
 |---|---|---|---|
-| D14 | Un solo camino para todas las entradas (concreta §3.5 y §3.7) | `recipe/share/ImportRouting.kt` (nuevo, puro): `enum class ImportSource { SCANNER, IMAGE, LINK }`, `enum class ImportError { NOT_POURLINE, NO_RECIPE_IN_IMAGE, NEWER_VERSION, CORRUPT, INVALID, SCANNER_UNAVAILABLE }`, `sealed interface ImportOutcome { Open(uri), Defer(uri), Fail(error) }` y `fun routeImport(text: String?, source: ImportSource, hasSession: Boolean): ImportOutcome`. Con `IMAGE`, un texto `null` o `NotPourline` dan `NO_RECIPE_IN_IMAGE`. `recipe/share/PendingRecipeImport.kt` (nuevo, puro): `class PendingRecipeImport` con `val pending: StateFlow<String?>`, `val notices: Flow<ImportNotice>` (un `Channel` con búfer), `fun submit(text: String?, source: ImportSource, hasSession: Boolean): ImportOutcome`, `fun consume(uri: String): Boolean` (`compareAndSet`) y `fun notify(notice: ImportNotice)`, con `sealed interface ImportNotice { Failed(error), Deferred, Added }`. `Open` y `Defer` ponen el URI en `pending` (el último reemplaza al anterior); `Defer` emite además `Deferred`; `Fail`, `Failed(error)`. Va en `AppDependencies.recipeImports`. | Es el `PendingRecipeImport` del §3.7, y además la cola de las entradas sin sesión. Con una sola cola, el aplazamiento sale gratis y se prueba en la JVM. |
+| D14 | Un solo camino para todas las entradas (concreta §3.5 y §3.7) | `recipe/share/ImportRouting.kt` (nuevo, puro): `enum class ImportSource { SCANNER, IMAGE, LINK }`, `enum class ImportError { NOT_POURLINE, NO_RECIPE_IN_IMAGE, NEWER_VERSION, CORRUPT, INVALID, SCANNER_UNAVAILABLE, READER_NOT_READY }`, `sealed interface ImportOutcome { Open(uri), Defer(uri), Fail(error) }` y `fun routeImport(text: String?, source: ImportSource, hasSession: Boolean): ImportOutcome`. Con `IMAGE`, un texto `null` o `NotPourline` dan `NO_RECIPE_IN_IMAGE`. `recipe/share/PendingRecipeImport.kt` (nuevo, puro): `class PendingRecipeImport` con `val pending: StateFlow<String?>`, `val notices: Flow<ImportNotice>` (un `Channel` con búfer), `fun submit(text: String?, source: ImportSource, hasSession: Boolean): ImportOutcome`, `fun consume(uri: String): Boolean` (`compareAndSet`) y `fun notify(notice: ImportNotice)`, con `sealed interface ImportNotice { Failed(error), Deferred, Added }`. `Open` y `Defer` ponen el URI en `pending` (el último reemplaza al anterior); `Defer` emite además `Deferred`; `Fail`, `Failed(error)`. Va en `AppDependencies.recipeImports`. | Es el `PendingRecipeImport` del §3.7, y además la cola de las entradas sin sesión. Con una sola cola, el aplazamiento sale gratis y se prueba en la JVM. |
 | D15 | Navegación a la vista previa (concreta §3.6) | Nueva clave `@Serializable data class RecipeImport(val uri: String) : NavKey` en `NavigationKeys.kt`. `TabsNavigation` observa `recipeImports.pending` y `hasSession`, y cuando hay pendiente **y** no hay sesión: `tab = Tab.RECIPES`, `stacks.getValue(Tab.RECIPES).openImport(uri)` y `consume(uri)`. `fun MutableList<NavKey>.openImport(uri: String)` (nueva, en `TabNavigation.kt`) sustituye la cima si ya es un `RecipeImport` y si no, apila. `showsBottomBar` oculta la barra con `RecipeImport` en la cima, como en los editores. Guardar y Cancelar llaman a `back()` (quitan solo la vista previa). | Sustituir la cima evita apilar vistas previas si llegan dos recetas seguidas. Ocultar la barra impide dejar una vista previa a medias al cambiar de pestaña. Quitar solo la vista previa no descarta un editor con cambios que hubiera debajo (discrepancia 7). |
 | D16 | Antes del primer arranque (amplía) | Si el onboarding no está hecho, `TabsNavigation` no está compuesta y el pendiente espera. Al terminar el onboarding se abre la vista previa. | El spec no lo cubre. Esperar es lo mismo que hace con una sesión. |
 | D21 | Mensajes de importación (concreta §3.5, §3.6 y §4) | Un `AntMessageHost` propio en `TabsNavigation`, dentro de `TourRoot`, sobre el `NavDisplay` y alineado abajo (con `navigationBarsPadding()` cuando no hay barra). Muestra los `notices` de `PendingRecipeImport`: `Added` (Success), `Deferred` (Info) y `Failed` (Error). `ui/recipes/ImportNoticeText.kt` (nuevo): `fun importNoticeText(notice: ImportNotice): Int` y `fun importNoticeStatus(notice: ImportNotice): AntStatus`. | Las entradas externas no tienen pantalla propia, y "Receta recibida…" tiene que verse encima de la sesión. Un único host para todos los mensajes de importación (también "Receta añadida" y los errores del escáner) evita repartirlos entre pantallas. |
@@ -137,7 +165,7 @@ spec no dice.
 | ID | Tema | Decisión | Motivo |
 |---|---|---|---|
 | D17 | `MainActivity` (concreta §3.5) | Manifiesto: `android:launchMode="singleTask"`, un filtro `SEND` + `DEFAULT` + `mimeType="image/*"` y otro `VIEW` + `DEFAULT` + `BROWSABLE` + `scheme="pourline"` `host="recipe"`. `RecipeIntents.kt` (nuevo, paquete raíz): `class RecipeIntentHandler(imports: PendingRecipeImport, reader: QrImageReader, hasSession: () -> Boolean, scope: CoroutineScope)` con `fun handle(intent: Intent): Boolean`, y `fun shouldHandleLaunchIntent(recreated: Boolean, intentFlags: Int): Boolean` (falso si se recrea o si lleva `FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY`). `VIEW` con esquema `pourline` → `submit(dataString, LINK, hasSession())`. `SEND` con `type` `image/*` → el `Uri` de `EXTRA_STREAM` (`IntentCompat.getParcelableExtra`) o del primer elemento de `clipData`; sin `Uri`, `submit(null, IMAGE, …)`; con `Uri`, `scope.launch { reader.read(uri) }` y después `submit` en el hilo principal. El resto de intents devuelve `false`. `MainActivity.onCreate` lo llama si `shouldHandleLaunchIntent(savedInstanceState != null, intent.flags)`, y `onNewIntent` siempre (con `setIntent`). El ámbito es `PourlineApp.applicationScope`. | `singleTask` garantiza una sola instancia y entrega los intents a `onNewIntent`. Con `savedInstanceState`, la rotación y la restauración del proceso no repiten la importación. La bandera de historial cubre abrir la app desde Recientes cuando la tarea nació de un `ACTION_SEND`. Leer la imagen en el ámbito de la app sobrevive a una rotación a mitad. |
-| D18 | Lectura desde imagen (concreta §3.5) | `share/QrImageReader.kt` (nuevo): `fun interface QrImageReader { suspend fun read(uri: Uri): String? }` y `class MlKitQrImageReader(context: Context) : QrImageReader, Closeable`, con `BarcodeScanning.getClient(BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build())` (perezoso), `suspend fun readBitmap(bitmap: Bitmap): List<String>` (todos los `rawValue`) y `read(uri)`: límites con `inJustDecodeBounds`, `inSampleSize(…, QR_IMAGE_MAX_SIDE)`, reducción con `scaledSize` a `QR_IMAGE_MAX_SIDE = 2048`, y el primer valor que empieza por `RecipeShareCodec.URI_PREFIX`. `SecurityException`, `IOException`, `OutOfMemoryError`, `RuntimeException` o un bitmap nulo dan `null`. Sin EXIF. Va en `AppDependencies.qrImageReader`. | Un QR se lee en cualquier orientación, así que no hace falta girar. `null` es "No se encontró ninguna receta en la imagen" (§4), también sin permiso de lectura. |
+| D18 | Lectura desde imagen (concreta §3.5; cambia con el lector de Play Services) | `share/QrImageReader.kt` (F0 trae `QrImageReader.read: String?`; F7 lo cambia a `sealed interface QrReadResult { Found(text); NoRecipe; ModelNotReady }`). `MlKitQrImageReader(context)` usa `BarcodeScanning.getClient(...)` de `play-services-mlkit-barcode-scanning` (solo QR, perezoso), con `suspend fun readBitmap(bitmap): List<String>` y `read(uri)`: límites con `inJustDecodeBounds`, `inSampleSize(…, QR_IMAGE_MAX_SIDE)`, reducción con `scaledSize` a `QR_IMAGE_MAX_SIDE = 2048`, y el primer valor que empieza por `RecipeShareCodec.URI_PREFIX`. `SecurityException`, `IOException`, `OutOfMemoryError` o un bitmap nulo dan `NoRecipe`. **Modelo sin descargar:** mientras Play Services no lo tiene, `process` falla con una `MlKitException` de código `UNAVAILABLE` ("Waiting for the barcode module to be downloaded"). Eso da `ModelNotReady` y se pide la descarga con `ModuleInstall.getClient(context).installModules(ModuleInstallRequest.newBuilder().addApi(scanner).build())` (sin esperar el resultado). `routeImport` lo traduce a `ImportError.READER_NOT_READY` y el mensaje del §4. Va en `AppDependencies.qrImageReader`. En el manifiesto (F8) se añade `<meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode" />` para que Play instale el modelo con la app. | Un QR se lee en cualquier orientación, así que no hace falta girar. El modelo ya no va en el APK (el incluido sumaba 20,8 MB), y a cambio la primera lectura puede fallar sin red: el §4 lo cubre con un mensaje. `NoRecipe` es "No se encontró ninguna receta en la imagen". |
 | D19 | Escáner (concreta §3.5) | `ui/recipes/QrScanner.kt` (nuevo): `sealed interface ScanResult { Scanned(text: String); Cancelled; Unavailable }`, `fun interface QrScanner { suspend fun scan(): ScanResult }`, `val LocalQrScanner = staticCompositionLocalOf<QrScanner?> { null }` y `@Composable fun rememberQrScanner(): QrScanner` (`LocalQrScanner.current` o el de Google). El de Google: `GmsBarcodeScanning.getClient(context, GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE)…build()).startScan()` con un `suspendCancellableCoroutine` propio: éxito → `Scanned(rawValue.orEmpty())`; cancelado → `Cancelled`; fallo → `Unavailable`. Con `enableAutoZoom()` si la versión de F0 lo tiene. | El `await()` de `coffee/label/TaskAwait.kt` convierte la cancelación en `CancellationException`, y aquí cancelar es un resultado normal ("no pasa nada"). El `CompositionLocal` deja poner un escáner falso en los tests sin tocar `AppDependencies`. |
 | D27 | Entradas internas (concreta §3.5) | `RecipesScreen` gana `importer: RecipeImportEntryViewModel? = null`. Con `importer`, un `AntIconButton(AntIcons.Import, …)` (`testTag("recipes_import")`, `loading = busy`) antes de "Crear receta", que abre un `DropdownMenu` (como `CoffeePhotoSlot`) con "Escanear QR" (`recipes_import_scan`) y "Desde una imagen" (`recipes_import_image`). `ui/recipes/RecipeImportEntryViewModel.kt` (nuevo): `RecipeImportEntryViewModel(imports: PendingRecipeImport, reader: QrImageReader, hasSession: () -> Boolean)` con `val busy: StateFlow<Boolean>`, `fun onScan(result: ScanResult)` (`Scanned` → `submit(text, SCANNER, …)`; `Cancelled` → nada; `Unavailable` → `notify(Failed(SCANNER_UNAVAILABLE))`) y `fun onImage(uri: Uri?)` (`null` → nada; si no, `reader.read` y `submit(text, IMAGE, …)`). La galería usa `rememberLauncherForActivityResult(PickVisualMedia())` con `ImageOnly`. `AntIcons.Import` (nuevo): una bandeja con una flecha hacia abajo. | Con `importer` opcional, `RecipesScreenTest` no cambia. El ViewModel vive en la entrada de navegación de `Recipes`, que le pasa `deps.recipeImports` y `deps.qrImageReader`. |
 
@@ -145,7 +173,7 @@ spec no dice.
 
 | ID | Tema | Decisión | Motivo |
 |---|---|---|---|
-| D24 | Cadenas (concreta §3.4, §3.6 y §4) | Nuevas en `values` y `values-en`. Compartir: `recipe_share_action` ("Compartir receta" / "Share recipe"), `recipe_share_dialog_title` ("Compartir receta"), `recipe_share_trimmed_text` ("Esta receta es muy larga para el QR. Al importarla faltarán %1$s." / "This recipe is too long for the QR code. When imported, it will be missing %1$s."), `recipe_share_too_long_text` (texto del §3.4 / "This recipe is too long to import with a QR code. Only the image will be shared."), `recipe_share_confirm` ("Compartir"), `recipe_share_cancel` ("Cancelar"), `recipe_trimmed_notes` ("las notas" / "the notes"), `recipe_trimmed_instructions` ("las instrucciones de los pasos" / "the step instructions"), `recipe_trimmed_stage_names` ("los nombres de los pasos" / "the step names"), `recipe_trimmed_list_two` ("%1$s y %2$s"), `recipe_trimmed_list_three` ("%1$s, %2$s y %3$s"). Tarjeta: `recipe_card_qr_caption` ("Escanéalo con Pourline para añadir esta receta" / "Scan it with Pourline to add this recipe"), `recipe_card_dose`, `recipe_card_water`, `recipe_card_ratio`, `recipe_card_temp`, `recipe_card_grind`, `recipe_card_step_duration` ("%1$d s"). Importar: `recipe_import_action` ("Importar receta"), `recipe_import_scan` ("Escanear QR"), `recipe_import_from_image` ("Desde una imagen"), `recipe_import_title` ("Importar receta"), `recipe_import_save`, `recipe_import_cancel`, `recipe_import_trimmed` ("La receta original tenía %1$s que no cupieron en el QR."), `recipe_import_identical` ("Ya tienes esta receta"), `recipe_import_notes` ("Notas"), `recipe_import_grind` ("Molienda"), `recipe_import_grind_use` ("Usar con %1$s · %2$s"), `recipe_import_grind_as_text` ("Guardar como texto"). Mensajes (texto del spec): `recipe_import_added`, `recipe_import_deferred`, `recipe_import_not_pourline`, `recipe_import_no_recipe`, `recipe_import_newer`, `recipe_import_corrupt`, `recipe_import_invalid` y `recipe_import_scanner_unavailable`. | El proyecto define cada texto por contexto aunque se repita ("Cancelar" ya existe varias veces). Los dos títulos que el spec no da se proponen aquí (discrepancia 13). |
+| D24 | Cadenas (concreta §3.4, §3.6 y §4) | Nuevas en `values` y `values-en`. Compartir: `recipe_share_action` ("Compartir receta" / "Share recipe"), `recipe_share_dialog_title` ("Compartir receta"), `recipe_share_trimmed_text` ("Esta receta es muy larga para el QR. Al importarla faltarán %1$s." / "This recipe is too long for the QR code. When imported, it will be missing %1$s."), `recipe_share_too_long_text` (texto del §3.4 / "This recipe is too long to import with a QR code. Only the image will be shared."), `recipe_share_confirm` ("Compartir"), `recipe_share_cancel` ("Cancelar"), `recipe_trimmed_notes` ("las notas" / "the notes"), `recipe_trimmed_instructions` ("las instrucciones de los pasos" / "the step instructions"), `recipe_trimmed_stage_names` ("los nombres de los pasos" / "the step names"), `recipe_trimmed_list_two` ("%1$s y %2$s"), `recipe_trimmed_list_three` ("%1$s, %2$s y %3$s"). Tarjeta: `recipe_card_qr_caption` ("Escanéalo con Pourline para añadir esta receta" / "Scan it with Pourline to add this recipe"), `recipe_card_dose`, `recipe_card_water`, `recipe_card_ratio`, `recipe_card_temp`, `recipe_card_grind`, `recipe_card_step_duration` ("%1$d s"). Importar: `recipe_import_action` ("Importar receta"), `recipe_import_scan` ("Escanear QR"), `recipe_import_from_image` ("Desde una imagen"), `recipe_import_title` ("Importar receta"), `recipe_import_save`, `recipe_import_cancel`, `recipe_import_trimmed` ("La receta original tenía %1$s que no cupieron en el QR."), `recipe_import_identical` ("Ya tienes esta receta"), `recipe_import_notes` ("Notas"), `recipe_import_grind` ("Molienda"), `recipe_import_grind_use` ("Usar con %1$s · %2$s"), `recipe_import_grind_as_text` ("Guardar como texto"). Mensajes (texto del spec): `recipe_import_added`, `recipe_import_deferred`, `recipe_import_not_pourline`, `recipe_import_no_recipe`, `recipe_import_newer`, `recipe_import_corrupt`, `recipe_import_invalid` y `recipe_import_scanner_unavailable` y `recipe_import_reader_preparing` ("El lector de QR se está preparando. Inténtalo en unos segundos" / "The QR reader is getting ready. Try again in a few seconds"). | El proyecto define cada texto por contexto aunque se repita ("Cancelar" ya existe varias veces). Los dos títulos que el spec no da se proponen aquí (discrepancia 13). |
 | D28 | Intents en los tests (concreta §5) | Los tests instrumentados de `ACTION_VIEW` y `ACTION_SEND` montan `TestApp(env)` y construyen `RecipeIntentHandler` con `env.dependencies.recipeImports`, `env.dependencies.qrImageReader` y la sesión de `env`, y le pasan `Intent` reales (el `ACTION_SEND` con un PNG generado por la tarjeta y servido por `FileProvider`). El pegamento de `MainActivity` (`singleTask`, `onNewIntent`, recreación) se prueba con `ManifestPermissionsTest` y por adb (§7.4). | Lanzar la `MainActivity` real usaría `PourlineApp.dependencies`: el `history.db` y las preferencias reales, que los tests nunca tocan (D32 de SPEC-005). |
 | D29 | Guardia del manifiesto (amplía) | `androidTest/.../ManifestPermissionsTest.kt` (nuevo): `requestedPermissions` del paquete no contiene `INTERNET` ni `CAMERA`; `queryIntentActivities` resuelve `VIEW pourline://recipe?...` y `SEND image/png` a `MainActivity`; y su `ActivityInfo.launchMode` es `LAUNCH_SINGLE_TASK`. | Una dependencia futura podría reintroducir `INTERNET`. Con el test, la regresión se ve en la suite y no solo en una revisión manual. |
 
@@ -156,8 +184,8 @@ Orden: F0 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9. F2 y F
 
 | Fase | Contenido | Tamaño | Estado |
 |---|---|---|---|
-| F0 | Spike en el dispositivo: línea base, dependencias, manifiesto sin `INTERNET`, Code Scanner y `MAX_URI_LENGTH` | M | Hecha en parte: detenida, `MAX_URI_LENGTH < 500` y escáner sin verificar |
-| F1 | Códec JVM puro: `RecipeShareCodec`, recorte y errores | M | Pendiente |
+| F0 | Spike en el dispositivo: línea base, dependencias, manifiesto sin `INTERNET`, Code Scanner y `MAX_URI_LENGTH` | M | Hecha (escáner pendiente del usuario) |
+| F1 | Códec JVM puro (formato binario del §3.1): `RecipeShareCodec`, recorte y errores | M | Pendiente |
 | F2 | Reglas de importación JVM: idéntica, sufijo, `routeImport` y `PendingRecipeImport` | S | Pendiente |
 | F3 | Resolución de molienda JVM | S | Pendiente |
 | F4 | Tarjeta de receta con QR y tamaño variable | M | Pendiente |
@@ -170,10 +198,11 @@ Orden: F0 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9. F2 y F
 Cada fase deja `:app` compilando y sus tests en verde. Se compila y se prueba solo `:app`, nunca con
 `./gradlew build` ni con builds limpios.
 
-- **Tests instrumentados:** siempre con `ANDROID_SERIAL=emulator-5556` (AVD `SG_API34`, Google Play, en `en-US`). El
-  `emulator-5554` es del usuario y no se usa. El teléfono físico conectado (`22081212UG`, Android 15, por adb
-  inalámbrico) solo se usa si el usuario lo autoriza (P5). Nunca dos suites a la vez en `emulator-5556`: una ejecución
-  paralela desde otro worktree ya tumbó una suite en SPEC-008.
+- **Tests instrumentados:** con `ANDROID_SERIAL=emulator-5556` (AVD `SG_API34`, imagen `google_apis`, en `en-US`), salvo los
+  que leen QR con ML Kit de Play Services, que van en `emulator-5560` (AVD `SG_API36_play`; ver "Cambios acordados tras F0").
+  El `emulator-5554` es del usuario y no se usa. El teléfono físico (`22081212UG`, Android 15, por adb inalámbrico) es el
+  móvil personal del usuario: solo lo toca el usuario, salvo instalar los APK de la prueba del escáner. Nunca dos suites
+  a la vez en el mismo emulador: una ejecución paralela desde otro worktree ya tumbó una suite en SPEC-008.
 - **Sin ARTEMIS.** Los tests de interfaz localizan por `testTag` y leen los textos esperados con `context.getString(...)`.
 - **Recorridos guiados:** los tests con `TestApp` llaman a `env.skipOnboarding()`, que los apaga.
 - **Fallos previos que no bloquean:** `CoffeeDetailScreenTest.theFactsAreFoldedByDefaultAndOpenOnTap` (idioma),
@@ -183,6 +212,10 @@ Cada fase deja `:app` compilando y sus tests en verde. Se compila y se prueba so
   `docs(specs): add the recipe sharing spec and implementation plan (SPEC-009)`.
 
 ### F0. Spike en el dispositivo
+
+> **Nota (2026-11-18).** Los pasos 2, 5 y 6 se cerraron con los cambios acordados tras F0: la dependencia de lectura de
+> imágenes es `play-services-mlkit-barcode-scanning` 18.3.1 (no `barcode-scanning`), `MAX_URI_LENGTH` se midió con ese
+> lector en `emulator-5560` y el Code Scanner lo prueba el usuario con su móvil (sección "Prueba del escáner de F0").
 
 **Objetivo:** cerrar los riesgos del §6 antes de escribir el códec y la interfaz:
 
@@ -254,7 +287,7 @@ En el repo solo queda lo que se reutiliza: las dependencias, `QrCode.kt`, `QrIma
 | `androidTest/.../share/QrLegibilityTest.kt` (nuevo) | `sweep` (medida, sin aserciones de umbral) y `maxUriLengthIsLegible`. |
 
 **Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.share.QrCodeTest"`.
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.share.QrLegibilityTest`.
+`ANDROID_SERIAL=emulator-5560 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.share.QrLegibilityTest` (lector de Play Services: `emulator-5560`).
 `grep -n "import android" app/src/main/kotlin/dev/josueamaya/pourline/share/QrCode.kt` no encuentra nada.
 
 **Criterio de salida.** Se cumplen todos:
@@ -283,78 +316,151 @@ saltados, 3 fallos conocidos: `CoffeeDetailScreenTest.theFactsAreFoldedByDefault
 `SessionPerformanceTest`); `lintDebug` con 2 errores (`StringFormatInvalid` en `four_six_split_*`, previos) y 21 avisos;
 APK de debug de 60 403 569 bytes.
 
-**Dependencias:** `com.google.zxing:core` 3.5.4, `com.google.mlkit:barcode-scanning` 17.3.0 y
-`com.google.android.gms:play-services-code-scanner` 16.1.0 (las últimas estables de Maven Central y Google Maven).
+**Dependencias:** `com.google.zxing:core` 3.5.4, `com.google.android.gms:play-services-mlkit-barcode-scanning` 18.3.1 y
+`com.google.android.gms:play-services-code-scanner` 16.1.0 (las últimas estables de Maven Central y Google Maven). Una
+primera medida con `com.google.mlkit:barcode-scanning` 17.3.0 (modelo en el APK) dio las mismas cifras de legibilidad y
++20,8 MB de APK; se descartó por decisión del usuario.
 
 | Criterio de salida | Resultado |
 |---|---|
-| 1. Manifiestos sin `INTERNET` ni `CAMERA`, idénticos a la línea base | Cumple. `uses-permission` y `uses-feature` de debug y release idénticos a la línea base; el informe del fusionador muestra `INTERNET` rechazado en `transport-backend-cct` por el `tools:node="remove"`; `apkanalyzer` da la misma lista. |
-| 2. El Code Scanner devuelve el URI sin `INTERNET` | **Sin verificar.** Hace falta una cámara que vea un QR (lo apunta una persona o una escena virtual del emulador). El teléfono físico es el móvil personal del usuario y estaba en uso; no se le lanzó nada más. |
-| 3. `MAX_URI_LENGTH >= 500` | **No cumple.** Ver abajo. |
-| 4. `zipalign -P 16` da `OK` en las `.so` | Cumple (también `libbarhopper_v3.so`). |
+| 1. Manifiestos sin `INTERNET` ni `CAMERA`, idénticos a la línea base | Cumple con la dependencia final. `uses-permission` y `uses-feature` de debug y release idénticos a la línea base; el informe del fusionador muestra `INTERNET` rechazado en `transport-backend-cct` por el `tools:node="remove"`; `apkanalyzer` da la misma lista y ni el manifiesto de debug ni el de release contienen `INTERNET` ni `CAMERA`. |
+| 2. El Code Scanner devuelve el URI sin `INTERNET` y sin red tras descargar el módulo | **Pendiente del usuario** (sección "Prueba del escáner de F0"). |
+| 3. `MAX_URI_LENGTH >= 500` | Con JSON, no (331). El usuario cambió el formato a binario; el criterio pasa a ser que la receta de peor caso quepa con 60 caracteres de margen (D8): cumple (231 a 267 frente a 331). |
+| 4. `zipalign -P 16` da `OK` en las `.so` | Cumple. Con el lector de Play Services desaparecen `libbarhopper_v3.so` y el modelo del APK; quedan `libandroidx.graphics.path.so` y `libmlkit_google_ocr_pipeline.so`, ambas `OK`. |
 
-El APK crece de 60 403 569 a 81 167 759 bytes (+20,8 MB, el modelo incluido de ML Kit `barcode-scanning`).
+**APK de debug:** 59 904 066 bytes (60 403 569 en la línea base): **-0,5 MB** con las tres dependencias, porque el modelo
+de barcode lo descarga Play Services.
 
-**Legibilidad (`QrLegibilityTest.sweep`, 5 muestras por longitud, QR de 432 px, 1080 x 1350):** tal cual, todas las
-muestras se leen hasta la versión 24. Tras reducir al 50 % y JPEG 70, solo se leen siempre hasta la versión 15 (375 y 400
-caracteres); desde la 16 falla de forma irregular (no monótona, depende de cómo caen los píxeles al reducir):
+**Legibilidad** (`QrLegibilityTest.sweep`, lector de Play Services en `emulator-5560`, 5 muestras por longitud, QR de
+432 px sobre un lienzo de 1080 x 1350). Tal cual se lee todo hasta la versión 22; tras reducir al 50 % y JPEG 70, solo
+hasta la versión 15 (375 y 400 caracteres) y desde la 16 de forma irregular:
 
-| Longitud | 300 | 350 | 375 | 400 | 425 | 475 | 525 | 600 | 700 |
-|---|---|---|---|---|---|---|---|---|---|
-| Versión | 13 | 14 | 15 | 15 | 16 | 17 | 18 | 19 | 21 |
-| Aciertos reducido + JPEG 70 | 5/5 | 5/5 | 5/5 | 5/5 | 2/5 | 0/5 | 3/5 | 0/5 | 0/5 |
+| Longitud | 200 | 250 | 300 | 350 | 375 | 400 | 425 | 475 | 525 | 600 | 700 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Versión | 10 | 11 | 13 | 14 | 15 | 15 | 16 | 17 | 18 | 19 | 21 |
+| Reducido + JPEG 70 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 2/5 | 3/5 | 4/5 | 3/5 | 0/5 |
 
-La regla de D8 (`Vmax = 15`, una versión de margen) da 362 (capacidad de la versión 14), pero con 362 el test
-`maxUriLengthIsLegible` falla en 1 de 20 muestras (19/20 con la reducción y JPEG 70). Por eso el valor provisional es
-**331** (versión 13, 20/20).
+`maxUriLengthIsLegible` (20 muestras): con 362 (regla de D8) acierta 19 de 20 en dos ejecuciones; con **331** acierta 20
+de 20. Valor fijado: **`MAX_URI_LENGTH = 331`**. Las medidas previas con el lector incluido en el APK coinciden.
 
-Otras medidas, con el QR en el borde derecho del lienzo y las mismas muestras (aciertos reducido + JPEG 70):
+**Receta de peor caso en binario** (simulación del §3.1 con `zlib` nivel 9 raw, equivalente a `Deflater`; script en el
+scratchpad): 20 pasos sin textos, nombre de 60 caracteres aleatorios, método, temperatura y molienda de catálogo
+(`catalogKey`, marca, modelo y ajuste):
 
-- QR de 504 px (168 dp): se lee de forma irregular desde la versión 14.
-- QR de 540 px (180 dp): todas las muestras hasta la versión 17 (500 caracteres), mezcla en la 18 y 19, irregular después.
-- QR de 576 px (192 dp): peor que el de 540 px por el mismo efecto del redimensionado.
-- Corrección L con 432 px: más capacidad por versión, pero no mejora la lectura reducida (falla desde la versión 12 o 13 a
-  ratos).
+| Variante | Mínimo | Máximo | Media |
+|---|---|---|---|
+| Tiempos en segundos (típica) | 231 | 255 | 243 |
+| Segundos, agua con decimales y tiempos aleatorios de 1 a 120 s (adversaria, 2 000 recetas) | 252 | 267 | 262 |
+| 0,1 s | 268 | 287 | 278 |
+| Milisegundos aleatorios (no los genera la app) | 324 | 348 | 338 |
 
-**Receta de 20 pasos sin textos** (script en el scratchpad con el esquema del §3.1, nombre de 60, método, temperatura y
-molienda): 430 a 490 caracteres, según los valores. La V60 clásica ocupa unos 232. Con 331, **una receta de 20 pasos no
-cabe aunque se quiten todos los textos**; y con 362 tampoco.
+Con 331, el margen del peor caso real es de **64 caracteres** (19 %). La V60 clásica ocupa unos 80 caracteres. El editor
+y `RecipeFromBrew` guardan siempre segundos enteros, así que la variante de milisegundos no se alcanza desde la app.
 
-**Alternativas del §6 (decide el usuario):** (a) agrandar el QR a 180 dp (540 px), con lo que la versión 17 se lee con
-fiabilidad (hasta unos 500 caracteres) y una receta de 20 pasos sin textos cabe justo, sin margen; (b) usar siempre 9:16
-y un QR aún mayor (hay que medirlo: el redimensionado hace que más grande no sea siempre mejor); (c) relajar el criterio
-de lectura del spec (reducción al 50 % es más duro que lo que hace WhatsApp con una imagen de 1080 px); (d) bajar la
-corrección a L no ayuda con el criterio actual.
+**Emulador.** `emulator-5556` no descarga el modelo (ver "Cambios acordados tras F0"); las medidas son de `emulator-5560`.
+
+### Prueba del escáner de F0 (la hace el usuario)
+
+El Code Scanner necesita una cámara que vea un QR. En el móvil físico (`22081212UG`) quedaron instalados el APK de debug
+y un APK de test con la prueba (`CodeScannerSpikeTest`, que no está en el repo). Todo lo necesario está en
+`~/Downloads/pourline-recipe-share/scanner-spike/`:
+
+| Archivo | Qué es |
+|---|---|
+| `qr-card-1080x1350.png` | El QR de 432 px en su sitio de la tarjeta, sobre fondo blanco. |
+| `qr-432.png` | El QR suelto, de 432 px (versión 13, 331 caracteres, el `MAX_URI_LENGTH`). |
+| `expected-uri.txt` | El URI que debe devolver el escáner. |
+| `pourline-debug.apk`, `pourline-spike-test.apk` | Para reinstalar si hace falta. |
+| `CodeScannerSpikeTest.kt.txt` | El código de la prueba. |
+
+El URI es un payload `v=1` válido del §3.1 (20 pasos, nombre de 60 caracteres, notas de 78), de la longitud máxima:
+
+```
+pourline://recipe?v=1&d=k7UJSk1OLUlUSElVKCgqTU0CsXIUUouTE_NSixSS8_MUSvMU8vJzk4pSFXJLKxVyEovS80Gqi1OLU08wMixi9_MrDCuPDLYwDAsw90gydImwKAhIMc3OqHA1Lqj0TPcuSAzNcyzKMTOOqMwOj0rN9PNzzsxMNE7Mi8izzDbOLi61zPU0CfLPy7GwDM61tGTnL8nMTc3NL0qNTzaOLyjK5wiB8vmdM1KLS_JKSxScjRUCivIPqIowMIisYWJiUIbSIP4JRgh_AjOYzz8NyJdkYGAFiXMB-d8h6uWg8qwgPlCcFaROBAA
+```
+
+**Preparación.** Móvil con la pantalla encendida y desbloqueada. Abrir `qr-432.png` en el Mac a tamaño real (100 %, con el
+brillo alto) y dejarlo a la vista. Abrir Pourline en el móvil y dejarla delante (en Xiaomi, el escáner solo se abre si la
+app está en primer plano o tiene el permiso de ventanas emergentes en segundo plano).
+
+```
+PHONE=adb-f1d5814f-ms4s9Z._adb-tls-connect._tcp     # o el serial USB que da `adb devices -l`
+RUN="dev.josueamaya.pourline.test/dev.josueamaya.pourline.PourlineTestRunner"
+LOG=/sdcard/Android/data/dev.josueamaya.pourline/files/scanner-spike.log
+adb -s $PHONE shell rm -f $LOG
+```
+
+1. **Normal.** Con el QR delante de la cámara trasera:
+   ```
+   adb -s $PHONE shell am instrument -w -e class dev.josueamaya.pourline.share.CodeScannerSpikeTest#scan $RUN
+   adb -s $PHONE shell cat $LOG
+   ```
+   Pasa si aparece `SCAN start INTERNET=false CAMERA=false` y `SCAN RESULT OK match=true length=331 ms=<n>`. El primer
+   uso puede descargar el módulo (hace falta red y tarda unos segundos); si sale `FAIL ... module ... downloaded`, esperar
+   un minuto con red y repetir.
+2. **Modo avión.** Hacerlo después del punto 1, con el cable USB (el adb inalámbrico se corta sin Wi-Fi) y el serial USB en
+   `PHONE`:
+   ```
+   adb -s $PHONE shell cmd connectivity airplane-mode enable
+   adb -s $PHONE shell svc wifi disable
+   adb -s $PHONE shell am instrument -w -e class dev.josueamaya.pourline.share.CodeScannerSpikeTest#scan $RUN
+   adb -s $PHONE shell cat $LOG
+   adb -s $PHONE shell cmd connectivity airplane-mode disable
+   adb -s $PHONE shell svc wifi enable
+   ```
+   Pasa si la última línea es `SCAN RESULT OK match=true`. Si el móvil no admite `cmd connectivity airplane-mode`, activar
+   el modo avión y apagar el Wi-Fi desde los ajustes rápidos y ejecutar solo `am instrument` y `cat`.
+3. **Tiempo de lectura de 5 s o menos.** Tres lecturas seguidas con el QR ya delante (después de la del punto 1):
+   ```
+   for i in 1 2 3; do adb -s $PHONE shell am instrument -w -e class dev.josueamaya.pourline.share.CodeScannerSpikeTest#scan $RUN > /dev/null; done
+   adb -s $PHONE shell grep "SCAN RESULT" $LOG
+   ```
+   Pasa si las tres líneas tienen `match=true` y `ms` de 5000 o menos. `ms` cuenta desde que se pide el escáner hasta el
+   resultado: incluye abrir la cámara y la lectura, así que el QR debe estar a la vista desde el principio.
+4. **Cancelar.** Ejecutar y, antes de 90 s, cerrar el escáner con la X o con atrás sin leer nada:
+   ```
+   adb -s $PHONE shell am instrument -w -e class dev.josueamaya.pourline.share.CodeScannerSpikeTest#cancel $RUN
+   adb -s $PHONE shell cat $LOG
+   ```
+   Pasa si la línea es `CANCEL RESULT canceled=true`. Si sale `canceled=false` y una `MlKitException` (código 13,
+   `CODE_SCANNER_CANCELLED`), anotarlo: D19 la tratará también como "cancelado".
+
+Al terminar, `adb -s $PHONE uninstall dev.josueamaya.pourline.test` quita el APK de test. Cualquier `FAIL` o `match=false`
+se pega tal cual al coordinador. Los tres resultados esperados (1, 2 y 3 con `match=true` y 4 con `canceled=true`) cierran
+el criterio de salida 2 de F0.
 
 Commit sugerido: `build(deps): add QR generation and reading libraries for recipe sharing`.
 
-### F1. Códec JVM puro
+### F1. Códec JVM puro (formato binario)
 
-**Objetivo:** modelo → URI → modelo, con versión, compresión, recorte por tamaño y todos los errores del §4.
+**Objetivo:** modelo → URI → modelo con el formato binario del §3.1, con versión, compresión, recorte por tamaño y todos
+los errores del §4.
 
 **Archivos:**
 
 | Archivo | Cambio |
 |---|---|
 | `recipe/share/SharedRecipe.kt` (nuevo) | Contratos del §3.2 (D1). |
-| `recipe/share/RecipeSharePayload.kt` (nuevo) | `PayloadV1`, `GrindV1` y `StageV1`, y la conversión desde y hacia `Recipe` y `SharedGrind` (D2, D5 y D7). |
-| `recipe/share/RecipeShareCodec.kt` | `encode` (con la sobrecarga `maxLength`) y `decode` (D1, D3, D4 y D6). |
+| `recipe/share/RecipeShareBinary.kt` (nuevo) | `ByteWriter`, `ByteReader` (`uvar`, `svar`, `str`) y `ShareFormat` (bits, unidades de tiempo y códigos de método) (D1, D2). |
+| `recipe/share/RecipeSharePayload.kt` (nuevo) | `encodePayload` y `decodePayload`: cabecera, molienda y pasos del §3.1 (D2, D4, D5, D7). |
+| `recipe/share/RecipeShareCodec.kt` | `encode` (con la sobrecarga `maxLength` y el recorte), `decode`, `deflate` y `base64url` (D1, D3, D4, D6). Las constantes de F0 se conservan. |
 
 **Tests:**
 
 | Archivo | Casos |
 |---|---|
-| `test/.../recipe/share/RecipeShareCodecTest.kt` (nuevo) | **Ida y vuelta:** `` `the built-in recipes round trip` `` (`BuiltInRecipes.all(FakeRecipeTexts())`: nombre, método, `methodOther`, dosis, temperatura, notas y, por paso, tipo, nombre, inicio, duración, agua e instrucción); `` `a recipe with every field round trips` `` (`OTHER` con `methodOther`, 93,5 °C, notas, 20 pasos mezclados con nombre e instrucción); `` `swirl and wait water is derived on decode` ``; `` `the decoded recipe has id 0, no built-in key, no localized names and no grind` ``; `` `stages are written ordered by start` ``. **Molienda:** `` `a catalog grinder travels as key, brand, model and value` ``; `` `a custom grinder has no key` ``; `` `a grinder without a setting has no value` ``; `` `a deleted grinder only carries the label` ``; `` `no grind, an empty grind or a deleted grinder without label omit g` ``. **Recorte** (con `maxLength` pequeño): `` `notes go first` ``; `` `then instructions` ``; `` `then stage names` ``; `` `x and trimmed list only what was actually removed` ``; `` `encode is null only when the fully trimmed uri does not fit` ``; `` `steps, times, water, dose, temperature, method and grind are never trimmed` ``; `` `the uri never exceeds the limit` ``. **Tope real:** `` `a 20 step recipe without texts fits under MAX_URI_LENGTH` `` (receta de referencia del paso 7 de F0). **Errores:** `` `surrounding spaces are accepted` ``; `` `another scheme, another host or no payload is not pourline` `` (`https://…`, `pourline://brew?…`, sin `d`, texto libre); `` `a newer version is rejected before reading the payload` `` (`v=2` con `d` basura); `` `a missing or non numeric version is corrupt` ``; `` `bad base64, bad deflate and bad json are corrupt` ``; `` `an unknown key is corrupt at the top, in g and in a stage` ``; `` `an unknown method, stage type or trimmed part is corrupt` ``; `` `a missing required key is corrupt` ``; `` `an oversized inflated payload is corrupt` ``; `` `a payload that fails the validator is invalid` `` (dosis 0, sin pasos, 21 pasos, inicios solapados, sin `POUR`). **Contrato:** `` `the golden v1 uri decodes to the classic V60` `` (D23). |
+| `test/.../recipe/share/RecipeShareBinaryTest.kt` (nuevo) | `` `uvar round trips and uses seven bits per byte` `` (0, 127, 128, 16 383, 16 384 y `Long.MAX_VALUE`); `` `svar uses zigzag` `` (0, -1, 1, -2, el máximo y el mínimo); `` `str is the length then utf8` `` (vacío, ASCII, `ñ`, un emoji); `` `reading past the end throws` ``; `` `an uvar longer than ten bytes throws` ``; `` `invalid utf8 throws` ``. |
+| `test/.../recipe/share/RecipeShareCodecTest.kt` (nuevo) | **Ida y vuelta:** `` `the built-in recipes round trip` `` (`BuiltInRecipes.all(FakeRecipeTexts())`: nombre, método, `methodOther`, dosis, temperatura, notas y, por paso, tipo, nombre, inicio, duración, agua e instrucción); `` `a recipe with every field round trips` `` (`OTHER` con `methodOther`, 93,5 °C, notas, 20 pasos mezclados con nombre e instrucción, y con la unidad de tiempo en s, 0,1 s y ms); `` `the time unit is the largest that divides every start and duration` `` (en `encodePayload`); `` `swirl and wait water is derived on decode` ``; `` `water is incremental in tenths of a gram` ``; `` `the decoded recipe has id 0, no built-in key, no localized names and no grind` ``; `` `stages are written ordered by start` ``; `` `an invalid recipe does not encode` ``. **Molienda:** `` `a catalog grinder travels as key, brand, model and value` ``; `` `a custom grinder has no key` ``; `` `a grinder without a setting has no value` ``; `` `the value is rounded to hundredths` ``; `` `a deleted grinder only carries the label` ``; `` `no grind, an empty grind or a deleted grinder without label omit the block` ``. **Recorte** (con `maxLength` pequeño): `` `notes go first` ``; `` `then instructions` ``; `` `then stage names` ``; `` `the trim bits and trimmed list only what was actually removed` ``; `` `encode is null only when the fully trimmed uri does not fit` ``; `` `steps, times, water, dose, temperature, method and grind are never trimmed` ``; `` `the uri never exceeds the limit` ``. **Tope real:** `` `the worst case recipe fits under MAX_URI_LENGTH with 60 characters to spare` `` (20 pasos sin textos, nombre de 60 caracteres aleatorios, método, temperatura y molienda de catálogo, con tiempos en segundos; URI de 271 caracteres o menos; las variantes en 0,1 s y en ms solo se anotan en la salida). **Errores:** `` `surrounding spaces are accepted` ``; `` `another scheme, another host or no payload is not pourline` `` (`https://…`, `pourline://brew?…`, sin `d`, texto libre); `` `a newer version is rejected before reading the payload` `` (`v=2` con `d` basura); `` `a missing or non numeric version is corrupt` ``; `` `bad base64 and bad deflate are corrupt` ``; `` `a truncated payload is corrupt` `` (cada prefijo propio del payload de la V60); `` `trailing bytes are corrupt` ``; `` `an undefined flag bit is corrupt` `` (en `flags`, `gflags` y `sflags`, y la unidad de tiempo 3); `` `an unknown method code or stage type is corrupt` ``; `` `method other without other method is corrupt` ``; `` `an oversized inflated payload is corrupt` ``; `` `a stage count above 20 is invalid before reading stages` ``; `` `a payload that fails the validator is invalid` `` (dosis 0, sin pasos, inicios solapados, sin `POUR`, nombre en blanco). **Contrato:** `` `the classic V60 payload matches the golden bytes` `` y `` `the golden v1 uri decodes to the classic V60` `` (D23); `` `the scanner worst case uri decodes to twenty stages` `` (`WORST_CASE_URI`, D23). |
 | `test/.../recipe/share/RecipeSharePurityTest.kt` (nuevo) | `` `the recipe share package does not import android` ``: recorre `src/main/kotlin/dev/josueamaya/pourline/recipe/share` y ninguna línea empieza por `import android` ni `import androidx`. |
-| `test/.../recipe/share/RecipeShareFixtures.kt` (nuevo) | `twentyStepsWithoutTexts()`, `everyField()` y `withLongTexts(notes, instructions)`. |
+| `test/.../recipe/share/RecipeShareFixtures.kt` (nuevo) | `worstCaseRecipe()`, `everyField()`, `withLongTexts(notes, instructions)`, `GOLDEN_V60_PAYLOAD`, `GOLDEN_V60_URI` y `WORST_CASE_URI`. |
 
 **Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.recipe.share.*" --tests "dev.josueamaya.pourline.recipe.*"`.
 
-**Criterio de salida:** todo en verde, también `` `a 20 step recipe without texts fits under MAX_URI_LENGTH` ``. Si ese caso falla,
-se detiene el plan y se consulta al usuario (§6: agrandar el QR o la tarjeta). Antes, se puede probar a escribir los
-`Double` enteros sin `.0` (R3).
+**Criterio de salida:** todo en verde, también `` `the worst case recipe fits under MAX_URI_LENGTH with 60 characters to spare` ``.
+Si ese caso falla, se detiene el plan y se consulta al usuario. Los bytes congelados (`GOLDEN_V60_PAYLOAD`) se revisan a mano
+contra la tabla del §3.1 antes de commitearlos.
 
-Commit sugerido: `feat(recipes): add the recipe share codec`.
+Commit sugerido: `feat(recipes): add the binary recipe share codec`.
 
 ### F2. Reglas de importación JVM
 
@@ -374,7 +480,7 @@ sin Android.
 | Archivo | Casos |
 |---|---|
 | `test/.../recipe/share/RecipeImportRulesTest.kt` (nuevo) | `` `the same recipe is identical` ``; `` `a name that differs only in case or outer spaces is still identical` ``; `` `a different dose, method or temperature is not identical` ``; `` `a different stage type, name, start, duration, pour water or instruction is not identical` ``; `` `swirl and wait water does not count` ``; `` `notes, method other and grind do not count` ``; `` `a blank stage name equals no name` ``; `` `a free name is kept trimmed` ``; `` `a taken name gets (2)` ``; `` `(2) taken gives (3)` ``; `` `the clash ignores case and outer spaces` ``. |
-| `test/.../recipe/share/ImportRoutingTest.kt` (nuevo) | Por cada `DecodeResult` y cada `ImportSource`: `` `ok without a session opens` ``; `` `ok with a session defers` ``; `` `a null text from an image is no recipe in image` ``; `` `not pourline from an image is no recipe in image` ``; `` `not pourline from the scanner or a link is not pourline` ``; `` `newer, corrupt and invalid map to their errors` ``. |
+| `test/.../recipe/share/ImportRoutingTest.kt` (nuevo) | Por cada `DecodeResult` y cada `ImportSource`: `` `ok without a session opens` ``; `` `ok with a session defers` ``; `` `a null text from an image is no recipe in image` ``; `` `not pourline from an image is no recipe in image` ``; `` `not pourline from the scanner or a link is not pourline` ``; `` `newer, corrupt and invalid map to their errors` ``; `` `a reader that is not ready maps to reader not ready` `` (`ModelNotReady` desde `IMAGE`, con y sin sesión: nunca abre ni aplaza). |
 | `test/.../recipe/share/PendingRecipeImportTest.kt` (nuevo) | `` `an opened import is pending without a notice` ``; `` `a deferred import is pending and notifies deferred` ``; `` `the last import replaces the pending one` ``; `` `a failure notifies its error and leaves the pending one alone` ``; `` `consume only clears the same uri` ``; `` `notices are kept until collected` ``. |
 
 **Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.recipe.share.*"`.
@@ -427,10 +533,10 @@ Commit sugerido: `feat(grinders): resolve the grind of an imported recipe`.
 |---|---|
 | `test/.../share/ShareModelsTest.kt` | `` `a recipe is shared as recipe-id png` ``; `` `up to the compact limit the recipe card is 4 by 5 and 9 by 16 after it` ``. |
 | `androidTest/.../share/ShareCardsLayoutTest.kt` | `aShortRecipeCardIs1080x1350WithAQrOfAtLeast432px` (V60 clásica: tamaño, `share_recipe_qr` de 432 × 432 px o más, el texto del QR, la marca dentro y cada `share_recipe_step_<i>` por encima de la marca). `aRecipeCardAtTheCompactLimitStaysAt4x5` (10 pasos). `aTwentyStepRecipeWithA60CharNameIs1080x1920AndShowsEveryStep`. `aRecipeCardWithoutQrHasNeitherQrNorCaption`. `theRecipeCardHasNoNotesNorInstructions` (ningún nodo contiene sus textos). `missingFactsAreNotShown` (sin temperatura ni molienda). `theQrIsBlackOnWhite` (píxeles de la zona de silencio blancos y el primer módulo del patrón de posición negro, en el bitmap capturado). `aDeletedGrinderShowsItsLabel` y `aLiveGrinderShowsTheEditorLabel`. Los casos existentes no cambian. |
-| `androidTest/.../share/RecipeQrLegibilityTest.kt` (nuevo) | `theWorstCaseCardIsReadableAsIsAndAfterHalvingAndJpeg70`: receta de 20 pasos, nombre de 60 caracteres y notas aleatorias (poco comprimibles) ajustadas por búsqueda binaria hasta que el URI quede entre `MAX_URI_LENGTH − 8` y `MAX_URI_LENGTH` sin recorte. Se captura con `ShareCaptureHost` (1080 × 1920) y `MlKitQrImageReader.readBitmap` devuelve el URI, tal cual y tras reducir al 50 % y recomprimir en JPEG 70. `decode` del texto leído da `Ok` con la misma receta. |
+| `androidTest/.../share/RecipeQrLegibilityTest.kt` (nuevo) | `theWorstCaseCardIsReadableAsIsAndAfterHalvingAndJpeg70`: receta de 20 pasos, nombre de 60 caracteres y notas aleatorias (poco comprimibles) ajustadas por búsqueda binaria hasta que el URI quede entre `MAX_URI_LENGTH − 8` y `MAX_URI_LENGTH` sin recorte. Se captura con `ShareCaptureHost` (1080 × 1920) y `MlKitQrImageReader.readBitmap` (con `awaitQrModel()`, en `emulator-5560`) devuelve el URI, tal cual y tras reducir al 50 % y recomprimir en JPEG 70. `decode` del texto leído da `Ok` con la misma receta. El URI de peor caso se construye con notas aleatorias de longitud ajustada, como antes, pero ahora el recorte solo aparece con textos largos: con 20 pasos sin textos el URI mide unos 250 caracteres. |
 
 **Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.share.*"`.
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.share.ShareCardsLayoutTest,dev.josueamaya.pourline.share.RecipeQrLegibilityTest,dev.josueamaya.pourline.share.ShareIntentTest`.
+`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.share.ShareCardsLayoutTest,dev.josueamaya.pourline.share.ShareIntentTest` y, con el modelo de QR, `ANDROID_SERIAL=emulator-5560 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.share.RecipeQrLegibilityTest`.
 
 **Criterio de salida:** todo en verde. Si 10 pasos no caben en 4:5, se baja `RECIPE_CARD_COMPACT_MAX_STAGES` al valor
 medido. Si 20 pasos no caben en 9:16, se reduce el nombre a una línea y se vuelve a medir; si aún no caben, se consulta.
@@ -459,7 +565,7 @@ Commit sugerido: `feat(share): add the recipe share card with a QR code`.
 | `androidTest/.../ui/recipes/RecipeEditScreenTest.kt`, `androidTest/.../share/ShareIntentTest.kt` | Sin cambios. Se ejecutan para comprobar que el editor y el resto de imágenes no cambian. |
 
 **Verificación:** `./gradlew :app:compileDebugKotlin`.
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.recipes.RecipeShareTest,dev.josueamaya.pourline.ui.recipes.RecipeEditScreenTest,dev.josueamaya.pourline.share.ShareIntentTest`.
+`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.recipes.RecipeEditScreenTest,dev.josueamaya.pourline.share.ShareIntentTest` y `ANDROID_SERIAL=emulator-5560 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.recipes.RecipeShareTest` (decodifica el PNG con el lector de Play Services).
 
 **Criterio de salida:** todo en verde y `RecipeEditScreenTest` sin cambios.
 
@@ -521,11 +627,11 @@ Commit sugerido: `feat(recipes): preview and save an imported recipe`.
 
 | Archivo | Casos |
 |---|---|
-| `androidTest/.../ui/recipes/RecipesImportTest.kt` (nuevo; `TestApp(env)` dentro de `CompositionLocalProvider(LocalQrScanner provides fake)`, y un `LocalActivityResultRegistryOwner` falso que devuelve el `Uri` que fija el test) | `theImportMenuOffersScanAndImageInBasicAndExpert`. `aScannedRecipeOpensThePreview`. `aForeignQrShowsNotPourline` ("https://example.com"). `cancellingTheScannerDoesNothing`. `anUnavailableScannerSuggestsTheImage`. `aGalleryImageWithARecipeOpensThePreview` (PNG de la tarjeta servido por `FileProvider`). `aGalleryImageWithoutQrShowsNoRecipeFound`. `aGalleryImageWithAForeignQrShowsNoRecipeFound`. `cancellingThePickerDoesNothing`. `aHugeImageIsReducedAndStillRead` (6 000 × 6 000 px con el QR escalado). `anUnreadableFileShowsNoRecipeFound` (bytes basura con extensión `.png`). |
+| `androidTest/.../ui/recipes/RecipesImportTest.kt` (nuevo; `TestApp(env)` dentro de `CompositionLocalProvider(LocalQrScanner provides fake)`, y un `LocalActivityResultRegistryOwner` falso que devuelve el `Uri` que fija el test) | `theImportMenuOffersScanAndImageInBasicAndExpert`. `aScannedRecipeOpensThePreview`. `aForeignQrShowsNotPourline` ("https://example.com"). `cancellingTheScannerDoesNothing`. `anUnavailableScannerSuggestsTheImage`. `aGalleryImageWithARecipeOpensThePreview` (PNG de la tarjeta servido por `FileProvider`). `aGalleryImageWithoutQrShowsNoRecipeFound`. `aGalleryImageWithAForeignQrShowsNoRecipeFound`. `cancellingThePickerDoesNothing`. `aHugeImageIsReducedAndStillRead` (6 000 × 6 000 px con el QR escalado). `anUnreadableFileShowsNoRecipeFound` (bytes basura con extensión `.png`). `aGalleryImageWhileTheReaderIsNotReadyShowsThePreparingMessage` (un `QrImageReader` falso que devuelve `ModelNotReady`: mensaje "The QR reader is getting ready…" y sin vista previa). Los casos con imagen real van en `emulator-5560`. |
 | `androidTest/.../ui/recipes/RecipesScreenTest.kt` | Sin cambios (sin `importer`). |
 
 **Verificación:** `./gradlew :app:compileDebugKotlin`.
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.recipes.RecipesImportTest,dev.josueamaya.pourline.ui.recipes.RecipesScreenTest,dev.josueamaya.pourline.ui.tour.RecipesHistoryTourTest`.
+`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.recipes.RecipesScreenTest,dev.josueamaya.pourline.ui.tour.RecipesHistoryTourTest` y `ANDROID_SERIAL=emulator-5560 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ui.recipes.RecipesImportTest`.
 
 **Criterio de salida:** todo en verde. El escáner real se prueba en F9, porque el emulador no tiene una cámara que vea
 un QR sin preparar la escena.
@@ -550,13 +656,13 @@ sola instancia de `MainActivity` y el aplazamiento durante una sesión.
 | Archivo | Casos |
 |---|---|
 | `test/.../RecipeIntentsTest.kt` (nuevo) | `` `a fresh launch is handled` ``; `` `a recreated activity is not handled again` ``; `` `a launch from recents is not handled again` ``. |
-| `androidTest/.../RecipeIntentImportTest.kt` (nuevo; D28) | `aViewIntentOpensThePreviewAndSavingAddsTheRecipe` (con "Recipe added"). `aSendIntentWithAGeneratedPngOpensThePreviewAndSavingAddsTheRecipe`. `aSendIntentWithAnImageWithoutQrShowsNoRecipeFound`. `aSendIntentWithAForeignQrShowsNoRecipeFound`. `aSendIntentWithoutStreamShowsNoRecipeFound`. `aViewIntentWithoutPayloadShowsNotPourline`. `withASessionTheIntentDoesNotNavigateAndThePreviewOpensWhenItEnds` (la pantalla de sesión sigue y aparece "Recipe received…"). `aSecondIntentDuringTheSessionReplacesThePendingOne`. `otherIntentsAreIgnored` (`MAIN`/`LAUNCHER`: `handle` da `false` y no navega). |
+| `androidTest/.../RecipeIntentImportTest.kt` (nuevo; D28) | `aViewIntentOpensThePreviewAndSavingAddsTheRecipe` (con "Recipe added"). `aSendIntentWithAGeneratedPngOpensThePreviewAndSavingAddsTheRecipe`. `aSendIntentWithAnImageWithoutQrShowsNoRecipeFound`. `aSendIntentWithAForeignQrShowsNoRecipeFound`. `aSendIntentWithoutStreamShowsNoRecipeFound`. `aSendIntentWhileTheReaderIsNotReadyShowsThePreparingMessage` (lector falso con `ModelNotReady`). `aViewIntentWithoutPayloadShowsNotPourline`. `withASessionTheIntentDoesNotNavigateAndThePreviewOpensWhenItEnds` (la pantalla de sesión sigue y aparece "Recipe received…"). `aSecondIntentDuringTheSessionReplacesThePendingOne`. `otherIntentsAreIgnored` (`MAIN`/`LAUNCHER`: `handle` da `false` y no navega). |
 | `androidTest/.../ManifestPermissionsTest.kt` (nuevo) | D29. |
 
 **Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.RecipeIntentsTest"`.
 `./gradlew :app:processDebugManifest` y `grep -E "android.permission.(INTERNET|CAMERA)"` sobre el manifiesto
 fusionado no encuentra nada.
-`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.RecipeIntentImportTest,dev.josueamaya.pourline.ManifestPermissionsTest,dev.josueamaya.pourline.ui.TabsNavigationTest`.
+`ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.ManifestPermissionsTest,dev.josueamaya.pourline.ui.TabsNavigationTest` y `ANDROID_SERIAL=emulator-5560 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.josueamaya.pourline.RecipeIntentImportTest`.
 Una comprobación rápida por adb: `adb -s emulator-5556 shell "am start -a android.intent.action.VIEW -d 'pourline://recipe?v=1&d=…'"`
 con `GOLDEN_V60_URI` abre la vista previa, y `adb -s emulator-5556 shell dumpsys activity activities | grep -c "dev.josueamaya.pourline/.MainActivity"`
 da una sola instancia.
@@ -581,13 +687,13 @@ Commit sugerido: `test(recipes): verify recipe sharing end to end`.
 |---|---|---|
 | El icono "Compartir" genera la imagen con la receta y el QR y abre el selector con `ACTION_SEND` `image/png`, en Básico y Experto, también con predefinidas | F4, F5 | `RecipeShareTest.aSavedRecipeSharesAPngInBasic` / `…InExpert` y `aBuiltInRecipeCanBeShared`; §7.4, paso 2 |
 | La imagen mide 1080 × 1350, o 1080 × 1920 si no caben los pasos, y muestra los 20 pasos | F4 | `ShareCardsLayoutTest.aShortRecipeCardIs1080x1350…`, `…AtTheCompactLimitStaysAt4x5` y `aTwentyStepRecipe…Is1080x1920AndShowsEveryStep`; `RecipeShareTest.thePngIsReadable…` |
-| Unitario: ida y vuelta de predefinidas y de una receta con todos los campos | F1 | `RecipeShareCodecTest` (ida y vuelta y contrato) |
-| Unitario: recorte en orden, con `x` y `trimmed`, y `null` solo sin cabida | F1 | `RecipeShareCodecTest` (recorte y tope real) |
-| Unitario: `NotPourline`, `NewerVersion`, `Corrupt` (base64, deflate, JSON, clave y método desconocidos) e `Invalid` | F1 | `RecipeShareCodecTest` (errores) |
+| Unitario: ida y vuelta de predefinidas y de una receta con todos los campos | F1 | `RecipeShareCodecTest` (ida y vuelta y contrato), `RecipeShareBinaryTest` |
+| Unitario: recorte en orden, con los bits de recorte y `trimmed`, y `null` solo sin cabida | F1 | `RecipeShareCodecTest` (recorte y tope real) |
+| Unitario: `NotPourline`, `NewerVersion`, `Corrupt` (base64, deflate, binario truncado, bytes sobrantes, bit o código desconocido) e `Invalid` | F1 | `RecipeShareCodecTest` (errores) |
 | Unitario: molienda en los tres casos y sin molienda | F3 | `SharedGrindResolutionTest` |
 | Unitario: idéntica y sufijos " (2)" y " (3)" | F2 | `RecipeImportRulesTest` |
 | Unitario: `recipe.share` no importa `android.*` | F1, F2 | `RecipeSharePurityTest`; `grep` del §7.2 |
-| Instrumentado: el QR del PNG de peor caso se lee con ML Kit, tal cual y tras 50 % + JPEG 70 | F0, F4 | `QrLegibilityTest.maxUriLengthIsLegible` y `RecipeQrLegibilityTest.theWorstCaseCardIsReadable…` |
+| Instrumentado: el QR del PNG de peor caso se lee con ML Kit (Play Services), tal cual y tras 50 % + JPEG 70 | F0, F4 | `QrLegibilityTest.maxUriLengthIsLegible` y `RecipeQrLegibilityTest.theWorstCaseCardIsReadable…` |
 | Instrumentado: compartir envía por `ShareSender` un `ACTION_SEND` con un PNG legible por `FileProvider` | F5 | `RecipeShareTest.thePngIsReadableThroughTheFileProvider…` |
 | Instrumentado: `ACTION_VIEW` y `ACTION_SEND image/*` abren `RecipeImport`; Guardar añade la receta con "Receta añadida" | F6, F8 | `RecipeIntentImportTest.aViewIntent…` y `aSendIntentWithAGeneratedPng…`; `RecipeImportNavigationTest.savingReturnsToTheListWithRecipeAdded` |
 | Instrumentado: con una sesión, el intent no navega y la vista previa se abre al terminar | F2, F6, F8 | `PendingRecipeImportTest`; `RecipeImportNavigationTest.withASession…`; `RecipeIntentImportTest.withASession…` |
@@ -601,9 +707,9 @@ Commit sugerido: `test(recipes): verify recipe sharing end to end`.
 
 | ID | Riesgo | Mitigación |
 |---|---|---|
-| R1 | El Code Scanner no funciona sin `INTERNET`, o el módulo no se descarga. | F0 lo prueba en el dispositivo antes de escribir nada más. Si falla, se detiene y se consulta (alternativa: CameraX + `CAMERA`). Sin módulo y sin red, el mensaje del §4 sugiere la galería. |
-| R2 | ML Kit `barcode-scanning` reintroduce `INTERNET` u otro permiso. | El `tools:node="remove"` es global. F0 compara la lista completa de permisos con la línea base, y `ManifestPermissionsTest` lo vigila después. |
-| R3 | `MAX_URI_LENGTH` no da cabida a 20 pasos sin textos, o un QR denso no se lee con una cámara desde otra pantalla. | D8: una versión de margen, el mínimo de 500, la lectura con el escáner en F0 y la auto-zoom del escáner. Primera palanca antes de consultar: escribir los `Double` enteros sin `.0` (unos 10 a 20 caracteres menos en 20 pasos). Después, las alternativas del §6. |
+| R1 | El Code Scanner no funciona sin `INTERNET`, o el módulo no se descarga. | F0 lo prueba el usuario en su móvil antes de escribir el códec (F1 no empieza hasta que lo confirme). Si falla, se detiene y se consulta (alternativa: CameraX + `CAMERA`). Sin módulo y sin red, el mensaje del §4 sugiere la galería. |
+| R2 | ML Kit (`play-services-mlkit-barcode-scanning`) reintroduce `INTERNET` u otro permiso. | El `tools:node="remove"` es global. F0 compara la lista completa de permisos con la línea base, y `ManifestPermissionsTest` lo vigila después. |
+| R3 | Un QR denso no se lee con una cámara desde otra pantalla. | D8: `MAX_URI_LENGTH = 331` (versión 13), la receta de peor caso queda 64 caracteres por debajo, la lectura con el escáner en F0 (a cargo del usuario, con un URI de 331 caracteres) y la auto-zoom del escáner. |
 | R4 | Los 20 pasos no caben en 9:16 o 10 no caben en 4:5. | Filas de alto fijo y el test de maqueta de F4, que fija la constante. |
 | R5 | La biblioteca nativa de ML Kit no está alineada a 16 KB (`targetSdk 37`). | `zipalign -P 16` en F0, comparado con la línea base. `emulator-5554` (16 KB) es del usuario y no se usa. |
 | R6 | `singleTask` cierra lo que haya encima de `MainActivity` en su tarea al volver desde el lanzador (el selector de fotos o el escáner abiertos). | Ese caso devuelve "cancelado", que no hace nada. Se comprueba por adb en el §7.4. |
@@ -612,7 +718,8 @@ Commit sugerido: `test(recipes): verify recipe sharing end to end`.
 | R9 | El host de mensajes de importación coincide con el `Snackbar` propio de una pantalla ("Receta borrada"). | Es raro y solo dura lo que un mensaje corto. Los dos usan `AntMessageHost`. |
 | R10 | La cámara del fabricante no ofrece abrir `pourline://`. | Está fuera del alcance de la app (§4). La prueba manual anota el fabricante. |
 | R11 | Un payload enorme o malicioso. | Tope de inflado (D3), `RecipeValidator` y el propio tamaño del QR. |
-| R12 | El APK crece por el modelo incluido de ML Kit. | Es el precio de leer sin red (§3.8). F0 lo mide y lo anota. |
+| R12 | La lectura de imágenes depende de que Play Services haya descargado el modelo de QR. | El modelo no va en el APK (el incluido sumaba 20,8 MB). Sin modelo y sin red, la primera lectura da `ModelNotReady` y el mensaje del §4 (D18); el manifiesto pide al instalar la app que Play lo descargue. |
+| R15 | El emulador `emulator-5556` no descarga el modelo de Play Services. | Los tests que leen QR van en `emulator-5560` (AVD `SG_API36_play`) con `awaitQrModel()`. Si el AVD pierde sus datos, el modelo se vuelve a descargar con red. |
 | R13 | Una regresión en las imágenes existentes por el tamaño variable. | `ShareRequest.size` y `ShareFrame(size)` valen `SHARE_SIZE` por defecto. F4 ejecuta `ShareCardsLayoutTest` y `ShareIntentTest` sin cambiar sus casos. |
 | R14 | Las anclas del recorrido guiado en `RecipesScreen` y `RecipeEditScreen` se rompen al tocar la barra superior. | Los iconos nuevos van en `actions` sin tocar las anclas existentes. F6 y F7 ejecutan `RecipesHistoryTourTest`. |
 
@@ -631,7 +738,7 @@ Cada una tiene una propuesta. Si se aprueba el plan sin comentarios, se aplica l
 4. **P4. Adónde vuelve Guardar (D15).** *Propuesta: quitar solo la vista previa. Desde la lista se vuelve a la lista, y
    si había un editor abierto debajo, al editor, sin perder sus cambios.* Alternativa: vaciar la pila de Recetas hasta
    la lista, aunque se pierdan los cambios de ese editor.
-5. **P5. Teléfono físico.** Está conectado un `22081212UG` (Android 15, Play Store, por adb inalámbrico). *Propuesta:
+5. **P5. Teléfono físico (actualizada tras F0: el usuario prueba el escáner con su móvil; el agente no lo toca hasta que lo avise).** Está conectado un `22081212UG` (Android 15, Play Store, por adb inalámbrico). *Propuesta:
    usarlo en F0 para el escáner y en F9 para la cámara del sistema, Lens y la prueba con dos móviles.* Sin él, el
    escáner de F0 se prueba en `emulator-5556` con la escena virtual preparada por el usuario, y la cámara del sistema
    queda para la prueba manual del usuario.
@@ -694,10 +801,10 @@ emulador está en inglés: los textos esperados son los de `values-en`.
 | 3 | `adb -s emulator-5556 shell "am start -a android.intent.action.VIEW -d 'pourline://recipe?v=1&d=…'"` con `GOLDEN_V60_URI`, con la app delante y después en segundo plano | La vista previa en Recetas, con el aviso "You already have this recipe". `dumpsys activity activities` muestra una sola `MainActivity`. Captura. |
 | 4 | Con la vista previa abierta, girar (`settings put system accelerometer_rotation 0` y `settings put system user_rotation 1`) y volver | La vista previa sigue igual y no se abre otra. Al final se restauran los dos ajustes. |
 | 5 | Guardar | La lista con "V60 classic (2)" y el mensaje "Recipe added". Captura. |
-| 6 | `adb push v60.png /sdcard/Download/` → app Files → compartir la imagen → Pourline (o `am start -a android.intent.action.SEND -t image/png --eu android.intent.extra.STREAM <content://media/…> --grant-read-uri-permission`) | La vista previa. Se cuentan los toques desde la imagen abierta hasta Guardar: 3 o menos (§1, "menos de 4 toques"). Captura. |
+| 6 | (en `emulator-5560`) `adb push v60.png /sdcard/Download/` → app Files → compartir la imagen → Pourline (o `am start -a android.intent.action.SEND -t image/png --eu android.intent.extra.STREAM <content://media/…> --grant-read-uri-permission`) | La vista previa. Se cuentan los toques desde la imagen abierta hasta Guardar: 3 o menos (§1, "menos de 4 toques"). Captura. |
 | 7 | Preparar → "Start without scale" → "Start timer"; repetir el paso 3 | La sesión sigue y sale "Recipe received. You'll see it when you finish brewing.". Tras "Finish" y "Done" (o descartar), se abre la vista previa. Capturas. |
-| 8 | Compartir hacia Pourline una imagen sin QR (una captura de pantalla cualquiera) | "No recipe was found in the image". |
-| 9 | Recetas → Importar → "From an image" → `v60.png` en el selector de fotos | La vista previa. |
+| 8 | (en `emulator-5560`) Compartir hacia Pourline una imagen sin QR (una captura de pantalla cualquiera) | "No recipe was found in the image". |
+| 9 | (en `emulator-5560`) Recetas → Importar → "From an image" → `v60.png` en el selector de fotos | La vista previa. |
 | 10 | Recetas → Importar → "Scan QR code" → cancelar | No pasa nada. Con el teléfono físico (P5): leer el QR del PNG en la pantalla del Mac → la vista previa. |
 | 11 | Con la vista previa del paso 9 abierta, pulsar el icono de Pourline en el lanzador | Se vuelve a la misma tarea, con una sola `MainActivity`. |
 | 12 | `adb -s emulator-5556 shell dumpsys package dev.josueamaya.pourline \| grep -E "android.permission.(INTERNET\|CAMERA)"` | No imprime nada. |
