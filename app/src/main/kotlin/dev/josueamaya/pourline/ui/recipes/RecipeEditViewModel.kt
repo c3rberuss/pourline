@@ -16,13 +16,8 @@ import dev.josueamaya.pourline.recipe.Adjustment
 import dev.josueamaya.pourline.recipe.Recipe
 import dev.josueamaya.pourline.recipe.RecipeFromBrew
 import dev.josueamaya.pourline.recipe.RecipeRepository
-import dev.josueamaya.pourline.protocol.WeightUnit
 import dev.josueamaya.pourline.recipe.RecipeTexts
-import dev.josueamaya.pourline.recipe.share.RecipeShareCodec
-import dev.josueamaya.pourline.recipe.share.TrimmedPart
 import dev.josueamaya.pourline.settings.DefaultGrinderStore
-import dev.josueamaya.pourline.share.RecipeShareData
-import dev.josueamaya.pourline.share.qrMatrix
 import dev.josueamaya.pourline.ui.history.formatBrewDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -54,15 +49,6 @@ sealed interface RecipeEditStatus {
 
   /** La receta (o la preparación de origen) ya no existe, o se acaba de borrar: la pantalla vuelve atrás. */
   data object Gone : RecipeEditStatus
-}
-
-/**
- * Lo que hay que enseñar antes de compartir la receta [id] como imagen: la tarjeta ya preparada ([data]), lo que el
- * QR no pudo llevar ([trimmed]) y si ni recortando cabe ([withoutQr], la tarjeta va sin QR).
- */
-data class RecipeSharePrompt(val id: Long, val data: RecipeShareData, val trimmed: Set<TrimmedPart>, val withoutQr: Boolean) {
-  /** Con recorte o sin QR hay que avisar y esperar a que el usuario acepte; si no, se comparte directamente. */
-  val needsConfirmation: Boolean get() = withoutQr || trimmed.isNotEmpty()
 }
 
 /**
@@ -232,14 +218,12 @@ class RecipeEditViewModel(
     val recipe = repository.get(recipeId) ?: return null
     val setting = recipe.grind
     val grinder = setting?.grinderId?.let { grinderRepository.get(it) }
-    val encoded = RecipeShareCodec.encode(recipe, grinder)
     val grindText = when {
       setting == null || setting.isEmpty -> null
       grinder != null -> GrindFormat.label(grinder, setting.value, grindTexts)
       else -> setting.label
     }
-    val data = RecipeShareData(recipe, grindText, WeightUnit.GRAMS, encoded?.let { qrMatrix(it.uri) })
-    return RecipeSharePrompt(recipeId, data, encoded?.trimmed.orEmpty(), withoutQr = encoded == null)
+    return recipeSharePrompt(recipeId, recipe, grinder, grindText)
   }
 
   /** Borra sin confirmar: la lista ofrece "Deshacer". */

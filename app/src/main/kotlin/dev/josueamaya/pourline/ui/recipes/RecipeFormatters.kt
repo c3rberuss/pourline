@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline.ui.recipes
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -24,18 +25,24 @@ internal fun recipeSummary(doseG: Double, totalWaterG: Double, stageCount: Int):
   pluralStringResource(R.plurals.recipe_stage_count, stageCount, stageCount),
 )
 
-/** "las notas", "las notas y los nombres de los pasos"…: lo recortado, siempre en el orden notas, instrucciones y nombres. */
-@Composable
-internal fun trimmedPartsText(parts: Set<TrimmedPart>): String {
-  val names = TrimmedPart.entries.filter { it in parts }.map {
-    stringResource(
-      when (it) {
-        TrimmedPart.NOTES -> R.string.recipe_trimmed_notes
-        TrimmedPart.INSTRUCTIONS -> R.string.recipe_trimmed_instructions
-        TrimmedPart.STAGE_NAMES -> R.string.recipe_trimmed_stage_names
-      },
-    )
+/**
+ * Los textos de lo recortado, siempre en el orden notas, instrucciones y nombres. Con [partialInstructions] (se quitaron
+ * algunas instrucciones, no todas), las instrucciones son "las instrucciones de algunos pasos" (enmienda 1 de SPEC-009).
+ */
+@StringRes
+internal fun trimmedPartsRes(parts: Set<TrimmedPart>, partialInstructions: Boolean): List<Int> =
+  TrimmedPart.entries.filter { it in parts }.map {
+    when (it) {
+      TrimmedPart.NOTES -> R.string.recipe_trimmed_notes
+      TrimmedPart.INSTRUCTIONS -> if (partialInstructions) R.string.recipe_trimmed_some_instructions else R.string.recipe_trimmed_instructions
+      TrimmedPart.STAGE_NAMES -> R.string.recipe_trimmed_stage_names
+    }
   }
+
+/** "las notas", "las notas y los nombres de los pasos"…: lo recortado según [trimmedPartsRes]. */
+@Composable
+internal fun trimmedPartsText(parts: Set<TrimmedPart>, partialInstructions: Boolean = false): String {
+  val names = trimmedPartsRes(parts, partialInstructions).map { stringResource(it) }
   return when (names.size) {
     0 -> ""
     1 -> names[0]

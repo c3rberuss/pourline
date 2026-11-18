@@ -491,11 +491,13 @@
     <string name="recipe_share_dialog_title">Share recipe</string>
     <string name="recipe_share_trimmed_text">This recipe is too long for the QR code. When imported, it will be missing %1$s.</string>
     <string name="recipe_share_too_long_text">This recipe is too long to import with a QR code. Only the image will be shared.</string>
+    <string name="recipe_share_invalid_text">This recipe has invalid data and can\'t be imported with a QR code. Only the image will be shared.</string>
     <string name="recipe_share_confirm">Share</string>
     <string name="recipe_share_cancel">Cancel</string>
     <string name="recipe_trimmed_notes">the notes</string>
     <string name="recipe_trimmed_instructions">the step instructions</string>
     <string name="recipe_trimmed_stage_names">the step names</string>
+    <string name="recipe_trimmed_some_instructions">the instructions of some steps</string>
     <string name="recipe_trimmed_list_two">%1$s and %2$s</string>
     <string name="recipe_trimmed_list_three">%1$s, %2$s and %3$s</string>
     <string name="recipe_import_title">Import recipe</string>

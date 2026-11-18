@@ -163,7 +163,7 @@ la cadena nueva).
 |---|---|---|---|
 | F0 | Línea base, tarjeta con el QR de 6 px y alto variable, medición sobre la tarjeta real y `MAX_URI_LENGTH` | L | Hecha |
 | F1 | Códec: instrucciones de una en una, recuentos, `EncodeResult` y la receta 4:6 del usuario | M | Hecha |
-| F2 | Compartir: motivo de "sin QR", "algunos pasos" y aviso de datos no válidos | M | Pendiente |
+| F2 | Compartir: motivo de "sin QR", "algunos pasos" y aviso de datos no válidos | M | Hecha |
 | F3 | Importar: aviso de recorte parcial | S | Pendiente |
 | F4 | Verificación: suites, comprobaciones, E2E por adb, capturas y cierre | M | Pendiente |
 
@@ -375,6 +375,15 @@ tiene su propio aviso.
 **Criterio de salida:** todo en verde, y `RecipeEditScreenTest` y el recorrido de Recetas sin cambios.
 
 Commit sugerido: `feat(recipes): tell partial instruction trims and invalid recipes apart when sharing`.
+
+#### Resultado de F2
+
+- JVM: `ui.recipes.*` y `recipe.share.*` en verde (`RecipeSharePromptTest`, 5 tests nuevos).
+- `emulator-5560`: `RecipeShareTest` 17 de 17 (los 3 nuevos incluidos).
+- `emulator-5556`: `RecipeEditScreenTest` y `RecipesHistoryTourTest`, 39 de 39, sin cambios.
+- `:app:lintDebug`: 2 errores y 21 avisos, como la línea base (sin `MissingTranslation` ni `ExtraTranslation`).
+- Con el tope de 600, `aLongRecipeKeepsTheFirstInstructionsAndListsSomeSteps` (10 pasos, notas de 300, instrucciones de 120)
+  da un recorte parcial.
 
 ### F3. Importar: aviso de recorte parcial
 
