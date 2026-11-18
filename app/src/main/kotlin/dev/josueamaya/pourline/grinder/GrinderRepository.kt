@@ -43,6 +43,9 @@ class GrinderRepository(
 
   suspend fun get(id: Long): Grinder? = withContext(Dispatchers.IO) { dao.get(id)?.toGrinder() }
 
+  /** El molino predefinido con la clave [key] (propio o no, retirado o no), o `null` si el catálogo no lo tiene. */
+  suspend fun byCatalogKey(key: String): Grinder? = withContext(Dispatchers.IO) { dao.getByCatalogKey(key)?.toGrinder() }
+
   /** Cuántas recetas usan el molino. */
   fun recipeCount(id: Long): Flow<Int> = dao.recipeCount(id)
 

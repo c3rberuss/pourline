@@ -1,10 +1,13 @@
 package dev.josueamaya.pourline
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,7 +15,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -37,8 +42,10 @@ import dev.josueamaya.pourline.ui.coffees.CoffeeEditViewModel
 import dev.josueamaya.pourline.ui.coffees.CoffeePickerViewModel
 import dev.josueamaya.pourline.ui.coffees.CoffeesScreen
 import dev.josueamaya.pourline.ui.coffees.CoffeesViewModel
+import dev.josueamaya.pourline.ui.components.AntMessageHost
 import dev.josueamaya.pourline.ui.components.AntTabBar
 import dev.josueamaya.pourline.ui.components.AntTabBarItem
+import dev.josueamaya.pourline.ui.components.showAntMessage
 import dev.josueamaya.pourline.ui.grinders.GrindConverterScreen
 import dev.josueamaya.pourline.ui.grinders.GrindConverterViewModel
 import dev.josueamaya.pourline.ui.grinders.GrinderCatalogScreen
@@ -65,8 +72,12 @@ import dev.josueamaya.pourline.ui.prepare.PrepareScreen
 import dev.josueamaya.pourline.ui.prepare.PrepareViewModel
 import dev.josueamaya.pourline.ui.recipes.RecipeEditScreen
 import dev.josueamaya.pourline.ui.recipes.RecipeEditViewModel
+import dev.josueamaya.pourline.ui.recipes.RecipeImportScreen
+import dev.josueamaya.pourline.ui.recipes.RecipeImportViewModel
 import dev.josueamaya.pourline.ui.recipes.RecipesScreen
 import dev.josueamaya.pourline.ui.recipes.RecipesViewModel
+import dev.josueamaya.pourline.ui.recipes.importNoticeStatus
+import dev.josueamaya.pourline.ui.recipes.importNoticeText
 import dev.josueamaya.pourline.ui.scale.TargetPickerViewModel
 import dev.josueamaya.pourline.ui.session.SessionScreen
 import dev.josueamaya.pourline.ui.settings.SettingsScreen
@@ -114,23 +125,49 @@ private fun TabsNavigation(deps: AppDependencies) {
   val activeStack = stacks.getValue(tab)
   val showBar = showsBottomBar(activeStack)
 
+  // Una receta importada abre su vista previa en Recetas, salvo con una sesión en curso: entonces espera (D15).
+  val hasSession by remember { deps.scaleSession.ui.map { it.hasSession }.distinctUntilChanged() }
+    .collectAsStateWithLifecycle(remember { deps.scaleSession.ui.value.hasSession })
+  val pendingImport by deps.recipeImports.pending.collectAsStateWithLifecycle()
+  LaunchedEffect(pendingImport, hasSession) {
+    val uri = pendingImport ?: return@LaunchedEffect
+    if (!hasSession && deps.recipeImports.consume(uri)) {
+      tab = Tab.RECIPES
+      stacks.getValue(Tab.RECIPES).openImport(uri)
+    }
+  }
+  // Los mensajes de las importaciones (añadida, aplazada, errores) salen en un host propio, sobre cualquier pantalla (D21).
+  val importMessages = remember { SnackbarHostState() }
+  val resources = LocalResources.current
+  LaunchedEffect(deps.recipeImports) {
+    deps.recipeImports.notices.collect { notice ->
+      importMessages.showAntMessage(resources.getString(importNoticeText(notice)), importNoticeStatus(notice))
+    }
+  }
+
   TourRoot(deps.tourSettings) {
     Column(Modifier.fillMaxSize()) {
-      NavDisplay(
-        // Con las entradas de Preparar debajo, "Atrás" en la raíz de otra pestaña tiene a dónde ir (D30).
-        entries = if (tab == Tab.PREPARE) entries.getValue(Tab.PREPARE) else entries.getValue(Tab.PREPARE) + entries.getValue(tab),
-        modifier = Modifier
-          .weight(1f)
-          // La barra inferior ya ocupa el inset de navegación: las pantallas de dentro no lo suman otra vez.
-          .then(if (showBar) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier),
-        onBack = {
-          when (backAction(tab, activeStack.size)) {
-            BackAction.Pop -> activeStack.removeLastOrNull()
-            BackAction.SelectPrepare -> tab = Tab.PREPARE
-            BackAction.Exit -> Unit
-          }
-        },
-      )
+      Box(Modifier.weight(1f)) {
+        NavDisplay(
+          // Con las entradas de Preparar debajo, "Atrás" en la raíz de otra pestaña tiene a dónde ir (D30).
+          entries = if (tab == Tab.PREPARE) entries.getValue(Tab.PREPARE) else entries.getValue(Tab.PREPARE) + entries.getValue(tab),
+          modifier = Modifier
+            .fillMaxSize()
+            // La barra inferior ya ocupa el inset de navegación: las pantallas de dentro no lo suman otra vez.
+            .then(if (showBar) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier),
+          onBack = {
+            when (backAction(tab, activeStack.size)) {
+              BackAction.Pop -> activeStack.removeLastOrNull()
+              BackAction.SelectPrepare -> tab = Tab.PREPARE
+              BackAction.Exit -> Unit
+            }
+          },
+        )
+        AntMessageHost(
+          importMessages,
+          Modifier.align(Alignment.BottomCenter).then(if (showBar) Modifier else Modifier.navigationBarsPadding()),
+        )
+      }
       if (showBar) {
         val items = Tab.entries.map { AntTabBarItem(it, stringResource(it.label), it.icon, it.testTag) }
         // Las pestañas son anclas del recorrido general: su registro es el de la raíz, no el de una pantalla.
@@ -325,6 +362,13 @@ private fun tabEntryProvider(
       // Duplicar abre la copia en lugar de la original: atrás vuelve a la lista.
       onDuplicated = { copyId -> stack[stack.lastIndex] = RecipeEdit(id = copyId) },
       onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.value)) },
+    )
+  }
+  tabEntry<RecipeImport>(tab, stack, activeTab) { key ->
+    RecipeImportScreen(
+      viewModel { RecipeImportViewModel(key.uri, deps.recipeRepository, deps.grinderRepository, deps.grindTexts, deps.recipeImports) },
+      // Guardar y Cancelar quitan solo la vista previa: un editor con cambios que hubiera debajo no se descarta.
+      onDone = ::back,
     )
   }
   tabEntry<Tools>(tab, stack, activeTab) {

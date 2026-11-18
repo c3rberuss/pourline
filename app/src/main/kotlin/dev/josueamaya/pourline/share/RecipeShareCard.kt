@@ -190,12 +190,12 @@ fun QrCodeBox(matrix: QrMatrix, modifier: Modifier = Modifier) {
 private fun compactStyle(): TextStyle = AntTheme.typography.textSM.copy(lineHeight = 16.sp)
 
 /** El número sin unidad: gramos sin decimales si es entero y con uno si no; onzas con 2 decimales (D11). */
-private fun weightNumber(valueG: Double, unit: WeightUnit): String =
+internal fun weightNumber(valueG: Double, unit: WeightUnit): String =
   if (unit == WeightUnit.OUNCES) formatNumber(fromGrams(valueG, unit), unit) else formatGrams(valueG)
 
 /** El método con su nombre; con `OTHER`, el texto de `methodOther` si lo hay. `null` sin método. */
 @Composable
-private fun recipeMethodText(method: BrewMethod?, other: String?): String? = when {
+internal fun recipeMethodText(method: BrewMethod?, other: String?): String? = when {
   method == null -> null
   method == BrewMethod.OTHER && !other.isNullOrBlank() -> other
   else -> method.label()

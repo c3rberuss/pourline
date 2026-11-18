@@ -26,6 +26,12 @@ import kotlinx.serialization.Serializable
  */
 @Serializable data class RecipeEdit(val id: Long? = null, val fromBrewId: Long? = null, val fourSix: FourSixParams? = null) : NavKey
 
+/**
+ * La vista previa de una receta importada (SPEC-009). [uri] es el texto del QR (`pourline://recipe?...`): la pantalla lo
+ * vuelve a decodificar, así que sobrevive a la recreación sin guardar nada más.
+ */
+@Serializable data class RecipeImport(val uri: String) : NavKey
+
 /** Elegir la preparación B para compararla con A. Al elegir, se sustituye por [BrewCompare] en la pila. */
 @Serializable data class ComparePick(val aId: Long) : NavKey
 

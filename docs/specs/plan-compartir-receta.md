@@ -193,7 +193,7 @@ Orden: F0 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9. F2 y F
 | F3 | Resolución de molienda JVM | S | Hecha |
 | F4 | Tarjeta de receta con QR y tamaño variable | M | Hecha |
 | F5 | Compartir desde el editor | M | Hecha |
-| F6 | Vista previa, guardado, navegación común y mensajes | L | Pendiente |
+| F6 | Vista previa, guardado, navegación común y mensajes | L | Hecha |
 | F7 | Entradas internas: escáner y galería | M | Pendiente |
 | F8 | Entradas externas: `ACTION_SEND`, `ACTION_VIEW`, `singleTask` y aplazamiento | M | Pendiente |
 | F9 | Verificación: suites, lint, manifiesto, E2E por adb, prueba con dos móviles y capturas | M | Pendiente |
@@ -641,6 +641,20 @@ termine la sesión), y Guardar añade la receta con el mensaje "Receta añadida"
 **Criterio de salida:** todo en verde, y `TabsNavigationTest` y los tests del recorrido de Recetas sin cambios.
 
 Commit sugerido: `feat(recipes): preview and save an imported recipe`.
+
+**Resultado de F6 (2026-11-18).** Unitarios de `:app` (1036): verdes (`TabNavigationTest` 3 casos nuevos, `ImportNoticeTextTest` 2). En
+`emulator-5556`: `RecipeImportScreenTest` (12), `RecipeImportNavigationTest` (7) y `GrinderRepositoryTest` (con `byCatalogKey`): verdes;
+`TabsNavigationTest`, `RecipesHistoryTourTest`, `RecipeEditScreenTest` y `RecipesScreenTest` (55 tests con los anteriores) verdes y sin
+cambios. `:app:lintDebug`: 2 errores y 21 avisos, igual que la línea base (un `LocalContextGetResourceValueCall` propio se corrigió con
+`LocalResources`). Manifiesto fusionado de `debug`: sin `INTERNET` ni `CAMERA`.
+
+Detalles que concretan D15, D21, D22 y D25 sin cambiar el comportamiento: el host de mensajes va en un `Box` con el `NavDisplay`
+(alineado abajo; con `navigationBarsPadding()` cuando no hay barra) en lugar de sobre el `Column` entero, para que quede encima de la
+barra y no debajo. `GrinderRepository.byCatalogKey` usa un `getByCatalogKey` nuevo con `@Transaction` (el `byCatalogKey` existente del
+DAO devuelve solo la entidad). La molienda `Linked` y `Text` se pintan con `recipe_import_grind` como etiqueta y el texto bajo ella
+(`recipe_import_grind_text`); la cadena `recipe_import_grind_text` de D25 no se creó porque el texto no es una cadena fija. `aGrinderRetiredBeforeSavingIsSavedAsText`
+quita el molino de "Mis molinos" (`setOwned(false)`) antes de guardar, que es el caso que cubre la nueva resolución al guardar.
+`recipeMethodText` y `weightNumber` de `RecipeShareCard.kt` pasan a `internal` para que la vista previa las reutilice.
 
 ### F7. Entradas internas
 

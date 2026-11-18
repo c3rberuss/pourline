@@ -28,6 +28,7 @@ import dev.josueamaya.pourline.protocol.Frame
 import dev.josueamaya.pourline.protocol.ScaleMessage
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
+import dev.josueamaya.pourline.recipe.share.PendingRecipeImport
 import dev.josueamaya.pourline.scale.ConnectionState
 import dev.josueamaya.pourline.scale.ConnectionStep
 import dev.josueamaya.pourline.scale.ScaleConnection
@@ -175,6 +176,7 @@ class TestAppDependencies(
   val photoStore = CoffeePhotoStore(photosDir, context.cacheDir)
   val coffees = CoffeeRepository(db, photoStore)
   val recipes = RecipeRepository(db, texts)
+  val recipeImports = PendingRecipeImport()
   val grinderSettings = GrinderSettings(context, PREFS)
   val grindTexts = ResourcesGrindTexts(context)
   val grinders = GrinderRepository(db, grinderSettings, grindTexts)
@@ -225,6 +227,7 @@ class TestAppDependencies(
     coffeeRepository = coffees,
     recipeRepository = recipes,
     recipeTexts = texts,
+    recipeImports = recipeImports,
     grinderSettings = grinderSettings,
     grinderRepository = grinders,
     grindTexts = grindTexts,
