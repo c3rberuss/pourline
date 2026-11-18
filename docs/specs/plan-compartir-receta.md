@@ -42,8 +42,11 @@ El usuario decidió tres cosas, y el spec ya las recoge (commit `9bc9b44`):
 2. **Lector de QR desde imagen** con `play-services-mlkit-barcode-scanning`: el modelo lo descarga Play Services y no va
    en el APK (D18). Falta el caso "modelo sin descargar" (§4): `ImportError.READER_NOT_READY`, `QrReadResult.ModelNotReady`
    y la cadena `recipe_import_reader_preparing`, que afectan a F2, F7 y F8.
-3. **Code Scanner:** lo verifica el usuario con su móvil (comandos al final de este documento, "Prueba del escáner de F0").
-   F1 no empieza hasta que lo confirme.
+3. **Code Scanner:** lo verifica el usuario a mano en su móvil, en F7, con el botón "Escanear QR" ya funcional. El spike de
+   F0 (`CodeScannerSpikeTest`) se colgó en el Xiaomi: la `ComponentActivity` de la regla nunca llegó a mostrarse (Pourline
+   estaba delante y "Depuración USB (ajustes de seguridad)" activa). No se investigó más. El criterio de salida 2 de F0 pasa a
+   ser una prueba manual de F7. Si falla, la alternativa del §6 (CameraX + `CAMERA`) solo afecta a F7 y la decide el usuario.
+   F1 a F6 siguen como estaban.
 
 **Emulador para los tests que leen QR.** `emulator-5556` (AVD `SG_API34`, imagen `google_apis` con GMS 23.18) **no descarga**
 el modelo de Play Services (`ZappDownloader: No successful module downloads`). Para esos tests se creó en F0 el AVD
@@ -130,7 +133,7 @@ spec no dice.
 | D6 | Recorte (concreta §3.2) | Cada paso del recorte quita lo suyo **acumulado** sobre el anterior (`TrimLevel`: `NONE`, `NOTES`, `INSTRUCTIONS`, `STAGE_NAMES`), y solo cuenta si había algo que quitar. Los bits 5 a 7 de `flags` y `trimmed` listan lo que se quitó de verdad: una receta sin notas que necesita quitar instrucciones da `trimmed = {INSTRUCTIONS}`. El tope se mide sobre el URI completo. Pasos, tiempos, agua, dosis, temperatura, método y molienda nunca se tocan. `encode` devuelve `null` si ni el paso 4 cabe. | Anotar "las notas" cuando no había notas confundiría al receptor. |
 | D7 | Molienda al codificar (concreta §3.1) | Sin `grind` o con `isEmpty`: sin bloque (bit 4 de `flags` a 0). Con `grinderId` y el molino vivo: `gflags` con `catalogKey` (si tiene), marca y modelo, y ajuste (si hay). Con `grinderId = null`: solo `label`. Con `grinderId` pero sin molino (borrado entre leer y compartir): como eliminado. Si el bloque quedaría vacío (eliminado sin `label`), no se escribe. Al decodificar, un `gflags` en 0 o con bits no definidos es `Corrupt`. | El §3.1 no prevé un bloque vacío, y decodificarlo daría un `SharedGrind` sin nada útil. |
 | D8 | `MAX_URI_LENGTH` (cierra §3.2 y §6) | **Fijado en F0: 331.** `QrLegibilityTest.sweep` dibuja, como en la tarjeta (432 px), cinco URI de cada longitud y los lee con ML Kit de Play Services tal cual y tras reducir al 50 % y JPEG 70. Solo se leen siempre hasta la versión 15 de QR (375 y 400 caracteres). La regla "una versión de margen" daría 362 (capacidad de la versión 14), pero `maxUriLengthIsLegible` con 362 acierta 19 de 20; con 331 (versión 13) acierta 20 de 20. **Margen que exige F1:** la receta de peor caso (20 pasos sin textos, nombre de 60, método, temperatura y molienda de catálogo) tiene que quedar al menos 60 caracteres por debajo (271 o menos). La simulación de F0 da entre 231 y 267 con tiempos en segundos, y hasta 348 con milisegundos aleatorios, que la app no genera. | La legibilidad depende de la versión del QR y, tras reducir, de cómo caen los píxeles: no es monótona. 331 es el valor medido que no falla. |
-| D23 | Contrato del formato (amplía) | `RecipeShareCodecTest` guarda dos constantes de la V60 clásica, generadas una vez en F1 con el codificador y revisadas a mano contra el §3.1: `GOLDEN_V60_PAYLOAD` (los bytes **antes** de `deflate`, en hexadecimal) y `GOLDEN_V60_URI` (el URI `v=1` completo, congelado). Los tests comprueban que `encodePayload` da exactamente `GOLDEN_V60_PAYLOAD` y que `GOLDEN_V60_URI` **se decodifica** a la receta esperada. No se compara la salida de `encode` byte a byte. `RecipeShareFixtures.WORST_CASE_URI` guarda además el URI de 331 caracteres de la prueba del escáner de F0 (sección "Prueba del escáner de F0"), que decodifica a 20 pasos, un nombre de 60 caracteres y notas de 78. La verificación por adb (§7.4) usa `GOLDEN_V60_URI`. | El §3.1 es un contrato entre versiones de la app: una app futura tiene que leer los QR ya compartidos. Los bytes previos a `deflate` no dependen de la versión de zlib (JVM y Android), así que comparan sin falsos fallos; el URI completo solo se decodifica. |
+| D23 | Contrato del formato (amplía) | `RecipeShareCodecTest` guarda dos constantes de la V60 clásica, generadas una vez en F1 con el codificador y revisadas a mano contra el §3.1: `GOLDEN_V60_PAYLOAD` (los bytes **antes** de `deflate`, en hexadecimal) y `GOLDEN_V60_URI` (el URI `v=1` completo, congelado). Los tests comprueban que `encodePayload` da exactamente `GOLDEN_V60_PAYLOAD` y que `GOLDEN_V60_URI` **se decodifica** a la receta esperada. No se compara la salida de `encode` byte a byte. `RecipeShareFixtures.WORST_CASE_URI` guarda además el URI de 331 caracteres de la prueba del escáner de F0 (sección "Prueba manual del escáner (F7)"), que decodifica a 20 pasos, un nombre de 60 caracteres y notas de 78. La verificación por adb (§7.4) usa `GOLDEN_V60_URI`. | El §3.1 es un contrato entre versiones de la app: una app futura tiene que leer los QR ya compartidos. Los bytes previos a `deflate` no dependen de la versión de zlib (JVM y Android), así que comparan sin falsos fallos; el URI completo solo se decodifica. |
 
 ### 2.2 QR, tarjeta y compartir
 
@@ -184,8 +187,8 @@ Orden: F0 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9. F2 y F
 
 | Fase | Contenido | Tamaño | Estado |
 |---|---|---|---|
-| F0 | Spike en el dispositivo: línea base, dependencias, manifiesto sin `INTERNET`, Code Scanner y `MAX_URI_LENGTH` | M | Hecha (escáner pendiente del usuario) |
-| F1 | Códec JVM puro (formato binario del §3.1): `RecipeShareCodec`, recorte y errores | M | Pendiente |
+| F0 | Spike en el dispositivo: línea base, dependencias, manifiesto sin `INTERNET`, Code Scanner y `MAX_URI_LENGTH` | M | Hecha (escáner se verifica a mano en F7) |
+| F1 | Códec JVM puro (formato binario del §3.1): `RecipeShareCodec`, recorte y errores | M | Hecha |
 | F2 | Reglas de importación JVM: idéntica, sufijo, `routeImport` y `PendingRecipeImport` | S | Pendiente |
 | F3 | Resolución de molienda JVM | S | Pendiente |
 | F4 | Tarjeta de receta con QR y tamaño variable | M | Pendiente |
@@ -215,7 +218,7 @@ Cada fase deja `:app` compilando y sus tests en verde. Se compila y se prueba so
 
 > **Nota (2026-11-18).** Los pasos 2, 5 y 6 se cerraron con los cambios acordados tras F0: la dependencia de lectura de
 > imágenes es `play-services-mlkit-barcode-scanning` 18.3.1 (no `barcode-scanning`), `MAX_URI_LENGTH` se midió con ese
-> lector en `emulator-5560` y el Code Scanner lo prueba el usuario con su móvil (sección "Prueba del escáner de F0").
+> lector en `emulator-5560` y el Code Scanner lo prueba el usuario con su móvil (sección "Prueba manual del escáner (F7)").
 
 **Objetivo:** cerrar los riesgos del §6 antes de escribir el códec y la interfaz:
 
@@ -324,7 +327,7 @@ primera medida con `com.google.mlkit:barcode-scanning` 17.3.0 (modelo en el APK)
 | Criterio de salida | Resultado |
 |---|---|
 | 1. Manifiestos sin `INTERNET` ni `CAMERA`, idénticos a la línea base | Cumple con la dependencia final. `uses-permission` y `uses-feature` de debug y release idénticos a la línea base; el informe del fusionador muestra `INTERNET` rechazado en `transport-backend-cct` por el `tools:node="remove"`; `apkanalyzer` da la misma lista y ni el manifiesto de debug ni el de release contienen `INTERNET` ni `CAMERA`. |
-| 2. El Code Scanner devuelve el URI sin `INTERNET` y sin red tras descargar el módulo | **Pendiente del usuario** (sección "Prueba del escáner de F0"). |
+| 2. El Code Scanner devuelve el URI sin `INTERNET` y sin red tras descargar el módulo | **Pasa a F7, como prueba manual del usuario** con el botón "Escanear QR" (sección "Prueba manual del escáner (F7)"). |
 | 3. `MAX_URI_LENGTH >= 500` | Con JSON, no (331). El usuario cambió el formato a binario; el criterio pasa a ser que la receta de peor caso quepa con 60 caracteres de margen (D8): cumple (231 a 267 frente a 331). |
 | 4. `zipalign -P 16` da `OK` en las `.so` | Cumple. Con el lector de Play Services desaparecen `libbarhopper_v3.so` y el modelo del APK; quedan `libandroidx.graphics.path.so` y `libmlkit_google_ocr_pipeline.so`, ambas `OK`. |
 
@@ -359,7 +362,7 @@ y `RecipeFromBrew` guardan siempre segundos enteros, así que la variante de mil
 
 **Emulador.** `emulator-5556` no descarga el modelo (ver "Cambios acordados tras F0"); las medidas son de `emulator-5560`.
 
-### Prueba del escáner de F0 (la hace el usuario)
+### Prueba manual del escáner (F7)
 
 El Code Scanner necesita una cámara que vea un QR. En el móvil físico (`22081212UG`) quedaron instalados el APK de debug
 y un APK de test con la prueba (`CodeScannerSpikeTest`, que no está en el repo). Todo lo necesario está en
@@ -459,6 +462,13 @@ los errores del §4.
 **Criterio de salida:** todo en verde, también `` `the worst case recipe fits under MAX_URI_LENGTH with 60 characters to spare` ``.
 Si ese caso falla, se detiene el plan y se consulta al usuario. Los bytes congelados (`GOLDEN_V60_PAYLOAD`) se revisan a mano
 contra la tabla del §3.1 antes de commitearlos.
+
+**Resultado de F1:** 47 tests JVM de `recipe.share` en verde (`RecipeShareCodecTest` 39, `RecipeShareBinaryTest` 7,
+`RecipeSharePurityTest` 1). `GOLDEN_V60_PAYLOAD` (86 bytes) se escribió a mano contra el §3.1 y coincide con la salida de
+`encodePayload`. La receta de peor caso mide 256 caracteres (margen de 75 sobre 331); con 0,1 s, 264, y con ms, 287.
+Desviaciones: `encodePayload` devuelve `EncodedPayload(bytes, trimmed)` en lugar de `ByteArray`, y `encode` ordena los pasos por
+`startMs` antes de validar. No hay el caso de inicios solapados en los tests de `Invalid`: con `gap` sin signo no se puede
+escribir.
 
 Commit sugerido: `feat(recipes): add the binary recipe share codec`.
 
