@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -69,6 +70,8 @@ import dev.josueamaya.pourline.ui.grinders.GrindSettingField
 import dev.josueamaya.pourline.ui.history.label
 import dev.josueamaya.pourline.ui.scale.BrewChart
 import dev.josueamaya.pourline.ui.session.formatClock
+import dev.josueamaya.pourline.ui.session.stepTypeIcon
+import dev.josueamaya.pourline.ui.session.stepTypeLabel
 import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
 import dev.josueamaya.pourline.ui.tour.TourHost
@@ -336,19 +339,25 @@ private fun StageCard(
   onRemove: () -> Unit,
 ) {
   val number = index + 1
-  val typeOptions = listOf(
-    AntSegmentedOption(StageType.POUR, stringResource(R.string.step_type_pour), AntIcons.Pour),
-    AntSegmentedOption(StageType.SWIRL, stringResource(R.string.step_type_swirl), AntIcons.Swirl),
-    AntSegmentedOption(StageType.WAIT, stringResource(R.string.step_type_wait), AntIcons.Wait),
-  )
+  val typeOptions = StageType.entries.map { AntSegmentedOption(it, stringResource(stepTypeLabel(it)), stepTypeIcon(it)) }
   AntCard(Modifier.fillMaxWidth().tourAnchor("recipe_stage_0", enabled = index == 0).testTag("recipe_stage_$index"), size = AntCardSize.Small) {
-    AntSegmented(
-      options = typeOptions,
-      selected = stage.type,
-      onSelect = onTypeChange,
-      modifier = Modifier.fillMaxWidth().testTag("recipe_stage_type_$index"),
-      size = AntSize.Small,
-    )
+    // Con cuatro tipos no caben las etiquetas (D15 de SPEC-010): a la izquierda el tipo elegido y a la derecha las opciones.
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+      AntText(
+        stringResource(stepTypeLabel(stage.type)),
+        Modifier.weight(1f).testTag("recipe_stage_type_label_$index"),
+        strong = true,
+        maxLines = 2,
+      )
+      AntSegmented(
+        options = typeOptions,
+        selected = stage.type,
+        onSelect = onTypeChange,
+        modifier = Modifier.testTag("recipe_stage_type_$index"),
+        size = AntSize.Small,
+        iconOnly = true,
+      )
+    }
     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
       Column(Modifier.weight(1f)) {
         AntInput(
@@ -409,13 +418,26 @@ private fun StageCard(
         singleLine = false,
         minLines = 2,
       )
-      AntText(
-        stringResource(R.string.recipe_stage_instruction_counter, stage.instruction.length, RecipeValidator.MAX_INSTRUCTION),
-        Modifier.fillMaxWidth().testTag("recipe_stage_instruction_counter_$index"),
-        type = if (errors.instruction != null) AntTextType.Danger else AntTextType.Secondary,
-        style = AntTheme.typography.textSM,
-        textAlign = TextAlign.End,
-      )
+      Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+        // Aviso no bloqueante: una Acción sin instrucción se guarda igual.
+        if (stage.type == StageType.ACTION && stage.instruction.isBlank()) {
+          AntText(
+            stringResource(R.string.recipe_action_instruction_hint),
+            Modifier.weight(1f).testTag("recipe_stage_action_hint_$index"),
+            type = AntTextType.Warning,
+            style = AntTheme.typography.textSM,
+          )
+        } else {
+          Spacer(Modifier.weight(1f))
+        }
+        AntText(
+          stringResource(R.string.recipe_stage_instruction_counter, stage.instruction.length, RecipeValidator.MAX_INSTRUCTION),
+          Modifier.testTag("recipe_stage_instruction_counter_$index"),
+          type = if (errors.instruction != null) AntTextType.Danger else AntTextType.Secondary,
+          style = AntTheme.typography.textSM,
+          textAlign = TextAlign.End,
+        )
+      }
     }
     // Con tres campos por fila no cabe el texto de cada error: se muestran debajo, uno por campo.
     errors.start?.let { ErrorText(it, "recipe_stage_start_error_$index") }

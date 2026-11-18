@@ -1,6 +1,17 @@
 package dev.josueamaya.pourline.ui.recipes
 
+import android.util.Log
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertTextContains
@@ -9,6 +20,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -38,6 +50,7 @@ import dev.josueamaya.pourline.recipe.Recipe
 import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
+import dev.josueamaya.pourline.recipe.StageType
 import dev.josueamaya.pourline.settings.ExperienceMode
 import dev.josueamaya.pourline.settings.LocalExperienceMode
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
@@ -98,9 +111,9 @@ class RecipeEditScreenTest {
 
   private fun exists(tag: String) = rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
 
-  /** Elige el tipo de un paso con su etiqueta, dentro del segmentado `recipe_stage_type_<i>`. */
+  /** Elige el tipo de un paso por su descripción (las opciones solo llevan icono), dentro del segmentado `recipe_stage_type_<i>`. */
   private fun chooseType(index: Int, labelRes: Int) {
-    rule.onNode(hasText(context.getString(labelRes)) and hasAnyAncestor(hasTestTag("recipe_stage_type_$index")))
+    rule.onNode(hasContentDescription(context.getString(labelRes)) and hasAnyAncestor(hasTestTag("recipe_stage_type_$index")))
       .performScrollTo()
       .performClick()
   }
@@ -328,6 +341,83 @@ class RecipeEditScreenTest {
     rule.onNodeWithTag("recipe_edit_totals").performScrollTo().assertTextEquals(totalsText("0:35"))
     rule.onNodeWithTag("recipe_edit_totals")
       .assertContentDescriptionEquals(totalsText(context.getString(R.string.recipe_total_time_description, "0:35")))
+  }
+
+  @Test
+  fun theTypeSelectorOffersActionAndSavesAnActionWithItsInstruction() {
+    show()
+    type("recipe_edit_name", "AeroPress")
+    type("recipe_edit_dose", "15")
+    rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick()
+    assertTrue(exists("recipe_stage_water_1"))
+    chooseType(1, R.string.step_type_action)
+    assertFalse(exists("recipe_stage_water_1"))
+    rule.onNodeWithTag("recipe_stage_type_label_1").performScrollTo().assertTextEquals(context.getString(R.string.step_type_action))
+    type("recipe_stage_instruction_1", "Pon la tapa")
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsEnabled().performClick()
+    rule.waitUntil(5_000) { backCount == 1 }
+    val saved = runBlocking { recipes.get(recipes.list().first().single { !it.builtIn }.id)!! }
+    assertEquals(StageType.ACTION, saved.stages[1].type)
+    assertEquals("Pon la tapa", saved.stages[1].instruction)
+    assertEquals(50.0, saved.stages[1].targetWaterG, 0.0) // el agua del vertido anterior
+  }
+
+  @Test
+  fun anActionWithoutInstructionShowsTheHintAndStillSaves() {
+    show()
+    type("recipe_edit_name", "AeroPress")
+    type("recipe_edit_dose", "15")
+    rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick()
+    // En un vertido sin instrucción no hay aviso.
+    assertFalse(exists("recipe_stage_action_hint_0"))
+    assertFalse(exists("recipe_stage_action_hint_1"))
+    chooseType(1, R.string.step_type_action)
+    rule.onNodeWithTag("recipe_stage_action_hint_1").performScrollTo().assertTextEquals(context.getString(R.string.recipe_action_instruction_hint))
+    type("recipe_stage_instruction_1", "Pon la tapa")
+    assertFalse(exists("recipe_stage_action_hint_1"))
+    replace("recipe_stage_instruction_1", "")
+    assertTrue(exists("recipe_stage_action_hint_1"))
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsEnabled().performClick()
+    rule.waitUntil(5_000) { backCount == 1 }
+    val saved = runBlocking { recipes.get(recipes.list().first().single { !it.builtIn }.id)!! }
+    assertEquals(StageType.ACTION, saved.stages[1].type)
+    assertEquals(null, saved.stages[1].instruction)
+  }
+
+  @Test
+  fun theTypeSelectorShowsTheChosenTypeAndFourOptionsAt360dpWithALargeFont() {
+    rule.setContent {
+      val density = LocalDensity.current
+      CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 1.3f)) {
+        PourlineTheme(darkTheme = false) {
+          Box(Modifier.width(360.dp)) {
+            val viewModel = remember { RecipeEditViewModel(recipes, brews, texts, grinders, defaults, ResourcesGrindTexts(context), null, null) }
+            RecipeEditScreen(viewModel, onBack = {}, onDuplicated = {})
+          }
+        }
+      }
+    }
+    rule.waitUntil(5_000) { exists("recipe_edit_save") }
+    val dp = context.resources.displayMetrics.density
+    val card = rule.onNodeWithTag("recipe_stage_0").performScrollTo().fetchSemanticsNode().boundsInRoot
+    for (labelRes in listOf(R.string.step_type_pour, R.string.step_type_swirl, R.string.step_type_wait, R.string.step_type_action)) {
+      chooseType(0, labelRes)
+      val label = context.getString(labelRes)
+      val node = rule.onNodeWithTag("recipe_stage_type_label_0").performScrollTo().assertTextEquals(label).fetchSemanticsNode()
+      val layouts = mutableListOf<TextLayoutResult>()
+      node.config[SemanticsActions.GetTextLayoutResult].action!!(layouts)
+      val layout = layouts.single()
+      assertEquals("'$label' en una línea", 1, layout.lineCount)
+      assertFalse("'$label' se corta", layout.hasVisualOverflow)
+      Log.i("StageTypeSelector", "'$label' mide ${(layout.getLineRight(0) - layout.getLineLeft(0)) / dp} dp de ${node.size.width / dp} dp disponibles")
+    }
+    // Cuatro opciones solo con icono, de 48 dp o más y dentro de la tarjeta del paso.
+    for (labelRes in listOf(R.string.step_type_pour, R.string.step_type_swirl, R.string.step_type_wait, R.string.step_type_action)) {
+      val option = rule.onNode(hasContentDescription(context.getString(labelRes)) and hasAnyAncestor(hasTestTag("recipe_stage_type_0")))
+        .performScrollTo().assertIsDisplayed().fetchSemanticsNode()
+      assertTrue("opción de ${option.size.width / dp} dp", option.size.width >= 48 * dp - 1)
+      assertTrue("la opción queda dentro de la tarjeta", option.boundsInRoot.left >= card.left && option.boundsInRoot.right <= card.right)
+    }
   }
 
   @Test

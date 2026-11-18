@@ -235,6 +235,7 @@
     <string name="step_type_wait">Esperar</string>
     <string name="step_type_action">Acción</string>
     <string name="recipe_stage_instruction">Instrucción (opcional)</string>
+    <string name="recipe_action_instruction_hint">Describe la acción, por ejemplo «Pon la tapa»</string>
     <string name="recipe_stage_instruction_counter">%1$d/%2$d</string>
     <string name="recipe_edit_stage_remove">Quitar paso %1$d</string>
     <string name="recipe_edit_add_stage">Añadir paso</string>
@@ -1047,7 +1048,7 @@
     <string name="tour_recipe_edit_method_title">Método</string>
     <string name="tour_recipe_edit_method_body">El método de preparación.</string>
     <string name="tour_recipe_edit_stage_title">Pasos</string>
-    <string name="tour_recipe_edit_stage_body">Cada paso es un vertido, un removido o una espera, con su tiempo.</string>
+    <string name="tour_recipe_edit_stage_body">Cada paso es un vertido, un removido, una espera o una acción, con su tiempo.</string>
     <string name="tour_recipe_edit_add_stage_title">Añadir paso</string>
     <string name="tour_recipe_edit_add_stage_body">Añade más pasos a la receta.</string>
     <string name="tour_recipe_edit_totals_title">Totales</string>

@@ -236,6 +236,7 @@
     <string name="step_type_wait">Wait</string>
     <string name="step_type_action">Action</string>
     <string name="recipe_stage_instruction">Instruction (optional)</string>
+    <string name="recipe_action_instruction_hint">Describe the action, for example \"Put the cap on\"</string>
     <string name="recipe_stage_instruction_counter">%1$d/%2$d</string>
     <string name="recipe_edit_stage_remove">Remove step %1$d</string>
     <string name="recipe_edit_add_stage">Add step</string>
@@ -1048,7 +1049,7 @@
     <string name="tour_recipe_edit_method_title">Method</string>
     <string name="tour_recipe_edit_method_body">The brewing method.</string>
     <string name="tour_recipe_edit_stage_title">Steps</string>
-    <string name="tour_recipe_edit_stage_body">Each step is a pour, a swirl or a wait, with its timing.</string>
+    <string name="tour_recipe_edit_stage_body">Each step is a pour, a swirl, a wait or an action, with its timing.</string>
     <string name="tour_recipe_edit_add_stage_title">Add step</string>
     <string name="tour_recipe_edit_add_stage_body">Add more steps to the recipe.</string>
     <string name="tour_recipe_edit_totals_title">Totals</string>

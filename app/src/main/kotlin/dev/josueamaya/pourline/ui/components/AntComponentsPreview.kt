@@ -86,6 +86,19 @@ private fun AntShowcase() {
       onSelect = { unit = it },
       modifier = Modifier.fillMaxWidth(),
     )
+    var stepType by remember { mutableStateOf("pour") }
+    AntSegmented(
+      options = listOf(
+        AntSegmentedOption("pour", "Verter", AntIcons.Pour),
+        AntSegmentedOption("swirl", "Remover", AntIcons.Swirl),
+        AntSegmentedOption("wait", "Esperar", AntIcons.Wait),
+        AntSegmentedOption("action", "Acción", AntIcons.Action),
+      ),
+      selected = stepType,
+      onSelect = { stepType = it },
+      size = AntSize.Small,
+      iconOnly = true,
+    )
 
     AntDivider(text = "Alert · Message", orientation = AntDividerOrientation.Left)
     AntAlert("Conectando…", type = AntStatus.Info)
