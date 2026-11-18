@@ -15,7 +15,8 @@ import dev.josueamaya.pourline.brew.TargetStage
 import dev.josueamaya.pourline.settings.TargetSettings
 
 /**
- * Avisa de que empieza una etapa con una vibración corta y un pitido, según los dos ajustes (que se leen en
+ * Avisa de que empieza una etapa con una vibración corta y un pitido, y de los últimos 5 s antes de ella con
+ * un tic por segundo, según los dos ajustes (que se leen en
  * cada aviso, así que un cambio en ajustes se aplica enseguida). Si el dispositivo no vibra o el
  * `ToneGenerator` no se puede crear, ese aviso se omite.
  *
@@ -47,6 +48,12 @@ class AndroidStageNotifier(context: Context, private val settings: TargetSetting
     val go = remainingS <= 0
     if (settings.stageVibration.value) vibrate(if (go) VIBRATION_MS else TICK_VIBRATION_MS)
     if (settings.stageSound.value) beep(if (go) BEEP_MS else TICK_BEEP_MS)
+  }
+
+  /** Los tics hacia el siguiente paso son como los de la cuenta regresiva; el paso en sí suena con [stageStarted]. */
+  override fun nextStepTick(remainingS: Int) {
+    if (settings.stageVibration.value) vibrate(TICK_VIBRATION_MS)
+    if (settings.stageSound.value) beep(TICK_BEEP_MS)
   }
 
   private fun vibrate(durationMs: Long = VIBRATION_MS) {

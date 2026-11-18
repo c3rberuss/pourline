@@ -82,4 +82,35 @@ class StageAlertTrackerTest {
     assertNull(tracker.update(1_000, null, 50_000))
     assertNull(tracker.update(1_000, curve, null))
   }
+
+  // --- Tics hacia el siguiente paso ---
+
+  @Test
+  fun `each countdown second ticks once even if the guide is published several times`() {
+    val tracker = StageAlertTracker()
+    val next = curve.stages[2]
+    assertEquals(5, tracker.tick(1_000, next, 5))
+    assertNull(tracker.tick(1_000, next, 5))
+    assertEquals(4, tracker.tick(1_000, next, 4))
+    assertNull(tracker.tick(1_000, next, 4))
+    assertEquals(3, tracker.tick(1_000, next, 3))
+  }
+
+  @Test
+  fun `outside the countdown there is no tick`() {
+    val tracker = StageAlertTracker()
+    assertNull(tracker.tick(1_000, curve.stages[2], null))
+    assertNull(tracker.tick(1_000, null, 3))
+    assertNull(tracker.tick(null, curve.stages[2], 3))
+  }
+
+  @Test
+  fun `the same second ticks again for another step or another session`() {
+    val tracker = StageAlertTracker()
+    assertEquals(1, tracker.tick(1_000, curve.stages[1], 1))
+    assertEquals(1, tracker.tick(1_000, curve.stages[2], 1))
+    assertEquals(1, tracker.tick(2_000, curve.stages[2], 1))
+    assertNull(tracker.tick(null, null, null))
+    assertEquals(1, tracker.tick(2_000, curve.stages[2], 1))
+  }
 }
