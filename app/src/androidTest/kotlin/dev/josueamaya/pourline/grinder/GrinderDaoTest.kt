@@ -120,6 +120,19 @@ class GrinderDaoTest {
   }
 
   @Test
+  fun isUsedIsTrueForAGrinderWithPairs() = runTest {
+    val uno = db.addGrinder(TestGrinders.uno)
+    val dos = db.addGrinder(TestGrinders.dos)
+    val tres = db.addGrinder(TestGrinders.tres)
+    assertFalse(dao.isUsed(uno))
+    db.addCalibration(uno, 20.0, dos, 30.0)
+    // Un par cuenta desde cualquiera de sus dos lados; un molino sin pares sigue sin uso.
+    assertTrue(dao.isUsed(uno))
+    assertTrue(dao.isUsed(dos))
+    assertFalse(dao.isUsed(tres))
+  }
+
+  @Test
   fun deletingLeavesNullGrinderIdKeepsTheValueAndRegeneratesTheLabelWithTheCurrentName() = runTest {
     val id = db.addGrinder(TestGrinders.uno)
     val recipeId = recipes.save(recipe(GrindSetting(id, 21.0, "Uno · 21 clics")))

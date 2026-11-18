@@ -38,8 +38,8 @@ class RealCatalogSeedTest {
     val file = GrinderCatalogFile.parse(AssetCatalogSource(context).read()!!).getOrThrow()
     assertEquals(APPROVED_KEYS, file.grinders.map { it.catalogKey })
 
-    assertEquals(SyncResult.Synced(1, added = APPROVED_KEYS.size, updated = 0, retired = 0, deleted = 0), seeder.sync())
-    assertEquals(1, settings.catalogVersion)
+    assertEquals(SyncResult.Synced(2, added = APPROVED_KEYS.size, updated = 0, retired = 0, deleted = 0), seeder.sync())
+    assertEquals(2, settings.catalogVersion)
 
     val seeded = db.grinderDao().observeAll().first().map { it.toGrinder() }
     assertEquals(APPROVED_KEYS.toSet(), seeded.map { it.catalogKey }.toSet())

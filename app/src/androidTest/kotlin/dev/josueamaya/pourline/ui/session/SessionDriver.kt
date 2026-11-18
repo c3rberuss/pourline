@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.scale.ConnectionState
@@ -51,6 +52,8 @@ class SessionDriver(private val rule: ComposeTestRule, val env: TestAppDependenc
   /** "Empezar" en Preparar: abre la sesión en el paso 1. */
   fun start() {
     waitFor("prepare_start")
+    // Con marcas en la tarjeta de molienda ("aproximado") el botón puede quedar bajo el pliegue.
+    runCatching { node("prepare_start").performScrollTo() }
     node("prepare_start").performClick()
     waitFor("session_prep")
   }

@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline.ui.grinders
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
@@ -7,6 +8,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.grinder.GrindDirection
+import dev.josueamaya.pourline.grinder.GrindFix
 import dev.josueamaya.pourline.grinder.GrindLevel
 import dev.josueamaya.pourline.grinder.GrindTexts
 import dev.josueamaya.pourline.grinder.GrindUnit
@@ -58,6 +60,14 @@ fun GrindLevel.abbreviation(): String = stringResource(
     GrindLevel.EXTRA_COARSE -> R.string.grind_level_extra_coarse_abbr
   },
 )
+
+/** El texto del enlace de "Sin equivalencia" (tarjeta y convertidor). */
+@StringRes
+fun GrindFix.linkText(): Int = when (this) {
+  GrindFix.COMPLETE_RANGES -> R.string.grind_card_fix_complete
+  GrindFix.DUPLICATE -> R.string.grind_card_fix_duplicate
+  GrindFix.ADD_CALIBRATION -> R.string.grind_card_fix_calibration
+}
 
 @Composable
 fun GrindDirection.label(): String = stringResource(

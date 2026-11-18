@@ -240,3 +240,29 @@ private const val BREWS_V5_SQL =
   "`grinderId` INTEGER, `grindValue` REAL, `grindLabel` TEXT, " +
   "FOREIGN KEY(`coffeeId`) REFERENCES `coffees`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , " +
   "FOREIGN KEY(`grinderId`) REFERENCES `grinders`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )"
+
+/**
+ * Migración 6 → 7 (SPEC-006, enmienda 1): la tabla `grind_calibrations` con sus claves foráneas a `grinders` (`CASCADE`)
+ * y sus cuatro índices. No toca datos. El SQL está copiado de `app/schemas/.../7.json`.
+ */
+val MIGRATION_6_7: Migration = object : Migration(6, 7) {
+  override fun migrate(db: SupportSQLiteDatabase) {
+    db.execSQL(
+      "CREATE TABLE IF NOT EXISTS `grind_calibrations` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+        "`grinderAId` INTEGER NOT NULL, `valueA` REAL NOT NULL, `grinderBId` INTEGER NOT NULL, " +
+        "`valueB` REAL NOT NULL, `updatedAtEpochMs` INTEGER NOT NULL, " +
+        "FOREIGN KEY(`grinderAId`) REFERENCES `grinders`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , " +
+        "FOREIGN KEY(`grinderBId`) REFERENCES `grinders`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+    )
+    db.execSQL("CREATE INDEX IF NOT EXISTS `index_grind_calibrations_grinderAId` ON `grind_calibrations` (`grinderAId`)")
+    db.execSQL("CREATE INDEX IF NOT EXISTS `index_grind_calibrations_grinderBId` ON `grind_calibrations` (`grinderBId`)")
+    db.execSQL(
+      "CREATE UNIQUE INDEX IF NOT EXISTS `index_grind_calibrations_grinderAId_grinderBId_valueA` " +
+        "ON `grind_calibrations` (`grinderAId`, `grinderBId`, `valueA`)",
+    )
+    db.execSQL(
+      "CREATE UNIQUE INDEX IF NOT EXISTS `index_grind_calibrations_grinderAId_grinderBId_valueB` " +
+        "ON `grind_calibrations` (`grinderAId`, `grinderBId`, `valueB`)",
+    )
+  }
+}

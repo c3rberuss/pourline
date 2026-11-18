@@ -97,7 +97,7 @@ fun GrindSettingField(
             if (onOpenConverter != null && choice.value != null) {
               AntButton(
                 text = stringResource(R.string.grind_card_converter),
-                onClick = { onOpenConverter(ConverterArgs(current.id, method, choice.value)) },
+                onClick = { onOpenConverter(ConverterArgs(current.id, choice.value)) },
                 modifier = Modifier.testTag("${tagPrefix}_grind_converter"),
                 type = AntButtonType.Link,
               )

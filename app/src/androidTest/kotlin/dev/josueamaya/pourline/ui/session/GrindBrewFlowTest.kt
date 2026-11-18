@@ -63,9 +63,9 @@ class GrindBrewFlowTest {
     driver.waitFor("grind_card_value")
 
     GrindersUi(rule, env).choose("grind_card_grinder", "Acme Tres")
-    // Uno V60 16–24 en 30 está a +175 %; Tres V60 60–100 → 60 + 1,75 × 40 = 130.
+    // Uno 30 está en el nivel 3 + 10/12 × 2 = 4,667 (entre MEDIUM 20 y COARSE 32); Tres: 100 + 0,833 × 60 = 150.
     rule.waitUntil(5_000) { env.grindSelection.current()?.grinderId == tresId }
-    assertEquals(130.0, env.grindSelection.current()!!.value!!, 0.0)
+    assertEquals(150.0, env.grindSelection.current()!!.value!!, 0.0)
 
     driver.reachPourStep()
     driver.pourFollowingTarget()
@@ -75,7 +75,7 @@ class GrindBrewFlowTest {
     val brewId = runBlocking { env.brews.list(BrewFilter()).first().single().id }
     val saved = runBlocking { env.brews.get(brewId) }!!.entity
     assertEquals(tresId, saved.grinderId)
-    assertEquals(130.0, saved.grindValue!!, 0.0)
+    assertEquals(150.0, saved.grindValue!!, 0.0)
     assertTrue(saved.grindLabel!!.startsWith("Tres"))
     assertNotNull(saved.method)
 

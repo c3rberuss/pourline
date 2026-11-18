@@ -754,11 +754,13 @@
     <string name="grind_card_recipe_none">The recipe has no grind setting</string>
     <string name="grind_card_grind_with">Grind with</string>
     <string name="grind_card_approximate">approximate</string>
+    <string name="grind_card_calibrated">per your calibration</string>
     <string name="grind_card_suggested">suggested</string>
     <string name="grind_card_at_limit">at the grinder\'s limit</string>
     <string name="grind_card_no_equivalent">No equivalent</string>
     <string name="grind_card_fix_complete">Complete the ranges</string>
     <string name="grind_card_fix_duplicate">Duplicate to customize</string>
+    <string name="grind_card_fix_calibration">Add another equivalence</string>
     <string name="grind_card_orphan">Assign a grinder to the recipe to convert</string>
     <string name="grind_card_no_reference">No recipe: no setting to convert</string>
     <string name="grind_card_add">Add your grinder to see the equivalent</string>
@@ -766,8 +768,6 @@
     <string name="converter_title">Converter</string>
     <string name="converter_source">Source grinder</string>
     <string name="converter_source_placeholder">Choose a grinder</string>
-    <string name="converter_method">Method</string>
-    <string name="converter_no_method">No method</string>
     <string name="converter_value">Setting</string>
     <string name="converter_results">In my grinders</string>
     <string name="converter_pick_source">Choose a source grinder to start</string>
@@ -780,6 +780,24 @@
     <string name="converter_picker_owned">My grinders</string>
     <string name="converter_picker_catalog">Catalog</string>
     <string name="converter_picker_empty">No results</string>
+    <string name="converter_correct">Correct</string>
+    <string name="grind_calibration_add">Add equivalence</string>
+    <string name="grind_calibration_save">Save equivalence</string>
+    <string name="grind_calibration_sheet_title">Equivalence</string>
+    <string name="grind_calibration_other">Other grinder</string>
+    <string name="grind_calibration_updated">Equivalence updated</string>
+    <plurals name="grind_calibration_conflict">
+        <item quantity="one">Contradicts the equivalence %s</item>
+        <item quantity="other">Contradicts the equivalences %s</item>
+    </plurals>
+    <string name="grind_calibration_replace">Replace</string>
+    <string name="grind_calibration_invalid">Check the settings: each one must be within its grinder\'s scale</string>
+    <string name="grind_calibration_pair">%1$s %2$s = %3$s %4$s</string>
+    <string name="grinder_detail_calibrations">Equivalences</string>
+    <string name="grinder_detail_calibrations_empty">Save the settings that grind the same on your grinders to fine-tune the conversion</string>
+    <string name="grind_calibration_delete_title">Delete the equivalence %s?</string>
+    <string name="grind_calibration_edit_description">Edit %s</string>
+    <string name="grind_calibration_delete_description">Delete %s</string>
     <string name="brew_notice_channel">Brew in progress</string>
     <string name="brew_notice_channel_description">Keeps the brew running when you leave the app</string>
     <string name="brew_notice_water">%1$s of %2$s</string>

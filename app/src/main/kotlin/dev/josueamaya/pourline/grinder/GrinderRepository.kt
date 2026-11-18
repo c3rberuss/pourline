@@ -26,6 +26,7 @@ class GrinderRepository(
   private val clock: () -> Long = System::currentTimeMillis,
 ) {
   private val dao = db.grinderDao()
+  private val calibrationDao = db.grindCalibrationDao()
 
   /** "Mis molinos": los propios y los predefinidos marcados "Lo tengo", por marca y modelo (D28). */
   fun owned(): Flow<List<Grinder>> = dao.observeOwned().map(::sorted).flowOn(Dispatchers.Default)
@@ -95,6 +96,53 @@ class GrinderRepository(
     dao.deleteRelabeling(id, labels(dao.recipesUsing(id)), labels(dao.brewsUsing(id)))
     if (defaults.defaultGrinderId.value == id) defaults.setDefaultGrinderId(null)
     true
+  }
+
+  /** Los pares de calibración en los que interviene [grinderId], en cualquiera de los dos lados (enmienda 1). */
+  fun calibrations(grinderId: Long): Flow<List<GrindCalibration>> =
+    calibrationDao.observeOf(grinderId).map { rows -> rows.map { it.toCalibration() } }.flowOn(Dispatchers.Default)
+
+  /** Los pares entre [fromId] y [toId], orientados de [fromId] a [toId]. Sin pares si son el mismo molino. */
+  fun calibrationPoints(fromId: Long, toId: Long): Flow<List<CalibrationPoint>> {
+    if (fromId == toId) return flowOf(emptyList())
+    return calibrationDao.observeBetween(minOf(fromId, toId), maxOf(fromId, toId))
+      .map { rows -> rows.map { it.toCalibration().pointFrom(fromId) } }
+      .flowOn(Dispatchers.Default)
+  }
+
+  /**
+   * Guarda el par "[value] en [grinderId] = [otherValue] en [otherId]", o edita [editingId] (§3.3.1 de la enmienda 1).
+   * Los valores se ajustan al paso de su molino. Devuelve `Saved`, `Updated` (había un par con el mismo valor en un
+   * lado), `Conflict` (contradice a otros pares; no escribe nada) o `Invalid`.
+   */
+  suspend fun saveCalibration(grinderId: Long, value: Double, otherId: Long, otherValue: Double, editingId: Long? = null): CalibrationSaveResult =
+    writeCalibration(grinderId, value, otherId, otherValue, replace = false, editingId = editingId)
+
+  /** Como [saveCalibration], pero borra los pares que contradicen al nuevo y lo guarda, en una transacción. */
+  suspend fun replaceCalibration(grinderId: Long, value: Double, otherId: Long, otherValue: Double, editingId: Long? = null): CalibrationSaveResult =
+    writeCalibration(grinderId, value, otherId, otherValue, replace = true, editingId = editingId)
+
+  suspend fun deleteCalibration(id: Long) {
+    withContext(Dispatchers.IO + NonCancellable) { calibrationDao.deleteById(id) }
+  }
+
+  private suspend fun writeCalibration(
+    grinderId: Long,
+    value: Double,
+    otherId: Long,
+    otherValue: Double,
+    replace: Boolean,
+    editingId: Long?,
+  ): CalibrationSaveResult = withContext(Dispatchers.IO + NonCancellable) {
+    val grinder = dao.get(grinderId)?.toGrinder() ?: return@withContext CalibrationSaveResult.Invalid(listOf(CalibrationError.NotOwned(grinderId)))
+    val other = dao.get(otherId)?.toGrinder() ?: return@withContext CalibrationSaveResult.Invalid(listOf(CalibrationError.NotOwned(otherId)))
+    val snapped = snap(value, grinder)
+    val otherSnapped = snap(otherValue, other)
+    if (replace) {
+      calibrationDao.replace(grinder, snapped, other, otherSnapped, editingId, clock())
+    } else {
+      calibrationDao.save(grinder, snapped, other, otherSnapped, editingId, clock())
+    }
   }
 
   private fun sorted(all: List<GrinderWithDetails>): List<Grinder> {

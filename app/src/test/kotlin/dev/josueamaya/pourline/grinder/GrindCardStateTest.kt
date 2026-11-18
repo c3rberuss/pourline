@@ -2,6 +2,7 @@ package dev.josueamaya.pourline.grinder
 
 import dev.josueamaya.pourline.grinder.GrinderFixtures.cinco
 import dev.josueamaya.pourline.grinder.GrinderFixtures.dos
+import dev.josueamaya.pourline.grinder.GrinderFixtures.sinCurva
 import dev.josueamaya.pourline.grinder.GrinderFixtures.tres
 import dev.josueamaya.pourline.grinder.GrinderFixtures.uno
 import dev.josueamaya.pourline.history.BrewMethod
@@ -22,7 +23,8 @@ class GrindCardStateTest {
     owned: List<Grinder> = this.owned,
     chosenId: Long? = null,
     defaultId: Long? = null,
-  ) = grindCardState(source, sourceGrinder, owned, chosenId, defaultId)
+    calibrations: List<GrindCalibration> = emptyList(),
+  ) = grindCardState(source, sourceGrinder, owned, chosenId, defaultId, calibrations)
 
   // --- Preselección del §3.7 ---
 
@@ -54,22 +56,24 @@ class GrindCardStateTest {
   fun `the same grinder shows the setting as it is`() {
     val s = state(source(uno, 20.0), uno)
     assertEquals(GrindOutcome.Value(20.0, exact = true, reasons = emptySet(), suggested = false), s.outcome)
-    assertEquals(ConverterArgs(1, BrewMethod.V60, 20.0), s.converter)
+    assertEquals(ConverterArgs(1, 20.0), s.converter)
   }
 
   @Test
-  fun `another grinder converts through the range of the method`() {
+  fun `another grinder converts through the grind curves`() {
+    // Uno 20 está en MEDIUM (nivel 3), que en Dos es 30 (enmienda 1: sin posición dentro del rango del método).
     val s = state(source(uno, 20.0), uno, chosenId = 2)
-    assertEquals(GrindOutcome.Value(28.0, exact = true, reasons = emptySet(), suggested = false), s.outcome)
+    assertEquals(GrindOutcome.Value(30.0, exact = false, reasons = setOf(ConversionReason.ANCHORS), suggested = false), s.outcome)
   }
 
   @Test
   fun `the marks come from the reasons of the conversion`() {
+    // Uno 40 → nivel 6,33 → Dos 63,33: se redondea a 63,5 y se limita a 60.
     val limit = state(source(uno, 40.0), uno, chosenId = 2).outcome as GrindOutcome.Value
     assertEquals(60.0, limit.value, 0.0)
-    assertEquals(setOf(ConversionReason.AT_LIMIT), limit.reasons)
-    // Sin rango del método en el destino se aproxima por anclas.
-    val anchors = state(source(uno, 14.0, BrewMethod.AEROPRESS), uno, chosenId = 2).outcome as GrindOutcome.Value
+    assertEquals(setOf(ConversionReason.ANCHORS, ConversionReason.ROUNDED, ConversionReason.AT_LIMIT), limit.reasons)
+    val anchors = state(source(uno, 14.0), uno, chosenId = 2).outcome as GrindOutcome.Value
+    assertEquals(20.0, anchors.value, 0.0)
     assertEquals(setOf(ConversionReason.ANCHORS), anchors.reasons)
     assertEquals(false, anchors.exact)
   }
@@ -93,10 +97,10 @@ class GrindCardStateTest {
   @Test
   fun `no equivalence offers to complete my grinder or to duplicate a predefined one`() {
     val own = state(source(uno, 14.0, BrewMethod.AEROPRESS), uno, owned = listOf(uno, cinco), chosenId = cinco.id).outcome
-    assertEquals(GrindOutcome.NoEquivalent(GrindFix.COMPLETE_RANGES), own)
+    assertEquals(GrindOutcome.NoEquivalent(GrindFix.COMPLETE_RANGES, cinco.id), own)
     val predefined = cinco.copy(catalogKey = "acme-cinco")
     val dup = state(source(uno, 14.0, BrewMethod.AEROPRESS), uno, owned = listOf(uno, predefined), chosenId = predefined.id).outcome
-    assertEquals(GrindOutcome.NoEquivalent(GrindFix.DUPLICATE), dup)
+    assertEquals(GrindOutcome.NoEquivalent(GrindFix.DUPLICATE, predefined.id), dup)
   }
 
   @Test
@@ -114,7 +118,7 @@ class GrindCardStateTest {
     assertEquals(GrindOutcome.NoGrinder, none.outcome)
     assertNull(none.chosen)
     // La línea de la receta y el atajo siguen disponibles a nivel de estado; la tarjeta decide qué muestra.
-    assertEquals(ConverterArgs(1, BrewMethod.V60, 20.0), none.converter)
+    assertEquals(ConverterArgs(1, 20.0), none.converter)
   }
 
   @Test
@@ -132,7 +136,7 @@ class GrindCardStateTest {
   @Test
   fun `the snapshot is the chosen grinder with the shown value and its copy`() {
     val converted = state(source(uno, 20.0), uno, chosenId = 2).snapshot(FakeGrindTexts)
-    assertEquals(GrindSetting(2, 28.0, "Dos · 28 clics"), converted)
+    assertEquals(GrindSetting(2, 30.0, "Dos · 30 clics"), converted)
     val suggested = state(GrindSource(BrewMethod.V60, null), chosenId = 1).snapshot(FakeGrindTexts)
     assertEquals(GrindSetting(1, 20.0, "Uno · 20 clics"), suggested)
   }
@@ -150,5 +154,79 @@ class GrindCardStateTest {
   @Test
   fun `the snapshot is null without a chosen grinder`() {
     assertNull(state(source(uno, 20.0), uno, owned = emptyList()).snapshot(FakeGrindTexts))
+  }
+
+  // --- Calibración (enmienda 1) ---
+
+  private val twoPairs = listOf(GrindCalibration(1, 1, 10.0, 2, 14.0), GrindCalibration(2, 1, 30.0, 2, 50.0))
+
+  @Test
+  fun `the method of the recipe does not change the conversion`() {
+    val expected = state(source(uno, 20.0, BrewMethod.V60), uno, chosenId = 2).outcome
+    assertEquals(expected, state(source(uno, 20.0, BrewMethod.OTHER), uno, chosenId = 2).outcome)
+    assertEquals(expected, state(source(uno, 20.0, null), uno, chosenId = 2).outcome)
+    assertEquals(expected, state(source(uno, 20.0, BrewMethod.ESPRESSO), uno, chosenId = 2).outcome)
+  }
+
+  @Test
+  fun `two pairs give a calibrated value`() {
+    val outcome = state(source(uno, 20.0), uno, chosenId = 2, calibrations = twoPairs).outcome
+    assertEquals(GrindOutcome.Value(32.0, exact = false, reasons = setOf(ConversionReason.CALIBRATED), suggested = false), outcome)
+  }
+
+  @Test
+  fun `pairs with other grinders are ignored`() {
+    // Pares Uno↔Tres y Dos↔Tres: no cuentan para Uno → Dos.
+    val others = listOf(GrindCalibration(3, 1, 10.0, 3, 50.0), GrindCalibration(4, 2, 10.0, 3, 60.0))
+    assertEquals(
+      state(source(uno, 20.0), uno, chosenId = 2).outcome,
+      state(source(uno, 20.0), uno, chosenId = 2, calibrations = others).outcome,
+    )
+  }
+
+  @Test
+  fun `one pair and no curve gives add calibration on the chosen grinder`() {
+    val pair = listOf(GrindCalibration(1, 1, 20.0, cinco.id, 5.0))
+    val outcome = state(source(uno, 20.0), uno, owned = listOf(uno, cinco), chosenId = cinco.id, calibrations = pair).outcome
+    assertEquals(GrindOutcome.NoEquivalent(GrindFix.ADD_CALIBRATION, cinco.id), outcome)
+  }
+
+  @Test
+  fun `no equivalent points to the grinder without a curve`() {
+    // El molino de la receta no tiene curva y el elegido sí: se arregla el de la receta.
+    val outcome = state(source(cinco, 4.0), cinco, owned = listOf(cinco, uno), chosenId = uno.id).outcome
+    assertEquals(GrindOutcome.NoEquivalent(GrindFix.COMPLETE_RANGES, cinco.id), outcome)
+  }
+
+  @Test
+  fun `the snapshot saves the calibrated value`() {
+    val snapshot = state(source(uno, 20.0), uno, chosenId = 2, calibrations = twoPairs).snapshot(FakeGrindTexts)
+    assertEquals(GrindSetting(2, 32.0, "Dos · 32 clics"), snapshot)
+  }
+
+  // --- fixFor (enmienda 1, D45) ---
+
+  @Test
+  fun `one pair gives add calibration on the chosen grinder`() {
+    assertEquals(FixTarget(GrindFix.ADD_CALIBRATION, sinCurva.id), fixFor(uno, sinCurva, pairCount = 1))
+    assertEquals(FixTarget(GrindFix.ADD_CALIBRATION, uno.id), fixFor(sinCurva, uno, pairCount = 1))
+  }
+
+  @Test
+  fun `the fix points to the grinder without a curve`() {
+    // El origen no tiene curva y el elegido sí: se arregla el origen.
+    assertEquals(FixTarget(GrindFix.COMPLETE_RANGES, sinCurva.id), fixFor(sinCurva, uno, pairCount = 0))
+    // El elegido no tiene curva: el elegido.
+    assertEquals(FixTarget(GrindFix.COMPLETE_RANGES, sinCurva.id), fixFor(uno, sinCurva, pairCount = 0))
+    // Ninguno la tiene: el elegido.
+    val other = sinCurva.copy(id = 20)
+    assertEquals(FixTarget(GrindFix.COMPLETE_RANGES, other.id), fixFor(sinCurva, other, pairCount = 0))
+  }
+
+  @Test
+  fun `an own grinder gets complete ranges and a predefined one duplicate`() {
+    val predefined = sinCurva.copy(id = 30, catalogKey = "acme-sin-curva", sourceUrl = "https://example.com", sourceName = "Fuente")
+    assertEquals(FixTarget(GrindFix.DUPLICATE, predefined.id), fixFor(uno, predefined, pairCount = 0))
+    assertEquals(FixTarget(GrindFix.COMPLETE_RANGES, sinCurva.id), fixFor(uno, sinCurva, pairCount = 0))
   }
 }

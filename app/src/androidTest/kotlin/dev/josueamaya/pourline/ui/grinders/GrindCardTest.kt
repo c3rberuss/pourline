@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.ui.grinders
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -11,6 +12,7 @@ import dev.josueamaya.pourline.grinder.GrindSetting
 import dev.josueamaya.pourline.grinder.GrindUnit
 import dev.josueamaya.pourline.grinder.GrindUnitLevel
 import dev.josueamaya.pourline.grinder.TestGrinders
+import dev.josueamaya.pourline.grinder.addCalibration
 import dev.josueamaya.pourline.grinder.addGrinder
 import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.recipe.Recipe
@@ -93,10 +95,55 @@ class GrindCardTest {
     ui.waitFor("grind_card_value")
 
     ui.choose("grind_card_grinder", "Acme Dos")
-    // Uno V60 16–24 en 20 es el 50 %; Dos V60 20–36 → 28.
-    rule.waitUntil(5_000) { runCatching { text("grind_card_value").assertTextContains("28", substring = true) }.isSuccess }
+    // Uno 20 está en MEDIUM (nivel 3) y Dos tiene MEDIUM en 30: la conversión es por curvas de grosor, no por el rango V60.
+    rule.waitUntil(5_000) { runCatching { text("grind_card_value").assertTextContains("30", substring = true) }.isSuccess }
     assertFalse(ui.exists("grind_card_ruler"))
-    assertEquals(28.0, env.grindSelection.current()!!.value!!, 0.0)
+    assertEquals(30.0, env.grindSelection.current()!!.value!!, 0.0)
+  }
+
+  @Test
+  fun twoPairsShowPerYourCalibration() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val dos = runBlocking { env.db.addGrinder(TestGrinders.dos, 2_000L) }
+    runBlocking {
+      env.db.addCalibration(uno, 10.0, dos, 14.0)
+      env.db.addCalibration(uno, 30.0, dos, 50.0)
+    }
+    val id = recipe(GrindSetting(uno, 20.0, "x"))
+    show(id)
+    ui.waitFor("grind_card_value")
+
+    ui.choose("grind_card_grinder", "Acme Dos")
+    // Uno 10 = Dos 14 y Uno 30 = Dos 50: Uno 20 queda a mitad, 32.
+    rule.waitUntil(5_000) { runCatching { text("grind_card_value").assertTextContains("32", substring = true) }.isSuccess }
+    assertTrue(ui.exists("grind_card_marks"))
+    assertTrue(rule.onAllNodesWithText(context.getString(R.string.grind_card_calibrated)).fetchSemanticsNodes().isNotEmpty())
+    assertEquals(32.0, env.grindSelection.current()!!.value!!, 0.0)
+  }
+
+  @Test
+  fun onePairWithoutACurveOffersToAddAnotherEquivalence() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val bare = Grinder(
+      brand = "Acme",
+      model = "Vacío",
+      units = listOf(GrindUnitLevel(GrindUnit.CLICKS)),
+      scaleMin = 0.0,
+      scaleMax = 40.0,
+      owned = true,
+    )
+    val bareId = runBlocking { env.db.addGrinder(bare, 2_000L) }
+    runBlocking { env.db.addCalibration(uno, 20.0, bareId, 10.0) }
+    val id = recipe(GrindSetting(uno, 25.0, "x"))
+    show(id)
+    ui.waitFor("grind_card_value")
+    ui.choose("grind_card_grinder", "Acme Vacío")
+    ui.waitFor("grind_card_fix")
+    ui.node("grind_card_fix").assertTextContains(context.getString(R.string.grind_card_fix_calibration), substring = true)
+    ui.click("grind_card_fix")
+    // El detalle del molino elegido, con la sección "Equivalencias" ya a la vista.
+    ui.waitFor("grinder_calibrations")
+    ui.node("grinder_calibrations").assertIsDisplayed()
   }
 
   @Test

@@ -220,6 +220,12 @@ object AntIcons {
   val Convert: ImageVector by lazy {
     strokeIcon("Convert", "M4 8H20", "M16 4L20 8L16 12", "M20 16H4", "M8 12L4 16L8 20")
   }
+  /** Un lápiz: editar. */
+  val Edit: ImageVector by lazy { strokeIcon("Edit", "M4 20H8L19 9L15 5L4 16Z", "M13 7L17 11") }
+  /** Una papelera: borrar. */
+  val Delete: ImageVector by lazy {
+    strokeIcon("Delete", "M4 7H20", "M9 7V4H15V7", "M6 7L7 20H17L18 7", "M10 11V16", "M14 11V16")
+  }
 }
 
 private const val STAR_PATH = "M12 3L14.8 8.8L21 9.6L16.5 14L17.6 20.3L12 17.3L6.4 20.3L7.5 14L3 9.6L9.2 8.8Z"

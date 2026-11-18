@@ -49,8 +49,14 @@ abstract class GrinderDao {
   @Query("SELECT COUNT(*) FROM recipes WHERE grinderId = :id")
   abstract fun recipeCount(id: Long): Flow<Int>
 
-  /** Si alguna receta o preparación usa el molino. */
-  @Query("SELECT EXISTS(SELECT 1 FROM recipes WHERE grinderId = :id) OR EXISTS(SELECT 1 FROM brews WHERE grinderId = :id)")
+  /**
+   * Si alguna receta o preparación usa el molino, o si tiene pares de calibración: un par se conserva aunque el molino
+   * ya no sea mío (§3.3.1 de la enmienda 1), así que su molino no se borra al sincronizar el catálogo, se retira.
+   */
+  @Query(
+    "SELECT EXISTS(SELECT 1 FROM recipes WHERE grinderId = :id) OR EXISTS(SELECT 1 FROM brews WHERE grinderId = :id) " +
+      "OR EXISTS(SELECT 1 FROM grind_calibrations WHERE grinderAId = :id OR grinderBId = :id)",
+  )
   abstract suspend fun isUsed(id: Long): Boolean
 
   @Query("SELECT id, grindValue AS value FROM recipes WHERE grinderId = :id")
@@ -127,7 +133,8 @@ abstract class GrinderDao {
   /**
    * Sincroniza los predefinidos con [catalog] en una transacción (D34): inserta los nuevos, actualiza los que ya
    * están (conservando id y `owned`, y reemplazando los hijos) y trata los que ya no vienen: los que están en uso
-   * (recetas, preparaciones, `owned` o el predeterminado [defaultId]) pasan a `retired`; el resto se borra.
+   * (recetas, preparaciones, pares de calibración, `owned` o el predeterminado [defaultId]) pasan a `retired`; el
+   * resto se borra. Los pares de calibración no se tocan: borrar solo ocurre sin pares, así que la `CASCADE` no actúa.
    * Los molinos propios no se tocan. Un predefinido que vuelve deja de estar retirado.
    */
   @Transaction
