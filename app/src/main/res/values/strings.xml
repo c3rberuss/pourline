@@ -851,11 +851,20 @@
         <item quantity="one">%d vertido</item>
         <item quantity="other">%d vertidos</item>
     </plurals>
+    <string name="four_six_pace">Ritmo de vertido</string>
+    <string name="four_six_pace_normal">Normal</string>
+    <string name="four_six_pace_slow">Lento</string>
+    <string name="four_six_pace_slowest">Muy lento</string>
+    <string name="four_six_pace_custom">Otro</string>
+    <string name="four_six_pace_unit">g/s</string>
+    <string name="four_six_pace_value">%1$s g/s · %2$s g en %3$d s</string>
+    <string name="four_six_pace_error">El ritmo va de 2 a 15 g/s, con un decimal como mucho.</string>
+    <string name="four_six_pace_hint">Un vertido más lento dura más y la espera se acorta: cada vertido sigue empezando a su hora.</string>
     <string name="four_six_split_taste">40 % sabor</string>
     <string name="four_six_split_strength">60 % intensidad</string>
     <string name="four_six_pours">Vertidos</string>
     <string name="four_six_time">Tiempo</string>
-    <string name="four_six_pour_detail">%1$s · hasta %2$s g</string>
+    <string name="four_six_pour_detail">%1$s–%2$s · hasta %3$s g</string>
     <string name="four_six_pour_amount">+%1$s g</string>
     <string name="four_six_end">Retirar el filtro</string>
     <string name="four_six_note">Molienda gruesa y agua a 92 °C. Cada vertido empieza 45 s después del anterior y el filtro se retira 30 s después del último.</string>

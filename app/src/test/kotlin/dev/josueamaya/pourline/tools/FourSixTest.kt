@@ -32,7 +32,9 @@ class FourSixTest {
     ratio: Double = 15.0,
     taste: FourSixTaste = FourSixTaste.BALANCED,
     strength: FourSixStrength = FourSixStrength.STANDARD,
-  ) = FourSix.plan(FourSixParams(dose, ratio, taste, strength))!!
+    pace: FourSixPace = FourSixPace.NORMAL,
+    rate: Double = pace.gramsPerSecond!!,
+  ) = FourSix.plan(FourSixParams(dose, ratio, taste, strength, rate))!!
 
   @Test
   fun theClassicIsFivePoursOfSixtyGramsInThreeAndAHalfMinutes() {
@@ -107,9 +109,53 @@ class FourSixTest {
   @Test
   fun bigDosesSpaceThePoursSoTheyNeverOverlap() {
     val plan = plan(dose = 60.0, ratio = 16.0, strength = FourSixStrength.LIGHTEST)
-    // 960 g: el único vertido de intensidad es de 576 g, que se recorta a 60 s.
-    assertEquals(60_000L, plan.pours.last().durationMs)
+    // 960 g: el único vertido de intensidad es de 576 g; a 6 g/s, 96 s.
+    assertEquals(96_000L, plan.pours.last().durationMs)
     plan.pours.zipWithNext().forEach { (a, b) -> assertTrue(b.startMs >= a.endMs + 10_000L) }
+  }
+
+  @Test
+  fun aSlowerPaceLengthensThePoursAndShortensTheWaitsWithoutMovingTheStarts() {
+    val normal = plan()
+    val slow = plan(pace = FourSixPace.SLOW)
+    val slowest = plan(pace = FourSixPace.SLOWEST)
+    assertTrue(slow.pours.all { it.durationMs == 15_000L })
+    assertTrue(slowest.pours.all { it.durationMs == 20_000L })
+    assertEquals(normal.pours.map { it.startMs }, slow.pours.map { it.startMs })
+    assertEquals(normal.pours.map { it.startMs }, slowest.pours.map { it.startMs })
+    assertEquals(210_000L, slow.totalTimeMs)
+    // El último vertido acaba a 3:20 y se dejan 15 s de drenado.
+    assertEquals(215_000L, slowest.totalTimeMs)
+    // Las esperas de la receta encajan solas: 45 s − 20 s entre vertidos y 15 s de drenado al final.
+    val waits = FourSix.recipe(slowest, FakeFourSixTexts()).stages.filter { it.type == StageType.WAIT }.map { it.durationMs }
+    assertEquals(listOf(25_000L, 25_000L, 25_000L, 25_000L, 15_000L), waits)
+  }
+
+  @Test
+  fun aSlowerPaceAlsoSlowsSmallPours() {
+    // 36 g a 6 g/s se quedarían en 6 s: el mínimo es lo que se tarda en verter 60 g al ritmo elegido.
+    assertTrue(plan(strength = FourSixStrength.STRONGEST).pours.all { it.durationMs == 10_000L })
+    assertTrue(plan(strength = FourSixStrength.STRONGEST, pace = FourSixPace.SLOW).pours.all { it.durationMs == 15_000L })
+  }
+
+  @Test
+  fun aVerySlowBigPourDelaysTheNextOnes() {
+    // 60 g a 1:12, muy suave: vertidos de 144, 144 y 432 g. A 3 g/s, 48 s (más 10 s de espera) no caben en 45 s.
+    val plan = plan(dose = 60.0, ratio = 12.0, strength = FourSixStrength.LIGHTEST, pace = FourSixPace.SLOWEST)
+    // El último, 144 s, se queda en el máximo de un paso: 2 min.
+    assertEquals(listOf(48_000L, 48_000L, 120_000L), plan.pours.map { it.durationMs })
+    assertEquals(listOf(0L, 58_000L, 116_000L), plan.pours.map { it.startMs })
+    assertEquals(116_000L + 135_000L, plan.totalTimeMs)
+  }
+
+  @Test
+  fun aCustomRateIsHonouredUpToTwoMinutesAPour() {
+    // 2,5 g/s: 60 g en 24 s; el vertido único de 180 g, en 72 s, retrasa el final.
+    val plan = plan(strength = FourSixStrength.LIGHTEST, rate = 2.5)
+    assertEquals(listOf(24_000L, 24_000L, 72_000L), plan.pours.map { it.durationMs })
+    assertEquals(listOf(0L, 45_000L, 90_000L), plan.pours.map { it.startMs })
+    // A 2 g/s, 576 g serían 288 s: se queda en el máximo de un paso, 2 min.
+    assertEquals(120_000L, plan(dose = 60.0, ratio = 16.0, strength = FourSixStrength.LIGHTEST, rate = 2.0).pours.last().durationMs)
   }
 
   @Test
@@ -126,6 +172,8 @@ class FourSixTest {
     assertNull(FourSix.plan(FourSixParams(60.1, 15.0)))
     assertNull(FourSix.plan(FourSixParams(20.0, 9.9)))
     assertNull(FourSix.plan(FourSixParams(20.0, 20.1)))
+    assertNull(FourSix.plan(FourSixParams(20.0, 15.0, pourRateGPerS = 1.9)))
+    assertNull(FourSix.plan(FourSixParams(20.0, 15.0, pourRateGPerS = 15.1)))
     // 60 g a 1:17 son 1020 g: más de lo que admite una receta.
     assertNull(FourSix.plan(FourSixParams(60.0, 17.0)))
     assertNotNull(FourSix.plan(FourSixParams(50.0, 20.0)))
@@ -133,12 +181,13 @@ class FourSixTest {
 
   @Test
   fun everyCombinationGivesAValidRecipe() {
-    val doses = listOf(5.0, 12.5, 20.0, 33.3, 50.0)
-    val ratios = listOf(10.0, 15.0, 17.5, 20.0)
-    for (dose in doses) for (ratio in ratios) for (taste in FourSixTaste.entries) for (strength in FourSixStrength.entries) {
-      val plan = FourSix.plan(FourSixParams(dose, ratio, taste, strength)) ?: continue
+    val doses = listOf(5.0, 12.5, 20.0, 33.3, 50.0, 60.0)
+    val ratios = listOf(10.0, 15.0, 16.6, 17.5, 20.0)
+    val rates = listOf(FourSix.MIN_POUR_RATE_G_PER_S, 3.0, 4.5, 6.0, FourSix.MAX_POUR_RATE_G_PER_S)
+    for (dose in doses) for (ratio in ratios) for (taste in FourSixTaste.entries) for (strength in FourSixStrength.entries) for (rate in rates) {
+      val plan = FourSix.plan(FourSixParams(dose, ratio, taste, strength, rate)) ?: continue
       val recipe = FourSix.recipe(plan, FakeFourSixTexts())
-      assertEquals("$dose 1:$ratio $taste $strength", emptyList<Any>(), RecipeValidator.validate(recipe))
+      assertEquals("$dose 1:$ratio $taste $strength $rate g/s", emptyList<Any>(), RecipeValidator.validate(recipe))
       assertEquals(plan.totalTimeMs, recipe.stages.last().endMs)
       assertEquals(plan.totalWaterG, recipe.totalWaterG, 0.0)
     }
