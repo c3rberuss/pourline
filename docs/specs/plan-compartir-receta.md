@@ -194,9 +194,9 @@ Orden: F0 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9. F2 y F
 | F4 | Tarjeta de receta con QR y tamaño variable | M | Hecha |
 | F5 | Compartir desde el editor | M | Hecha |
 | F6 | Vista previa, guardado, navegación común y mensajes | L | Hecha |
-| F7 | Entradas internas: escáner y galería | M | Hecha (escáner pendiente de prueba manual) |
-| F8 | Entradas externas: `ACTION_SEND`, `ACTION_VIEW`, `singleTask` y aplazamiento | M | Pendiente |
-| F9 | Verificación: suites, lint, manifiesto, E2E por adb, prueba con dos móviles y capturas | M | Pendiente |
+| F7 | Entradas internas: escáner y galería | M | Hecha |
+| F8 | Entradas externas: `ACTION_SEND`, `ACTION_VIEW`, `singleTask` y aplazamiento | M | Hecha |
+| F9 | Verificación: suites, lint, manifiesto, E2E por adb, prueba con dos móviles y capturas | M | En curso |
 
 Cada fase deja `:app` compilando y sus tests en verde. Se compila y se prueba solo `:app`, nunca con
 `./gradlew build` ni con builds limpios.
@@ -691,7 +691,7 @@ Commit sugerido: `feat(recipes): import a recipe from the scanner or a gallery i
 imagen, incluido el de 6 000 × 6 000 px) y `RecipeShareTest` / `RecipeQrLegibilityTest` (adaptados a `QrReadResult`): verdes. En
 `emulator-5556`: `RecipesScreenTest`, `RecipesHistoryTourTest`, `TabsNavigationTest` y `RecipeImportNavigationTest` (35 tests): verdes y sin
 cambios. Unitarios de `:app`: verdes. `:app:lintDebug`: 2 errores y 21 avisos, igual que la línea base. Manifiesto fusionado de `debug`:
-sin `INTERNET` ni `CAMERA`. **Falta la prueba manual del escáner real en el móvil** (ver abajo): es lo que cierra F7.
+sin `INTERNET` ni `CAMERA`. La prueba manual del escáner real en el móvil (ver abajo) salió bien y cierra F7.
 
 Desviaciones menores respecto a D18, D19 y D27: `MlKitQrImageReader.read` captura cualquier excepción salvo la cancelación y solo da
 `ModelNotReady` si es `MlKitException.UNAVAILABLE` (la causa puede venir anidada); con `ModelNotReady` pide el módulo con
@@ -711,6 +711,8 @@ QR y aparece **Importar receta** con 20 pasos, el nombre de 60 caracteres y las 
 2. **Modo avión** (con el módulo ya descargado por el punto 1): lo mismo. Pasa si lee sin red.
 3. **Tiempo:** de tocar "Escanear QR" a ver la vista previa, 5 s o menos (tres veces, con el QR ya a la vista).
 4. **Cancelar:** abrir el escáner y cerrarlo con la X o con atrás. Pasa si no ocurre nada (ni vista previa ni mensaje).
+
+**Resultado (2026-11-18, el usuario en su Xiaomi `22081212UG`):** los cuatro casos salieron bien (normal, modo avión, lectura en 5 s o menos y cancelar). Con esto quedan cerrados F7 y el criterio de salida 2 de F0; el Code Scanner de Google se mantiene y no hace falta la alternativa del §6.
 
 Si el escáner no abre o falla, es el criterio de salida 2 de F0 y se aplica la alternativa del §6 (CameraX + `CAMERA`), que solo
 afecta a `QrScanner.kt` y al manifiesto. "Desde una imagen" no necesita esta prueba: la cubren los tests de F7.
@@ -747,6 +749,17 @@ da una sola instancia.
 **Criterio de salida:** todo en verde y una sola instancia en la comprobación por adb.
 
 Commit sugerido: `feat(recipes): import recipes from shared images and pourline links`.
+
+**Resultado de F8 (2026-11-18).** Unitarios de `:app` (1039, 0 fallos; `RecipeIntentsTest` 3). En `emulator-5560`:
+`RecipeIntentImportTest` (11 tests, con el lector real de Play Services en los casos con imagen). En `emulator-5556`:
+`ManifestPermissionsTest` (4) y `TabsNavigationTest` (10), todos en verde. El manifiesto fusionado de debug no pide `INTERNET` ni
+`CAMERA` (solo `ACCESS_NETWORK_STATE`, que ya estaba). `:app:lintDebug` sigue en 2 errores y 21 avisos, los de la línea base.
+Por adb en `emulator-5556`: `am start -W -a android.intent.action.VIEW -d 'pourline://recipe?v=1&d=…'` con `GOLDEN_V60_URI`
+arranca en frío; con el onboarding pendiente se queda en él y, al pulsar "Skip", abre la vista previa "V60 clásica" (D16). Un
+segundo `VIEW` con la app abierta no crea otra instancia (`dumpsys activity activities`: un solo `ActivityRecord` de
+`MainActivity`, `LaunchState: UNKNOWN`, es decir `onNewIntent`). Desviación: se añadió un caso (`aSendIntentCarryingTheImageInClipDataIsRead`)
+para la ruta de `clipData` de D17, y la `MainActivity` real no se lanza en los tests de intents (usaría el `history.db` real; el
+manejador se prueba con `TestApp(env)` y `Intent` reales, y el pegamento `singleTask`/`onNewIntent` por `ManifestPermissionsTest` y adb).
 
 ### F9. Verificación
 
