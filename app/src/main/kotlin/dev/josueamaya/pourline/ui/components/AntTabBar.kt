@@ -42,6 +42,8 @@ fun <T> AntTabBar(
   selected: T,
   onSelect: (T) -> Unit,
   modifier: Modifier = Modifier,
+  /** Un modificador extra para cada pestaña (el recorrido guiado pone aquí sus anclas). */
+  itemModifier: (T) -> Modifier = { Modifier },
 ) {
   val colors = AntTheme.colors
   Column(
@@ -63,6 +65,7 @@ fun <T> AntTabBar(
             .weight(1f)
             .fillMaxHeight()
             .testTag(item.testTag)
+            .then(itemModifier(item.id))
             .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(item.id) })
             .padding(horizontal = AntTheme.spacing.xxs),
           horizontalAlignment = Alignment.CenterHorizontally,

@@ -67,6 +67,9 @@ import dev.josueamaya.pourline.ui.scale.TargetPickerViewModel
 import dev.josueamaya.pourline.ui.scale.TargetSelectRow
 import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -152,7 +155,7 @@ fun PrepareScreen(
             AntIcons.Settings,
             contentDescription = stringResource(R.string.settings_open),
             onClick = onOpenSettings,
-            modifier = Modifier.testTag("prepare_settings"),
+            modifier = Modifier.tourAnchor("prepare_settings").testTag("prepare_settings"),
           )
         },
       )
@@ -167,15 +170,20 @@ fun PrepareScreen(
         .padding(AntTheme.spacing.base),
       verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
     ) {
-      ScaleCard(ui.card, actions)
+      ScaleCard(ui.card, actions, Modifier.tourAnchor("scale_card"))
       TargetSelectRow(
         ui.target,
         enabled = true,
         onClick = { pickerOpen = true },
-        modifier = Modifier.testTag("prepare_recipe"),
+        modifier = Modifier.tourAnchor("prepare_recipe").testTag("prepare_recipe"),
         label = stringResource(R.string.prepare_recipe),
       )
-      CoffeeSelectRow(ui.coffee, enabled = true, onClick = { coffeePickerOpen = true }, modifier = Modifier.testTag("prepare_coffee"))
+      CoffeeSelectRow(
+        ui.coffee,
+        enabled = true,
+        onClick = { coffeePickerOpen = true },
+        modifier = Modifier.tourAnchor("prepare_coffee").testTag("prepare_coffee"),
+      )
       DoseCard(
         ui,
         viewModel,
@@ -193,6 +201,7 @@ fun PrepareScreen(
         onAddGrinder = onAddGrinder,
         onFix = onFixGrinder,
         onOpenConverter = onOpenConverter,
+        modifier = Modifier.tourAnchor("grind_card"),
       )
       Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
         AntButton(
@@ -202,7 +211,7 @@ fun PrepareScreen(
             viewModel.startSession()
             onStart()
           },
-          modifier = Modifier.fillMaxWidth().testTag("prepare_start"),
+          modifier = Modifier.fillMaxWidth().tourAnchor("prepare_start").testTag("prepare_start"),
           type = AntButtonType.Primary,
           size = AntSize.Large,
           enabled = ui.canStart,
@@ -222,13 +231,16 @@ fun PrepareScreen(
             viewModel.startScalelessSession()
             onStart()
           },
-          modifier = Modifier.fillMaxWidth().testTag("prepare_start_scaleless"),
+          modifier = Modifier.fillMaxWidth().tourAnchor("prepare_start_scaleless").testTag("prepare_start_scaleless"),
           size = AntSize.Large,
           enabled = canStartScaleless(ui.target != null, doseText, ratioText, recipeDoseText.takeIf { recipeDoseEditable }),
         )
       }
     }
   }
+
+  // El recorrido general (SPEC-008): señala la pantalla y, al final, las pestañas.
+  TourHost(Tours.prepare)
 
   if (sheetOpen) {
     ConnectionSheet(
@@ -302,7 +314,7 @@ private fun DoseCard(
   recipeDoseText: String?,
   onRecipeDoseText: (String) -> Unit,
 ) {
-  AntCard(Modifier.fillMaxWidth()) {
+  AntCard(Modifier.fillMaxWidth().tourAnchor("prepare_dose_card").testTag("prepare_dose_card")) {
     if (ui.target != null) {
       Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm)) {
         if (recipeDoseText != null) {

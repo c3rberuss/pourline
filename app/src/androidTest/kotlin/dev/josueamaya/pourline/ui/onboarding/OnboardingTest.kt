@@ -32,6 +32,7 @@ class OnboardingTest {
   @Before
   fun setUp() {
     env = TestAppDependencies(context)
+    env.skipTours()
   }
 
   @After

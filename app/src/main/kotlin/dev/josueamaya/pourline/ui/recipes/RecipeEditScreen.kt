@@ -61,6 +61,9 @@ import dev.josueamaya.pourline.ui.history.label
 import dev.josueamaya.pourline.ui.scale.BrewChart
 import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 @Composable
 fun RecipeEditScreen(
@@ -128,7 +131,7 @@ fun RecipeEditScreen(
         selected = form.method,
         onSelect = { m -> viewModel.update { it.copy(method = m) } },
         label = stringResource(R.string.recipe_edit_method),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().tourAnchor("recipe_edit_method"),
         testTag = "recipe_edit_method",
       )
       if (form.method == BrewMethod.OTHER) {
@@ -189,7 +192,7 @@ fun RecipeEditScreen(
       AntButton(
         text = stringResource(R.string.recipe_edit_add_stage),
         onClick = { viewModel.update { it.addStage() } },
-        modifier = Modifier.fillMaxWidth().testTag("recipe_add_stage"),
+        modifier = Modifier.fillMaxWidth().tourAnchor("recipe_add_stage").testTag("recipe_add_stage"),
         enabled = form.canAddStage,
         icon = AntIcons.Plus,
       )
@@ -224,6 +227,8 @@ fun RecipeEditScreen(
       }
     }
   }
+
+  TourHost(Tours.recipeEdit, ready = status != RecipeEditStatus.Loading)
 
   if (confirmDiscard) {
     AntModal(
@@ -274,7 +279,7 @@ private fun StageCard(
     AntSegmentedOption(StageType.SWIRL, stringResource(R.string.step_type_swirl), AntIcons.Swirl),
     AntSegmentedOption(StageType.WAIT, stringResource(R.string.step_type_wait), AntIcons.Wait),
   )
-  AntCard(Modifier.fillMaxWidth().testTag("recipe_stage_$index"), size = AntCardSize.Small) {
+  AntCard(Modifier.fillMaxWidth().tourAnchor("recipe_stage_0", enabled = index == 0).testTag("recipe_stage_$index"), size = AntCardSize.Small) {
     AntSegmented(
       options = typeOptions,
       selected = stage.type,
@@ -367,7 +372,7 @@ private fun Totals(form: RecipeEditForm) {
   } else {
     stringResource(R.string.recipe_edit_totals_water, formatGrams(water))
   }
-  AntText(text, Modifier.testTag("recipe_edit_totals"), type = AntTextType.Secondary)
+  AntText(text, Modifier.tourAnchor("recipe_edit_totals").testTag("recipe_edit_totals"), type = AntTextType.Secondary)
 }
 
 @Composable
@@ -381,7 +386,7 @@ private fun Preview(form: RecipeEditForm) {
     waterUnitLabel = unit.symbol,
     flowUnitLabel = stringResource(R.string.scale_flow_value, unit.symbol),
     description = stringResource(R.string.recipe_edit_preview),
-    modifier = Modifier.testTag("recipe_edit_preview"),
+    modifier = Modifier.tourAnchor("recipe_edit_preview").testTag("recipe_edit_preview"),
     target = curve,
   )
 }

@@ -21,6 +21,7 @@ import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.history.label
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 /**
  * Fila de una receta: nombre, método, "15 g · 250 g · 1:16,7 · 3 etapas" y las etiquetas "Predefinida" y,
@@ -28,7 +29,16 @@ import dev.josueamaya.pourline.ui.theme.AntTheme
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun RecipeRow(item: RecipeListItem, onClick: () -> Unit, modifier: Modifier = Modifier, active: Boolean = false) {
+fun RecipeRow(
+  item: RecipeListItem,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  active: Boolean = false,
+  /** La etiqueta "Predefinida" es el ancla del recorrido de Recetas: solo la de la primera predefinida de la lista. */
+  builtInAnchor: Boolean = false,
+  /** La etiqueta "Activa" es el ancla del recorrido de Recetas. */
+  activeAnchor: Boolean = false,
+) {
   AntCard(modifier.testTag("recipe_row"), size = AntCardSize.Small, onClick = onClick) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
       AntText(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -41,8 +51,8 @@ fun RecipeRow(item: RecipeListItem, onClick: () -> Unit, modifier: Modifier = Mo
           verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
           modifier = Modifier.fillMaxWidth(),
         ) {
-          if (item.builtIn) AntTag(stringResource(R.string.recipe_builtin_tag), Modifier.testTag("recipe_builtin_tag"))
-          if (active) AntTag(stringResource(R.string.recipe_active_tag), Modifier.testTag("recipe_active_tag"), color = AntTagColor.Primary)
+          if (item.builtIn) AntTag(stringResource(R.string.recipe_builtin_tag), Modifier.tourAnchor("recipe_builtin_tag", enabled = builtInAnchor).testTag("recipe_builtin_tag"))
+          if (active) AntTag(stringResource(R.string.recipe_active_tag), Modifier.tourAnchor("recipe_active_tag", enabled = activeAnchor).testTag("recipe_active_tag"), color = AntTagColor.Primary)
         }
       }
     }

@@ -23,6 +23,9 @@ import dev.josueamaya.pourline.ui.components.AntIcons
 import dev.josueamaya.pourline.ui.components.AntListItem
 import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 /** Raíz de la pestaña Herramientas: la calculadora de ratio, el generador 4:6 y el convertidor de molienda. */
 @Composable
@@ -31,6 +34,7 @@ fun ToolsScreen(
   onOpenFourSix: () -> Unit,
   onOpenConverter: () -> Unit,
 ) {
+  TourHost(Tours.tools)
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = { AntTopBar(title = stringResource(R.string.tools_title)) },
@@ -60,7 +64,7 @@ private fun ToolRow(icon: ImageVector, title: Int, description: Int, tag: String
   AntListItem(
     title = stringResource(title),
     description = stringResource(description),
-    modifier = Modifier.testTag(tag),
+    modifier = Modifier.tourAnchor(tag).testTag(tag),
     avatar = { Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp), tint = AntTheme.colors.textSecondary) },
     extra = { Icon(AntIcons.Right, contentDescription = null, modifier = Modifier.size(16.dp), tint = AntTheme.colors.textTertiary) },
     divider = divider,

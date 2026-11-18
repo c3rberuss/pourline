@@ -52,6 +52,7 @@ class SettingsScreenTest {
   private lateinit var recipes: RecipeRepository
   private var restoreCalls = 0
   private var grindersOpened = 0
+  private var replayCalls = 0
   private lateinit var grinderSettings: GrinderSettings
   private lateinit var grinders: GrinderRepository
 
@@ -81,6 +82,7 @@ class SettingsScreenTest {
             restoreCalls++
             recipes.restoreBuiltIns()
           },
+          onReplayTour = { replayCalls++ },
           onBack = {},
         )
       }
@@ -128,6 +130,12 @@ class SettingsScreenTest {
 
     rule.onNodeWithText(context.getString(R.string.theme_light)).performClick()
     assertEquals("LIGHT", testPrefs().getString(ThemeSettings.KEY_MODE, null))
+  }
+
+  @Test
+  fun theReplayRowCallsBack() {
+    rule.onNodeWithTag("settings_tour_replay").performScrollTo().performClick()
+    assertEquals(1, replayCalls)
   }
 
   @Test

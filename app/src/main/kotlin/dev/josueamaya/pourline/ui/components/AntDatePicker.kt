@@ -86,6 +86,7 @@ fun AntDatePicker(
     }
   }
   if (open) {
+    ReportModalPresence()
     val maxMillis = maxDate?.toUtcMillis()
     val selectable = remember(maxMillis) {
       object : SelectableDates {

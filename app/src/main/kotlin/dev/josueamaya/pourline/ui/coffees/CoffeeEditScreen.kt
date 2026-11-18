@@ -57,6 +57,9 @@ import dev.josueamaya.pourline.ui.components.showAntMessage
 import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 import java.time.LocalDate
 
 private const val NOTES_MIN_LINES = 3
@@ -129,7 +132,7 @@ fun CoffeeEditScreen(
           AntButton(
             text = stringResource(R.string.coffee_edit_save),
             onClick = viewModel::save,
-            modifier = Modifier.padding(end = AntTheme.spacing.xs).testTag("coffee_edit_save"),
+            modifier = Modifier.padding(end = AntTheme.spacing.xs).tourAnchor("coffee_edit_save").testTag("coffee_edit_save"),
             type = AntButtonType.Primary,
             size = AntSize.Small,
             enabled = ready && errors.isEmpty(),
@@ -159,14 +162,14 @@ fun CoffeeEditScreen(
             newCameraTarget = newCameraTarget,
             onPhoto = { open -> viewModel.addPhoto(slot, open) },
             onRemove = { viewModel.removePhoto(slot) },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).tourAnchor("coffee_photo_slot_1", enabled = slot == 1),
           )
         }
       }
       AntButton(
         text = stringResource(R.string.coffee_edit_read_label),
         onClick = viewModel::readLabel,
-        modifier = Modifier.fillMaxWidth().testTag("coffee_edit_read_label"),
+        modifier = Modifier.fillMaxWidth().tourAnchor("coffee_edit_read_label").testTag("coffee_edit_read_label"),
         icon = AntIcons.ScanText,
         enabled = (form.photo1 != null || form.photo2 != null) && photoBusy.isEmpty() && !ocrRunning,
         loading = ocrRunning,
@@ -184,6 +187,8 @@ fun CoffeeEditScreen(
       CoffeeFields(form, shown, suggestions, viewModel::update, viewModel::addVariety, viewModel::removeVariety, today)
     }
   }
+
+  TourHost(Tours.coffeeEdit, ready = ready)
 
   if (confirmDiscard) {
     AntModal(

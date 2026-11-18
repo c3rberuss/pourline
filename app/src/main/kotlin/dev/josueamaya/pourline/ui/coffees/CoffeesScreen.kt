@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -35,6 +36,10 @@ import dev.josueamaya.pourline.ui.components.AntSegmentedOption
 import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.theme.AntTheme
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.TourLazyAnchor
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 import java.time.LocalDate
 
 @Composable
@@ -65,6 +70,11 @@ private fun CoffeesContent(
   onOpenCoffee: (Long) -> Unit,
   onAddCoffee: () -> Unit,
 ) {
+  val listState = rememberLazyListState()
+  // La lista perezosa solo compone lo que se ve: estos pasos se declaran para que el recorrido los busque desplazando.
+  TourLazyAnchor("coffees_search", listState, present = true)
+  TourLazyAnchor("coffees_tabs", listState, present = true)
+  TourLazyAnchor("coffee_row", listState, present = !items.isNullOrEmpty())
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
@@ -80,7 +90,7 @@ private fun CoffeesContent(
             AntIcons.Plus,
             contentDescription = stringResource(R.string.coffees_add),
             onClick = onAddCoffee,
-            modifier = Modifier.testTag("coffees_add"),
+            modifier = Modifier.tourAnchor("coffees_add").testTag("coffees_add"),
           )
         },
       )
@@ -88,6 +98,7 @@ private fun CoffeesContent(
   ) { padding ->
     LazyColumn(
       Modifier.fillMaxSize().padding(padding).testTag("coffees_list"),
+      state = listState,
       contentPadding = PaddingValues(AntTheme.spacing.base),
       verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
     ) {
@@ -100,17 +111,22 @@ private fun CoffeesContent(
           ),
           selected = archived,
           onSelect = onArchivedChange,
-          modifier = Modifier.fillMaxWidth().testTag("coffees_tabs"),
+          modifier = Modifier.fillMaxWidth().tourAnchor("coffees_tabs").testTag("coffees_tabs"),
         )
       }
       val rows = items ?: return@LazyColumn
       if (rows.isEmpty()) {
         item(key = "empty") { EmptyState(query, archived, onAddCoffee) }
       } else {
-        items(rows, key = { it.id }) { item -> CoffeeRow(item, onClick = { onOpenCoffee(item.id) }) }
+        items(rows, key = { it.id }) { item ->
+          // Solo la primera fila es el ancla del paso "Un café".
+          val anchor = if (item.id == rows.first().id) Modifier.tourAnchor("coffee_row") else Modifier
+          CoffeeRow(item, onClick = { onOpenCoffee(item.id) }, modifier = anchor)
+        }
       }
     }
   }
+  TourHost(Tours.coffees, ready = items != null)
 }
 
 @Composable
@@ -118,7 +134,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
   AntInput(
     value = query,
     onValueChange = onQueryChange,
-    modifier = Modifier.fillMaxWidth().testTag("coffees_search"),
+    modifier = Modifier.fillMaxWidth().tourAnchor("coffees_search").testTag("coffees_search"),
     placeholder = stringResource(R.string.coffees_search_hint),
     prefix = { Icon(AntIcons.Search, contentDescription = null, modifier = Modifier.size(16.dp), tint = AntTheme.colors.textTertiary) },
     suffix = if (query.isEmpty()) {

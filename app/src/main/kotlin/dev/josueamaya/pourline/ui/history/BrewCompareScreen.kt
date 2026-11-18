@@ -54,6 +54,9 @@ import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.scale.formatDuration
 import dev.josueamaya.pourline.ui.scale.formatNumber
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.abs
@@ -103,6 +106,7 @@ fun BrewCompareScreen(viewModel: BrewCompareViewModel, onBack: () -> Unit, share
     }
   }
   launcher.Host()
+  TourHost(Tours.compare, ready = loaded != null)
 }
 
 /** La imagen de la comparación: la leyenda con el nombre y la fecha de cada una, y el pie con los cafés vinculados (D4). */
@@ -147,7 +151,7 @@ private fun CompareContent(a: BrewRecord, b: BrewRecord) {
     val xMaxMs = maxOf(a.summary.totalTimeMs, b.summary.totalTimeMs)
     val waterLabel = unit.symbol
     val flowLabel = stringResource(R.string.scale_flow_value, unit.symbol)
-    AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.compare_water_title)) {
+    AntCard(Modifier.fillMaxWidth().tourAnchor("compare_chart_water"), title = stringResource(R.string.compare_water_title)) {
       CompareChart(
         series, CompareKind.WATER, unit, xMaxMs, waterLabel,
         description = stringResource(R.string.compare_water_description, waterLabel),
@@ -168,7 +172,7 @@ private fun CompareContent(a: BrewRecord, b: BrewRecord) {
 /** A y B: un punto con su color, el nombre (o la fecha y hora) y el café. */
 @Composable
 private fun Legend(a: BrewRecord, b: BrewRecord, colors: CompareColors) {
-  AntCard(Modifier.fillMaxWidth().testTag("compare_legend")) {
+  AntCard(Modifier.fillMaxWidth().tourAnchor("compare_legend").testTag("compare_legend")) {
     LegendItem("A", a, colors.a, Modifier.testTag("compare_legend_a"))
     LegendItem("B", b, colors.b, Modifier.testTag("compare_legend_b"))
   }
@@ -188,7 +192,7 @@ private fun LegendItem(letter: String, record: BrewRecord, color: Color, modifie
 
 @Composable
 private fun CompareTable(rows: List<CompareRow>, unit: WeightUnit) {
-  AntCard(Modifier.fillMaxWidth().testTag("compare_table"), title = stringResource(R.string.compare_table_title)) {
+  AntCard(Modifier.fillMaxWidth().tourAnchor("compare_table").testTag("compare_table"), title = stringResource(R.string.compare_table_title)) {
     Row(Modifier.fillMaxWidth()) {
       Cell(null, Modifier.weight(LABEL_WEIGHT))
       Cell(stringResource(R.string.compare_column_a), Modifier.weight(1f), header = true)

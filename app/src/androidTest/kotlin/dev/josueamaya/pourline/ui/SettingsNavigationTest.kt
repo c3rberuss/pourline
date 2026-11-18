@@ -15,6 +15,7 @@ import dev.josueamaya.pourline.MainActivity
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.Tab
 import dev.josueamaya.pourline.settings.ExperienceMode
+import dev.josueamaya.pourline.ui.tour.Tours
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -45,7 +46,10 @@ class SettingsNavigationTest {
   private val skipOnboarding = TestRule { base: Statement, _: Description ->
     object : Statement() {
       override fun evaluate() {
-        (context.applicationContext as PourlineApp).experienceSettings.completeOnboarding(ExperienceMode.BASIC)
+        val app = context.applicationContext as PourlineApp
+        app.experienceSettings.completeOnboarding(ExperienceMode.BASIC)
+        // Sin recorridos: taparían las pantallas que estos tests recorren.
+        app.tourSettings.markSeen(Tours.allStepIds)
         base.evaluate()
       }
     }

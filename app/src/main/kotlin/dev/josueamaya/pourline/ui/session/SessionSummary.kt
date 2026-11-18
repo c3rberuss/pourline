@@ -44,6 +44,7 @@ import dev.josueamaya.pourline.ui.scale.formatNumber
 import dev.josueamaya.pourline.ui.scale.textRes
 import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 /**
  * El resumen de la sesión (D8), que sustituye al dial y a la lista en `Finished`. Básico: tiempo total, agua, dosis,
@@ -136,14 +137,14 @@ internal fun SessionSummary(
         AntButton(
           text = stringResource(R.string.summary_details),
           onClick = { (saved as? SavedBrew.Saved)?.let { onAddDetails(it.id) } },
-          modifier = Modifier.weight(1f).testTag("summary_details"),
+          modifier = Modifier.weight(1f).tourAnchor("summary_details").testTag("summary_details"),
           enabled = saved is SavedBrew.Saved,
         )
       }
       AntButton(
         text = stringResource(R.string.summary_share),
         onClick = onShare,
-        modifier = Modifier.weight(1f).testTag("summary_share"),
+        modifier = Modifier.weight(1f).tourAnchor("summary_share").testTag("summary_share"),
         icon = AntIcons.Share,
       )
     }
@@ -169,7 +170,8 @@ private fun ExpertSummary(ui: ScaleUiState, summary: BrewSummary, mode: Experien
   }
   val showReason = mode.shows(ExpertFeature.SUMMARY_FINISH_REASON)
   if (!showFlow && !showStability && fit == null && !showReason) return
-  AntCard(Modifier.fillMaxWidth().testTag("summary_expert")) {
+  // El paso "Métricas" habla de flujo, estabilidad y curva objetivo: sin báscula no hay nada de eso que resaltar.
+  AntCard(Modifier.fillMaxWidth().tourAnchor("summary_expert", enabled = !ui.scaleless).testTag("summary_expert")) {
     if (showFlow) {
       Row(Modifier.fillMaxWidth()) {
         AntStatistic(

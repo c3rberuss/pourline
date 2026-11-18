@@ -112,6 +112,8 @@ import dev.josueamaya.pourline.ui.scale.levelText
 import dev.josueamaya.pourline.ui.scale.tagColor
 import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 import kotlinx.coroutines.flow.flowOf
 
 private const val PREP_STEPS = 4
@@ -191,6 +193,8 @@ fun SessionScreen(
         title = ui.target?.name ?: stringResource(R.string.session_title_free),
         onClose = ::leave,
         onOptions = { optionsOpen = true },
+        // Sin anclas durante la cuenta regresiva ni el vertido: la sesión activa no actualiza el registro (D27).
+        anchors = phase is BrewPhase.Armed && !countingDown,
       )
     },
     snackbarHost = { AntMessageHost(snackbar) },
@@ -230,6 +234,10 @@ fun SessionScreen(
   }
 
   launcher.Host()
+
+  // El resumen espera al guardado: "Añadir detalles" solo existe cuando la preparación está guardada (D27).
+  val summaryReady = phase !is BrewPhase.Finished || ui.savedBrew is SavedBrew.Saved || ui.savedBrew is SavedBrew.Failed
+  TourHost(sessionTour(ui), ready = summaryReady, enabled = sessionTourEnabled(ui))
 
   if (exitDialog) {
     AntChoiceModal(
@@ -284,9 +292,9 @@ fun SessionScreen(
   }
 }
 
-/** La barra de la sesión: X, el título (se recorta con elipsis) y ⋯. */
+/** La barra de la sesión: X, el título (se recorta con elipsis) y ⋯. Con [anchors], las dos son anclas del recorrido. */
 @Composable
-internal fun SessionTopBar(title: String, onClose: () -> Unit, onOptions: () -> Unit) {
+internal fun SessionTopBar(title: String, onClose: () -> Unit, onOptions: () -> Unit, anchors: Boolean = false) {
   AntTopBar(
     title = title,
     navigationIcon = {
@@ -294,7 +302,7 @@ internal fun SessionTopBar(title: String, onClose: () -> Unit, onOptions: () -> 
         AntIcons.Close,
         contentDescription = stringResource(R.string.session_close),
         onClick = onClose,
-        modifier = Modifier.testTag("session_close"),
+        modifier = Modifier.tourAnchor("session_close", enabled = anchors).testTag("session_close"),
       )
     },
     actions = {
@@ -302,7 +310,7 @@ internal fun SessionTopBar(title: String, onClose: () -> Unit, onOptions: () -> 
         AntIcons.More,
         contentDescription = stringResource(R.string.session_options),
         onClick = onOptions,
-        modifier = Modifier.testTag("session_options"),
+        modifier = Modifier.tourAnchor("session_options", enabled = anchors).testTag("session_options"),
       )
     },
   )
@@ -379,7 +387,7 @@ private fun PrepPanel(
     PrepStepper(prep.step)
     AntText(
       "${formatNumber(ui.weight, unit)} ${unit.symbol}",
-      Modifier.fillMaxWidth().padding(vertical = AntTheme.spacing.lg).testTag("prep_weight"),
+      Modifier.fillMaxWidth().padding(vertical = AntTheme.spacing.lg).tourAnchor("prep_weight").testTag("prep_weight"),
       style = AntTheme.typography.heading1.copy(fontSize = 56.sp, lineHeight = 64.sp, fontWeight = FontWeight.Light),
       textAlign = TextAlign.Center,
     )
@@ -427,7 +435,7 @@ private fun PrepButtons(step: PrepStep, ready: Boolean, hasWeight: Boolean, sess
       AntButton(
         stringResource(R.string.prep_tare),
         onClick = session::prepTare,
-        modifier = Modifier.weight(1f).testTag("prep_tare"),
+        modifier = Modifier.weight(1f).tourAnchor("prep_tare").testTag("prep_tare"),
         type = AntButtonType.Primary,
         size = AntSize.Large,
         enabled = ready,
@@ -472,7 +480,7 @@ private fun PrepStepper(current: PrepStep) {
   val colors = AntTheme.colors
   val description = stringResource(R.string.prep_stepper, current.ordinal + 1)
   Row(
-    Modifier.fillMaxWidth().testTag("prep_stepper").semantics { contentDescription = description },
+    Modifier.fillMaxWidth().tourAnchor("prep_stepper").testTag("prep_stepper").semantics { contentDescription = description },
     verticalAlignment = Alignment.CenterVertically,
   ) {
     PrepStep.entries.forEachIndexed { index, step ->

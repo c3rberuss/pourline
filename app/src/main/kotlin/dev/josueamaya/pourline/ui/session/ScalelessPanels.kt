@@ -36,6 +36,7 @@ import dev.josueamaya.pourline.ui.scale.formatNumber
 import dev.josueamaya.pourline.ui.scale.guideGrams
 import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 /**
  * La sesión sin báscula lista para empezar (SPEC-007 §3.4), en lugar de los pasos previos. Con receta, el primer paso y la
@@ -63,7 +64,7 @@ internal fun ScalelessReadyPanel(ui: ScaleUiState, onStart: () -> Unit) {
     AntButton(
       text = stringResource(R.string.prep_start_timer),
       onClick = onStart,
-      modifier = Modifier.fillMaxWidth().testTag("scaleless_start"),
+      modifier = Modifier.fillMaxWidth().tourAnchor("scaleless_start").testTag("scaleless_start"),
       type = AntButtonType.Primary,
       size = AntSize.Large,
     )
@@ -94,7 +95,7 @@ private fun PlanCard(ui: ScaleUiState) {
         value = water?.let { formatNumber(it, WeightUnit.GRAMS) } ?: empty,
         title = stringResource(R.string.brew_summary_total_water),
         suffix = water?.let { WeightUnit.GRAMS.symbol },
-        modifier = Modifier.weight(1f).testTag("scaleless_plan_water"),
+        modifier = Modifier.weight(1f).tourAnchor("scaleless_plan_water").testTag("scaleless_plan_water"),
       )
     }
   }

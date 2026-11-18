@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -60,6 +61,10 @@ import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.components.showAntMessage
 import dev.josueamaya.pourline.ui.theme.AntTheme
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.TourLazyAnchor
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 import java.time.LocalDate
 import kotlinx.coroutines.launch
 
@@ -101,7 +106,7 @@ fun CoffeeDetailScreen(
               onClick = {
                 launcher.share(ShareTarget.Coffee(detail.coffee.id), ShareContent.Coffee(detail.coffee.toShareData(detail.daysSinceRoast)))
               },
-              modifier = Modifier.testTag("coffee_detail_share"),
+              modifier = Modifier.tourAnchor("coffee_detail_share").testTag("coffee_detail_share"),
             )
           }
         },
@@ -153,6 +158,7 @@ fun CoffeeDetailScreen(
     }
   }
   launcher.Host()
+  TourHost(Tours.coffeeDetail, ready = detail != null)
 }
 
 @Composable
@@ -168,8 +174,14 @@ private fun DetailList(
   onOpenBrew: (Long) -> Unit,
 ) {
   val coffee = detail.coffee
+  val listState = rememberLazyListState()
+  // La lista perezosa solo compone lo que se ve: estos pasos se declaran para que el recorrido los busque desplazando.
+  TourLazyAnchor("coffee_detail_status", listState, present = coffee.roastDate != null || detail.stockG != null)
+  TourLazyAnchor("coffee_detail_log", listState, present = true)
+  TourLazyAnchor("coffee_detail_new_bag", listState, present = true)
   LazyColumn(
     Modifier.fillMaxSize().padding(padding).testTag("coffee_detail_list"),
+    state = listState,
     contentPadding = PaddingValues(AntTheme.spacing.base),
     verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
   ) {
@@ -206,7 +218,11 @@ private fun DetailList(
       item(key = "status") { StatusCard(detail) }
     }
     item(key = "log_header") {
-      Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs), verticalAlignment = Alignment.CenterVertically) {
+      Row(
+        Modifier.tourAnchor("coffee_detail_log").testTag("coffee_detail_log"),
+        horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
         AntTitle(stringResource(R.string.coffee_detail_log_title), level = 5)
         AntText(
           pluralStringResource(R.plurals.coffee_detail_log_count, detail.brews.size, detail.brews.size),
@@ -243,7 +259,7 @@ private fun DetailList(
           AntButton(
             stringResource(R.string.coffee_detail_new_bag),
             onNewBag,
-            Modifier.weight(1f).testTag("coffee_detail_new_bag"),
+            Modifier.weight(1f).tourAnchor("coffee_detail_new_bag").testTag("coffee_detail_new_bag"),
           )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
@@ -282,7 +298,7 @@ private fun Photos(photo1: String?, photo2: String?) {
 @Composable
 private fun StatusCard(detail: CoffeeDetail) {
   val coffee = detail.coffee
-  AntCard(Modifier.fillMaxWidth().testTag("coffee_detail_status")) {
+  AntCard(Modifier.fillMaxWidth().tourAnchor("coffee_detail_status").testTag("coffee_detail_status")) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.base)) {
       detail.daysSinceRoast?.let { days ->
         AntStatistic(days.toString(), Modifier.weight(1f).testTag("coffee_detail_days"), title = stringResource(R.string.coffee_detail_days))

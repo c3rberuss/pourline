@@ -1,5 +1,8 @@
 package dev.josueamaya.pourline.ui.recipes
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -35,6 +38,7 @@ class RecipesScreenTest {
   private lateinit var repository: RecipeRepository
   private var opened: Long? = null
   private var created = 0
+  private var activeId by mutableStateOf<Long?>(null)
 
   @Before
   fun setUp() {
@@ -43,7 +47,7 @@ class RecipesScreenTest {
     val viewModel = RecipesViewModel(repository)
     rule.setContent {
       PourlineTheme(darkTheme = false) {
-        RecipesScreen(viewModel, onBack = {}, onOpenRecipe = { opened = it }, onCreateRecipe = { created++ })
+        RecipesScreen(viewModel, onBack = {}, onOpenRecipe = { opened = it }, onCreateRecipe = { created++ }, activeRecipeId = activeId)
       }
     }
   }
@@ -73,6 +77,18 @@ class RecipesScreenTest {
       context.resources.getQuantityString(R.plurals.recipe_stage_count, 3, 3),
     )
     rule.onNodeWithText(summary).assertIsDisplayed()
+  }
+
+  @Test
+  fun theActiveRecipeIsTagged() {
+    waitForRows(2)
+    rule.onAllNodesWithTag("recipe_active_tag", useUnmergedTree = true).assertCountEquals(0)
+
+    val second = ids()[1]
+    rule.runOnUiThread { activeId = second }
+
+    rule.waitUntil(5_000) { rule.onAllNodesWithTag("recipe_active_tag", useUnmergedTree = true).fetchSemanticsNodes().size == 1 }
+    rule.onNodeWithText(context.getString(R.string.recipe_active_tag)).assertIsDisplayed()
   }
 
   @Test

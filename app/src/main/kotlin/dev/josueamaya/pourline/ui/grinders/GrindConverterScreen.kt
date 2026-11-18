@@ -47,6 +47,9 @@ import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.components.showAntMessage
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 /**
  * El convertidor suelto (§3.7): molino de origen y ajuste, y una fila por cada molino mío con su equivalente. Si el origen
@@ -76,6 +79,7 @@ fun GrindConverterScreen(
   var pickerOpen by rememberSaveable { mutableStateOf(false) }
   val texts = rememberGrindTexts()
 
+  TourHost(Tours.converter, ready = state != null)
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     snackbarHost = { AntMessageHost(snackbar) },
@@ -96,7 +100,7 @@ fun GrindConverterScreen(
       AntSelectTrigger(
         value = ui.source?.displayName,
         onClick = { pickerOpen = true },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().tourAnchor("converter_source"),
         label = stringResource(R.string.converter_source),
         placeholder = stringResource(R.string.converter_source_placeholder),
         testTag = "converter_source",
@@ -134,7 +138,15 @@ fun GrindConverterScreen(
         ui.rows.isEmpty() -> Hint(stringResource(R.string.converter_no_others), "converter_no_others")
         else -> {
           AntCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp)) {
-            ui.rows.forEach { row -> ConverterRowItem(row, texts, onFix, onCorrect = { viewModel.correct(row) }) }
+            ui.rows.forEachIndexed { i, row ->
+              ConverterRowItem(
+                row,
+                texts,
+                onFix,
+                onCorrect = { viewModel.correct(row) },
+                modifier = Modifier.tourAnchor("converter_row", enabled = i == 0),
+              )
+            }
           }
           GrindAttribution(
             listOfNotNull(ui.source) + ui.rows.map { it.grinder },
@@ -183,12 +195,18 @@ private fun Hint(text: String, tag: String) {
  * de "Sin equivalencia". El arreglo `ADD_CALIBRATION` solo se ofrece cuando no hay botón, que ya hace lo mismo.
  */
 @Composable
-private fun ConverterRowItem(row: ConverterRow, texts: GrindTexts, onFix: (GrindFix, Long) -> Unit, onCorrect: () -> Unit) {
+private fun ConverterRowItem(
+  row: ConverterRow,
+  texts: GrindTexts,
+  onFix: (GrindFix, Long) -> Unit,
+  onCorrect: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
   val grinder = row.grinder
   val noEquivalent = row.conversion == Conversion.NoEquivalent
   AntListItem(
     title = grinder.displayName,
-    modifier = Modifier.testTag("converter_row_${grinder.id}"),
+    modifier = modifier.testTag("converter_row_${grinder.id}"),
     extra = {
       Column(horizontalAlignment = Alignment.End) {
         Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs), verticalAlignment = Alignment.CenterVertically) {

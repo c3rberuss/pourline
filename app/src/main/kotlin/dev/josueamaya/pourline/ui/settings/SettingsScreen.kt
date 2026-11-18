@@ -54,11 +54,15 @@ import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.components.showAntMessage
 import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
 import kotlinx.coroutines.launch
 
 /**
  * Recibe los ajustes por parámetro (sin `CompositionLocal`) para poder probarla aislada.
- * [onRestoreRecipes] devuelve las recetas predefinidas a fábrica, tras confirmar; [onOpenGrinders] abre Molinos. Con [onBack] `null` (es una
+ * [onRestoreRecipes] devuelve las recetas predefinidas a fábrica, tras confirmar; [onOpenGrinders] abre Molinos;
+ * [onReplayTour] borra los recorridos vistos y vuelve a Preparar. Con [onBack] `null` (es una
  * pestaña) no hay flecha de volver.
  */
 @Composable
@@ -71,6 +75,7 @@ fun SettingsScreen(
   grinderDefaults: DefaultGrinderStore,
   onRestoreRecipes: suspend () -> Unit,
   onOpenGrinders: () -> Unit,
+  onReplayTour: () -> Unit,
   onBack: (() -> Unit)?,
 ) {
   val autoFinish by settings.autoFinishSeconds.collectAsStateWithLifecycle()
@@ -111,7 +116,7 @@ fun SettingsScreen(
           ),
           selected = experience,
           onSelect = experienceSettings::setMode,
-          modifier = Modifier.fillMaxWidth().testTag("settings_mode"),
+          modifier = Modifier.fillMaxWidth().tourAnchor("settings_mode").testTag("settings_mode"),
         )
         AntText(
           stringResource(if (experience == ExperienceMode.BASIC) R.string.mode_basic_hint else R.string.mode_expert_hint),
@@ -123,7 +128,7 @@ fun SettingsScreen(
           options = ThemeMode.entries.map { AntSegmentedOption(it, stringResource(it.labelRes), it.icon) },
           selected = theme,
           onSelect = themeSettings::setMode,
-          modifier = Modifier.fillMaxWidth().testTag("settings_theme"),
+          modifier = Modifier.fillMaxWidth().tourAnchor("settings_theme").testTag("settings_theme"),
         )
         AntText(stringResource(R.string.theme_hint), type = AntTextType.Secondary)
       }
@@ -148,7 +153,7 @@ fun SettingsScreen(
           },
           selected = countdown,
           onSelect = settings::setCountdownSeconds,
-          modifier = Modifier.fillMaxWidth().testTag("settings_countdown"),
+          modifier = Modifier.fillMaxWidth().tourAnchor("settings_countdown").testTag("settings_countdown"),
         )
         AntText(stringResource(R.string.settings_countdown_hint), type = AntTextType.Secondary)
       }
@@ -158,6 +163,7 @@ fun SettingsScreen(
           checked = vibration,
           onCheckedChange = targetSettings::setStageVibration,
           tag = "settings_stage_vibration",
+          anchor = true,
         )
         SwitchRow(
           label = stringResource(R.string.settings_stage_sound),
@@ -166,6 +172,7 @@ fun SettingsScreen(
           tag = "settings_stage_sound",
         )
       }
+      ReplayTourRow(onReplayTour)
       if (experience.shows(ExpertFeature.RESTORE_BUILT_INS)) {
         AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.settings_recipes_title)) {
           AntButton(
@@ -177,6 +184,8 @@ fun SettingsScreen(
       }
     }
   }
+
+  TourHost(Tours.settings)
 
   if (confirmRestore) {
     AntModal(
@@ -211,14 +220,30 @@ private val ThemeMode.icon: ImageVector
   }
 
 @Composable
-private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit, tag: String) {
+private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit, tag: String, anchor: Boolean = false) {
   Row(
-    Modifier.fillMaxWidth(),
+    // El hueco del recorrido cubre la fila entera (texto e interruptor), no solo el interruptor.
+    Modifier.fillMaxWidth().tourAnchor(tag, enabled = anchor),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
   ) {
     AntText(label, Modifier.weight(1f))
     AntSwitch(checked, onCheckedChange, Modifier.testTag(tag))
+  }
+}
+
+/** La fila "Ver recorrido": vuelve a mostrar los recorridos de todas las pantallas. */
+@Composable
+private fun ReplayTourRow(onReplay: () -> Unit) {
+  AntCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp)) {
+    AntListItem(
+      title = stringResource(R.string.settings_tour_replay),
+      description = stringResource(R.string.settings_tour_replay_hint),
+      modifier = Modifier.tourAnchor("settings_tour_replay").testTag("settings_tour_replay"),
+      extra = { Icon(AntIcons.Right, contentDescription = null, modifier = Modifier.size(16.dp), tint = AntTheme.colors.textTertiary) },
+      divider = false,
+      onClick = onReplay,
+    )
   }
 }
 
@@ -240,7 +265,7 @@ private fun GrindersRow(repository: GrinderRepository, defaults: DefaultGrinderS
     AntListItem(
       title = stringResource(R.string.settings_grinders),
       description = description,
-      modifier = Modifier.testTag("settings_grinders"),
+      modifier = Modifier.tourAnchor("settings_grinders").testTag("settings_grinders"),
       avatar = { Icon(AntIcons.Grinder, contentDescription = null, modifier = Modifier.size(24.dp), tint = AntTheme.colors.textSecondary) },
       extra = { Icon(AntIcons.Right, contentDescription = null, modifier = Modifier.size(16.dp), tint = AntTheme.colors.textTertiary) },
       divider = false,

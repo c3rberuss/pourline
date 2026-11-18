@@ -49,11 +49,14 @@ import dev.josueamaya.pourline.settings.LocalExperienceMode
 import dev.josueamaya.pourline.settings.TargetSettings
 import dev.josueamaya.pourline.settings.ThemeMode
 import dev.josueamaya.pourline.settings.ThemeSettings
+import dev.josueamaya.pourline.settings.TourSettings
 import dev.josueamaya.pourline.sim.SimulatedScaleConnection
 import dev.josueamaya.pourline.tools.ResourcesFourSixTexts
 import dev.josueamaya.pourline.ui.coffees.FakeLabelOcr
 import dev.josueamaya.pourline.ui.scale.SilentNotifier
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
+import dev.josueamaya.pourline.ui.tour.Tour
+import dev.josueamaya.pourline.ui.tour.Tours
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -166,6 +169,7 @@ class TestAppDependencies(
   val targetSettings = TargetSettings(context, PREFS)
   val themeSettings = ThemeSettings(context, PREFS)
   val experienceSettings = ExperienceSettings(context, PREFS)
+  val tourSettings = TourSettings(context, PREFS)
   val connectionSettings = ConnectionSettings(context, PREFS)
   val brews = BrewRepository(db)
   val photoStore = CoffeePhotoStore(photosDir, context.cacheDir)
@@ -214,6 +218,7 @@ class TestAppDependencies(
     targetSettings = targetSettings,
     themeSettings = themeSettings,
     experienceSettings = experienceSettings,
+    tourSettings = tourSettings,
     freeBrewDefaults = brewSettings,
     scaleMemory = connectionSettings,
     brewRepository = brews,
@@ -239,9 +244,20 @@ class TestAppDependencies(
     GrinderCatalogSeeder(db.grinderDao(), { json }, grinderSettings, grinderSettings).sync()
   }
 
-  /** Marca el primer arranque como hecho (sin esto aparece la elección de modo). */
-  fun skipOnboarding(mode: ExperienceMode = ExperienceMode.BASIC) =
+  /**
+   * Marca el primer arranque como hecho (sin esto aparece la elección de modo) y apaga los recorridos guiados, salvo los
+   * de [showTours]: los tests que los prueban dejan pendientes solo esos.
+   */
+  fun skipOnboarding(mode: ExperienceMode = ExperienceMode.BASIC, showTours: Collection<Tour> = emptyList()) {
     experienceSettings.completeOnboarding(mode)
+    skipTours(except = showTours)
+  }
+
+  /** Marca como vistos todos los pasos de los recorridos, menos los de [except]. */
+  fun skipTours(except: Collection<Tour> = emptyList()) {
+    val shown = except.flatMap { tour -> tour.steps.map { it.id } }.toSet()
+    tourSettings.markSeen(Tours.allStepIds - shown)
+  }
 
   fun close() {
     scaleSession.disconnect()
