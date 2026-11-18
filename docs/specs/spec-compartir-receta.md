@@ -2,9 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado. Plan aprobado: [`plan-compartir-receta.md`](plan-compartir-receta.md). En implementación |
-| Fecha | 2026-11-17 |
-| Rama | `feat/share-recipe`, desde `develop` (`e64330a`) |
+| Estado | Implementado y fusionado a `develop` (2026-11-18, `bbc96aa`). Plan: [`plan-compartir-receta.md`](plan-compartir-receta.md). **Enmienda 1** (QR grande): Aprobado (2026-11-18). Plan aprobado: [`plan-qr-grande.md`](plan-qr-grande.md) (P1-P3 con la propuesta del plan). En implementación |
+| Fecha | 2026-11-17. Enmienda 1: 2026-11-18 |
+| Rama | `feat/share-recipe`, desde `develop` (`e64330a`). Enmienda 1: `feat/share-recipe-large-qr`, desde `develop` (`bbc96aa`) |
+| Enmienda 1 | El QR deja de tener una caja fija de 432 px: cada módulo mide 6 px exactos y la caja crece con la versión del QR, lo que sube `MAX_URI_LENGTH` de 331 a 700. El QR pasa a una franja propia al final de la tarjeta y el alto de la tarjeta se ajusta al contenido. Si aun así no cabe, las instrucciones se recortan de una en una desde el último paso, no todas de golpe. Cambia §3.1, §3.2, §3.3, §3.4, §3.6, §4, §5, §6 y §7. Motivo: la receta 4:6 generada por la app (10 pasos, con notas e instrucciones) ocupa 450 caracteres y perdía notas e instrucciones al compartirse |
 | Deriva de | [SPEC-004](spec-catalogo-cafes.md) (alcance Out: "Compartir como texto o como archivo importable por otra instalación") |
 | Módulos afectados | `:app`: `recipe` (nuevo códec), `share` (nueva tarjeta y QR), `ui/recipes` (compartir, importar, vista previa), `grinder` (resolución de molienda), `MainActivity` y manifiesto (intents de entrada), navegación |
 | Specs relacionados | [SPEC-003](spec-curva-objetivo.md) (recetas), [SPEC-004](spec-catalogo-cafes.md) (imágenes para compartir), [SPEC-005](spec-navegacion-modos.md) (pestañas y modos), [SPEC-006](spec-molinos.md) (molinos y conversión) |
@@ -82,6 +83,8 @@
     fiable con URI de hasta unos 331 caracteres.
   - Con JSON, una receta de 20 pasos sin textos ocupaba entre 430 y 490 caracteres.
   - El binario la deja en torno a 200.
+  - **Enmienda 1:** el límite real no era la capacidad del QR, sino el tamaño en píxeles de cada
+    módulo. Con módulos de 6 px exactos el QR se lee 20 de 20 hasta 700 caracteres (§3.3, §6).
 - **Primitivas del payload `v=1`:**
   - `uvar`: entero sin signo en LEB128 (7 bits por byte, el bit alto indica que sigue otro byte).
   - `svar`: entero con signo en zigzag sobre `uvar`.
@@ -202,15 +205,26 @@
   - Se mide sobre la longitud del URI: `MAX_URI_LENGTH`.
   - El plan fija su valor con el test de legibilidad (§5): el QR de un URI de esa longitud tiene que
     leerse tras reducir la imagen a la mitad y recomprimirla en JPEG calidad 70.
-- **Orden del recorte**, que se detiene en cuanto el URI cabe:
+  - **Enmienda 1:** `MAX_URI_LENGTH = 700` (QR versión 21, corrección M), con el QR dibujado a 6 px
+    por módulo (§3.3). Medido el 2026-11-18 en `emulator-5560` con el lector de Play Services:
+    20 de 20 tal cual y 20 de 20 reducido y en JPEG 70 para 600, 650 y 700 caracteres; a 750 ya
+    falla 1 de 20.
+- **Orden del recorte** (reescrito por la enmienda 1), que se detiene en cuanto el URI cabe:
   1. Receta completa.
   2. Sin las notas.
-  3. Además, sin las instrucciones de los pasos.
-  4. Además, sin los nombres de los pasos.
+  3. Además, sin la instrucción del último paso que la tenga; se repite, de un paso en uno hacia el
+     primero, hasta que cabe o no queda ninguna instrucción.
+  4. Además, sin los nombres de los pasos (todos a la vez).
   5. Si aún no cabe, `encode` devuelve `null` (§4).
 
-  Lo quitado se anota en los bits 5-7 de `flags`. Pasos, tiempos, agua, dosis, temperatura, método
-  y molienda nunca se recortan.
+  Lo quitado se anota en los bits 5-7 de `flags`: el bit 6 vale 1 si se quitó al menos una
+  instrucción. El formato `v=1` no cambia y las apps ya instaladas leen estos QR. Pasos, tiempos,
+  agua, dosis, temperatura, método y molienda nunca se recortan.
+- **Recorte parcial de instrucciones (enmienda 1):** quien comparte y quien importa distinguen si
+  faltan todas las instrucciones o solo algunas.
+  - Al compartir, `encode` informa cuántas instrucciones quitó. El plan decide cómo se refleja en
+    `EncodedRecipe`; `TrimmedPart.INSTRUCTIONS` sigue indicando que se quitó al menos una.
+  - Al importar, "algunas" es: bit 6 a 1 y al menos un paso decodificado con instrucción.
 - **`decode`:**
   - Acepta el URI exacto y también con espacios alrededor.
   - Rechaza esquema distinto de `pourline` o host distinto de `recipe`.
@@ -223,9 +237,10 @@
 
 - **Marco:** reutiliza `ShareFrame`, `ShareCaptureHost`, el PNG en `cacheDir/shared/`, `FileProvider`
   y `ShareSender` (SPEC-004, D30).
-- **Tamaño:**
-  - 360 × 450 dp (1080 × 1350 px, `SHARE_SIZE`) si caben todos los pasos.
-  - Si no caben, crece a 360 × 640 dp (1080 × 1920 px, 9:16).
+- **Tamaño** (reescrito por la enmienda 1):
+  - Ancho fijo de 360 dp (1080 px a `SHARE_DENSITY` = 3).
+  - Alto ajustado al contenido, con un mínimo de 450 dp (1080 × 1350 px, 4:5). Sustituye a los dos
+    tamaños fijos (4:5 hasta 10 pasos y 9:16 desde 11) y a `RECIPE_CARD_COMPACT_MAX_STAGES`.
   - Todos los pasos se muestran siempre.
 - **Contenido:**
   - **Cabecera:** nombre y método. Con `OTHER`, el texto de `methodOther`.
@@ -234,10 +249,16 @@
     muestran.
   - **Pasos:** una fila compacta por paso con el tipo, el nombre si hay, el inicio (`m:ss`), la
     duración y el agua acumulada (solo en `POUR`). Usa los formateadores de `RecipeFormatters`.
-  - **QR:**
-    - Ocupa al menos el 40 % del ancho: 144 dp, es decir 432 px.
+  - **QR** (reescrito por la enmienda 1):
+    - Va en una franja propia al final de la tarjeta, debajo de los pasos y encima del pie,
+      centrado y con el texto "Escanéalo con Pourline para añadir esta receta" debajo.
+    - La cabecera (nombre, método y datos) ocupa todo el ancho, porque el QR ya no va a su lado.
+    - Cada módulo mide exactamente 2 dp, es decir 6 px enteros, sin antialias. La caja mide
+      `(módulos + 8) × 6` px, zona de silencio de 4 módulos por lado incluida: unos 462 px en
+      versión 13 y 654 px en versión 21, el máximo con `MAX_URI_LENGTH`.
     - Se dibuja en negro sobre blanco, también con tema oscuro.
-    - Lleva el texto "Escanéalo con Pourline para añadir esta receta".
+  - **Orden:** cabecera, datos, pasos, franja del QR y pie. Sin QR (`encode` devolvió `null`), la
+    franja no aparece.
   - **Pie:** el de las otras tarjetas.
 - **Unidad e idioma:**
   - Pesos siempre en gramos, igual que las recetas en el resto de la app. `WeightUnit` es la
@@ -257,7 +278,8 @@
 3. Según el resultado:
    - `trimmed` no vacío: diálogo "Esta receta es muy larga para el QR. Al importarla faltarán …",
      con la lista de lo recortado ("las notas", "las instrucciones de los pasos", "los nombres de
-     los pasos"). Botones Compartir y Cancelar.
+     los pasos"). Botones Compartir y Cancelar. Si solo se quitaron algunas instrucciones, el texto
+     es "las instrucciones de algunos pasos" (enmienda 1).
    - `null`: diálogo "Esta receta es demasiado larga para importarse con QR. Se compartirá solo la
      imagen.", con Compartir y Cancelar. La tarjeta se genera sin QR y sin el texto del QR.
 4. Se genera el PNG y se abre el selector con `ACTION_SEND` (`image/png`) a través de `ShareSender`.
@@ -298,7 +320,8 @@
   - Los mismos datos y pasos que la tarjeta, más las notas y las instrucciones de los pasos.
   - Pesos en gramos.
 - **Avisos** (`AntMessage` o tarjeta de aviso, encima del contenido):
-  - Con `trimmed` no vacío: "La receta original tenía … que no cupieron en el QR".
+  - Con `trimmed` no vacío: "La receta original tenía … que no cupieron en el QR". Con recorte
+    parcial de instrucciones (§3.2), dice "instrucciones de algunos pasos" (enmienda 1).
   - Si es **idéntica** a una receta existente: "Ya tienes esta receta". No bloquea el guardado.
     - Idéntica significa: mismo nombre (comparado sin mayúsculas ni espacios extremos), misma dosis,
       mismo método, misma temperatura y mismos pasos (tipo, nombre, inicio, duración, agua de
@@ -393,6 +416,10 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
   inválidos…) -> `Invalid` -> "La receta del QR no es válida". No se abre la vista previa.
 - **`BrewMethod` desconocido en `v=1`** -> `Corrupt`. Un método nuevo exige `v=2` (§3.1).
 - **Receta que no cabe ni recortando** -> se comparte la imagen sin QR, con aviso previo (§3.4).
+- **Receta que no pasa `RecipeValidator` al compartir** -> hoy `encode` devuelve `null` y se muestra
+  el mismo aviso de "demasiado larga". Con la enmienda 1, el aviso distingue los dos casos: si la
+  receta guardada no es válida, "Esta receta tiene datos no válidos y no se puede importar con QR.
+  Se compartirá solo la imagen."
 - **Fallo al generar la imagen** -> `AntMessage` de error y no se abre el selector, como en
   SPEC-004.
 - **Escáner no disponible** (sin Google Play Services, o módulo sin descargar y sin conexión) ->
@@ -426,13 +453,19 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
 - [ ] El icono "Compartir" del editor genera una imagen con la receta completa y un QR, y abre el
       selector con `ACTION_SEND` `image/png`, en los modos Básico y Experto y también con recetas
       predefinidas.
-- [ ] La imagen mide 1080 × 1350 px, o 1080 × 1920 px si no caben los pasos, y muestra todos los
-      pasos de una receta de 20.
+- [ ] La imagen mide 1080 px de ancho y al menos 1350 px de alto, crece con el contenido y muestra
+      todos los pasos y el QR de una receta de 20 pasos con el URI en `MAX_URI_LENGTH` (enmienda 1).
+- [ ] **Enmienda 1:** en el PNG generado, cada módulo del QR mide 6 × 6 px exactos y la caja mide
+      `(módulos + 8) × 6` px. Lo comprueba un test instrumentado leyendo los píxeles.
+- [ ] **Enmienda 1:** la receta 4:6 equilibrada e intensidad media de 18,8 g, con molino del catálogo
+      (la que se recortaba en el Xiaomi), se comparte sin recortar nada.
 - [ ] **Unitario:** ida y vuelta. `decode(encode(r))` reproduce nombre, método, `methodOther`, dosis,
       temperatura, notas y pasos (tipo, nombre, inicio, duración, agua e instrucción) de las
       predefinidas y de una receta con todos los campos.
-- [ ] **Unitario:** recorte en orden notas → instrucciones → nombres de paso, con los bits de
-      recorte y `trimmed` correctos. `null` solo cuando ni el recorte completo cabe.
+- [ ] **Unitario:** recorte en orden notas → instrucciones de una en una desde el último paso →
+      nombres de paso, con los bits de recorte y `trimmed` correctos. Se quitan solo las
+      instrucciones necesarias. `null` solo cuando ni el recorte completo cabe (enmienda 1).
+- [ ] **Unitario:** una receta inválida y una que no cabe dan avisos distintos (enmienda 1).
 - [ ] **Unitario:** `NotPourline`, `NewerVersion`, `Corrupt` (base64, deflate, binario
       truncado, bytes sobrantes, bit o código desconocido) e `Invalid`.
 - [ ] **Unitario:** resolución de molienda en los tres casos (mismo molino por `catalogKey` y por
@@ -485,6 +518,18 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
       lector de Play Services. La receta de 20 pasos de peor caso queda en 231 a 267.
     - La tarjeta es 4:5 (1080 × 1350) hasta `RECIPE_CARD_COMPACT_MAX_STAGES` = 10 pasos y 9:16
       (1080 × 1920) a partir de 11.
+  - **Enmienda 1, medición previa (2026-11-18, `emulator-5560`, `QrLegibilityTest#sweep`):**
+    - Con caja fija, la lectura tras reducir al 50 % y JPEG 70 es irregular. A 720 px, por ejemplo,
+      500 caracteres dan 3 de 5 y 600 dan 5 de 5. La causa es que el módulo mide un número no entero
+      de píxeles.
+    - Con módulos de píxeles enteros: a 4 px se pierden lecturas desde 400 caracteres. A 6 px, 20 de
+      20 hasta 700 y 19 de 20 a 750. A 8 px, 20 de 20 de 650 a 900, pero con una caja de hasta 968 px.
+    - Se eligen 6 px y 700 caracteres.
+  - **Enmienda 1, riesgo:** la muestra es de 20 URIs aleatorias por longitud y en un solo emulador.
+    El plan vuelve a medir con 20 muestras por longitud alrededor de `MAX_URI_LENGTH` sobre la
+    tarjeta real, y si falla alguna, baja el valor.
+  - **Al cerrar la enmienda 1:** anotar aquí el valor final de `MAX_URI_LENGTH` y el alto de la
+    tarjeta con la receta de peor caso.
 
 ## 7. Alternativas descartadas
 
@@ -497,5 +542,12 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
 - **Bloquear el QR si no cabe / limitar longitudes al editar:** se prefiere recortar textos y
   avisar, sin cambiar el editor.
 - **Abrir la vista previa encima de una sesión:** interrumpe la preparación.
+- **Códigos para los textos que genera la app (enmienda 1):** enviar un código en vez de las
+  instrucciones y notas de 4:6 y de las predefinidas. Bajaba la receta 4:6 a unos 150 caracteres,
+  pero exigía `v=2` y no ayudaba con los textos del usuario. El usuario eligió solo el QR grande.
+- **Módulos de 8 px y 900 caracteres (enmienda 1):** el QR ocuparía casi todo el ancho (hasta
+  968 px), y también en recetas cortas.
+- **Recortar todas las instrucciones de golpe:** era el comportamiento original. La enmienda 1 las
+  quita de una en una para conservar las que caben.
 - **Importar QR de versión futura ignorando campos:** podría crear recetas incompletas sin que el
   usuario lo sepa.
