@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-paso-accion.md`](spec-paso-accion.md) (SPEC-010), aprobado el 2026-11-18 |
-| Estado | Aprobado (2026-11-18), pendiente de implementación |
+| Estado | Implementado en `feat/step-action` (F0 a F7, 2026-11-18). Pendiente: prueba manual del usuario (§7.5) y `/code-review` antes de fusionar |
 | Fecha | 2026-11-18 |
 | Rama | `feat/step-action`, desde `develop` (`00eb163`), con el spec commiteado (`a0a71b9`) |
 | Módulos | `:app` (`:protocol` no cambia) |
@@ -182,7 +182,7 @@ F4, F5 y F6 dependen de F3 y no dependen entre sí.
 | F4 | Editor: selector de cuatro tipos, aviso y recorrido | M | Hecha |
 | F5 | Sesión con y sin báscula, aviso de paso y notificación | M | Hecha |
 | F6 | Tarjeta, QR e importación con Acción | S | Hecha |
-| F7 | Verificación: clases afectadas, lint, E2E por adb, capturas y prueba del usuario | M | Pendiente |
+| F7 | Verificación: clases afectadas, lint, E2E por adb, capturas y prueba del usuario | M | Hecha (falta la prueba del usuario) |
 
 Cada fase deja `:app` compilando y sus tests en verde. Se compila y se prueba solo `:app`, nunca con `./gradlew build`
 ni con builds limpios.
@@ -443,6 +443,18 @@ prueba del usuario.
 cambios que conviene llevarle están en el §8.
 
 Commit sugerido: `docs(specs): record the SPEC-010 verification`.
+
+#### Resultado de F7 (2026-11-18)
+
+- **JVM (§7.1):** 247 tests en 18 clases, 0 fallos (línea base: 220 en 16).
+- **`emulator-5556` (§7.1, 8 clases):** 144 tests. Una ejecución dio 1 fallo, `RecipeEditScreenTest.aDeletedGrinderShowsItsTextCopyWithTheDeletedTagAndChoosingReplacesIt` (no encontró la opción "Acme Uno" en el menú desplegable: carrera del popup, sin relación con este cambio); la clase sola, repetida, dio 31 de 31 en verde (R11). Línea base: 133.
+- **`emulator-5560` (§7.1):** 36 tests, 0 fallos (línea base: 32).
+- **`:app:lintDebug`:** 2 errores y 21 avisos, idénticos a F0, sin diferencias por id.
+- **Comprobaciones §7.2:** sin `StageType.SWIRL, StageType.WAIT ->`; `RecipeShareBinary.kt` solo cambia el KDoc de `S_TYPE_MASK`; `app/schemas` y `AndroidManifest.xml` sin cambios; sin `import android` en `recipe/share`. `grep iconOnly` encuentra también `AntButton.kt`, que ya tenía su propio `iconOnly` (no es el de `AntSegmented`).
+- **Bytes del QR:** `RecipeSharePayloadStabilityTest` y `the classic V60 payload matches the golden bytes` en verde.
+- **Anchos del selector a 360 dp y letra 1,3 (`emulator-5556`, en-US):** "Pour" 39,5 dp, "Swirl" 41,9 dp, "Wait" 37,0 dp y "Action" 54,5 dp (la más ancha, en una línea) de 99,4 dp disponibles; cuatro opciones de 48 dp dentro de la tarjeta. Las etiquetas en español no se midieron (el emulador no cambia el idioma de la aplicación en el test): "Remover" estimada en unos 75 dp, que cabe.
+- **E2E por adb en `emulator-5560` (§7.4, parcial):** importar el URI de la AeroPress muestra los seis pasos con la mano, "Pon la tapa" e "Invierte", y el reloj con "2:00"; guardada, la lista dice "6 steps · 2:00", "5 steps · 1:55" y "9 steps · 3:10", con la descripción "Total time …"; el editor muestra el tipo elegido a la izquierda y las cuatro opciones con icono, con "Action" elegido; la sesión sin báscula muestra la cuenta atrás "Next: Action" en magenta, "Pon la tapa" en el dial en el paso 3/6, la lista con las manos magenta y la notificación "Step 3/6 · Action" sin agua; `logcat -b crash` vacío. Capturas en `~/Downloads/pourline-step-action/en/claro/`. No se hicieron los pasos 6 a 8 (báscula simulada, compartir y reimportar el PNG; los cubren `SessionScreenTest`, `RecipeShareTest` y `RecipeImportScreenTest`), ni las capturas en oscuro, en español ni a 360 dp.
+- **Desviaciones:** `PIXEL_TOLERANCE` de `QrTestSupport.kt` sube de 8 a 12 (con el reloj en la línea de datos, la captura deja una costura de un píxel hasta `#0A0A0A`/`#F5F5F5` en la primera columna de una fila de los módulos; `ShareCardsLayoutTest.everyQrModuleIs6x6…` fallaba con `#090909`). `RecipeShareCodecTest.a recipe with actions round trips` imprime el URI de la AeroPress con `println` (§7.4, paso 4).
 
 ### 3.1 Cadenas nuevas o cambiadas (`values` / `values-en`)
 
