@@ -2,6 +2,7 @@ package dev.josueamaya.pourline.session
 
 import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.grinder.FakeGrindTexts
+import dev.josueamaya.pourline.grinder.ConversionReason
 import dev.josueamaya.pourline.grinder.GrindCalibration
 import dev.josueamaya.pourline.grinder.GrindOutcome
 import dev.josueamaya.pourline.grinder.GrindSetting
@@ -103,8 +104,24 @@ class GrindSelectionTest {
     selection.choose(2)
 
     val value = selection.state.value.outcome as GrindOutcome.Value
-    assertEquals(28.0, value.value, 0.0)
-    assertEquals(GrindSetting(2, 28.0, "Dos · 28 clics"), selection.current())
+    // Uno 20 es MEDIUM, que en Dos es 30 (curvas de grosor).
+    assertEquals(30.0, value.value, 0.0)
+    assertEquals(GrindSetting(2, 30.0, "Dos · 30 clics"), selection.current())
+  }
+
+  @Test
+  fun `new pairs recompute the card without changing the source`() = runTest(UnconfinedTestDispatcher()) {
+    val selection = selection()
+    target.value = active(1, GrindSetting(1, 20.0, null))
+    selection.choose(2)
+    assertEquals(30.0, (selection.state.value.outcome as GrindOutcome.Value).value, 0.0)
+
+    grinders.calibrations.value = listOf(GrindCalibration(1, 1, 10.0, 2, 14.0), GrindCalibration(2, 1, 30.0, 2, 50.0))
+    val value = selection.state.value.outcome as GrindOutcome.Value
+    assertEquals(32.0, value.value, 0.0)
+    assertEquals(setOf(ConversionReason.CALIBRATED), value.reasons)
+    assertEquals(GrindSetting(2, 32.0, "Dos · 32 clics"), selection.current())
+    assertEquals(uno, selection.state.value.sourceGrinder)
   }
 
   @Test

@@ -349,6 +349,12 @@ private fun tabEntryProvider(
   }
 }
 
-/** Completar los rangos abre el editor del molino propio; en un predefinido, una copia suya con los rangos abiertos. */
-private fun fixGrinderKey(fix: GrindFix, id: Long): NavKey =
-  if (fix == GrindFix.COMPLETE_RANGES) GrinderEdit(id = id, openRanges = true) else GrinderEdit(fromId = id, openRanges = true)
+/**
+ * Completar los rangos abre el editor del molino propio; en un predefinido, una copia suya con los rangos abiertos;
+ * añadir otra equivalencia abre el detalle del molino (la sección "Equivalencias" llega en F7).
+ */
+private fun fixGrinderKey(fix: GrindFix, id: Long): NavKey = when (fix) {
+  GrindFix.COMPLETE_RANGES -> GrinderEdit(id = id, openRanges = true)
+  GrindFix.DUPLICATE -> GrinderEdit(fromId = id, openRanges = true)
+  GrindFix.ADD_CALIBRATION -> GrinderDetail(id, toCalibrations = true)
+}

@@ -177,7 +177,7 @@ private fun ConverterRowItem(row: ConverterRow, texts: GrindTexts, onFix: (Grind
             AntText(stringResource(R.string.grind_card_no_equivalent), Modifier.testTag("converter_value_${grinder.id}"), type = AntTextType.Warning)
             row.fix?.let { fix ->
               AntButton(
-                text = stringResource(if (fix == GrindFix.COMPLETE_RANGES) R.string.grind_card_fix_complete else R.string.grind_card_fix_duplicate),
+                text = stringResource(fix.linkText()),
                 onClick = { onFix(fix, grinder.id) },
                 modifier = Modifier.testTag("converter_fix_${grinder.id}"),
                 type = AntButtonType.Link,

@@ -45,7 +45,7 @@ import kotlinx.serialization.Serializable
 /** Ajustes → Molinos → Añadir molino: el catálogo con búsqueda. */
 @Serializable data object GrinderCatalog : NavKey
 
-@Serializable data class GrinderDetail(val id: Long) : NavKey
+@Serializable data class GrinderDetail(val id: Long, val toCalibrations: Boolean = false) : NavKey
 
 /**
  * `id == null` crea un molino propio; `fromId` abre una copia para personalizar ("Duplicar", D22);

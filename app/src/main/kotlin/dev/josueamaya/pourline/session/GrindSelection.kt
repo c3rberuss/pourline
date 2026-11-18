@@ -89,14 +89,17 @@ class GrindSelection(
       latest.value = src
       // Al cambiar de receta la elección se olvida y vuelve la preselección (§3.7).
       if (choice.value?.reference != src.reference) choice.value = null
+      val sourceId = src.grind?.setting?.grinderId
       combine(
-        grinders.grinder(src.grind?.setting?.grinderId),
+        grinders.grinder(sourceId),
         grinders.owned(),
         defaults.defaultGrinderId,
         choice,
-      ) { sourceGrinder, owned, defaultId, picked ->
+        // Los pares solo se emiten cuando cambia la tabla, no con cada lectura de la báscula (D50).
+        if (sourceId == null) flowOf(emptyList()) else grinders.calibrations(sourceId),
+      ) { sourceGrinder, owned, defaultId, picked, calibrations ->
         val chosenId = picked?.takeIf { it.reference == src.reference }?.grinderId
-        grindCardState(src.grind, sourceGrinder, owned, chosenId, defaultId)
+        grindCardState(src.grind, sourceGrinder, owned, chosenId, defaultId, calibrations)
       }
     }
     .distinctUntilChanged()
