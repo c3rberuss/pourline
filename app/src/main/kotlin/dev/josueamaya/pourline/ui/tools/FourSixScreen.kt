@@ -30,6 +30,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.tools.FourSix
+import dev.josueamaya.pourline.tools.FourSixPace
 import dev.josueamaya.pourline.tools.FourSixParams
 import dev.josueamaya.pourline.tools.FourSixPhase
 import dev.josueamaya.pourline.tools.FourSixPlan
@@ -45,6 +46,8 @@ import dev.josueamaya.pourline.ui.components.AntIcons
 import dev.josueamaya.pourline.ui.components.AntInput
 import dev.josueamaya.pourline.ui.components.AntInputStatus
 import dev.josueamaya.pourline.ui.components.AntListItem
+import dev.josueamaya.pourline.ui.components.AntSegmented
+import dev.josueamaya.pourline.ui.components.AntSegmentedOption
 import dev.josueamaya.pourline.ui.components.AntSlider
 import dev.josueamaya.pourline.ui.components.AntStatistic
 import dev.josueamaya.pourline.ui.components.AntText
@@ -55,8 +58,8 @@ import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
 
 /**
- * El generador 4:6: café y ratio, sabor (dulce ↔ brillante) e intensidad (suave ↔ intensa). Muestra cada vertido con
- * su inicio, sus gramos y el acumulado, y [onSaveAsRecipe] abre el editor de recetas ya relleno.
+ * El generador 4:6: café y ratio, sabor (dulce ↔ brillante), intensidad (suave ↔ intensa) y ritmo de vertido. Muestra
+ * cada vertido con su inicio y su fin, sus gramos y el acumulado, y [onSaveAsRecipe] abre el editor de recetas ya relleno.
  */
 @Composable
 fun FourSixScreen(viewModel: FourSixViewModel, onBack: () -> Unit, onSaveAsRecipe: (FourSixParams) -> Unit) {
@@ -97,6 +100,7 @@ fun FourSixScreen(viewModel: FourSixViewModel, onBack: () -> Unit, onSaveAsRecip
 
 @Composable
 private fun AmountsCard(viewModel: FourSixViewModel, plan: FourSixPlan?) {
+  val amountsError = viewModel.error?.takeIf { it != FourSixInputError.POUR_RATE }
   AntCard(Modifier.fillMaxWidth()) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm)) {
       Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
@@ -106,7 +110,7 @@ private fun AmountsCard(viewModel: FourSixViewModel, plan: FourSixPlan?) {
           onValueChange = { viewModel.dose = it },
           modifier = Modifier.fillMaxWidth().testTag("four_six_dose"),
           suffix = { AntText(stringResource(R.string.prepare_grams), type = AntTextType.Secondary) },
-          status = if (viewModel.error == null) AntInputStatus.Default else AntInputStatus.Error,
+          status = if (amountsError == null) AntInputStatus.Default else AntInputStatus.Error,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         )
       }
@@ -117,7 +121,7 @@ private fun AmountsCard(viewModel: FourSixViewModel, plan: FourSixPlan?) {
           onValueChange = { viewModel.ratio = it },
           modifier = Modifier.fillMaxWidth().testTag("four_six_ratio"),
           prefix = { AntText(stringResource(R.string.prepare_ratio_prefix), type = AntTextType.Secondary) },
-          status = if (viewModel.error == null) AntInputStatus.Default else AntInputStatus.Error,
+          status = if (amountsError == null) AntInputStatus.Default else AntInputStatus.Error,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         )
       }
@@ -128,7 +132,7 @@ private fun AmountsCard(viewModel: FourSixViewModel, plan: FourSixPlan?) {
         suffix = plan?.let { stringResource(R.string.prepare_grams) },
       )
     }
-    viewModel.error?.let { error ->
+    amountsError?.let { error ->
       AntText(
         stringResource(if (error == FourSixInputError.WATER) R.string.four_six_water_error else R.string.four_six_range_error),
         Modifier.testTag("four_six_error"),
@@ -180,6 +184,58 @@ private fun ProfileCard(viewModel: FourSixViewModel, plan: FourSixPlan?) {
       tag = "four_six_strength",
     )
     plan?.let { PourSplit(it) }
+    PaceSelector(viewModel)
+  }
+}
+
+/**
+ * Ritmo de vertido: alarga cada vertido y acorta la espera que le sigue, sin mover cuándo empieza el siguiente. Con
+ * "Personalizado" se escribe en g/s.
+ */
+@Composable
+private fun PaceSelector(viewModel: FourSixViewModel) {
+  Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs), verticalAlignment = Alignment.CenterVertically) {
+      AntText(stringResource(R.string.four_six_pace), Modifier.weight(1f), strong = true)
+      viewModel.pourRate?.let { rate ->
+        AntText(
+          stringResource(
+            R.string.four_six_pace_value,
+            RatioCalculator.format(rate),
+            RatioCalculator.format(FourSix.MIN_POUR_G),
+            (FourSix.pourDurationMs(FourSix.MIN_POUR_G, rate) / 1_000).toInt(),
+          ),
+          Modifier.testTag("four_six_pace_value"),
+          type = AntTextType.Secondary,
+        )
+      }
+    }
+    AntSegmented(
+      options = FourSixPace.entries.map { AntSegmentedOption(it, stringResource(it.labelRes)) },
+      selected = viewModel.pace,
+      onSelect = viewModel::selectPace,
+      modifier = Modifier.fillMaxWidth().testTag("four_six_pace"),
+    )
+    if (viewModel.pace == FourSixPace.CUSTOM) {
+      val invalid = viewModel.error == FourSixInputError.POUR_RATE
+      AntInput(
+        value = viewModel.customPourRate,
+        onValueChange = { viewModel.customPourRate = it },
+        modifier = Modifier.fillMaxWidth().testTag("four_six_pace_custom"),
+        suffix = { AntText(stringResource(R.string.four_six_pace_unit), type = AntTextType.Secondary) },
+        status = if (invalid) AntInputStatus.Error else AntInputStatus.Default,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+      )
+      if (invalid) {
+        AntText(
+          stringResource(R.string.four_six_pace_error),
+          Modifier.testTag("four_six_pace_error"),
+          type = AntTextType.Danger,
+          style = AntTheme.typography.textSM,
+        )
+      }
+    }
+    AntText(stringResource(R.string.four_six_pace_hint), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
   }
 }
 
@@ -289,7 +345,12 @@ private fun PlanCard(plan: FourSixPlan) {
     plan.pours.forEachIndexed { i, pour ->
       AntListItem(
         title = pourNames.getOrNull(i) ?: stringResource(R.string.four_six_pour_name_n, i + 1),
-        description = stringResource(R.string.four_six_pour_detail, formatStart(pour.startMs), RatioCalculator.format(pour.totalG)),
+        description = stringResource(
+          R.string.four_six_pour_detail,
+          formatStart(pour.startMs),
+          formatStart(pour.endMs),
+          RatioCalculator.format(pour.totalG),
+        ),
         modifier = Modifier.testTag("four_six_pour_$i"),
         extra = {
           AntText(

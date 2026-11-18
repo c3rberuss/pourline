@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
@@ -22,6 +23,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.Tab
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.tools.RatioCalculator
 import dev.josueamaya.pourline.ui.TestApp
 import dev.josueamaya.pourline.ui.TestAppDependencies
 import kotlinx.coroutines.flow.first
@@ -108,6 +110,25 @@ class ToolsScreenTest {
     rule.onNodeWithTag("four_six_pour_count").performScrollTo().assertTextContains("5", substring = true)
     rule.onNodeWithTag("four_six_time").assertTextContains("3:30", substring = true)
     rule.onNodeWithTag("four_six_pour_0").performScrollTo().assertTextContains("+60 g")
+    rule.onNodeWithTag("four_six_pour_1").performScrollTo().assertTextContains("0:45–0:55", substring = true)
+
+    // Más lento: el vertido dura más, pero empieza a la misma hora.
+    rule.onNodeWithText(context.getString(R.string.four_six_pace_slowest)).performScrollTo().performClick()
+    rule.onNodeWithTag("four_six_pour_1").performScrollTo().assertTextContains("0:45–1:05", substring = true)
+    rule.onNodeWithTag("four_six_time").performScrollTo().assertTextContains("3:35", substring = true)
+
+    // Ritmo propio: el campo empieza con el ritmo que había (3 g/s) y acepta un decimal.
+    rule.onNodeWithText(context.getString(R.string.four_six_pace_custom)).performScrollTo().performClick()
+    rule.onNodeWithTag("four_six_pace_custom").performScrollTo().assertTextContains("3", substring = true)
+    rule.onNodeWithTag("four_six_pace_custom").performTextReplacement("2.5")
+    rule.onNodeWithTag("four_six_pace_value").assertTextContains("${RatioCalculator.format(2.5)} g/s", substring = true)
+    rule.onNodeWithTag("four_six_pour_1").performScrollTo().assertTextContains("0:45–1:09", substring = true)
+    rule.onNodeWithTag("four_six_pace_custom").performScrollTo().performTextReplacement("1")
+    rule.onNodeWithTag("four_six_pace_error").assertIsDisplayed()
+    assertFalse(exists("four_six_error"))
+    assertFalse(exists("four_six_pour_0"))
+    rule.onNodeWithTag("four_six_save").performScrollTo().assertIsNotEnabled()
+    rule.onNodeWithText(context.getString(R.string.four_six_pace_normal)).performScrollTo().performClick()
 
     setLevel("four_six_taste", 0)
     setLevel("four_six_strength", 4)
@@ -134,6 +155,7 @@ class ToolsScreenTest {
     waitFor("four_six")
     rule.onNodeWithTag("four_six_dose").performTextReplacement("20")
     setLevel("four_six_strength", 3)
+    rule.onNodeWithText(context.getString(R.string.four_six_pace_slow)).performScrollTo().performClick()
     rule.onNodeWithTag("four_six_save").performScrollTo().assertIsEnabled().performClick()
 
     waitFor("recipe_edit_save")
@@ -153,6 +175,9 @@ class ToolsScreenTest {
     val recipe = runBlocking { env.recipes.get(saved.id) }
     assertNotNull(recipe)
     assertEquals(listOf(60.0, 120.0, 165.0, 210.0, 255.0, 300.0), recipe!!.stages.filter { it.type == StageType.POUR }.map { it.targetWaterG })
+    // A ritmo lento, cada vertido dura 15 s y cada espera llega justo al siguiente.
+    assertEquals(List(6) { 15_000L }, recipe.stages.filter { it.type == StageType.POUR }.map { it.durationMs })
+    recipe.stages.zipWithNext().forEach { (a, b) -> assertEquals(a.endMs, b.startMs) }
     assertEquals(StageType.WAIT, recipe.stages.last().type)
     assertEquals(255_000L, recipe.stages.last().endMs)
   }

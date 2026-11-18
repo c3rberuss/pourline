@@ -852,11 +852,20 @@
         <item quantity="one">%d pour</item>
         <item quantity="other">%d pours</item>
     </plurals>
+    <string name="four_six_pace">Pour speed</string>
+    <string name="four_six_pace_normal">Normal</string>
+    <string name="four_six_pace_slow">Slow</string>
+    <string name="four_six_pace_slowest">Very slow</string>
+    <string name="four_six_pace_custom">Custom</string>
+    <string name="four_six_pace_unit">g/s</string>
+    <string name="four_six_pace_value">%1$s g/s · %2$s g in %3$d s</string>
+    <string name="four_six_pace_error">The pour speed goes from 2 to 15 g/s, with one decimal at most.</string>
+    <string name="four_six_pace_hint">A slower pour lasts longer and the wait gets shorter: each pour still starts on time.</string>
     <string name="four_six_split_taste">40% taste</string>
     <string name="four_six_split_strength">60% strength</string>
     <string name="four_six_pours">Pours</string>
     <string name="four_six_time">Time</string>
-    <string name="four_six_pour_detail">%1$s · up to %2$s g</string>
+    <string name="four_six_pour_detail">%1$s–%2$s · up to %3$s g</string>
     <string name="four_six_pour_amount">+%1$s g</string>
     <string name="four_six_end">Remove the filter</string>
     <string name="four_six_note">Coarse grind and water at 92 °C. Each pour starts 45 s after the previous one, and the filter comes off 30 s after the last.</string>
