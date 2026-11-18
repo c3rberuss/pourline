@@ -480,6 +480,11 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
 
 - **Al cerrar la implementación:** anotar en este spec el valor final de `MAX_URI_LENGTH` y el
   número de pasos a partir del cual la tarjeta pasa de 4:5 a 9:16.
+  - **Valores finales (2026-11-18):**
+    - `MAX_URI_LENGTH` = 331 caracteres (QR versión 13, corrección M, 432 px = 144 dp), medido con el
+      lector de Play Services. La receta de 20 pasos de peor caso queda en 231 a 267.
+    - La tarjeta es 4:5 (1080 × 1350) hasta `RECIPE_CARD_COMPACT_MAX_STAGES` = 10 pasos y 9:16
+      (1080 × 1920) a partir de 11.
 
 ## 7. Alternativas descartadas
 

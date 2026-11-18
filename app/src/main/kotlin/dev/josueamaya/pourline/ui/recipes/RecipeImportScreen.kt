@@ -19,11 +19,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.grinder.GrindFormat
@@ -56,11 +59,15 @@ import dev.josueamaya.pourline.ui.session.stepTypeLabel
 import dev.josueamaya.pourline.ui.theme.AntTheme
 import kotlin.math.roundToLong
 
-private val StepStartWidth = 36.dp
+private val StepStartWidth = 44.dp
 private val StepIconSize = 16.dp
 private val StepTypeWidth = 64.dp
 private val StepDurationWidth = 40.dp
 private val StepWaterWidth = 56.dp
+
+/** Las columnas llevan texto: crecen con la escala de letra (en `dp` fijos "0:10" se cortaba a 1,3). */
+@Composable
+private fun scaledWidth(base: Dp): Dp = with(LocalDensity.current) { base.value.sp.toDp() }
 
 /**
  * La vista previa de una receta importada (SPEC-009 §3.6), de solo lectura: los avisos, los datos, la molienda, las
@@ -200,28 +207,29 @@ private fun linkedText(grinder: Grinder, value: Double?, texts: GrindTexts): Str
 /** Inicio, tipo, nombre, duración y agua acumulada (solo en `POUR`), y debajo la instrucción si la hay. */
 @Composable
 private fun StageRow(stage: RecipeStage, index: Int, unit: WeightUnit) {
+  val startWidth = scaledWidth(StepStartWidth)
   Column(Modifier.fillMaxWidth().testTag("recipe_import_step_$index"), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs), verticalAlignment = Alignment.CenterVertically) {
-      AntText(formatClock(stage.startMs), Modifier.width(StepStartWidth), type = AntTextType.Secondary, maxLines = 1)
+      AntText(formatClock(stage.startMs), Modifier.width(startWidth), type = AntTextType.Secondary, maxLines = 1)
       Icon(stepTypeIcon(stage.type), contentDescription = null, modifier = Modifier.size(StepIconSize), tint = AntTheme.colors.textSecondary)
-      AntText(stringResource(stepTypeLabel(stage.type)), Modifier.width(StepTypeWidth), maxLines = 1, overflow = TextOverflow.Ellipsis)
+      AntText(stringResource(stepTypeLabel(stage.type)), Modifier.width(scaledWidth(StepTypeWidth)), maxLines = 1, overflow = TextOverflow.Ellipsis)
       AntText(stage.name.orEmpty(), Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
       AntText(
         stringResource(R.string.recipe_card_step_duration, (stage.durationMs / 1000.0).roundToLong().toInt()),
-        Modifier.width(StepDurationWidth),
+        Modifier.width(scaledWidth(StepDurationWidth)),
         type = AntTextType.Secondary,
         textAlign = TextAlign.End,
         maxLines = 1,
       )
       AntText(
         if (stage.type == StageType.POUR) "${weightNumber(stage.targetWaterG, unit)} ${unit.symbol}" else "",
-        Modifier.width(StepWaterWidth),
+        Modifier.width(scaledWidth(StepWaterWidth)),
         textAlign = TextAlign.End,
         maxLines = 1,
       )
     }
     stage.instruction?.let {
-      AntText(it, Modifier.padding(start = StepStartWidth + StepIconSize + AntTheme.spacing.xs * 2).testTag("recipe_import_step_instruction_$index"), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
+      AntText(it, Modifier.padding(start = startWidth + StepIconSize + AntTheme.spacing.xs * 2).testTag("recipe_import_step_instruction_$index"), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
     }
   }
 }

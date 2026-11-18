@@ -8,6 +8,7 @@
 | Rama | `feat/share-recipe` desde `develop` (`e64330a`, que ya incluye el recorrido guiado de SPEC-008). |
 | Módulos | `:app` (`:protocol` no cambia) |
 | `MAX_URI_LENGTH` | **331** (QR de 432 px, versión 13, corrección M, lector de Play Services). Fijado en F0. |
+| Verificación final (F9) | JVM 1039 (0 fallos). Instrumentados: 681 por emulador (ver "Resultado de F9"). Lint 2 errores y 21 avisos, como la línea base. APK de debug 61 152 353 bytes (+748 784 frente a los 60 403 569 de la línea base). |
 
 El spec no trae fases, así que este plan las define. El orden va de dentro afuera. Primero, un spike en el dispositivo
 (F0) que cierra los dos riesgos del §6 y fija `MAX_URI_LENGTH`. Si F0 falla, el plan se detiene y se consulta al
@@ -196,7 +197,7 @@ Orden: F0 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9. F2 y F
 | F6 | Vista previa, guardado, navegación común y mensajes | L | Hecha |
 | F7 | Entradas internas: escáner y galería | M | Hecha |
 | F8 | Entradas externas: `ACTION_SEND`, `ACTION_VIEW`, `singleTask` y aplazamiento | M | Hecha |
-| F9 | Verificación: suites, lint, manifiesto, E2E por adb, prueba con dos móviles y capturas | M | En curso |
+| F9 | Verificación: suites, lint, manifiesto, E2E por adb, prueba con dos móviles y capturas | M | Detenida: falta la prueba con dos móviles (§7.5, la hace el usuario) |
 
 Cada fase deja `:app` compilando y sus tests en verde. Se compila y se prueba solo `:app`, nunca con
 `./gradlew build` ni con builds limpios.
@@ -770,6 +771,51 @@ manejador se prueba con `TestApp(env)` y `Intent` reales, y el pegamento `single
 **Verificación:** el §7.
 
 Commit sugerido: `test(recipes): verify recipe sharing end to end`.
+
+**Resultado de F9 (2026-11-18).** Hecho todo salvo la prueba con dos móviles del §7.5, que es del usuario.
+
+- **Unitarios de `:app`:** 1039 tests, 1 saltado, 0 fallos (línea base 932, 1 saltado).
+- **Instrumentados completos** (681 tests, 5 saltados, como la línea base de 608 más los nuevos):
+  - `emulator-5556` (API 34): 17 fallos. Los 3 de la lista del §3 (`CoffeeDetailScreenTest.theFactsAreFoldedByDefaultAndOpenOnTap` y los dos
+    de `SessionPerformanceTest`) y 14 que necesitan el modelo de Play Services, que ese emulador no puede descargar: `RecipeIntentImportTest` 4,
+    `RecipesImportTest` 4, `RecipeShareTest` 3, `QrLegibilityTest` 2 y `RecipeQrLegibilityTest` 1. Los mismos 14 pasan en `emulator-5560`.
+  - `emulator-5560` (API 36 con Play): 6 fallos. Los 3 conocidos y 3 de UI sin relación con la receta compartida
+    (`CoffeeEditScreenTest.removingAPhotoAndTheVarietiesField`, `RecipeEditScreenTest.saveAsRecipeFromABrewFillsOneStagePerPourAndWarnsAboutAMissingDose`
+    y `SessionScreenTest.theCrossInActiveOpensTheDialogAndKeepBrewingClosesIt`: timeout, `ConcurrentModificationException`). Repetidas solas, las tres
+    clases pasan (62 de 62), así que son intermitentes. En `emulator-5556` pasan en la suite completa.
+- **Lint:** `:app:lintDebug` con 2 errores y 21 avisos, los de la línea base (`UnusedResources` de `backup_rules` y `data_extraction_rules` ya estaba).
+  Sin `MissingTranslation` ni `ExtraTranslation`.
+- **Comprobaciones del §7.2:** `recipe.share`, `QrCode.kt` y `SharedGrindResolution.kt` sin `import android`. Los manifiestos fusionados de debug y release
+  tienen los mismos permisos que la línea base y ni `INTERNET` ni `CAMERA`; `dumpsys package` en el emulador tampoco los lista. `git diff develop` de las
+  tres tarjetas anteriores, vacío. `zipalign -c -P 16` da `OK` en las 8 `.so` del APK de debug.
+- **Rendimiento (§7.3):** no se midió. Es informativo y el spec no lo pide; ninguna suite vio lentitud.
+- **E2E por adb (§7.4), solo en emuladores:**
+  - Pasos 1, 2, 3, 4, 5, 7 y 12 en `emulator-5556`; 6, 8, 9, 10 y 11 en `emulator-5560`. `logcat -b crash` vacío.
+  - Paso 1: el icono de compartir pasa de habilitado a deshabilitado al editar el nombre, y vuelve al restaurarlo.
+  - Paso 2: la hoja del sistema no lista Pourline; el PNG de la caché mide 1080 x 1350.
+  - Paso 3: `VIEW` con la app delante y en segundo plano abre la vista previa y deja una sola `MainActivity` (`LaunchState: HOT`).
+  - Paso 4: al girar y volver, la vista previa sigue y no se abre otra.
+  - Paso 5: tras guardar sale "Recipe added" y la lista trae "Classic V60 (2)".
+  - Paso 6: desde Google Photos con la imagen abierta, Compartir, Pourline y Guardar son **3 toques**.
+  - Paso 7: con la sesión en marcha sale "Recipe received. You will see it when the brew ends." y, tras Finish y Done, se abre la vista previa.
+  - Paso 8: "No recipe was found in the image".
+  - Paso 9: la vista previa con el aviso "You already have this recipe".
+  - Paso 10: "Scan QR code" abre el escáner de Google y cancelar no hace nada. Leer un QR real lo hizo el usuario en su Xiaomi (F7).
+  - Paso 11: el icono del lanzador con la vista previa abierta vuelve a la misma tarea.
+- **Avisos del E2E:**
+  - `am start -a SEND --eu EXTRA_STREAM content://media/...` da "No recipe was found" aunque la imagen sea válida: `am` no migra `EXTRA_STREAM` a `clipData`, y sin
+    esa migración no hay permiso de lectura. Es un límite de la herramienta (las compartidas de verdad llevan `clipData`; el caso lo cubre `RecipeIntentImportTest`).
+    Se usó Google Photos para el paso 6.
+  - Con la vista previa abierta sobre el editor de una receta, guardar vuelve a ese editor (no a la lista) con "Recipe added". Es la pila de la pestaña; no se cambió.
+  - Con la vista previa abierta sobre una receta del mismo nombre, el aviso "You already have this recipe" solo sale con el nombre y el contenido idénticos; la
+    receta de `GOLDEN_V60_URI` ("V60 clásica") no lo dispara en un emulador en inglés.
+- **Defecto hallado y corregido (§7.6, escala de letra 1,3):** la columna de hora de inicio de la vista previa (36 dp fijos) cortaba el último dígito
+  (`0:1` por `0:10`). Las cuatro columnas de `StageRow` crecen ahora con la escala de letra (`scaledWidth`, base de 44 dp para la hora) y se añadió
+  `RecipeImportScreenTest.theStartTimesAreNotCutWithALargeFontScale` (14 tests en la clase), que falla sin el arreglo y pasa con él. Está en el commit de F9.
+- **Capturas (§7.6):** en `~/Downloads/pourline-recipe-share/{en,es}`: editor, menú Importar, vista previa y mensaje "sin receta" en claro y en oscuro; la
+  tarjeta 4:5; la vista previa con escala 1,3; y "Recipe added" en inglés y claro. **No se capturaron** la tarjeta 9:16 (hace falta una receta de más de 10
+  pasos; la cubre `ShareCardsLayoutTest`), la vista previa con los dos avisos ni con el selector de molienda, ni los diálogos del recorte.
+- **Pendiente:** la prueba con dos móviles del §7.5. Hasta entonces F9 queda "Detenida".
 
 ## 4. Trazabilidad con el §5 del spec
 

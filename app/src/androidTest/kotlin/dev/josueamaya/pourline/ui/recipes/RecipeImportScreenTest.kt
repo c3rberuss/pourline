@@ -1,6 +1,12 @@
 package dev.josueamaya.pourline.ui.recipes
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isPopup
@@ -277,6 +283,24 @@ class RecipeImportScreenTest {
     assertTrue(done > 0)
     val notice = runBlocking { withTimeout(5_000) { imports.notices.first() } }
     assertEquals(ImportNotice.Failed(ImportError.CORRUPT), notice)
+  }
+
+  @Test
+  fun theStartTimesAreNotCutWithALargeFontScale() {
+    val uri = uriOf(recipe(withInstruction = true))
+    rule.setContent {
+      val density = LocalDensity.current
+      CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 1.3f)) {
+        PourlineTheme(darkTheme = false) { RecipeImportScreen(viewModel(uri), onDone = { done++ }) }
+      }
+    }
+    rule.waitUntil(5_000) { exists("recipe_import_save") }
+
+    // "0:45" es la más ancha de las tres salidas (0:00, 0:30, 0:45); si la columna fuera de `dp` fijos perdería el último dígito.
+    val start = rule.onNode(hasText("0:45") and hasAnyAncestor(hasTestTag("recipe_import_step_2"))).performScrollTo()
+    val layouts = mutableListOf<TextLayoutResult>()
+    start.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action!!(layouts)
+    assertFalse("la hora de inicio se corta", layouts.single().hasVisualOverflow)
   }
 
   private companion object {
