@@ -189,7 +189,7 @@ Orden: F0 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9. F2 y F
 |---|---|---|---|
 | F0 | Spike en el dispositivo: línea base, dependencias, manifiesto sin `INTERNET`, Code Scanner y `MAX_URI_LENGTH` | M | Hecha (escáner se verifica a mano en F7) |
 | F1 | Códec JVM puro (formato binario del §3.1): `RecipeShareCodec`, recorte y errores | M | Hecha |
-| F2 | Reglas de importación JVM: idéntica, sufijo, `routeImport` y `PendingRecipeImport` | S | Pendiente |
+| F2 | Reglas de importación JVM: idéntica, sufijo, `routeImport` y `PendingRecipeImport` | S | Hecha |
 | F3 | Resolución de molienda JVM | S | Pendiente |
 | F4 | Tarjeta de receta con QR y tamaño variable | M | Pendiente |
 | F5 | Compartir desde el editor | M | Pendiente |
@@ -496,6 +496,11 @@ sin Android.
 **Verificación:** `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.recipe.share.*"`.
 
 **Criterio de salida:** todo en verde y `RecipeSharePurityTest` sigue pasando con los archivos nuevos.
+
+**Resultado de F2:** 26 tests JVM nuevos en verde (`RecipeImportRulesTest` 11, `ImportRoutingTest` 8,
+`PendingRecipeImportTest` 6) y `RecipeSharePurityTest` sigue pasando. Desviación: `QrReadResult` (D18) vive en
+`recipe/share/ImportRouting.kt`, junto con `routeImageRead` y `PendingRecipeImport.submit(read, hasSession)`, para que el
+enrutado de una imagen sea JVM puro; `QrImageReader` (F7) lo importa.
 
 Commit sugerido: `feat(recipes): add import naming, routing and the pending import`.
 
