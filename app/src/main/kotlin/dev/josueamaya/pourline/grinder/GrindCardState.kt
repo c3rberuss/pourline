@@ -12,10 +12,27 @@ enum class GrindFix {
 
   /** El molino de destino es predefinido: se duplica para personalizarlo. */
   DUPLICATE,
+
+  /** Hay un solo par de calibración y falta la curva de algún molino: se añade otra equivalencia (enmienda 1). */
+  ADD_CALIBRATION,
+}
+
+/** El arreglo de "Sin equivalencia" y el molino al que lleva (D45). */
+data class FixTarget(val fix: GrindFix, val grinderId: Long)
+
+/**
+ * Qué se ofrece cuando no hay equivalencia de [from] a [to] y cuántos pares hay entre ellos (D45). Con 1 par, añadir
+ * otra equivalencia en [to]. Si no, completar los rangos del molino sin curva ([to] si ninguno la tiene) si es propio, o
+ * duplicarlo si es predefinido.
+ */
+fun fixFor(from: Grinder, to: Grinder, pairCount: Int): FixTarget {
+  if (pairCount == 1) return FixTarget(GrindFix.ADD_CALIBRATION, to.id)
+  val target = if (GrindCurve.of(to) == null || GrindCurve.of(from) != null) to else from
+  return FixTarget(if (target.isPredefined) GrindFix.DUPLICATE else GrindFix.COMPLETE_RANGES, target.id)
 }
 
 /** Lo que recibe el convertidor suelto para abrirse ya relleno (F8). */
-data class ConverterArgs(val sourceId: Long, val method: BrewMethod?, val value: Double)
+data class ConverterArgs(val sourceId: Long, val value: Double)
 
 /** Lo que muestra la tarjeta como ajuste del molino elegido (D25). */
 sealed interface GrindOutcome {
@@ -25,8 +42,8 @@ sealed interface GrindOutcome {
   /** "La receta no indica molienda" y el molino elegido no tiene rango del método que sugerir. */
   data object NoSetting : GrindOutcome
 
-  /** No hay equivalencia entre el molino de la receta y el elegido. */
-  data class NoEquivalent(val fix: GrindFix) : GrindOutcome
+  /** No hay equivalencia entre el molino de la receta y el elegido; [fix] se aplica al molino [grinderId] (D45). */
+  data class NoEquivalent(val fix: GrindFix, val grinderId: Long) : GrindOutcome
 
   /** El molino de la receta está eliminado: no se puede convertir. */
   data object Orphan : GrindOutcome
@@ -75,6 +92,7 @@ private fun preselected(source: GrindSource?, owned: List<Grinder>, chosenId: Lo
 /**
  * El estado de la tarjeta de molienda (D25). [sourceGrinder] es el molino vivo de la referencia y [owned], mis
  * molinos; [chosenId] es la elección explícita del usuario, si la hay, y [defaultId] el predeterminado.
+ * [calibrations] son los pares de calibración del molino de origen; la conversión usa los que lo unen con el elegido.
  */
 fun grindCardState(
   source: GrindSource?,
@@ -82,27 +100,30 @@ fun grindCardState(
   owned: List<Grinder>,
   chosenId: Long?,
   defaultId: Long?,
+  calibrations: List<GrindCalibration> = emptyList(),
 ): GrindCardState {
   val chosen = preselected(source, owned, chosenId, defaultId)
   val setting = source?.setting?.takeUnless { it.isEmpty }
   val live = if (setting?.grinderId != null) sourceGrinder?.takeIf { it.id == setting.grinderId } else null
-  val converter = if (live != null && setting?.value != null) ConverterArgs(live.id, source.method, setting.value) else null
+  val converter = if (live != null && setting?.value != null) ConverterArgs(live.id, setting.value) else null
   val outcome = when {
     chosen == null -> if (source == null) GrindOutcome.NoReference else GrindOutcome.NoGrinder
     source == null -> GrindOutcome.NoReference
     setting != null && live == null -> GrindOutcome.Orphan
-    live != null && setting?.value != null -> convertOutcome(setting.value, source.method, live, chosen)
+    live != null && setting?.value != null -> convertOutcome(setting.value, live, chosen, calibrations)
     else -> suggestion(source.method, chosen)
   }
   return GrindCardState(source, live, owned, chosen, outcome, converter)
 }
 
-private fun convertOutcome(value: Double, method: BrewMethod?, from: Grinder, to: Grinder): GrindOutcome =
-  when (val result = GrindConverter.convert(value, method, from, to)) {
+private fun convertOutcome(value: Double, from: Grinder, to: Grinder, calibrations: List<GrindCalibration>): GrindOutcome {
+  val pairs = calibrations.pointsBetween(from.id, to.id)
+  return when (val result = GrindConverter.convert(value, from, to, pairs)) {
     is Conversion.Exact -> GrindOutcome.Value(result.value, exact = true, reasons = emptySet(), suggested = false)
     is Conversion.Approximate -> GrindOutcome.Value(result.value, exact = false, reasons = result.reasons, suggested = false)
-    Conversion.NoEquivalent -> GrindOutcome.NoEquivalent(if (to.isPredefined) GrindFix.DUPLICATE else GrindFix.COMPLETE_RANGES)
+    Conversion.NoEquivalent -> fixFor(from, to, pairs.size).let { GrindOutcome.NoEquivalent(it.fix, it.grinderId) }
   }
+}
 
 private fun suggestion(method: BrewMethod?, chosen: Grinder): GrindOutcome =
   GrindConverter.suggested(method, chosen)

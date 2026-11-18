@@ -147,7 +147,7 @@ internal fun ScalelessActivePanel(ui: ScaleUiState, onFinish: () -> Unit) {
       if (target != null) {
         view?.let {
           AntText(
-            stringResource(R.string.scaleless_step_progress, it.number, it.count, formatClock(it.remainingMs)),
+            stringResource(R.string.scaleless_step_progress, it.number, it.count, formatRemaining(it.remainingMs)),
             Modifier.fillMaxWidth().testTag("scaleless_step_progress"),
             type = AntTextType.Secondary,
             textAlign = TextAlign.Center,

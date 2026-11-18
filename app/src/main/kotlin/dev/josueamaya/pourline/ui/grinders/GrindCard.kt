@@ -39,7 +39,7 @@ import dev.josueamaya.pourline.ui.tour.tourAnchor
  *
  * @param onChoose elige el molino de "Moler con".
  * @param onAddGrinder abre Ajustes → Molinos ("Añade tu molino…").
- * @param onFix completa los rangos del molino elegido o lo duplica (el id es el del molino elegido).
+ * @param onFix completa los rangos de un molino, lo duplica o añade otra equivalencia (el id es el del molino al que se aplica).
  * @param onOpenConverter abre el convertidor relleno; `null` si no hay atajo.
  */
 @Composable
@@ -96,8 +96,8 @@ fun GrindCard(
         )
         if (chosen != null) {
           AntButton(
-            text = stringResource(if (outcome.fix == GrindFix.COMPLETE_RANGES) R.string.grind_card_fix_complete else R.string.grind_card_fix_duplicate),
-            onClick = { onFix(outcome.fix, chosen.id) },
+            text = stringResource(outcome.fix.linkText()),
+            onClick = { onFix(outcome.fix, outcome.grinderId) },
             modifier = Modifier.testTag("grind_card_fix"),
             type = AntButtonType.Link,
           )
@@ -162,7 +162,7 @@ private fun Marks(outcome: GrindOutcome.Value) {
   ConversionTags(outcome.reasons, outcome.suggested, Modifier.fillMaxWidth().testTag("grind_card_marks"), centered = true)
 }
 
-/** Las marcas de un resultado: "sugerido", "aproximado" (por anclas) y "al límite del molino". No dibuja nada sin marcas. */
+/** Las marcas de un resultado: "sugerido", "según tu calibración", "aproximado" (por anclas) y "al límite del molino". */
 @Composable
 internal fun ConversionTags(
   reasons: Set<ConversionReason>,
@@ -172,6 +172,7 @@ internal fun ConversionTags(
 ) {
   val marks = buildList {
     if (suggested) add(stringResource(R.string.grind_card_suggested) to AntTagColor.Primary)
+    if (ConversionReason.CALIBRATED in reasons) add(stringResource(R.string.grind_card_calibrated) to AntTagColor.Success)
     if (ConversionReason.ANCHORS in reasons) add(stringResource(R.string.grind_card_approximate) to AntTagColor.Default)
     if (ConversionReason.AT_LIMIT in reasons) add(stringResource(R.string.grind_card_at_limit) to AntTagColor.Warning)
   }

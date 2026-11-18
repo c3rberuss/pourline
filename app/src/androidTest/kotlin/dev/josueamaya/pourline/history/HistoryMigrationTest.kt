@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import dev.josueamaya.pourline.grinder.GrindCalibrationEntity
 import dev.josueamaya.pourline.recipe.BuiltInRecipes
 import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.recipe.FakeRecipeTexts
@@ -23,7 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.room.testing.MigrationTestHelper
 
-/** Migraciones 1 → 2, 2 → 3, 3 → 4, 4 → 5 y 5 → 6 sobre bases creadas con los esquemas exportados. */
+/** Migraciones 1 → 2, 2 → 3, 3 → 4, 4 → 5, 5 → 6 y 6 → 7 sobre bases creadas con los esquemas exportados. */
 @RunWith(AndroidJUnit4::class)
 class HistoryMigrationTest {
   private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -128,7 +129,7 @@ class HistoryMigrationTest {
 
     // Y la base se abre con Room y se lee por los DAO.
     val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
-      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
       .build()
     try {
       runBlocking {
@@ -163,13 +164,13 @@ class HistoryMigrationTest {
   }
 
   @Test
-  fun aFreshInstallIsCreatedAtVersion6WithTheBuiltIns() = runBlocking {
+  fun aFreshInstallIsCreatedAtVersion7WithTheBuiltIns() = runBlocking {
     val context = instrumentation.targetContext
     context.deleteDatabase(NAME)
     val fresh = HistoryDatabase.create(context, NAME, texts)
     try {
       assertEquals(2, fresh.recipeDao().observeAll().first().size)
-      assertEquals(6, fresh.openHelper.readableDatabase.version)
+      assertEquals(7, fresh.openHelper.readableDatabase.version)
       assertEquals(0, fresh.openHelper.readableDatabase.query("SELECT COUNT(*) FROM grinders").use { it.moveToFirst(); it.getInt(0) })
       val steps = fresh.openHelper.readableDatabase.query(
         "SELECT builtInKey, COUNT(*) FROM recipe_stages JOIN recipes ON recipes.id = recipeId GROUP BY builtInKey",
@@ -324,7 +325,7 @@ class HistoryMigrationTest {
   fun migrates4To5ThenRoomReadsEverything() = runBlocking {
     helper.createDatabase(NAME, 4).use { seedV4(it) }
     val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
-      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
       .build()
     try {
       val recipes = RecipeRepository(room, texts)
@@ -398,7 +399,7 @@ class HistoryMigrationTest {
 
     // En la base migrada la clave foránea funciona: vincular un café y borrarlo deja `coffeeId = null` y el nombre.
     val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
-      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
       .build()
     try {
       runBlocking {
@@ -511,7 +512,7 @@ class HistoryMigrationTest {
 
     // Leídas con Room, la curva de cada receta es idéntica punto a punto a la calculada con las filas v3.
     val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
-      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
       .build()
     try {
       runBlocking {
@@ -665,7 +666,7 @@ class HistoryMigrationTest {
   fun migrates5To6ThenRoomReadsEverything() = runBlocking {
     helper.createDatabase(NAME, 5).use { seedV5(it) }
     val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
-      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
       .build()
     try {
       val repository = BrewRepository(room)
@@ -677,6 +678,108 @@ class HistoryMigrationTest {
       assertFalse(brew.entity.scaleless)
       assertEquals(77, brew.entity.fitScore)
       assertEquals(2, repository.comparableCount().first())
+    } finally {
+      room.close()
+    }
+  }
+
+  // --- 6 → 7 (SPEC-006, enmienda 1) ---
+
+  /** Una v6 con dos molinos, una receta y una preparación que usan el molino 1, y un café. */
+  private fun seedV6(db: SupportSQLiteDatabase) {
+    db.execSQL("INSERT INTO coffees (id, name, varieties, archived, createdAtEpochMs) VALUES (1, 'Etiopía Guji', '', 0, 1000)")
+    for ((id, model, max) in listOf(Triple(1, "Uno", 40.0), Triple(2, "Dos", 60.0))) {
+      db.execSQL(
+        "INSERT INTO grinders (id, brand, model, direction, scaleMin, scaleMax, step, owned, retired, updatedAtEpochMs) " +
+          "VALUES ($id, 'Acme', '$model', 'HIGHER_IS_COARSER', 0.0, $max, 1.0, 1, 0, 1000)",
+      )
+      db.execSQL("INSERT INTO grinder_units (grinderId, position, unit, perParent) VALUES ($id, 0, 'CLICKS', NULL)")
+    }
+    db.execSQL(
+      "INSERT INTO recipes (id, name, doseG, localizedNames, updatedAtEpochMs, grinderId, grindValue, grindLabel) " +
+        "VALUES (1, 'Receta', 15.0, 0, 1000, 1, 20.0, 'Uno · 20 clics')",
+    )
+    insertV5Brew(db, 1, withCurve = true)
+    insertV5Brew(db, 2, withCurve = false)
+  }
+
+  private val v6Tables = listOf("brews", "recipes", "grinders", "grinder_units", "coffees", "brew_curves", "brew_targets")
+
+  @Test
+  fun migrates6To7CreatingGrindCalibrations() {
+    helper.createDatabase(NAME, 6).use { seedV6(it) }
+    val before = helper.runMigrationsAndValidate(NAME, 6, false).use { db ->
+      v6Tables.associateWith { dumpOf(db, "SELECT * FROM `$it`") }
+    }
+
+    val db = helper.runMigrationsAndValidate(NAME, 7, true, MIGRATION_6_7)
+
+    // La tabla existe y está vacía.
+    assertEquals(0, count(db, "grind_calibrations"))
+    assertEquals(
+      listOf("id", "grinderAId", "valueA", "grinderBId", "valueB", "updatedAtEpochMs"),
+      columns(db, "grind_calibrations"),
+    )
+    // Dos claves foráneas a `grinders` con CASCADE.
+    val foreignKeys = db.query("PRAGMA foreign_key_list(`grind_calibrations`)").use { c ->
+      buildList { while (c.moveToNext()) add(listOf(c.getString(2), c.getString(3), c.getString(4), c.getString(6))) }
+    }
+    assertEquals(
+      setOf(listOf("grinders", "grinderAId", "id", "CASCADE"), listOf("grinders", "grinderBId", "id", "CASCADE")),
+      foreignKeys.toSet(),
+    )
+    // Los cuatro índices, dos de ellos únicos.
+    val indices = db.query("PRAGMA index_list(`grind_calibrations`)").use { c ->
+      buildMap { while (c.moveToNext()) put(c.getString(1), c.getInt(2)) }
+    }.filterKeys { it.startsWith("index_grind_calibrations_") }
+    assertEquals(
+      mapOf(
+        "index_grind_calibrations_grinderAId" to 0,
+        "index_grind_calibrations_grinderBId" to 0,
+        "index_grind_calibrations_grinderAId_grinderBId_valueA" to 1,
+        "index_grind_calibrations_grinderAId_grinderBId_valueB" to 1,
+      ),
+      indices,
+    )
+    // El resto de las filas no cambia.
+    assertEquals(before, v6Tables.associateWith { dumpOf(db, "SELECT * FROM `$it`") })
+    assertEquals(0, db.query("PRAGMA foreign_key_check").use { it.count })
+    db.close()
+  }
+
+  @Test
+  fun migrates1To2To3To4To5To6To7InAChain() {
+    helper.createDatabase(NAME, 1).use { db -> insertV1Brew(db, 1, "Etiopía", "Etiopía Guji", 1_700_000_000_000) }
+    helper.runMigrationsAndValidate(
+      NAME, 7, true,
+      migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+    ).use { db ->
+      db.query("SELECT coffee FROM brews").use { c ->
+        c.moveToFirst()
+        assertEquals("Etiopía Guji", c.getString(0))
+      }
+      assertEquals(2, count(db, "recipes"))
+      assertEquals(0, count(db, "grind_calibrations"))
+      assertEquals(0, db.query("PRAGMA foreign_key_check").use { it.count })
+    }
+  }
+
+  @Test
+  fun migrates6To7ThenRoomReadsEverything() = runBlocking {
+    helper.createDatabase(NAME, 6).use { seedV6(it) }
+    val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+      .build()
+    try {
+      val brews = BrewRepository(room).list(BrewFilter()).first()
+      assertEquals(listOf(2L, 1L), brews.map { it.id })
+      assertEquals(listOf(1L, 2L), room.grinderDao().observeAll().first().map { it.grinder.id }.sorted())
+      val recipe = RecipeRepository(room, texts).get(1)!!
+      assertEquals(1L, recipe.grind?.grinderId)
+      assertEquals(20.0, recipe.grind?.value)
+      // Y se puede guardar un par.
+      val id = room.grindCalibrationDao().insert(GrindCalibrationEntity(grinderAId = 1, valueA = 20.0, grinderBId = 2, valueB = 30.0, updatedAtEpochMs = 5))
+      assertEquals(listOf(id), room.grindCalibrationDao().observeOf(2).first().map { it.id })
     } finally {
       room.close()
     }

@@ -162,6 +162,110 @@ class GrinderRepositoryTest {
     assertEquals("A", repository.grinder(z).first()!!.model)
   }
 
+  // --- Pares de calibración (enmienda 1) ---
+
+  private suspend fun twoGrinders(): Pair<Long, Long> = repository.save(TestGrinders.uno) to repository.save(TestGrinders.dos)
+
+  @Test
+  fun saveCalibrationReturnsSavedAndTheFlowEmitsIt() = runTest {
+    val (uno, dos) = twoGrinders()
+    assertTrue(repository.calibrations(uno).first().isEmpty())
+    val saved = repository.saveCalibration(uno, 20.0, dos, 31.0) as CalibrationSaveResult.Saved
+    assertEquals(listOf(GrindCalibration(saved.id, uno, 20.0, dos, 31.0)), repository.calibrations(uno).first())
+    assertEquals(repository.calibrations(uno).first(), repository.calibrations(dos).first())
+  }
+
+  @Test
+  fun saveCalibrationSnapsTheValues() = runTest {
+    val (uno, dos) = twoGrinders()
+    // Uno tiene paso 1 y Dos, 0,5: 20,4 → 20 y 30,3 → 30,5.
+    repository.saveCalibration(uno, 20.4, dos, 30.3)
+    val pair = repository.calibrations(uno).first().single()
+    assertEquals(20.0, pair.valueA, 0.0)
+    assertEquals(30.5, pair.valueB, 0.0)
+  }
+
+  @Test
+  fun aRepeatedValueReturnsUpdated() = runTest {
+    val (uno, dos) = twoGrinders()
+    val id = (repository.saveCalibration(uno, 20.0, dos, 30.0) as CalibrationSaveResult.Saved).id
+    assertEquals(CalibrationSaveResult.Updated(id), repository.saveCalibration(uno, 20.0, dos, 32.0))
+    assertEquals(32.0, repository.calibrations(uno).first().single().valueB, 0.0)
+  }
+
+  @Test
+  fun aContradictionReturnsConflictAndWritesNothing() = runTest {
+    val (uno, dos) = twoGrinders()
+    val first = (repository.saveCalibration(uno, 20.0, dos, 30.0) as CalibrationSaveResult.Saved).id
+    val result = repository.saveCalibration(uno, 25.0, dos, 25.0)
+    assertEquals(CalibrationSaveResult.Conflict(listOf(GrindCalibration(first, uno, 20.0, dos, 30.0))), result)
+    assertEquals(listOf(first), repository.calibrations(uno).first().map { it.id })
+  }
+
+  @Test
+  fun replaceCalibrationDeletesTheConflictsAndSaves() = runTest {
+    val (uno, dos) = twoGrinders()
+    repository.saveCalibration(uno, 20.0, dos, 30.0)
+    val result = repository.replaceCalibration(uno, 25.0, dos, 25.0) as CalibrationSaveResult.Saved
+    assertEquals(listOf(GrindCalibration(result.id, uno, 25.0, dos, 25.0)), repository.calibrations(uno).first())
+  }
+
+  @Test
+  fun aGrinderThatIsNotOwnedReturnsInvalid() = runTest {
+    val uno = repository.save(TestGrinders.uno)
+    // Un predefinido sin "Lo tengo": existe, pero no es mío.
+    val predefined = db.grinderDao().save(TestGrinders.dos.copy(catalogKey = "acme-dos", owned = false, sourceUrl = "u", sourceName = "n").toRows(1_000L))
+    assertEquals(
+      CalibrationSaveResult.Invalid(listOf(CalibrationError.NotOwned(predefined))),
+      repository.saveCalibration(uno, 20.0, predefined, 30.0),
+    )
+    assertTrue(repository.calibrations(uno).first().isEmpty())
+    // Y un molino que no existe.
+    assertEquals(CalibrationSaveResult.Invalid(listOf(CalibrationError.NotOwned(999L))), repository.saveCalibration(uno, 20.0, 999L, 30.0))
+  }
+
+  @Test
+  fun calibrationPointsAreOrientedFromTheFirstGrinder() = runTest {
+    val (uno, dos) = twoGrinders()
+    repository.saveCalibration(uno, 10.0, dos, 14.0)
+    repository.saveCalibration(uno, 30.0, dos, 50.0)
+    val fromUno = repository.calibrationPoints(uno, dos).first().sortedBy { it.fromValue }
+    assertEquals(listOf(CalibrationPoint(10.0, 14.0), CalibrationPoint(30.0, 50.0)), fromUno)
+    val fromDos = repository.calibrationPoints(dos, uno).first().sortedBy { it.fromValue }
+    assertEquals(listOf(CalibrationPoint(14.0, 10.0), CalibrationPoint(50.0, 30.0)), fromDos)
+    assertTrue(repository.calibrationPoints(uno, uno).first().isEmpty())
+  }
+
+  @Test
+  fun deletingAGrinderDeletesItsPairs() = runTest {
+    val (uno, dos) = twoGrinders()
+    val tres = repository.save(TestGrinders.tres)
+    repository.saveCalibration(uno, 20.0, dos, 30.0)
+    repository.saveCalibration(dos, 10.0, tres, 40.0)
+    assertTrue(repository.delete(dos))
+    assertTrue(repository.calibrations(uno).first().isEmpty())
+    assertTrue(repository.calibrations(tres).first().isEmpty())
+  }
+
+  @Test
+  fun duplicatingAPredefinedDoesNotCopyItsPairs() = runTest {
+    val a = db.grinderDao().save(TestGrinders.uno.copy(catalogKey = "acme-uno", sourceUrl = "u", sourceName = "n").toRows(1_000L))
+    val b = db.grinderDao().save(TestGrinders.dos.copy(catalogKey = "acme-dos", sourceUrl = "u", sourceName = "n").toRows(1_000L))
+    repository.saveCalibration(a, 20.0, b, 30.0)
+    val copy = repository.save(repository.duplicateDraft(a)!!)
+    assertTrue(repository.calibrations(copy).first().isEmpty())
+    assertEquals(1, repository.calibrations(a).first().size)
+  }
+
+  @Test
+  fun deleteCalibrationRemovesOnlyThatPair() = runTest {
+    val (uno, dos) = twoGrinders()
+    val first = (repository.saveCalibration(uno, 10.0, dos, 14.0) as CalibrationSaveResult.Saved).id
+    val second = (repository.saveCalibration(uno, 30.0, dos, 50.0) as CalibrationSaveResult.Saved).id
+    repository.deleteCalibration(first)
+    assertEquals(listOf(second), repository.calibrations(uno).first().map { it.id })
+  }
+
   private companion object {
     const val PREFS = "grinder_repository_test"
   }

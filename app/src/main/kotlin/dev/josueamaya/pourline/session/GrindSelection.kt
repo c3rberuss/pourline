@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline.session
 
+import dev.josueamaya.pourline.grinder.GrindCalibration
 import dev.josueamaya.pourline.grinder.GrindCardState
 import dev.josueamaya.pourline.grinder.GrindSetting
 import dev.josueamaya.pourline.grinder.GrindSource
@@ -37,12 +38,17 @@ interface SessionGrinders {
   fun owned(): Flow<List<Grinder>>
 
   fun grinder(id: Long?): Flow<Grinder?>
+
+  /** Los pares de calibración del molino [grinderId] (enmienda 1). */
+  fun calibrations(grinderId: Long): Flow<List<GrindCalibration>>
 }
 
 class RepositorySessionGrinders(private val repository: GrinderRepository) : SessionGrinders {
   override fun owned(): Flow<List<Grinder>> = repository.owned()
 
   override fun grinder(id: Long?): Flow<Grinder?> = repository.grinder(id)
+
+  override fun calibrations(grinderId: Long): Flow<List<GrindCalibration>> = repository.calibrations(grinderId)
 }
 
 /** Sin molinos: el valor por defecto para quien no los necesita. */
@@ -50,6 +56,8 @@ object NoSessionGrinders : SessionGrinders {
   override fun owned(): Flow<List<Grinder>> = flowOf(emptyList())
 
   override fun grinder(id: Long?): Flow<Grinder?> = flowOf(null)
+
+  override fun calibrations(grinderId: Long): Flow<List<GrindCalibration>> = flowOf(emptyList())
 }
 
 /**
@@ -81,14 +89,17 @@ class GrindSelection(
       latest.value = src
       // Al cambiar de receta la elección se olvida y vuelve la preselección (§3.7).
       if (choice.value?.reference != src.reference) choice.value = null
+      val sourceId = src.grind?.setting?.grinderId
       combine(
-        grinders.grinder(src.grind?.setting?.grinderId),
+        grinders.grinder(sourceId),
         grinders.owned(),
         defaults.defaultGrinderId,
         choice,
-      ) { sourceGrinder, owned, defaultId, picked ->
+        // Los pares solo se emiten cuando cambia la tabla, no con cada lectura de la báscula (D50).
+        if (sourceId == null) flowOf(emptyList()) else grinders.calibrations(sourceId),
+      ) { sourceGrinder, owned, defaultId, picked, calibrations ->
         val chosenId = picked?.takeIf { it.reference == src.reference }?.grinderId
-        grindCardState(src.grind, sourceGrinder, owned, chosenId, defaultId)
+        grindCardState(src.grind, sourceGrinder, owned, chosenId, defaultId, calibrations)
       }
     }
     .distinctUntilChanged()

@@ -106,8 +106,14 @@ class ScriptedConnection(private val hang: Boolean) : ScaleConnection {
 class RecordingNotifier : StageNotifier {
   val started = java.util.Collections.synchronizedList(mutableListOf<TargetStage>())
 
+  val nextStepTicks = java.util.Collections.synchronizedList(mutableListOf<Int>())
+
   override fun stageStarted(stage: TargetStage) {
     started += stage
+  }
+
+  override fun nextStepTick(remainingS: Int) {
+    nextStepTicks += remainingS
   }
 
   override fun release() = Unit

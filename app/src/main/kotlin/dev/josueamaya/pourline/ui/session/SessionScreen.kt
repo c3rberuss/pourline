@@ -1,6 +1,9 @@
 package dev.josueamaya.pourline.ui.session
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,10 +22,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +38,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -56,8 +65,8 @@ import dev.josueamaya.pourline.brew.toGrams
 import dev.josueamaya.pourline.grinder.ConverterArgs
 import dev.josueamaya.pourline.grinder.GrindFix
 import dev.josueamaya.pourline.history.BrewRepository
-import dev.josueamaya.pourline.scale.ConnectionState
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.scale.ConnectionState
 import dev.josueamaya.pourline.session.GrindSelection
 import dev.josueamaya.pourline.session.PrepState
 import dev.josueamaya.pourline.session.PrepStep
@@ -65,8 +74,8 @@ import dev.josueamaya.pourline.session.SavedBrew
 import dev.josueamaya.pourline.session.ScaleError
 import dev.josueamaya.pourline.session.ScaleSessionManager
 import dev.josueamaya.pourline.session.ScaleUiState
-import dev.josueamaya.pourline.settings.ExpertFeature
 import dev.josueamaya.pourline.settings.ExperienceMode
+import dev.josueamaya.pourline.settings.ExpertFeature
 import dev.josueamaya.pourline.settings.LocalExperienceMode
 import dev.josueamaya.pourline.settings.ModeStore
 import dev.josueamaya.pourline.share.ShareContent
@@ -715,7 +724,11 @@ internal fun CurrentStep(ui: ScaleUiState) {
   }
 }
 
-/** "Siguiente: {tipo} {nombre} en {m:ss}"; en los últimos 5 s, el tiempo es la cuenta atrás en color primario y negrita (D6). */
+/**
+ * "Siguiente: {tipo} {nombre} en {m:ss}" (D6). En los últimos 5 s pasa a [NextStepCountdown]: una tarjeta en color
+ * primario con el número grande, que late a cada segundo (el notificador da a la vez un tic de sonido y vibración).
+ * Las dos formas tienen el mismo alto mínimo para que la lista de pasos no salte al entrar en la cuenta atrás.
+ */
 @Composable
 internal fun NextStep(ui: ScaleUiState, elapsedMs: Long) {
   val guide = ui.guide ?: return
@@ -723,23 +736,75 @@ internal fun NextStep(ui: ScaleUiState, elapsedMs: Long) {
   val info = nextStepInfo(guide.nextStage, elapsedMs, guide.countdownS) ?: return
   val type = stringResource(stepTypeLabel(info.stage.type))
   val label = info.name?.let { stringResource(R.string.session_step_title, type, it) } ?: type
-  val time = info.countdownS?.let { stringResource(R.string.session_next_seconds, it) } ?: nextStepClock(info)
+  info.countdownS?.let {
+    NextStepCountdown(label, it)
+    return
+  }
+  val time = nextStepClock(info)
   // El tiempo va dentro de la frase traducida: se parte por un marcador para darle estilo propio.
   val marker = "\u0000"
   val (before, after) = stringResource(R.string.session_next, label, marker).split(marker).let { it[0] to it.getOrElse(1) { "" } }
-  Row(Modifier.fillMaxWidth().testTag("session_next_step"), verticalAlignment = Alignment.CenterVertically) {
+  Row(
+    Modifier.fillMaxWidth().heightIn(min = NEXT_STEP_MIN_HEIGHT).testTag("session_next_step"),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
     AntText(before, type = AntTextType.Secondary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-    AntText(
-      time,
-      Modifier.testTag("session_next_time"),
-      type = if (info.emphasized) AntTextType.Default else AntTextType.Secondary,
-      style = if (info.emphasized) AntTheme.typography.text.copy(color = AntTheme.colors.primary.base) else AntTheme.typography.text,
-      strong = info.emphasized,
-      maxLines = 1,
-    )
+    AntText(time, Modifier.testTag("session_next_time"), type = AntTextType.Secondary, maxLines = 1)
     if (after.isNotEmpty()) AntText(after, type = AntTextType.Secondary, maxLines = 1)
   }
 }
+
+/** La cuenta atrás de los últimos 5 s antes del siguiente paso: "Siguiente" y el paso a la izquierda, los segundos en grande. */
+@Composable
+private fun NextStepCountdown(label: String, seconds: Int) {
+  val time = stringResource(R.string.session_next_seconds, seconds)
+  val description = stringResource(R.string.session_next, label, time)
+  // 1 → 0 a cada segundo: el número arranca más grande y el fondo más intenso, y vuelven a su tamaño y tono.
+  val pulse = remember { Animatable(0f) }
+  LaunchedEffect(seconds) {
+    pulse.snapTo(1f)
+    pulse.animateTo(0f, tween(durationMillis = 450, easing = FastOutSlowInEasing))
+  }
+  val colors = AntTheme.colors.primary
+  val shape = RoundedCornerShape(AntTheme.radius.lg)
+  Row(
+    Modifier
+      .fillMaxWidth()
+      .heightIn(min = NEXT_STEP_MIN_HEIGHT)
+      .testTag("session_next_step")
+      .clip(shape)
+      .drawBehind { drawRect(lerp(colors.bg, colors.bgHover, pulse.value)) }
+      .border(1.dp, colors.border, shape)
+      .padding(horizontal = AntTheme.spacing.sm)
+      .semantics(mergeDescendants = true) { contentDescription = description },
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs),
+  ) {
+    AntText(
+      stringResource(R.string.session_next_label),
+      type = AntTextType.Secondary,
+      maxLines = 1,
+    )
+    AntText(label, Modifier.weight(1f), strong = true, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    // `Text` y no `AntText`: el color del tipo de `AntText` taparía el primario.
+    Text(
+      time,
+      Modifier
+        .testTag("session_next_time")
+        .graphicsLayer {
+          val scale = 1f + 0.3f * pulse.value
+          scaleX = scale
+          scaleY = scale
+        },
+      color = colors.text,
+      style = AntTheme.typography.heading3.copy(fontWeight = FontWeight.Bold),
+      maxLines = 1,
+    )
+  }
+}
+
+/** El alto de "Siguiente …", con y sin cuenta atrás: lo que necesita la tarjeta con el número grande. */
+private val NEXT_STEP_MIN_HEIGHT = 40.dp
 
 @Composable
 private fun KeepScreenOn() {

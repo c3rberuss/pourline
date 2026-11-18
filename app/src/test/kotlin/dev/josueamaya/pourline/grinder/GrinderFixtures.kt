@@ -90,6 +90,34 @@ object GrinderFixtures {
     owned = true,
   )
 
+  /** Sin anclas, con tres rangos: curva implícita (recta por mínimos cuadrados de los puntos medios). Clics 0–120. */
+  val soloRangos = Grinder(
+    id = 7,
+    brand = "Acme",
+    model = "Solo rangos",
+    units = listOf(GrindUnitLevel(GrindUnit.CLICKS)),
+    scaleMin = 0.0,
+    scaleMax = 120.0,
+    ranges = mapOf(
+      BrewMethod.V60 to GrindRange(50.0, 80.0),
+      BrewMethod.AEROPRESS to GrindRange(40.0, 50.0),
+      BrewMethod.FRENCH_PRESS to GrindRange(80.0, 120.0),
+    ),
+    owned = true,
+  )
+
+  /** Sin anclas y con un solo rango: no tiene curva (un solo nivel). */
+  val sinCurva = Grinder(
+    id = 8,
+    brand = "Acme",
+    model = "Sin curva",
+    units = listOf(GrindUnitLevel(GrindUnit.CLICKS)),
+    scaleMin = 0.0,
+    scaleMax = 40.0,
+    ranges = mapOf(BrewMethod.V60 to GrindRange(16.0, 24.0)),
+    owned = true,
+  )
+
   val all = listOf(uno, dos, tres, inverso, cinco, seis)
 }
 

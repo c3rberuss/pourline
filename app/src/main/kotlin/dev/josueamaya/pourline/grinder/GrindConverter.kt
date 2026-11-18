@@ -5,6 +5,9 @@ import kotlin.math.abs
 
 /** Por qué un resultado no es exacto. */
 enum class ConversionReason {
+  /** Se calculó con los pares de calibración del usuario ("según tu calibración"). */
+  CALIBRATED,
+
   /** Se calculó con las anclas de grosor, no con el rango del método. */
   ANCHORS,
 
@@ -31,38 +34,70 @@ val Conversion.valueOrNull: Double?
     Conversion.NoEquivalent -> null
   }
 
-/** La conversión de un ajuste entre molinos por posición dentro del rango del método (§3.3). Todo es aritmética local. */
+/** La conversión de un ajuste entre molinos por pares de calibración y curvas de grosor (§3.3). Todo es aritmética local. */
 object GrindConverter {
   /**
-   * El ajuste equivalente de [value] (en unidades base de [from]) en [to].
+   * El ajuste equivalente de [value] (en unidades base de [from]) en [to], sin depender del método de la receta.
+   * [pairs] son los pares de calibración entre los dos molinos, orientados de [from] a [to].
    *
    * 1. Mismo molino: `Exact(value)`.
-   * 2. Si los dos tienen rango para [method], el mismo porcentaje de posición dentro del rango (extrapola fuera de él).
-   * 3. Si no, interpola por tramos con las anclas definidas en los dos (al menos 2), con la razón `ANCHORS`.
-   * 4. Si tampoco, `NoEquivalent`.
+   * 2. Con 2 o más pares: interpolación por tramos sobre ellos (`CALIBRATED`, o el valor del par si coincide).
+   * 3. Con 1 par: la conversión por curvas desplazada para que pase por el par (`CALIBRATED`); sin alguna curva,
+   *    `NoEquivalent`.
+   * 4. Sin pares: la conversión por curvas de grosor (`ANCHORS`).
+   * 5. Si no hay curvas, `NoEquivalent`.
    *
    * El resultado se redondea al paso del destino (`ROUNDED`) y se limita a su escala (`AT_LIMIT`).
    */
-  fun convert(value: Double, method: BrewMethod?, from: Grinder, to: Grinder): Conversion {
+  fun convert(value: Double, from: Grinder, to: Grinder, pairs: List<CalibrationPoint>): Conversion {
     if (from.id != 0L && from.id == to.id) return Conversion.Exact(value)
 
-    val fromRange = method?.let { from.ranges[it] }
-    val toRange = method?.let { to.ranges[it] }
-    val usesAnchors = fromRange == null || toRange == null
-    val raw = if (!usesAnchors) {
-      byRange(value, fromRange!!, from.direction, toRange!!, to.direction)
-    } else {
-      byAnchors(value, from, to) ?: return Conversion.NoEquivalent
-    }
+    val calc = when {
+      pairs.size >= 2 -> byPairs(value, pairs)
+      pairs.size == 1 -> byOnePair(value, from, to, pairs.first())
+      else -> byCurves(value, from, to)?.let { Calc(it, ConversionReason.ANCHORS) }
+    } ?: return Conversion.NoEquivalent
+    return finish(calc, to)
+  }
 
+  /** El valor sin redondear y la razón que lo explica; `null` si coincide con un par (el valor del usuario, sin razón). */
+  private class Calc(val raw: Double, val reason: ConversionReason?)
+
+  private fun byPairs(value: Double, pairs: List<CalibrationPoint>): Calc? {
+    val sorted = pairs.sortedBy { it.fromValue }
+    sorted.firstOrNull { abs(value - it.fromValue) < EPS }?.let { return Calc(it.toValue, null) }
+    return interpolate(sorted.map { it.fromValue to it.toValue }, value)?.let { Calc(it, ConversionReason.CALIBRATED) }
+  }
+
+  private fun byOnePair(value: Double, from: Grinder, to: Grinder, pair: CalibrationPoint): Calc? {
+    // Sin la curva de alguno de los dos no hay equivalencia, ni siquiera en el valor del par.
+    val atPair = byCurves(pair.fromValue, from, to) ?: return null
+    if (abs(value - pair.fromValue) < EPS) return Calc(pair.toValue, null)
+    val shifted = byCurves(value, from, to) ?: return null
+    return Calc(shifted + (pair.toValue - atPair), ConversionReason.CALIBRATED)
+  }
+
+  /** Valor de origen → nivel con la curva del origen → valor de destino con la curva del destino; `null` sin alguna curva. */
+  private fun byCurves(value: Double, from: Grinder, to: Grinder): Double? {
+    val fromCurve = GrindCurve.of(from) ?: return null
+    val toCurve = GrindCurve.of(to) ?: return null
+    return toCurve.value(fromCurve.level(value)).takeUnless { it.isNaN() }
+  }
+
+  /**
+   * Redondea al paso del destino y limita a su escala, con sus razones. Un valor que viene de un par pero que el destino
+   * no admite (la escala se editó después) sale `CALIBRATED` con `ROUNDED` o `AT_LIMIT`.
+   */
+  private fun finish(calc: Calc, to: Grinder): Conversion {
     val reasons = mutableSetOf<ConversionReason>()
-    if (usesAnchors) reasons += ConversionReason.ANCHORS
-    var result = snap(raw, to)
-    if (abs(result - raw) > 1e-6) reasons += ConversionReason.ROUNDED
+    calc.reason?.let { reasons += it }
+    var result = snap(calc.raw, to)
+    if (abs(result - calc.raw) > 1e-6) reasons += ConversionReason.ROUNDED
     if (result < to.scaleMin - EPS || result > to.scaleMax + EPS) {
       result = clampToScale(result, to)
       reasons += ConversionReason.AT_LIMIT
     }
+    if (calc.reason == null && reasons.isNotEmpty()) reasons += ConversionReason.CALIBRATED
     return if (reasons.isEmpty()) Conversion.Exact(result) else Conversion.Approximate(result, reasons)
   }
 
@@ -70,41 +105,5 @@ object GrindConverter {
   fun suggested(method: BrewMethod?, grinder: Grinder): Double? {
     val range = method?.let { grinder.ranges[it] } ?: return null
     return snap((range.min + range.max) / 2, grinder)
-  }
-
-  /** El extremo fino de un rango: `min` si subir es más grueso y `max` si subir es más fino. */
-  private fun fineEnd(range: GrindRange, direction: GrindDirection) =
-    if (direction == GrindDirection.HIGHER_IS_COARSER) range.min else range.max
-
-  private fun coarseEnd(range: GrindRange, direction: GrindDirection) =
-    if (direction == GrindDirection.HIGHER_IS_COARSER) range.max else range.min
-
-  private fun byRange(value: Double, from: GrindRange, fromDirection: GrindDirection, to: GrindRange, toDirection: GrindDirection): Double {
-    val fromFine = fineEnd(from, fromDirection)
-    val toFine = fineEnd(to, toDirection)
-    val p = (value - fromFine) / (coarseEnd(from, fromDirection) - fromFine)
-    return toFine + p * (coarseEnd(to, toDirection) - toFine)
-  }
-
-  private fun byAnchors(value: Double, from: Grinder, to: Grinder): Double? {
-    val common = GrindLevel.entries.filter { it in from.anchors && it in to.anchors }
-    if (common.size < 2) return null
-    // Valor de origen → nivel (0..6), por tramos y extrapolando por el tramo extremo.
-    val toLevel = common.map { from.anchors.getValue(it) to it.ordinal.toDouble() }.sortedBy { it.first }
-    val level = interpolate(toLevel, value) ?: return null
-    // Nivel → valor de destino.
-    val toValue = common.map { it.ordinal.toDouble() to to.anchors.getValue(it) }
-    return interpolate(toValue, level)
-  }
-
-  /** Interpola linealmente por tramos sobre [points] (ordenados por x) y extrapola por los tramos de los extremos. */
-  private fun interpolate(points: List<Pair<Double, Double>>, x: Double): Double? {
-    if (points.size < 2) return null
-    // Con x anterior al primer punto se usa el primer tramo; con x posterior al último, el último.
-    val i = points.indexOfLast { it.first <= x }.coerceIn(0, points.size - 2)
-    val (x0, y0) = points[i]
-    val (x1, y1) = points[i + 1]
-    if (abs(x1 - x0) < EPS) return null
-    return y0 + (x - x0) / (x1 - x0) * (y1 - y0)
   }
 }

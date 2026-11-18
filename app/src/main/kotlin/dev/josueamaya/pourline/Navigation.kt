@@ -189,7 +189,7 @@ private fun tabEntryProvider(
       onNewCoffee = { stack.add(CoffeeEdit()) },
       onAddGrinder = { stack.add(Grinders) },
       onFixGrinder = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
-      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
+      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.value)) },
     )
   }
   tabEntry<Session>(tab, stack, activeTab) {
@@ -209,7 +209,7 @@ private fun tabEntryProvider(
       grind = deps.grindSelection,
       onAddGrinder = { stack.add(Grinders) },
       onFixGrinder = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
-      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
+      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.value)) },
     )
   }
   tabEntry<Coffees>(tab, stack, activeTab) {
@@ -272,7 +272,7 @@ private fun tabEntryProvider(
   }
   tabEntry<GrindConverter>(tab, stack, activeTab) { key ->
     GrindConverterScreen(
-      viewModel { GrindConverterViewModel(deps.grinderRepository, key.sourceId, key.method, key.value) },
+      viewModel { GrindConverterViewModel(deps.grinderRepository, key.sourceId, key.value) },
       onBack = ::back,
       onOpenGrinders = { stack.add(Grinders) },
       onFix = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
@@ -292,6 +292,7 @@ private fun tabEntryProvider(
       onBack = ::back,
       onEdit = { id -> stack.add(GrinderEdit(id = id)) },
       onDuplicate = { id -> stack.add(GrinderEdit(fromId = id)) },
+      toCalibrations = key.toCalibrations,
     )
   }
   tabEntry<GrinderEdit>(tab, stack, activeTab) { key ->
@@ -323,7 +324,7 @@ private fun tabEntryProvider(
       onBack = ::back,
       // Duplicar abre la copia en lugar de la original: atrás vuelve a la lista.
       onDuplicated = { copyId -> stack[stack.lastIndex] = RecipeEdit(id = copyId) },
-      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
+      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.value)) },
     )
   }
   tabEntry<Tools>(tab, stack, activeTab) {
@@ -384,9 +385,15 @@ private fun tabEntryProvider(
   }
 }
 
-/** Completar los rangos abre el editor del molino propio; en un predefinido, una copia suya con los rangos abiertos. */
-private fun fixGrinderKey(fix: GrindFix, id: Long): NavKey =
-  if (fix == GrindFix.COMPLETE_RANGES) GrinderEdit(id = id, openRanges = true) else GrinderEdit(fromId = id, openRanges = true)
+/**
+ * Completar los rangos abre el editor del molino propio; en un predefinido, una copia suya con los rangos abiertos;
+ * añadir otra equivalencia abre el detalle del molino (la sección "Equivalencias" llega en F7).
+ */
+private fun fixGrinderKey(fix: GrindFix, id: Long): NavKey = when (fix) {
+  GrindFix.COMPLETE_RANGES -> GrinderEdit(id = id, openRanges = true)
+  GrindFix.DUPLICATE -> GrinderEdit(fromId = id, openRanges = true)
+  GrindFix.ADD_CALIBRATION -> GrinderDetail(id, toCalibrations = true)
+}
 
 /** El id de la receta elegida en Preparar, o `null` si no hay objetivo o es una preparación anterior (D29). */
 private fun activeRecipeIdOf(ui: ScaleUiState): Long? = (ui.target?.key as? ReferenceKey.Recipe)?.id

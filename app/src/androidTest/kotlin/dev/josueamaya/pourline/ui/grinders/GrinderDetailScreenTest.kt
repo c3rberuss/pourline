@@ -3,12 +3,16 @@ package dev.josueamaya.pourline.ui.grinders
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.R
+import dev.josueamaya.pourline.grinder.GrindLevel
 import dev.josueamaya.pourline.grinder.GrindSetting
 import dev.josueamaya.pourline.grinder.TestGrinders
+import dev.josueamaya.pourline.grinder.addCalibration
 import dev.josueamaya.pourline.grinder.addGrinder
 import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.recipe.Recipe
@@ -160,6 +164,183 @@ class GrinderDetailScreenTest {
     ui.waitFor("grinder_detail_own")
     assertTrue(ui.owned().isEmpty())
     assertFalse(rule.onAllNodesWithTagExists("grinder_detail_is_default"))
+  }
+
+  private fun pairs(grinder: Long) =
+    runBlocking { env.grinders.calibrations(grinder).first() }.map { it.valueOf(grinder) to it.valueOf(it.otherId(grinder)) }.sortedBy { it.first }
+
+  private fun top(tag: String) = ui.node(tag, unmerged = true).fetchSemanticsNode().positionInRoot.y
+
+  @Test
+  fun anOwnGrinderWithoutPairsShowsTheEmptyText() {
+    val id = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    openDetail(id)
+    ui.waitFor("grinder_calibrations")
+    assertTrue(ui.exists("grinder_calibrations_empty"))
+  }
+
+  @Test
+  fun aPredefinedIDoNotHaveWithoutPairsHasNoSection() {
+    env.seedGrinders()
+    rule.setContent { TestApp(env) }
+    ui.openGrinders()
+    ui.click("grinders_add")
+    ui.waitFor("grinder_catalog_acme-dos")
+    ui.click("grinder_catalog_acme-dos")
+    ui.waitFor("grinder_detail_own")
+    assertFalse(ui.exists("grinder_calibrations"))
+  }
+
+  @Test
+  fun addingAPairListsItGroupedByGrinderAndSortedByThisGrinder() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val dos = runBlocking { env.db.addGrinder(TestGrinders.dos, 2_000L) }
+    val tres = runBlocking { env.db.addGrinder(TestGrinders.tres, 3_000L) }
+    val high = runBlocking { env.db.addCalibration(uno, 30.0, dos, 50.0) }
+    runBlocking { env.db.addCalibration(uno, 20.0, tres, 80.0) }
+    openDetail(uno)
+    ui.waitFor("grinder_calibrations_add")
+
+    ui.click("grinder_calibrations_add")
+    ui.waitFor("calibration_sheet")
+    ui.choose("calibration_grinder", "Acme Dos")
+    ui.click("calibration_value_0_inc") // el primer toque fija el centro de la escala: 20
+    ui.click("calibration_other_value_0_inc") // y en Dos, 30
+    ui.click("calibration_save")
+    ui.waitGone("calibration_sheet")
+
+    assertEquals(setOf(20.0 to 30.0, 20.0 to 80.0, 30.0 to 50.0), pairs(uno).toSet())
+    ui.waitFor("grinder_calibrations_group_$dos")
+    assertTrue(ui.exists("grinder_calibrations_group_$tres"))
+    val low = runBlocking { env.grinders.calibrations(uno).first() }.single { it.otherId(uno) == dos && it.valueOf(uno) == 20.0 }.id
+    ui.waitFor("grinder_calibration_$low")
+    // Dentro del grupo de Dos, el par con Uno 20 va antes que el de Uno 30.
+    assertTrue(top("grinder_calibration_$low") < top("grinder_calibration_$high"))
+  }
+
+  @Test
+  fun editingAPairChangesItsValues() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val dos = runBlocking { env.db.addGrinder(TestGrinders.dos, 2_000L) }
+    val id = runBlocking { env.db.addCalibration(uno, 20.0, dos, 31.0) }
+    openDetail(uno)
+    ui.waitFor("grinder_calibration_edit_$id")
+    ui.click("grinder_calibration_edit_$id")
+    ui.waitFor("calibration_sheet")
+    // Al editar, el otro molino queda fijo y los dos ajustes se pueden cambiar.
+    assertFalse(ui.exists("calibration_grinder"))
+    assertTrue(ui.exists("calibration_value_0_inc"))
+    ui.click("calibration_other_value_0_inc") // 31 → 31,5
+    ui.click("calibration_value_0_inc") // 20 → 21
+    ui.click("calibration_save")
+    ui.waitGone("calibration_sheet")
+
+    assertEquals(listOf(21.0 to 31.5), pairs(uno))
+  }
+
+  @Test
+  fun deletingAPairAsksAndRemovesIt() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val dos = runBlocking { env.db.addGrinder(TestGrinders.dos, 2_000L) }
+    val id = runBlocking { env.db.addCalibration(uno, 20.0, dos, 31.0) }
+    openDetail(uno)
+    ui.waitFor("grinder_calibration_delete_$id")
+    ui.click("grinder_calibration_delete_$id")
+    ui.waitFor("grinder_calibration_delete_dialog")
+    // Cancelar no borra.
+    ui.click("ant_modal_cancel")
+    ui.waitGone("grinder_calibration_delete_dialog")
+    assertEquals(listOf(20.0 to 31.0), pairs(uno))
+
+    ui.click("grinder_calibration_delete_$id")
+    ui.waitFor("grinder_calibration_delete_dialog")
+    ui.click("ant_modal_confirm")
+    ui.waitGone("grinder_calibration_$id")
+    assertEquals(emptyList<Pair<Double, Double>>(), pairs(uno))
+    assertTrue(ui.exists("grinder_calibrations_empty"))
+  }
+
+  @Test
+  fun aContradictingPairShowsTheConflictAndReplaceSavesIt() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val tres = runBlocking { env.db.addGrinder(TestGrinders.tres, 3_000L) }
+    runBlocking {
+      env.db.addCalibration(uno, 10.0, tres, 40.0)
+      env.db.addCalibration(uno, 30.0, tres, 120.0)
+    }
+    openDetail(uno)
+    ui.waitFor("grinder_calibrations_add")
+    ui.click("grinder_calibrations_add")
+    ui.waitFor("calibration_sheet")
+    // Un solo molino con el que emparejar: ya viene elegido.
+    assertTrue(ui.exists("calibration_other_value_0_inc"))
+    ui.click("calibration_value_0_inc") // 20
+    ui.click("calibration_other_value_0_inc") // el centro de Tres: 100
+    ui.click("calibration_other_value_0_inc") // una rotación más (40 clics): 140, por encima de Uno 30 = Tres 120
+    ui.click("calibration_save")
+    ui.waitFor("calibration_conflict")
+    assertEquals(listOf(10.0 to 40.0, 30.0 to 120.0), pairs(uno))
+
+    ui.click("calibration_replace")
+    ui.waitGone("calibration_sheet")
+    assertEquals(listOf(10.0 to 40.0, 20.0 to 140.0), pairs(uno))
+  }
+
+  @Test
+  fun aRepeatedValueShowsEquivalenceUpdated() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val dos = runBlocking { env.db.addGrinder(TestGrinders.dos, 2_000L) }
+    runBlocking { env.db.addCalibration(uno, 20.0, dos, 31.0) }
+    openDetail(uno)
+    ui.waitFor("grinder_calibrations_add")
+    ui.click("grinder_calibrations_add")
+    ui.waitFor("calibration_sheet")
+    ui.click("calibration_value_0_inc") // 20, el mismo valor del par que ya hay
+    repeat(4) { ui.click("calibration_other_value_0_inc") } // 30, 30,5, 31 y 31,5
+    ui.click("calibration_save")
+    ui.waitGone("calibration_sheet")
+
+    rule.waitUntil(5_000) {
+      rule.onAllNodesWithText(context.getString(R.string.grind_calibration_updated)).fetchSemanticsNodes().isNotEmpty()
+    }
+    assertEquals(listOf(20.0 to 31.5), pairs(uno))
+  }
+
+  @Test
+  fun aPairWithAGrinderThatIsNoLongerMineCanOnlyBeDeleted() {
+    env.seedGrinders()
+    val catalogDos = runBlocking { env.grinders.catalog().first().single { it.model == "Dos" }.id }
+    runBlocking { env.grinders.setOwned(catalogDos, true) }
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val id = runBlocking { env.db.addCalibration(uno, 20.0, catalogDos, 30.0) }
+    runBlocking { env.grinders.setOwned(catalogDos, false) }
+    openDetail(uno)
+    ui.waitFor("grinder_calibration_$id")
+    assertTrue(ui.exists("grinder_calibration_delete_$id"))
+    assertFalse(ui.exists("grinder_calibration_edit_$id"))
+  }
+
+  @Test
+  fun aValueOutsideTheEditedScaleShowsOutOfScale() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val dos = runBlocking { env.db.addGrinder(TestGrinders.dos, 2_000L) }
+    val id = runBlocking { env.db.addCalibration(uno, 30.0, dos, 50.0) }
+    // Dos se edita a 0–40: el 50 del par queda fuera de su escala.
+    runBlocking {
+      val edited = env.grinders.get(dos)!!
+      env.grinders.save(edited.copy(scaleMax = 40.0, anchors = edited.anchors + (GrindLevel.COARSE to 40.0)))
+    }
+    openDetail(uno)
+    ui.waitFor("grinder_calibration_$id")
+    assertTrue(ui.exists("grinder_calibration_out_of_scale_$id"))
+  }
+
+  @Test
+  fun noAddWithoutAnotherOwnedGrinder() {
+    val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    openDetail(uno)
+    ui.waitFor("grinder_calibrations")
+    assertFalse(ui.exists("grinder_calibrations_add"))
   }
 
   private fun androidx.compose.ui.test.junit4.ComposeTestRule.onAllNodesWithTagExists(tag: String) =

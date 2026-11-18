@@ -410,6 +410,20 @@ class ScaleSessionManagerTargetTest {
   }
 
   @Test
+  fun `the last five seconds before a step tick once per second`() {
+    selectRecipe(threeStages())
+    activePour()
+    val t0 = ui.brew.t0MonoMs!!
+
+    while (now - t0 < 24_000) advanceSeconds(1)
+    assertTrue(notifier.nextStepTicks.isEmpty())
+
+    while (now - t0 < 31_000) advanceSeconds(1)
+    assertEquals(listOf(5, 4, 3, 2, 1), notifier.nextStepTicks)
+    assertEquals(listOf(1), notifier.started.map { it.index })
+  }
+
+  @Test
   fun `a new session alerts again`() {
     selectRecipe(threeStages())
     activePour()

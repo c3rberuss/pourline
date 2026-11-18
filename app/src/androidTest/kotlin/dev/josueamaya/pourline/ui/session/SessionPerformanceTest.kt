@@ -12,6 +12,7 @@ import androidx.compose.ui.test.swipeLeft
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.grinder.GrindSetting
 import dev.josueamaya.pourline.grinder.TestGrinders
+import dev.josueamaya.pourline.grinder.addCalibration
 import dev.josueamaya.pourline.grinder.addGrinder
 import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.recipe.Recipe
@@ -70,7 +71,10 @@ class SessionPerformanceTest {
   private fun measure(mode: ExperienceMode, chartPage: Boolean) {
     runBlocking {
       val uno = env.db.addGrinder(TestGrinders.uno)
-      env.db.addGrinder(TestGrinders.dos, 2_000L)
+      val dos = env.db.addGrinder(TestGrinders.dos, 2_000L)
+      // Dos pares Uno↔Dos (D57): la tarjeta trabaja con calibración, no solo con curvas.
+      env.db.addCalibration(uno, 10.0, dos, 14.0)
+      env.db.addCalibration(uno, 30.0, dos, 50.0)
       env.recipes.save(longRecipe(uno))
     }
     env.skipOnboarding(mode)

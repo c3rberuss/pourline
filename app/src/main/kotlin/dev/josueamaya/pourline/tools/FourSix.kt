@@ -30,6 +30,17 @@ enum class FourSixStrength(val pours: Int) {
   STRONGEST(5),
 }
 
+/**
+ * Los ritmos de vertido que ofrece el generador, en gramos por segundo; [CUSTOM] es el que escribe el usuario. Ver
+ * [FourSixParams.pourRateGPerS].
+ */
+enum class FourSixPace(val gramsPerSecond: Double?) {
+  NORMAL(6.0),
+  SLOW(4.0),
+  SLOWEST(3.0),
+  CUSTOM(null),
+}
+
 /** Lo que elige el usuario. Va en la clave de navegación del editor de recetas ("Guardar como receta"). */
 @Serializable
 data class FourSixParams(
@@ -37,6 +48,12 @@ data class FourSixParams(
   val ratio: Double,
   val taste: FourSixTaste = FourSixTaste.BALANCED,
   val strength: FourSixStrength = FourSixStrength.STANDARD,
+  /**
+   * Ritmo de vertido. Cada vertido dura lo que se tarda en verter sus gramos a este ritmo, y nunca menos que 60 g a
+   * este ritmo, para que un ritmo más lento se note también en vertidos pequeños. El inicio de cada vertido no cambia
+   * (cada 45 s): la espera es lo que queda hasta el siguiente.
+   */
+  val pourRateGPerS: Double = FourSix.DEFAULT_POUR_RATE_G_PER_S,
 )
 
 /** A qué parte del método pertenece un vertido: el 40 % del sabor o el 60 % de la intensidad. */
@@ -66,7 +83,8 @@ data class FourSixPlan(
  * El método 4:6 de Tetsu Kasuya. El agua total (café × ratio) se divide en un 40 % que define el sabor, en dos
  * vertidos ([FourSixTaste]), y un 60 % que define la intensidad, en uno a cinco vertidos iguales ([FourSixStrength]).
  * Cada vertido empieza 45 s después del anterior y el filtro se retira 30 s después del último: con 20 g a 1:15,
- * equilibrado e intensidad media, son los cinco vertidos de 60 g de la receta original, en 3:30.
+ * equilibrado e intensidad media, son los cinco vertidos de 60 g de la receta original, en 3:30. La duración de cada
+ * vertido sale de [FourSixParams.pourRateGPerS]; si un vertido lento no deja al menos 10 s de espera, los siguientes se retrasan.
  *
  * Los pesos acumulados se redondean al gramo; cada vertido es la diferencia entre dos acumulados.
  */
@@ -75,6 +93,11 @@ object FourSix {
   const val MAX_DOSE_G = RecipeValidator.MAX_DOSE_G
   const val MIN_RATIO = 10.0
   const val MAX_RATIO = 20.0
+  const val MIN_POUR_RATE_G_PER_S = 2.0
+  const val MAX_POUR_RATE_G_PER_S = 15.0
+
+  /** 60 g en 10 s, como los vertidos de la receta predefinida. */
+  const val DEFAULT_POUR_RATE_G_PER_S = 6.0
   const val MAX_WATER_G = RecipeValidator.MAX_WATER_G
   const val DEFAULT_RATIO = 15.0
   const val TASTE_SHARE = 0.4
@@ -86,10 +109,9 @@ object FourSix {
   /** Del inicio del último vertido a retirar el filtro. */
   const val DRAIN_MS = 30_000L
 
-  /** Ritmo de vertido para estimar la duración de cada vertido: 60 g en 10 s. */
-  private const val POUR_RATE_G_PER_S = 6.0
-  private const val MIN_POUR_MS = 10_000L
-  private const val MAX_POUR_MS = 60_000L
+  /** Ningún vertido dura menos de lo que se tarda en verter estos gramos al ritmo elegido (10 s al ritmo normal). */
+  const val MIN_POUR_G = 60.0
+  private const val MAX_POUR_MS = RecipeValidator.MAX_DURATION_MS
 
   /** Con vertidos muy grandes (dosis altas), lo mínimo que se espera entre el final de uno y el siguiente. */
   private const val MIN_REST_MS = 10_000L
@@ -99,7 +121,7 @@ object FourSix {
 
   /** El plan de [params], o `null` si la dosis, el ratio o el agua total se salen de lo que admite una receta. */
   fun plan(params: FourSixParams): FourSixPlan? {
-    if (!isValidDose(params.doseG) || !isValidRatio(params.ratio)) return null
+    if (!isValidDose(params.doseG) || !isValidRatio(params.ratio) || !isValidPourRate(params.pourRateGPerS)) return null
     val waterG = (params.doseG * params.ratio).roundToLong().toDouble()
     if (waterG > MAX_WATER_G) return null
 
@@ -111,7 +133,7 @@ object FourSix {
     var startMs = 0L
     val pours = totals.mapIndexed { i, totalG ->
       val pourG = totalG - (totals.getOrNull(i - 1) ?: 0.0)
-      val durationMs = pourDurationMs(pourG)
+      val durationMs = pourDurationMs(pourG, params.pourRateGPerS)
       val pour = FourSixPour(
         phase = if (i < 2) FourSixPhase.TASTE else FourSixPhase.STRENGTH,
         startMs = startMs,
@@ -129,6 +151,9 @@ object FourSix {
   fun isValidDose(doseG: Double): Boolean = doseG.isFinite() && doseG in MIN_DOSE_G..MAX_DOSE_G
 
   fun isValidRatio(ratio: Double): Boolean = ratio.isFinite() && ratio in MIN_RATIO..MAX_RATIO
+
+  fun isValidPourRate(gramsPerSecond: Double): Boolean =
+    gramsPerSecond.isFinite() && gramsPerSecond in MIN_POUR_RATE_G_PER_S..MAX_POUR_RATE_G_PER_S
 
   /**
    * La receta del plan: cada vertido es un paso `POUR` y entre vertidos va un `WAIT` hasta el siguiente. Un último
@@ -166,8 +191,9 @@ object FourSix {
     )
   }
 
-  private fun pourDurationMs(pourG: Double): Long =
-    (ceil(pourG / POUR_RATE_G_PER_S).toLong() * 1_000L).coerceIn(MIN_POUR_MS, MAX_POUR_MS)
+  /** Cuánto dura verter [pourG] a [gramsPerSecond], en segundos enteros, entre 60 g a ese ritmo y 2 min. */
+  fun pourDurationMs(pourG: Double, gramsPerSecond: Double): Long =
+    (ceil(maxOf(pourG, MIN_POUR_G) / gramsPerSecond).toLong() * 1_000L).coerceAtMost(MAX_POUR_MS)
 }
 
 /** Textos de las recetas que genera [FourSix]. Lo implementa `ResourcesFourSixTexts`; en los tests, un falso. */

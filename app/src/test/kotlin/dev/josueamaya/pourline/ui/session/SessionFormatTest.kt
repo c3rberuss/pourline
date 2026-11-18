@@ -35,6 +35,33 @@ class SessionFormatTest {
   }
 
   @Test
+  fun `a remaining time rounds up to the second`() {
+    assertEquals("0:00", formatRemaining(0))
+    assertEquals("0:00", formatRemaining(-500))
+    assertEquals("0:01", formatRemaining(1))
+    assertEquals("0:05", formatRemaining(5_000))
+    assertEquals("0:06", formatRemaining(5_001))
+    assertEquals("1:00", formatRemaining(59_400))
+  }
+
+  @Test
+  fun `the remaining clock hands over to the countdown without repeating a second`() {
+    val config = TargetConfig()
+    val curve = TargetCurve(emptyList(), listOf(TargetStage(0, null, 0, 30_000, 50.0), TargetStage(1, null, 30_000, 60_000, 100.0)))
+    val next = curve.stages[1]
+    // Lo que dice "Siguiente … en" en cada segundo entero y a mitad de segundo, de 8 s antes del paso hasta 1 ms antes.
+    val shown = (8_000L downTo 1L step 500).plus(1L).distinct().map { before ->
+      val tMs = next.startMs - before
+      val guide = TargetGuide.at(curve, BrewPhase.Active(pouring = false), tMs, null, config)
+      val info = nextStepInfo(guide.nextStage, tMs, guide.countdownS)!!
+      info.countdownS?.toString() ?: nextStepClock(info).substringAfter(":").toInt().toString()
+    }
+    // Cada valor dura un segundo (dos muestras de medio segundo) y bajan de uno en uno.
+    assertEquals(listOf("8", "8", "7", "7", "6", "6", "5", "5", "4", "4", "3", "3", "2", "2", "1", "1"), shown.dropLast(1))
+    assertEquals("1", shown.last())
+  }
+
+  @Test
   fun `each step type has its own label and icon`() {
     assertEquals(R.string.step_type_pour, stepTypeLabel(StageType.POUR))
     assertEquals(R.string.step_type_swirl, stepTypeLabel(StageType.SWIRL))

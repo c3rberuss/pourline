@@ -50,3 +50,12 @@ val FourSixStrength.labelRes: Int
     FourSixStrength.STRONG -> R.string.four_six_strength_strong
     FourSixStrength.STRONGEST -> R.string.four_six_strength_strongest
   }
+
+@get:StringRes
+val FourSixPace.labelRes: Int
+  get() = when (this) {
+    FourSixPace.NORMAL -> R.string.four_six_pace_normal
+    FourSixPace.SLOW -> R.string.four_six_pace_slow
+    FourSixPace.SLOWEST -> R.string.four_six_pace_slowest
+    FourSixPace.CUSTOM -> R.string.four_six_pace_custom
+  }

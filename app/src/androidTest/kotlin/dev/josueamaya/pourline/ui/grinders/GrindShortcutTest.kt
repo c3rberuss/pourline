@@ -43,15 +43,15 @@ class GrindShortcutTest {
   private fun assertConverterFilled(uno: Long, dos: Long) {
     ui.waitFor("converter")
     rule.waitUntil(5_000) { runCatching { ui.node("converter_source").assertTextContains("Acme Uno", substring = true) }.isSuccess }
-    // Con el ajuste ya dado, hay una fila para Dos con el equivalente de 20 en Uno (V60): 28.
+    // Con el ajuste ya dado, hay una fila para Dos con el equivalente de 20 en Uno (por las curvas): 30.
     ui.waitFor("converter_row_$dos")
     assertFalse(ui.exists("converter_row_$uno"))
-    ui.node("converter_value_$dos", unmerged = true).assertTextContains("28", substring = true)
+    ui.node("converter_value_$dos", unmerged = true).assertTextContains("30", substring = true)
     assertFalse(ui.exists("converter_hint_value"))
   }
 
   @Test
-  fun theCardShortcutOpensTheConverterWithTheSourceMethodAndSetting() {
+  fun theCardShortcutOpensTheConverterWithTheSourceAndSetting() {
     val uno = runBlocking { env.db.addGrinder(TestGrinders.uno) }
     val dos = runBlocking { env.db.addGrinder(TestGrinders.dos, 2_000L) }
     val id = recipe(GrindSetting(uno, 20.0, "x"))

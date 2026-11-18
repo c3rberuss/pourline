@@ -26,8 +26,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * Lo que muestra Preparar. Con receta ([target] no es `null`) la dosis, el ratio y el agua son de solo lectura y
- * salen de ella; sin receta se editan la dosis ([plan]) y el ratio, y el agua se calcula.
+ * Lo que muestra Preparar. Con receta ([target] no es `null`) el ratio es el suyo y la dosis se puede cambiar si la receta
+ * la tiene: la receta (agua y pasos) se escala a ella. Sin receta se editan la dosis ([plan]) y el ratio, y el agua se
+ * calcula.
  */
 data class PrepareUiState(
   val card: ScaleCardState,
@@ -35,12 +36,17 @@ data class PrepareUiState(
   val coffee: PickedCoffee?,
   val plan: BrewPlan,
   val waterG: Double,
-  /** La dosis de la receta; `null` si la receta (o la preparación elegida) no la tiene. */
+  /** La dosis con la que se va a preparar la receta (la escrita o la suya); `null` si la receta no tiene dosis. */
   val recipeDoseG: Double?,
+  /** La dosis para la que está hecha la receta; `null` si no la tiene (entonces no se puede escalar). */
+  val recipeNominalDoseG: Double? = recipeDoseG,
   val canStart: Boolean,
 ) {
   /** El ratio agua:café de la receta; `null` sin dosis. */
   val recipeRatio: Double? get() = recipeDoseG?.takeIf { it > 0 }?.let { waterG / it }
+
+  /** La receta se ha escalado a una dosis distinta de la suya. */
+  val recipeScaled: Boolean get() = recipeNominalDoseG != null && recipeDoseG != recipeNominalDoseG
 }
 
 /**
@@ -105,7 +111,8 @@ class PrepareViewModel(
       coffee = scale.coffee,
       plan = plan,
       waterG = targetWaterG(target, null, plan),
-      recipeDoseG = target?.nominalDoseG,
+      recipeDoseG = target?.let { it.scaledDoseG ?: it.nominalDoseG },
+      recipeNominalDoseG = target?.nominalDoseG,
       canStart = scale.connection == ConnectionState.Ready,
     )
   }
@@ -143,6 +150,13 @@ class PrepareViewModel(
   fun setDose(text: String): Boolean {
     val dose = parseFreeDose(text) ?: return false
     defaults.setDefaultDoseG(dose)
+    return true
+  }
+
+  /** La dosis para la receta elegida: la escala si el texto vale (mismo rango que la dosis libre); devuelve si valía. */
+  fun setRecipeDose(text: String): Boolean {
+    val dose = parseFreeDose(text) ?: return false
+    manager.setRecipeDose(dose)
     return true
   }
 

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "grinders": [
     {
       "key": "timemore-chestnut-c2",
@@ -868,11 +868,6 @@
           "max": 50.0,
           "source": "40 – 50"
         },
-        "MOKA": {
-          "min": 10.0,
-          "max": 18.0,
-          "source": "10 – 18"
-        },
         "FRENCH_PRESS": {
           "min": 80.0,
           "max": 120.0,
@@ -886,10 +881,11 @@
       "missing": [
         "ESPRESSO: las unidades actuales no llegan a la finura de espresso y ninguna fuente da un rango fiable",
         "COLD_BREW: ninguna fuente lo da",
+        "MOKA: se quitó el rango 10-18 de Earl Coffee (versión 2 del catálogo): contradice el de pour over y el de AeroPress",
         "anchors: el dato de 18 µm por clic del fabricante no cuadra con los rangos recomendados, así que no se derivan anclas",
         "micronRange: no hay rango en micras fiable"
       ],
-      "notes": "Datos aprobados por el usuario el 2026-11-16 a partir de fuentes de terceros (no de Honest Coffee Guide). Femobook FAQ (https://www.femobook.com/pages/faq_2026): pour over 50-80 clics y 40 clics por rotación. The Way to Coffee (sourceUrl): AeroPress 40-50, prensa francesa hasta 100+, más de 120 clics en total y las unidades actuales no llegan a espresso. Earl Coffee (https://earlcoffee.co.uk/products/femobook-a2-electric-grinder): moka 10-18, prensa francesa 80-120 y 120+ clics en unas 3 rotaciones. Kalita Wave, Chemex y Origami usan el rango de pour over. Sin rango para COLD_BREW ni ESPRESSO: la conversión da Sin equivalencia (el A2 no tiene anclas para el respaldo). Escala 0-120 clics (el A2 hace más de 120)."
+      "notes": "Datos aprobados por el usuario el 2026-11-16 a partir de fuentes de terceros (no de Honest Coffee Guide). Femobook FAQ (https://www.femobook.com/pages/faq_2026): pour over 50-80 clics y 40 clics por rotación. The Way to Coffee (sourceUrl): AeroPress 40-50, prensa francesa hasta 100+, más de 120 clics en total y las unidades actuales no llegan a espresso. Earl Coffee (https://earlcoffee.co.uk/products/femobook-a2-electric-grinder): prensa francesa 80-120 y 120+ clics en unas 3 rotaciones. Kalita Wave, Chemex y Origami usan el rango de pour over. Sin rango para COLD_BREW, ESPRESSO ni MOKA. Versión 2 del catálogo (2026-11-17): se quitó el rango de moka 10-18 de Earl Coffee porque es incoherente con V60 50-80 y AeroPress 40-50 y desviaba la curva de grosor implícita del A2 (el usuario lo decidió en la puerta del 2026-11-17). La conversión no depende del método: sin anclas, el A2 usa la curva implícita de sus rangos, y los pares de calibración del usuario mandan sobre ella. Escala 0-120 clics (el A2 hace más de 120)."
     }
   ]
 }
