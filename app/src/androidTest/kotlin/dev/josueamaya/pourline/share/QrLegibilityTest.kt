@@ -29,22 +29,7 @@ class QrLegibilityTest {
   @Before
   fun setUp() {
     reader = MlKitQrImageReader(context)
-    awaitModel()
-  }
-
-  /** El modelo de Play Services se descarga bajo demanda: se espera a que lea un QR antes de medir. */
-  private fun awaitModel() {
-    val uri = uriOfLength(300, 0)
-    val deadline = System.nanoTime() + 240_000_000_000L
-    while (true) {
-      try {
-        if (runBlocking { reader.readBitmap(canvasWithQr(uri)) }.contains(uri)) return
-      } catch (e: Exception) {
-        Log.i(TAG, "modelo no listo: ${e.message}")
-      }
-      check(System.nanoTime() < deadline) { "el modelo de lectura de QR no se descargó en 240 s" }
-      Thread.sleep(3_000)
-    }
+    awaitQrModel(reader)
   }
 
   @After

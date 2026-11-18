@@ -26,6 +26,8 @@ sealed interface ShareContent {
   data class Brew(val data: BrewShareData) : ShareContent
 
   data class Compare(val data: CompareShareData) : ShareContent
+
+  data class Recipe(val data: RecipeShareData) : ShareContent
 }
 
 private class Pending(val request: ShareRequest, val fileName: String)
@@ -57,6 +59,7 @@ class ShareLauncher internal constructor(
           is ShareContent.Coffee -> ShareRequest.Coffee(content.data, content.data.photo?.let { coffeeImages?.photo(it, PHOTO_PX) })
           is ShareContent.Brew -> ShareRequest.Brew(content.data)
           is ShareContent.Compare -> ShareRequest.Compare(content.data)
+          is ShareContent.Recipe -> ShareRequest.Recipe(content.data)
         }
         pending = Pending(request, shareFileName(target))
       } catch (e: CancellationException) {

@@ -480,6 +480,13 @@
     <string name="share_error">The image could not be generated</string>
     <string name="share_action">Share</string>
     <string name="share_image_action">Share image</string>
+    <string name="recipe_card_qr_caption">Scan it with Pourline to add this recipe</string>
+    <string name="recipe_card_dose">%1$s %2$s</string>
+    <string name="recipe_card_water">%1$s %2$s</string>
+    <string name="recipe_card_ratio">1:%1$s</string>
+    <string name="recipe_card_temp">%1$s °C</string>
+    <string name="recipe_card_grind">Grind: %1$s</string>
+    <string name="recipe_card_step_duration">%1$d s</string>
     <string name="tab_prepare">Brew</string>
     <string name="tab_coffees">Coffees</string>
     <string name="tab_recipes">Recipes</string>

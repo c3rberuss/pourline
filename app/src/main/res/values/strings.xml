@@ -479,6 +479,13 @@
     <string name="share_error">No se pudo generar la imagen</string>
     <string name="share_action">Compartir</string>
     <string name="share_image_action">Compartir imagen</string>
+    <string name="recipe_card_qr_caption">Escanéalo con Pourline para añadir esta receta</string>
+    <string name="recipe_card_dose">%1$s %2$s</string>
+    <string name="recipe_card_water">%1$s %2$s</string>
+    <string name="recipe_card_ratio">1:%1$s</string>
+    <string name="recipe_card_temp">%1$s °C</string>
+    <string name="recipe_card_grind">Molienda: %1$s</string>
+    <string name="recipe_card_step_duration">%1$d s</string>
     <string name="tab_prepare">Preparar</string>
     <string name="tab_coffees">Cafés</string>
     <string name="tab_recipes">Recetas</string>

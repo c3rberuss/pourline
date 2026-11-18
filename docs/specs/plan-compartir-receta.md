@@ -191,7 +191,7 @@ Orden: F0 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9. F2 y F
 | F1 | Códec JVM puro (formato binario del §3.1): `RecipeShareCodec`, recorte y errores | M | Hecha |
 | F2 | Reglas de importación JVM: idéntica, sufijo, `routeImport` y `PendingRecipeImport` | S | Hecha |
 | F3 | Resolución de molienda JVM | S | Hecha |
-| F4 | Tarjeta de receta con QR y tamaño variable | M | Pendiente |
+| F4 | Tarjeta de receta con QR y tamaño variable | M | Hecha |
 | F5 | Compartir desde el editor | M | Pendiente |
 | F6 | Vista previa, guardado, navegación común y mensajes | L | Pendiente |
 | F7 | Entradas internas: escáner y galería | M | Pendiente |
@@ -557,6 +557,19 @@ Commit sugerido: `feat(grinders): resolve the grind of an imported recipe`.
 medido. Si 20 pasos no caben en 9:16, se reduce el nombre a una línea y se vuelve a medir; si aún no caben, se consulta.
 
 Commit sugerido: `feat(share): add the recipe share card with a QR code`.
+
+**Resultado de F4 (2026-11-18).** `RECIPE_CARD_COMPACT_MAX_STAGES = 10` se mantiene: con un nombre de 60 caracteres (2 líneas)
+y 10 pasos, todas las filas quedan por encima de la marca en 1080 × 1350; con 20 pasos y el mismo nombre, en 1080 × 1920.
+`ShareCardsLayoutTest` (19 tests con `ShareIntentTest`) en `emulator-5556`: verde. `RecipeQrLegibilityTest` en
+`emulator-5560`: verde (la tarjeta de peor caso, con el URI entre `MAX_URI_LENGTH - 8` y `MAX_URI_LENGTH`, se lee tal cual y
+tras reducir al 50 % y JPEG 70; `decode` devuelve la misma receta). Unitarios `share.*` y `recipe.*`: verdes. `:app:lintDebug`:
+2 errores y 21 avisos, igual que la línea base.
+
+Detalles que concretan D10 y D24 sin cambiar el comportamiento: `recipe_card_dose` y `recipe_card_water` son `"%1$s %2$s"`
+(número y símbolo de la unidad), `recipe_card_ratio` es `"1:%1$s"`, `recipe_card_temp` es `"%1$s °C"` y `recipe_card_grind` es
+`"Molienda: %1$s"` / `"Grind: %1$s"`, para que la línea "dosis · agua · ratio" quepa en los 164 dp de la columna de datos.
+`awaitQrModel()` vive en `androidTest/.../share/QrTestSupport.kt` y también lo usa `QrLegibilityTest`. La captura de la
+tarjeta es un bitmap de hardware: los tests que leen píxeles lo copian antes a `ARGB_8888`.
 
 ### F5. Compartir desde el editor
 

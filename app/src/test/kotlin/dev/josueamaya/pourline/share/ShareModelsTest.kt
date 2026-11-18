@@ -3,6 +3,9 @@ package dev.josueamaya.pourline.share
 import dev.josueamaya.pourline.coffee.CoffeeEntity
 import dev.josueamaya.pourline.coffee.CoffeeProcess
 import dev.josueamaya.pourline.coffee.RoastLevel
+import dev.josueamaya.pourline.protocol.WeightUnit
+import dev.josueamaya.pourline.recipe.Recipe
+import dev.josueamaya.pourline.recipe.share.alternatingStages
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -92,5 +95,29 @@ class ShareModelsTest {
     assertEquals("brew-12.png", shareFileName(ShareTarget.Brew(12)))
     assertEquals("compare-3-4.png", shareFileName(ShareTarget.Compare(3, 4)))
     assertEquals("summary.png", shareFileName(ShareTarget.Summary))
+  }
+
+  @Test
+  fun `a recipe is shared as recipe-id png`() {
+    assertEquals("recipe-5.png", shareFileName(ShareTarget.Recipe(5)))
+  }
+
+  @Test
+  fun `up to the compact limit the recipe card is 4 by 5 and 9 by 16 after it`() {
+    assertEquals(10, RECIPE_CARD_COMPACT_MAX_STAGES)
+    for (count in 1..RECIPE_CARD_COMPACT_MAX_STAGES) assertEquals("pasos: $count", SHARE_SIZE, recipeCardSize(count))
+    for (count in RECIPE_CARD_COMPACT_MAX_STAGES + 1..20) assertEquals("pasos: $count", SHARE_SIZE_TALL, recipeCardSize(count))
+    assertEquals(1080, (SHARE_SIZE_TALL.width.value * SHARE_DENSITY).toInt())
+    assertEquals(1920, (SHARE_SIZE_TALL.height.value * SHARE_DENSITY).toInt())
+    assertEquals(432, (SHARE_QR_SIZE.value * SHARE_DENSITY).toInt())
+  }
+
+  @Test
+  fun `a recipe request takes its size from the number of stages`() {
+    fun request(count: Int) = ShareRequest.Recipe(
+      RecipeShareData(Recipe(name = "R", doseG = 15.0, stages = alternatingStages(count)), grindText = null, unit = WeightUnit.GRAMS, qr = null),
+    )
+    assertEquals(SHARE_SIZE, request(10).size)
+    assertEquals(SHARE_SIZE_TALL, request(11).size)
   }
 }

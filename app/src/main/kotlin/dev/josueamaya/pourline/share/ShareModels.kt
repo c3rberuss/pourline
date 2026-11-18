@@ -8,6 +8,7 @@ import dev.josueamaya.pourline.coffee.CoffeeProcess
 import dev.josueamaya.pourline.coffee.RoastLevel
 import dev.josueamaya.pourline.history.BrewRecord
 import dev.josueamaya.pourline.protocol.WeightUnit
+import dev.josueamaya.pourline.recipe.Recipe
 import java.time.LocalDate
 
 /**
@@ -118,6 +119,13 @@ data class CompareShareData(
   val footer: List<ShareFooterLine>,
 )
 
+/**
+ * Lo que lleva la imagen de una receta. [grindText] es el texto de la molienda tal como lo muestra el editor (o la
+ * etiqueta del molino eliminado) y [qr] la matriz del QR; sin [qr] la tarjeta no lleva QR ni su texto. Las notas y las
+ * instrucciones de los pasos viajan en [recipe] pero la tarjeta no las dibuja.
+ */
+data class RecipeShareData(val recipe: Recipe, val grindText: String?, val unit: WeightUnit, val qr: QrMatrix?)
+
 /** Qué se comparte: da el nombre del archivo. */
 sealed interface ShareTarget {
   data class Coffee(val id: Long) : ShareTarget
@@ -126,14 +134,17 @@ sealed interface ShareTarget {
 
   data class Compare(val aId: Long, val bId: Long) : ShareTarget
 
+  data class Recipe(val id: Long) : ShareTarget
+
   /** El resumen de la sesión recién terminada (no tiene por qué estar guardada). */
   data object Summary : ShareTarget
 }
 
-/** `coffee-<id>.png`, `brew-<id>.png`, `compare-<a>-<b>.png` y `summary.png`. */
+/** `coffee-<id>.png`, `brew-<id>.png`, `compare-<a>-<b>.png`, `recipe-<id>.png` y `summary.png`. */
 fun shareFileName(target: ShareTarget): String = when (target) {
   is ShareTarget.Coffee -> "coffee-${target.id}.png"
   is ShareTarget.Brew -> "brew-${target.id}.png"
   is ShareTarget.Compare -> "compare-${target.aId}-${target.bId}.png"
+  is ShareTarget.Recipe -> "recipe-${target.id}.png"
   ShareTarget.Summary -> "summary.png"
 }
