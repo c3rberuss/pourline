@@ -35,6 +35,7 @@ import dev.josueamaya.pourline.grinder.GrindFix
 import dev.josueamaya.pourline.session.ScaleUiState
 import dev.josueamaya.pourline.settings.ReferenceKey
 import dev.josueamaya.pourline.tools.FourSix
+import dev.josueamaya.pourline.tools.FourSixParams
 import dev.josueamaya.pourline.ui.coffees.CoffeeDetailScreen
 import dev.josueamaya.pourline.ui.coffees.CoffeeDetailViewModel
 import dev.josueamaya.pourline.ui.coffees.CoffeeEditScreen
@@ -367,6 +368,7 @@ private fun tabEntryProvider(
       // Duplicar abre la copia en lugar de la original: atrás vuelve a la lista.
       onDuplicated = { copyId -> stack[stack.lastIndex] = RecipeEdit(id = copyId) },
       onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.value)) },
+      onOpenFourSix = if (key.id == null && key.fromBrewId == null) { { stack.add(FourSixTool) } } else null,
     )
   }
   tabEntry<RecipeImport>(tab, stack, activeTab) { key ->
@@ -390,7 +392,7 @@ private fun tabEntryProvider(
     FourSixScreen(
       viewModel { FourSixViewModel(deps.freeBrewDefaults) },
       onBack = ::back,
-      onSaveAsRecipe = { params -> stack.add(RecipeEdit(fourSix = params)) },
+      onSaveAsRecipe = { params -> stack.saveFourSixAsRecipe(params) },
     )
   }
   tabEntry<History>(tab, stack, activeTab) {
@@ -445,4 +447,18 @@ private fun fixGrinderKey(fix: GrindFix, id: Long): NavKey = when (fix) {
 }
 
 /** El id de la receta elegida en Preparar, o `null` si no hay objetivo o es una preparación anterior (D29). */
+/**
+ * "Guardar como receta" del generador 4:6 abre el editor con la receta generada. Si se llegó al generador desde el
+ * editor de una receta nueva, ese editor se sustituye por el nuevo: la receta generada ocupa su lugar y "atrás" vuelve a
+ * la lista. Desde Herramientas el generador se queda debajo, para volver a él.
+ */
+private fun NavBackStack<NavKey>.saveFourSixAsRecipe(params: FourSixParams) {
+  val below = getOrNull(lastIndex - 1)
+  if (lastOrNull() == FourSixTool && below is RecipeEdit && below.id == null && below.fromBrewId == null) {
+    removeAt(lastIndex)
+    removeAt(lastIndex)
+  }
+  add(RecipeEdit(fourSix = params))
+}
+
 private fun activeRecipeIdOf(ui: ScaleUiState): Long? = (ui.target?.key as? ReferenceKey.Recipe)?.id
