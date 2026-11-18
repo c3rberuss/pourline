@@ -56,7 +56,7 @@ class GrindCardStateTest {
   fun `the same grinder shows the setting as it is`() {
     val s = state(source(uno, 20.0), uno)
     assertEquals(GrindOutcome.Value(20.0, exact = true, reasons = emptySet(), suggested = false), s.outcome)
-    assertEquals(ConverterArgs(1, BrewMethod.V60, 20.0), s.converter)
+    assertEquals(ConverterArgs(1, 20.0), s.converter)
   }
 
   @Test
@@ -118,7 +118,7 @@ class GrindCardStateTest {
     assertEquals(GrindOutcome.NoGrinder, none.outcome)
     assertNull(none.chosen)
     // La línea de la receta y el atajo siguen disponibles a nivel de estado; la tarjeta decide qué muestra.
-    assertEquals(ConverterArgs(1, BrewMethod.V60, 20.0), none.converter)
+    assertEquals(ConverterArgs(1, 20.0), none.converter)
   }
 
   @Test

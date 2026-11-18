@@ -101,70 +101,9 @@ object GrindConverter {
     return if (reasons.isEmpty()) Conversion.Exact(result) else Conversion.Approximate(result, reasons)
   }
 
-  /**
-   * La conversión antigua por posición dentro del rango del método; F6 la borra.
-   *
-   * El ajuste equivalente de [value] (en unidades base de [from]) en [to].
-   *
-   * 1. Mismo molino: `Exact(value)`.
-   * 2. Si los dos tienen rango para [method], el mismo porcentaje de posición dentro del rango (extrapola fuera de él).
-   * 3. Si no, interpola por tramos con las anclas definidas en los dos (al menos 2), con la razón `ANCHORS`.
-   * 4. Si tampoco, `NoEquivalent`.
-   *
-   * El resultado se redondea al paso del destino (`ROUNDED`) y se limita a su escala (`AT_LIMIT`).
-   */
-  @Deprecated("Enmienda 1: usa convert(value, from, to, pairs)")
-  fun convert(value: Double, method: BrewMethod?, from: Grinder, to: Grinder): Conversion {
-    if (from.id != 0L && from.id == to.id) return Conversion.Exact(value)
-
-    val fromRange = method?.let { from.ranges[it] }
-    val toRange = method?.let { to.ranges[it] }
-    val usesAnchors = fromRange == null || toRange == null
-    val raw = if (!usesAnchors) {
-      byRange(value, fromRange!!, from.direction, toRange!!, to.direction)
-    } else {
-      byAnchors(value, from, to) ?: return Conversion.NoEquivalent
-    }
-
-    val reasons = mutableSetOf<ConversionReason>()
-    if (usesAnchors) reasons += ConversionReason.ANCHORS
-    var result = snap(raw, to)
-    if (abs(result - raw) > 1e-6) reasons += ConversionReason.ROUNDED
-    if (result < to.scaleMin - EPS || result > to.scaleMax + EPS) {
-      result = clampToScale(result, to)
-      reasons += ConversionReason.AT_LIMIT
-    }
-    return if (reasons.isEmpty()) Conversion.Exact(result) else Conversion.Approximate(result, reasons)
-  }
-
   /** El punto medio del rango de [method] en [grinder], ajustado al paso, o `null` sin rango (receta sin ajuste). */
   fun suggested(method: BrewMethod?, grinder: Grinder): Double? {
     val range = method?.let { grinder.ranges[it] } ?: return null
     return snap((range.min + range.max) / 2, grinder)
-  }
-
-  /** El extremo fino de un rango: `min` si subir es más grueso y `max` si subir es más fino. */
-  private fun fineEnd(range: GrindRange, direction: GrindDirection) =
-    if (direction == GrindDirection.HIGHER_IS_COARSER) range.min else range.max
-
-  private fun coarseEnd(range: GrindRange, direction: GrindDirection) =
-    if (direction == GrindDirection.HIGHER_IS_COARSER) range.max else range.min
-
-  private fun byRange(value: Double, from: GrindRange, fromDirection: GrindDirection, to: GrindRange, toDirection: GrindDirection): Double {
-    val fromFine = fineEnd(from, fromDirection)
-    val toFine = fineEnd(to, toDirection)
-    val p = (value - fromFine) / (coarseEnd(from, fromDirection) - fromFine)
-    return toFine + p * (coarseEnd(to, toDirection) - toFine)
-  }
-
-  private fun byAnchors(value: Double, from: Grinder, to: Grinder): Double? {
-    val common = GrindLevel.entries.filter { it in from.anchors && it in to.anchors }
-    if (common.size < 2) return null
-    // Valor de origen → nivel (0..6), por tramos y extrapolando por el tramo extremo.
-    val toLevel = common.map { from.anchors.getValue(it) to it.ordinal.toDouble() }.sortedBy { it.first }
-    val level = interpolate(toLevel, value) ?: return null
-    // Nivel → valor de destino.
-    val toValue = common.map { it.ordinal.toDouble() to to.anchors.getValue(it) }
-    return interpolate(toValue, level)
   }
 }

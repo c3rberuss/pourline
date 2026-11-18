@@ -165,7 +165,7 @@ private fun tabEntryProvider(
       onNewCoffee = { stack.add(CoffeeEdit()) },
       onAddGrinder = { stack.add(Grinders) },
       onFixGrinder = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
-      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
+      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.value)) },
     )
   }
   tabEntry<Session>(tab) {
@@ -185,7 +185,7 @@ private fun tabEntryProvider(
       grind = deps.grindSelection,
       onAddGrinder = { stack.add(Grinders) },
       onFixGrinder = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
-      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
+      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.value)) },
     )
   }
   tabEntry<Coffees>(tab) {
@@ -242,7 +242,7 @@ private fun tabEntryProvider(
   }
   tabEntry<GrindConverter>(tab) { key ->
     GrindConverterScreen(
-      viewModel { GrindConverterViewModel(deps.grinderRepository, key.sourceId, key.method, key.value) },
+      viewModel { GrindConverterViewModel(deps.grinderRepository, key.sourceId, key.value) },
       onBack = ::back,
       onOpenGrinders = { stack.add(Grinders) },
       onFix = { fix, id -> stack.add(fixGrinderKey(fix, id)) },
@@ -288,7 +288,7 @@ private fun tabEntryProvider(
       onBack = ::back,
       // Duplicar abre la copia en lugar de la original: atrás vuelve a la lista.
       onDuplicated = { copyId -> stack[stack.lastIndex] = RecipeEdit(id = copyId) },
-      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.method, it.value)) },
+      onOpenConverter = { stack.add(GrindConverter(it.sourceId, it.value)) },
     )
   }
   tabEntry<Tools>(tab) {

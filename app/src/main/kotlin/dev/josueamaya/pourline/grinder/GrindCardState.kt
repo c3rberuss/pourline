@@ -32,7 +32,7 @@ fun fixFor(from: Grinder, to: Grinder, pairCount: Int): FixTarget {
 }
 
 /** Lo que recibe el convertidor suelto para abrirse ya relleno (F8). */
-data class ConverterArgs(val sourceId: Long, val method: BrewMethod?, val value: Double)
+data class ConverterArgs(val sourceId: Long, val value: Double)
 
 /** Lo que muestra la tarjeta como ajuste del molino elegido (D25). */
 sealed interface GrindOutcome {
@@ -105,7 +105,7 @@ fun grindCardState(
   val chosen = preselected(source, owned, chosenId, defaultId)
   val setting = source?.setting?.takeUnless { it.isEmpty }
   val live = if (setting?.grinderId != null) sourceGrinder?.takeIf { it.id == setting.grinderId } else null
-  val converter = if (live != null && setting?.value != null) ConverterArgs(live.id, source.method, setting.value) else null
+  val converter = if (live != null && setting?.value != null) ConverterArgs(live.id, setting.value) else null
   val outcome = when {
     chosen == null -> if (source == null) GrindOutcome.NoReference else GrindOutcome.NoGrinder
     source == null -> GrindOutcome.NoReference

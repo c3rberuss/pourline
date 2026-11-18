@@ -1,7 +1,6 @@
 package dev.josueamaya.pourline
 
 import androidx.navigation3.runtime.NavKey
-import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.tools.FourSixParams
 import kotlinx.serialization.Serializable
 
@@ -54,7 +53,7 @@ import kotlinx.serialization.Serializable
 @Serializable data class GrinderEdit(val id: Long? = null, val fromId: Long? = null, val openRanges: Boolean = false) : NavKey
 
 /** El convertidor suelto (SPEC-006); los argumentos lo abren ya relleno con el origen, el método y el ajuste. */
-@Serializable data class GrindConverter(val sourceId: Long? = null, val method: BrewMethod? = null, val value: Double? = null) : NavKey
+@Serializable data class GrindConverter(val sourceId: Long? = null, val value: Double? = null) : NavKey
 
 /** Raíz de la pestaña Herramientas: la lista de herramientas. */
 @Serializable data object Tools : NavKey

@@ -767,8 +767,6 @@
     <string name="converter_title">Convertidor</string>
     <string name="converter_source">Molino de origen</string>
     <string name="converter_source_placeholder">Elige un molino</string>
-    <string name="converter_method">Método</string>
-    <string name="converter_no_method">Sin método</string>
     <string name="converter_value">Ajuste</string>
     <string name="converter_results">En mis molinos</string>
     <string name="converter_pick_source">Elige un molino de origen para empezar</string>
@@ -781,6 +779,19 @@
     <string name="converter_picker_owned">Mis molinos</string>
     <string name="converter_picker_catalog">Catálogo</string>
     <string name="converter_picker_empty">Sin resultados</string>
+    <string name="converter_correct">Corregir</string>
+    <string name="grind_calibration_add">Añadir equivalencia</string>
+    <string name="grind_calibration_save">Guardar equivalencia</string>
+    <string name="grind_calibration_sheet_title">Equivalencia</string>
+    <string name="grind_calibration_other">Otro molino</string>
+    <string name="grind_calibration_updated">Equivalencia actualizada</string>
+    <plurals name="grind_calibration_conflict">
+        <item quantity="one">Contradice la equivalencia %s</item>
+        <item quantity="other">Contradice las equivalencias %s</item>
+    </plurals>
+    <string name="grind_calibration_replace">Reemplazar</string>
+    <string name="grind_calibration_invalid">Revisa los ajustes: cada uno tiene que estar en la escala de su molino</string>
+    <string name="grind_calibration_pair">%1$s %2$s = %3$s %4$s</string>
     <string name="brew_notice_channel">Preparación en curso</string>
     <string name="brew_notice_channel_description">Mantiene la preparación activa cuando sales de la app</string>
     <string name="brew_notice_water">%1$s de %2$s</string>
