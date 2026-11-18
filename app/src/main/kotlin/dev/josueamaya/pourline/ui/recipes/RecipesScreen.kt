@@ -7,6 +7,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -14,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -43,6 +51,8 @@ fun RecipesScreen(
   onCreateRecipe: () -> Unit,
   /** La receta elegida en Preparar, que la lista marca como "Activa"; `null` sin receta elegida. */
   activeRecipeId: Long? = null,
+  /** Las entradas de "Importar" (escáner y galería); sin él, la barra no muestra el icono. */
+  importer: RecipeImportEntryViewModel? = null,
 ) {
   val items by viewModel.items.collectAsStateWithLifecycle()
   val pendingUndo by viewModel.pendingUndo.collectAsStateWithLifecycle()
@@ -74,6 +84,7 @@ fun RecipesScreen(
           }
         },
         actions = {
+          if (importer != null) ImportAction(importer)
           AntIconButton(
             AntIcons.Plus,
             contentDescription = stringResource(R.string.recipe_add),
@@ -124,4 +135,40 @@ fun RecipesScreen(
     }
   }
   TourHost(Tours.recipes, ready = items != null)
+}
+
+/** El icono "Importar" y su menú: escanear un QR con la cámara o leerlo de una imagen de la galería (SPEC-009 §3.5). */
+@Composable
+private fun ImportAction(importer: RecipeImportEntryViewModel) {
+  val busy by importer.busy.collectAsStateWithLifecycle()
+  val scanner = rememberQrScanner()
+  val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> importer.onImage(uri) }
+  var menu by remember { mutableStateOf(false) }
+  Box {
+    AntIconButton(
+      AntIcons.Import,
+      contentDescription = stringResource(R.string.recipe_import_action),
+      onClick = { menu = true },
+      modifier = Modifier.testTag("recipes_import"),
+      loading = busy,
+    )
+    DropdownMenu(menu, onDismissRequest = { menu = false }, containerColor = AntTheme.colors.bgElevated) {
+      DropdownMenuItem(
+        text = { androidx.compose.material3.Text(stringResource(R.string.recipe_import_scan), color = AntTheme.colors.text) },
+        onClick = {
+          menu = false
+          importer.scan(scanner)
+        },
+        modifier = Modifier.testTag("recipes_import_scan"),
+      )
+      DropdownMenuItem(
+        text = { androidx.compose.material3.Text(stringResource(R.string.recipe_import_from_image), color = AntTheme.colors.text) },
+        onClick = {
+          menu = false
+          picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+        },
+        modifier = Modifier.testTag("recipes_import_image"),
+      )
+    }
+  }
 }

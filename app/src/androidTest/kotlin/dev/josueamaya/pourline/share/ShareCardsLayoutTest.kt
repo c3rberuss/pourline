@@ -3,11 +3,15 @@ package dev.josueamaya.pourline.share
 import android.graphics.Bitmap
 import android.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.platform.app.InstrumentationRegistry
@@ -21,6 +25,11 @@ import dev.josueamaya.pourline.history.BrewRepository
 import dev.josueamaya.pourline.history.HistoryDatabase
 import dev.josueamaya.pourline.history.TestBrews
 import dev.josueamaya.pourline.history.UsedCoffee
+import dev.josueamaya.pourline.protocol.WeightUnit
+import dev.josueamaya.pourline.recipe.Recipe
+import dev.josueamaya.pourline.recipe.RecipeStage
+import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.share.RecipeShareCodec
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -67,9 +76,9 @@ class ShareCardsLayoutTest {
     assertTrue("la captura falló", !failed)
   }
 
-  private fun assertSize() {
+  private fun assertSize(height: Int = 1350) {
     assertEquals(1080, captured!!.width)
-    assertEquals(1350, captured!!.height)
+    assertEquals(height, captured!!.height)
   }
 
   private fun node(tag: String) = rule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode()
@@ -80,9 +89,9 @@ class ShareCardsLayoutTest {
     return results.single().lineCount
   }
 
-  private fun brandInside() {
+  private fun brandInside(height: Int = 1350) {
     val brand = node("share_brand")
-    assertTrue("la marca debe quedar dentro del alto", brand.positionInRoot.y + brand.size.height <= 1350)
+    assertTrue("la marca debe quedar dentro del alto", brand.positionInRoot.y + brand.size.height <= height)
     assertTrue(brand.positionInRoot.y >= 0f)
   }
 
@@ -274,4 +283,156 @@ class ShareCardsLayoutTest {
     val grid = node("share_scaleless_metrics")
     assertTrue("la rejilla debe quedar dentro", grid.positionInRoot.y >= 0f && grid.positionInRoot.y + grid.size.height <= 1350)
   }
+
+  // --- Tarjeta de receta ---
+
+  /** [count] pasos que alternan `POUR` y `WAIT`, con nombre en los `POUR` y una instrucción en todos. */
+  private fun stages(count: Int, instruction: String? = null): List<RecipeStage> {
+    var startMs = 0L
+    var water = 0.0
+    return List(count) { i ->
+      val pour = i % 2 == 0
+      if (pour) water += 25.0
+      RecipeStage(
+        name = if (pour) "Vertido $i" else null,
+        startMs = startMs,
+        targetWaterG = water,
+        durationMs = 20_000,
+        type = if (pour) StageType.POUR else StageType.WAIT,
+        instruction = instruction,
+      ).also { startMs += 25_000 }
+    }
+  }
+
+  private fun recipe(
+    count: Int,
+    name: String = "V60 clásica",
+    notes: String? = null,
+    instruction: String? = null,
+    temp: Double? = 93.0,
+  ) = Recipe(
+    id = 1,
+    name = name,
+    method = BrewMethod.V60,
+    waterTempC = temp,
+    notes = notes,
+    doseG = 15.0,
+    stages = stages(count, instruction),
+  )
+
+  private fun recipeData(recipe: Recipe, grindText: String? = "Timemore Chestnut C3 Pro · 24", withQr: Boolean = true): RecipeShareData {
+    val uri = RecipeShareCodec.encode(recipe, grinder = null)?.uri
+    return RecipeShareData(recipe, grindText, WeightUnit.GRAMS, qr = if (withQr && uri != null) qrMatrix(uri) else null)
+  }
+
+  private fun stepsAboveTheBrand(count: Int) {
+    val brandTop = node("share_brand").positionInRoot.y
+    for (i in 0 until count) {
+      val row = node("share_recipe_step_$i")
+      assertTrue("el paso $i debe quedar por encima de la marca", row.positionInRoot.y + row.size.height <= brandTop)
+    }
+    assertEquals(0, rule.onAllNodesWithTag("share_recipe_step_$count", useUnmergedTree = true).fetchSemanticsNodes().size)
+  }
+
+  private fun textOf(tag: String): String =
+    node(tag).config.getOrNull(SemanticsProperties.Text)!!.joinToString("") { it.text }
+
+  @Test
+  fun aShortRecipeCardIs1080x1350WithAQrOfAtLeast432px() {
+    capture(ShareRequest.Recipe(recipeData(recipe(4))))
+
+    assertSize()
+    brandInside()
+    val qr = node("share_recipe_qr")
+    assertTrue("QR de ${qr.size.width} × ${qr.size.height} px", qr.size.width >= 432 && qr.size.height >= 432)
+    assertNotNull(node("share_recipe_qr_caption"))
+    stepsAboveTheBrand(4)
+  }
+
+  @Test
+  fun aRecipeCardAtTheCompactLimitStaysAt4x5() {
+    capture(ShareRequest.Recipe(recipeData(recipe(RECIPE_CARD_COMPACT_MAX_STAGES, name = randomName(60)))))
+
+    assertSize()
+    brandInside()
+    stepsAboveTheBrand(RECIPE_CARD_COMPACT_MAX_STAGES)
+  }
+
+  @Test
+  fun aTwentyStepRecipeWithA60CharNameIs1080x1920AndShowsEveryStep() {
+    capture(ShareRequest.Recipe(recipeData(recipe(20, name = randomName(60)))))
+
+    assertSize(height = 1920)
+    brandInside(height = 1920)
+    assertTrue(lines("share_recipe_name") <= 2)
+    stepsAboveTheBrand(20)
+  }
+
+  @Test
+  fun aRecipeCardWithoutQrHasNeitherQrNorCaption() {
+    capture(ShareRequest.Recipe(recipeData(recipe(4), withQr = false)))
+
+    assertSize()
+    brandInside()
+    assertEquals(0, rule.onAllNodesWithTag("share_recipe_qr", useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertEquals(0, rule.onAllNodesWithTag("share_recipe_qr_caption", useUnmergedTree = true).fetchSemanticsNodes().size)
+    // La columna de datos ocupa todo el ancho.
+    assertTrue(node("share_recipe_facts").size.width > 0)
+  }
+
+  @Test
+  fun theRecipeCardHasNoNotesNorInstructions() {
+    capture(ShareRequest.Recipe(recipeData(recipe(4, notes = "NOTAS-DE-LA-RECETA", instruction = "INSTRUCCION-DEL-PASO"))))
+
+    rule.onAllNodesWithText("NOTAS-DE-LA-RECETA", substring = true, useUnmergedTree = true).assertCountEquals(0)
+    rule.onAllNodesWithText("INSTRUCCION-DEL-PASO", substring = true, useUnmergedTree = true).assertCountEquals(0)
+  }
+
+  @Test
+  fun missingFactsAreNotShown() {
+    capture(ShareRequest.Recipe(recipeData(recipe(4, temp = null), grindText = null)))
+
+    assertEquals(0, rule.onAllNodesWithTag("share_recipe_temp", useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertEquals(0, rule.onAllNodesWithTag("share_recipe_grind", useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertNotNull(node("share_recipe_dose"))
+    assertNotNull(node("share_recipe_water"))
+    assertNotNull(node("share_recipe_ratio"))
+  }
+
+  @Test
+  fun theQrIsBlackOnWhite() {
+    capture(ShareRequest.Recipe(recipeData(recipe(4))))
+
+    val box = node("share_recipe_qr")
+    val left = box.positionInRoot.x.toInt()
+    val top = box.positionInRoot.y.toInt()
+    // La captura es un bitmap de hardware: no deja leer píxeles hasta copiarlo.
+    val bitmap = captured!!.asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, false)
+    // La zona de silencio (4 módulos) es blanca en las cuatro esquinas, aunque la tarjeta sea clara u oscura.
+    for ((x, y) in listOf(2 to 2, 429 to 2, 2 to 429, 429 to 429)) {
+      assertEquals("esquina ($x, $y)", Color.WHITE, bitmap.getPixel(left + x, top + y))
+    }
+    // El primer módulo del patrón de posición (arriba a la izquierda) es negro.
+    val matrix = qrMatrix(RecipeShareCodec.encode(recipe(4), grinder = null)!!.uri)
+    val cells = matrix.modules + 2 * QR_QUIET_ZONE
+    val first = qrCellEdge(QR_QUIET_ZONE, cells, 432)
+    val next = qrCellEdge(QR_QUIET_ZONE + 1, cells, 432)
+    assertEquals(Color.BLACK, bitmap.getPixel(left + (first + next) / 2, top + (first + next) / 2))
+  }
+
+  @Test
+  fun aDeletedGrinderShowsItsLabel() {
+    capture(ShareRequest.Recipe(recipeData(recipe(4), grindText = "Molino viejo · 18")))
+
+    assertTrue(textOf("share_recipe_grind").contains("Molino viejo · 18"))
+  }
+
+  @Test
+  fun aLiveGrinderShowsTheEditorLabel() {
+    capture(ShareRequest.Recipe(recipeData(recipe(4), grindText = "Chestnut C3 Pro · 24")))
+
+    assertTrue(textOf("share_recipe_grind").contains("Chestnut C3 Pro · 24"))
+  }
+
+  private fun randomName(length: Int) = "Ñandú Reserva Especial ".repeat(4).take(length)
 }

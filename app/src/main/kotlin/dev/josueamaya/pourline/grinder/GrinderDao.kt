@@ -36,6 +36,10 @@ abstract class GrinderDao {
   @Query("SELECT * FROM grinders WHERE catalogKey = :key")
   abstract suspend fun byCatalogKey(key: String): GrinderEntity?
 
+  @Transaction
+  @Query("SELECT * FROM grinders WHERE catalogKey = :key")
+  abstract suspend fun getByCatalogKey(key: String): GrinderWithDetails?
+
   @Query("SELECT catalogKey FROM grinders WHERE catalogKey IS NOT NULL")
   abstract suspend fun catalogKeys(): List<String>
 

@@ -52,12 +52,32 @@
         android:supportsRtl="true"
         android:windowSoftInputMode="adjustResize"
         android:theme="@style/Theme.Pourline">
+        <!-- Play Services instala el modelo de lectura de QR con la app (SPEC-009, D18). -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode" />
+
+        <!-- singleTask: una sola instancia, para que una sesión en curso nunca se duplique al recibir una receta (SPEC-009, D17). -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Una imagen compartida desde WhatsApp, Fotos, etc.: se le busca el QR de una receta. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+            <!-- El enlace del QR (cámara del sistema, Lens): pourline://recipe?... -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="pourline" android:host="recipe" />
             </intent-filter>
         </activity>
 

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import dev.josueamaya.pourline.R
+import dev.josueamaya.pourline.recipe.share.TrimmedPart
 import java.util.Locale
 
 /** Gramos sin decimales si es entero y con uno si no (250, 16,4). */
@@ -22,3 +23,23 @@ internal fun recipeSummary(doseG: Double, totalWaterG: Double, stageCount: Int):
   stringResource(R.string.scale_ratio_value, if (doseG > 0) totalWaterG / doseG else 0.0),
   pluralStringResource(R.plurals.recipe_stage_count, stageCount, stageCount),
 )
+
+/** "las notas", "las notas y los nombres de los pasos"…: lo recortado, siempre en el orden notas, instrucciones y nombres. */
+@Composable
+internal fun trimmedPartsText(parts: Set<TrimmedPart>): String {
+  val names = TrimmedPart.entries.filter { it in parts }.map {
+    stringResource(
+      when (it) {
+        TrimmedPart.NOTES -> R.string.recipe_trimmed_notes
+        TrimmedPart.INSTRUCTIONS -> R.string.recipe_trimmed_instructions
+        TrimmedPart.STAGE_NAMES -> R.string.recipe_trimmed_stage_names
+      },
+    )
+  }
+  return when (names.size) {
+    0 -> ""
+    1 -> names[0]
+    2 -> stringResource(R.string.recipe_trimmed_list_two, names[0], names[1])
+    else -> stringResource(R.string.recipe_trimmed_list_three, names[0], names[1], names[2])
+  }
+}

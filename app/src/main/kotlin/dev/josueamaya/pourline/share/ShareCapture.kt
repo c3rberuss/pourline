@@ -15,6 +15,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.DpSize
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -28,11 +29,18 @@ import kotlinx.coroutines.withTimeoutOrNull
 /** Lo que se dibuja en la imagen. La foto del café ya viene decodificada: la captura no espera a ninguna carga. */
 @Stable
 sealed interface ShareRequest {
+  /** El tamaño de la tarjeta: 4:5 salvo la receta con muchos pasos (D10). */
+  val size: DpSize get() = SHARE_SIZE
+
   data class Coffee(val data: CoffeeShareData, val photo: ImageBitmap?) : ShareRequest
 
   data class Brew(val data: BrewShareData) : ShareRequest
 
   data class Compare(val data: CompareShareData) : ShareRequest
+
+  data class Recipe(val data: RecipeShareData) : ShareRequest {
+    override val size: DpSize get() = recipeCardSize(data.recipe.stages.size)
+  }
 }
 
 private const val TAG = "ShareCapture"
@@ -47,7 +55,7 @@ private const val QUIET_MS = 100L
 private const val MAX_SETTLE_ROUNDS = 10
 
 /**
- * Dibuja la tarjeta de [request] fuera de pantalla y la entrega como [ImageBitmap] de 1080 × 1350 px (D30). La
+ * Dibuja la tarjeta de [request] fuera de pantalla y la entrega como [ImageBitmap] de 1080 × 1350 px, o 1080 × 1920 px en la receta larga (D30, D10). La
  * tarjeta se mide al tamaño fijo dentro de un nodo de 1 × 1 px, con tema claro y densidad fija, y se graba en una
  * `GraphicsLayer` **sin** dibujarla en pantalla. Con `request == null` no compone nada. Un fallo al leer la capa
  * llama a [onFailed].
@@ -58,8 +66,8 @@ fun ShareCaptureHost(request: ShareRequest?, onCaptured: (ImageBitmap) -> Unit, 
   val layer = rememberGraphicsLayer()
   val draws = remember { MutableStateFlow(0) }
   val density = remember { Density(SHARE_DENSITY, fontScale = 1f) }
-  val width = with(density) { SHARE_SIZE.width.roundToPx() }
-  val height = with(density) { SHARE_SIZE.height.roundToPx() }
+  val width = with(density) { request.size.width.roundToPx() }
+  val height = with(density) { request.size.height.roundToPx() }
 
   Layout(
     content = {
@@ -108,5 +116,6 @@ private fun ShareCard(request: ShareRequest) {
     is ShareRequest.Coffee -> CoffeeShareCard(request.data, request.photo)
     is ShareRequest.Brew -> BrewShareCard(request.data)
     is ShareRequest.Compare -> CompareShareCard(request.data)
+    is ShareRequest.Recipe -> RecipeShareCard(request.data)
   }
 }

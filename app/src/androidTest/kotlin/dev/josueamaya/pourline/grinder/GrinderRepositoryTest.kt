@@ -269,4 +269,17 @@ class GrinderRepositoryTest {
   private companion object {
     const val PREFS = "grinder_repository_test"
   }
+
+  @Test
+  fun byCatalogKeyReturnsTheGrinderWithRangesAndAnchors() = runTest {
+    GrinderCatalogSeeder(db.grinderDao(), { TestGrinderCatalog.JSON }, settings, settings).sync()
+
+    val uno = repository.byCatalogKey(TestGrinderCatalog.KEY_UNO)!!
+
+    assertEquals("Uno", uno.model)
+    assertEquals(TestGrinderCatalog.KEY_UNO, uno.catalogKey)
+    assertEquals(GrindRange(16.0, 24.0), uno.ranges[BrewMethod.V60])
+    assertEquals(20.0, uno.anchors[GrindLevel.MEDIUM]!!, 1e-9)
+    assertNull(repository.byCatalogKey("no-such-grinder"))
+  }
 }

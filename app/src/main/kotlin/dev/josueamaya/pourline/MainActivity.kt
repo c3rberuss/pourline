@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -25,9 +26,15 @@ import dev.josueamaya.pourline.ui.theme.PourlineTheme
 class MainActivity : ComponentActivity() {
   private val app get() = application as PourlineApp
   private val deps get() = app.dependencies
+  private val recipeIntents by lazy {
+    RecipeIntentHandler(deps.recipeImports, deps.qrImageReader, { deps.scaleSession.ui.value.hasSession }, app.applicationScope)
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+
+    // Con una actividad recreada (rotación, proceso restaurado) o abierta desde Recientes, el intent ya se procesó (§3.5).
+    if (shouldHandleLaunchIntent(recreated = savedInstanceState != null, intentFlags = intent.flags)) recipeIntents.handle(intent)
 
     enableEdgeToEdge()
     setContent {
@@ -56,6 +63,13 @@ class MainActivity : ComponentActivity() {
         }
       }
     }
+  }
+
+  /** `singleTask`: una receta que llega con la app ya abierta entra aquí, sin crear otra instancia. */
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    recipeIntents.handle(intent)
   }
 
   private companion object {

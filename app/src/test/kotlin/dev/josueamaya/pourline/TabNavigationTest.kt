@@ -85,4 +85,27 @@ class TabNavigationTest {
     stack.popToRoot()
     assertEquals(listOf<NavKey>(History), stack)
   }
+
+  @Test
+  fun `the bottom bar is hidden with an import preview on top`() {
+    assertFalse(showsBottomBar(listOf(Recipes, RecipeImport("pourline://recipe?v=1&d=x"))))
+    // La regla solo mira la cima: con otra pantalla encima de la vista previa, la barra vuelve.
+    assertTrue(showsBottomBar(listOf(Recipes, RecipeImport("pourline://recipe?v=1&d=x"), Settings)))
+  }
+
+  @Test
+  fun `open import pushes a preview`() {
+    val stack = mutableListOf<NavKey>(Recipes)
+    stack.openImport("uri-a")
+    assertEquals(listOf<NavKey>(Recipes, RecipeImport("uri-a")), stack)
+  }
+
+  @Test
+  fun `open import replaces a preview already on top`() {
+    val stack = mutableListOf<NavKey>(Recipes, RecipeEdit(id = 3))
+    stack.openImport("uri-a")
+    stack.openImport("uri-b")
+    // Un editor debajo se conserva y las vistas previas no se apilan.
+    assertEquals(listOf<NavKey>(Recipes, RecipeEdit(id = 3), RecipeImport("uri-b")), stack)
+  }
 }

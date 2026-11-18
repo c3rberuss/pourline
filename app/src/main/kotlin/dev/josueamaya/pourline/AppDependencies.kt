@@ -11,6 +11,7 @@ import dev.josueamaya.pourline.grinder.GrinderRepository
 import dev.josueamaya.pourline.history.BrewRepository
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.RecipeTexts
+import dev.josueamaya.pourline.recipe.share.PendingRecipeImport
 import dev.josueamaya.pourline.session.AutoReconnect
 import dev.josueamaya.pourline.session.GrindSelection
 import dev.josueamaya.pourline.session.ScaleMemory
@@ -22,6 +23,7 @@ import dev.josueamaya.pourline.settings.GrinderSettings
 import dev.josueamaya.pourline.settings.TargetSettings
 import dev.josueamaya.pourline.settings.ThemeSettings
 import dev.josueamaya.pourline.settings.TourSettings
+import dev.josueamaya.pourline.share.QrImageReader
 import dev.josueamaya.pourline.tools.FourSixTexts
 
 /**
@@ -41,6 +43,10 @@ class AppDependencies(
   val coffeeRepository: CoffeeRepository,
   val recipeRepository: RecipeRepository,
   val recipeTexts: RecipeTexts,
+  /** La cola de recetas importadas que esperan su vista previa (SPEC-009, D14). */
+  val recipeImports: PendingRecipeImport,
+  /** Lee el QR de una imagen de la galería o de otra app (SPEC-009, D18). */
+  val qrImageReader: QrImageReader,
   val grinderSettings: GrinderSettings,
   val grinderRepository: GrinderRepository,
   val grindTexts: GrindTexts,

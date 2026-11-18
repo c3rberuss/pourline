@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.ui.components.AntDivider
@@ -41,9 +42,10 @@ private val BrandHeight = 20.dp
 fun ShareFrame(
   modifier: Modifier = Modifier,
   footer: List<ShareFooterLine> = emptyList(),
+  size: DpSize = SHARE_SIZE,
   body: @Composable ColumnScope.() -> Unit,
 ) {
-  Column(modifier.size(SHARE_SIZE).background(AntTheme.colors.bgContainer).testTag("share_card")) {
+  Column(modifier.size(size).background(AntTheme.colors.bgContainer).testTag("share_card")) {
     Box(Modifier.fillMaxWidth().height(AccentHeight).background(AntTheme.colors.primary.base))
     Column(
       Modifier.weight(1f).fillMaxWidth().padding(start = SideMargin, end = SideMargin, top = VerticalMargin, bottom = VerticalMargin),

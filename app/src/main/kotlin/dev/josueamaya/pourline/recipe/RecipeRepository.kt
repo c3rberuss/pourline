@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -67,6 +68,9 @@ class RecipeRepository(
         }
     }
     .flowOn(Dispatchers.Default)
+
+  /** Todas las recetas con los nombres mostrados, para comparar con una importada. */
+  suspend fun all(): List<Recipe> = withContext(Dispatchers.IO) { dao.observeAll().first().map(::toRecipe) }
 
   /** Emite `null` si la receta desaparece. */
   fun observe(id: Long): Flow<Recipe?> = dao.observe(id).map { it?.let(::toRecipe) }.flowOn(Dispatchers.Default)
