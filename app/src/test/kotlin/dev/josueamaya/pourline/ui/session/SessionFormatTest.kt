@@ -30,6 +30,13 @@ class SessionFormatTest {
   }
 
   @Test
+  fun `the clock formats recipe totals with minutes over 59`() {
+    assertEquals("3:30", formatClock(210_000))
+    assertEquals("60:00", formatClock(3_600_000))
+    assertEquals("62:00", formatClock(3_720_000))
+  }
+
+  @Test
   fun `a negative time is shown as zero`() {
     assertEquals("0:00", formatClock(-500))
   }

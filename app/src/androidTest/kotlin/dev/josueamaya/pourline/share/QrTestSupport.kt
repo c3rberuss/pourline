@@ -137,9 +137,11 @@ internal const val WORST_CASE_GRIND_TEXT =
 /**
  * La captura de la capa de Compose no es exacta al bit en el borde de un rectángulo: el primer píxel de un módulo sale con un
  * 1 % de mezcla (`#020202` en lugar de `#000000`, `#FDFDFD` en lugar de `#FFFFFF`). Por eso "negro" y "blanco" admiten
- * 8 niveles de margen. El texto de la tarjeta (negro al 88 % sobre blanco, `#1E1E1E` como mínimo) queda fuera del margen.
+ * 12 niveles de margen: con el reloj de los datos de SPEC-010 la captura deja además una costura de un píxel (la primera
+ * columna de una fila de píxeles de los módulos, hasta `#0A0A0A` y `#F5F5F5`), que no afecta a la lectura. El texto de la
+ * tarjeta (negro al 88 % sobre blanco, `#1E1E1E` como mínimo) queda fuera del margen.
  */
-private const val PIXEL_TOLERANCE = 8
+private const val PIXEL_TOLERANCE = 12
 
 private fun Int.isDark(): Boolean = Color.red(this) <= PIXEL_TOLERANCE && Color.green(this) <= PIXEL_TOLERANCE && Color.blue(this) <= PIXEL_TOLERANCE
 

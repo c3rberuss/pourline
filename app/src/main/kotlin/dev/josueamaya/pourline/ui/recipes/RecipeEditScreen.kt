@@ -23,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -66,6 +68,7 @@ import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.grinders.GrindSettingField
 import dev.josueamaya.pourline.ui.history.label
 import dev.josueamaya.pourline.ui.scale.BrewChart
+import dev.josueamaya.pourline.ui.session.formatClock
 import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
 import dev.josueamaya.pourline.ui.tour.TourHost
@@ -426,12 +429,23 @@ private fun StageCard(
 private fun Totals(form: RecipeEditForm) {
   val water = form.totalWaterG() ?: return
   val ratio = form.ratio()
-  val text = if (ratio != null) {
-    stringResource(R.string.recipe_edit_totals, formatGrams(water), formatRatioNumber(ratio))
-  } else {
-    stringResource(R.string.recipe_edit_totals_water, formatGrams(water))
+  val time = form.totalDurationMs()?.let(::formatClock)
+  val timeDescription = time?.let { stringResource(R.string.recipe_total_time_description, it) }
+  // Cuatro cadenas completas (con y sin ratio, con y sin tiempo) para poder traducir el orden y el separador.
+  @Composable
+  fun totals(timeText: String?): String = when {
+    ratio != null && timeText != null -> stringResource(R.string.recipe_edit_totals_time, formatGrams(water), formatRatioNumber(ratio), timeText)
+    ratio != null -> stringResource(R.string.recipe_edit_totals, formatGrams(water), formatRatioNumber(ratio))
+    timeText != null -> stringResource(R.string.recipe_edit_totals_water_time, formatGrams(water), timeText)
+    else -> stringResource(R.string.recipe_edit_totals_water, formatGrams(water))
   }
-  AntText(text, Modifier.tourAnchor("recipe_edit_totals").testTag("recipe_edit_totals"), type = AntTextType.Secondary)
+  val text = totals(time)
+  val description = totals(timeDescription)
+  AntText(
+    text,
+    Modifier.tourAnchor("recipe_edit_totals").testTag("recipe_edit_totals").semantics { contentDescription = description },
+    type = AntTextType.Secondary,
+  )
 }
 
 @Composable

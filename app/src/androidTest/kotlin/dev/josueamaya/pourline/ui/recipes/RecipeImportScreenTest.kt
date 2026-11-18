@@ -3,7 +3,9 @@ package dev.josueamaya.pourline.ui.recipes
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
@@ -125,6 +127,15 @@ class RecipeImportScreenTest {
     val letters = ('a'..'z') + ('A'..'Z') + ('0'..'9')
     val random = Random(seed)
     return String(CharArray(length) { letters[random.nextInt(letters.size)] })
+  }
+
+  @Test
+  fun showsTheTotalTimeNextToTheWaterAndTheRatio() {
+    show(uriOf(recipe()))
+
+    // Los pasos acaban en 1:45 (45 s de inicio y 60 s de duración del último).
+    rule.onNodeWithTag("recipe_import_duration").performScrollTo().assertIsDisplayed().assertTextEquals("1:45")
+      .assertContentDescriptionEquals(context.getString(R.string.recipe_total_time_description, "1:45"))
   }
 
   @Test

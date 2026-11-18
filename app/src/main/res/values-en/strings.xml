@@ -210,7 +210,7 @@
     <string name="recipe_undo">Undo</string>
     <string name="recipe_builtin_tag">Built-in</string>
     <string name="recipe_active_tag">Active</string>
-    <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s</string>
+    <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s · %5$s</string>
     <plurals name="recipe_stage_count">
         <item quantity="one">%1$d step</item>
         <item quantity="other">%1$d steps</item>
@@ -241,6 +241,9 @@
     <string name="recipe_edit_four_six">Generate with the 4:6 method</string>
     <string name="recipe_edit_totals">Total water %1$s g · Ratio 1:%2$s</string>
     <string name="recipe_edit_totals_water">Total water %1$s g</string>
+    <string name="recipe_edit_totals_time">Total water %1$s g · Ratio 1:%2$s · %3$s</string>
+    <string name="recipe_edit_totals_water_time">Total water %1$s g · %2$s</string>
+    <string name="recipe_total_time_description">Total time %1$s</string>
     <string name="recipe_edit_preview">Curve preview</string>
     <string name="recipe_edit_save">Save</string>
     <string name="recipe_edit_duplicate">Duplicate</string>

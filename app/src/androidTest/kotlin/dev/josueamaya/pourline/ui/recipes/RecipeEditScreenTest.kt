@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.ui.recipes
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.isPopup
@@ -299,8 +300,34 @@ class RecipeEditScreenTest {
     type("recipe_edit_dose", "20")
     replace("recipe_stage_water_0", "300")
     rule.onNodeWithTag("recipe_edit_totals").performScrollTo()
-      .assertTextEquals(context.getString(R.string.recipe_edit_totals, "300", String.format(java.util.Locale.getDefault(), "%.1f", 15.0)))
+      .assertTextEquals(context.getString(R.string.recipe_edit_totals_time, "300", String.format(java.util.Locale.getDefault(), "%.1f", 15.0), "0:10"))
     rule.onNodeWithTag("recipe_edit_preview").performScrollTo()
+  }
+
+  private fun totalsText(withTime: String?): String {
+    val ratio = String.format(java.util.Locale.getDefault(), "%.1f", 6.0)
+    return if (withTime != null) context.getString(R.string.recipe_edit_totals_time, "120", ratio, withTime) else context.getString(R.string.recipe_edit_totals, "120", ratio)
+  }
+
+  @Test
+  fun theTotalTimeFollowsTheStepsAndHidesWhileAStepCannotBeRead() {
+    show()
+    type("recipe_edit_dose", "20")
+    replace("recipe_stage_water_0", "120")
+    rule.onNodeWithTag("recipe_edit_totals").performScrollTo().assertTextEquals(totalsText("0:10"))
+    replace("recipe_stage_duration_0", "25")
+    rule.onNodeWithTag("recipe_edit_totals").performScrollTo().assertTextEquals(totalsText("0:25"))
+    // Un paso nuevo empieza donde acaba el anterior (0:25) y dura 10 s.
+    rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick()
+    replace("recipe_stage_water_1", "120")
+    rule.onNodeWithTag("recipe_edit_totals").performScrollTo().assertTextEquals(totalsText("0:35"))
+    // Con un inicio que no se lee, la línea sigue sin el tiempo.
+    replace("recipe_stage_start_1", "")
+    rule.onNodeWithTag("recipe_edit_totals").performScrollTo().assertTextEquals(totalsText(null))
+    replace("recipe_stage_start_1", "0:25")
+    rule.onNodeWithTag("recipe_edit_totals").performScrollTo().assertTextEquals(totalsText("0:35"))
+    rule.onNodeWithTag("recipe_edit_totals")
+      .assertContentDescriptionEquals(totalsText(context.getString(R.string.recipe_total_time_description, "0:35")))
   }
 
   @Test

@@ -31,6 +31,7 @@ import dev.josueamaya.pourline.recipe.Recipe
 import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.StageType
 import dev.josueamaya.pourline.recipe.share.RecipeShareCodec
+import dev.josueamaya.pourline.ui.session.formatClock
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -354,6 +355,17 @@ class ShareCardsLayoutTest {
     val box = node("share_recipe_qr")
     assertEquals("x de la caja del QR", 0f, box.positionInRoot.x % 2f, 0f)
     assertEquals("y de la caja del QR", 0f, box.positionInRoot.y % 2f, 0f)
+  }
+
+  @Test
+  fun theTotalTimeIsOnTheFactsLineAndTheCardKeepsItsSize() {
+    val recipe = recipe(4)
+    capture(ShareRequest.Recipe(recipeData(recipe)))
+
+    assertSize()
+    brandInside()
+    assertEquals(formatClock(recipe.totalDurationMs), textOf("share_recipe_duration"))
+    assertEquals(node("share_recipe_ratio").positionInRoot.y, node("share_recipe_duration").positionInRoot.y, 0f)
   }
 
   @Test

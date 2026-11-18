@@ -12,7 +12,10 @@ import dev.josueamaya.pourline.recipe.StageType
 import dev.josueamaya.pourline.ui.components.AntIcons
 import java.util.Locale
 
-/** `m:ss` a partir de milisegundos (se trunca al segundo). Es el formato del timer de la sesión (D25). */
+/**
+ * `m:ss` a partir de milisegundos (se trunca al segundo). Es el formato del timer de la sesión (D25) y el del tiempo
+ * total de una receta (SPEC-010): sin horas, así que 3 600 000 ms son "60:00".
+ */
 fun formatClock(ms: Long): String {
   val seconds = (ms / 1000).coerceAtLeast(0)
   return String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60)
