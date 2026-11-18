@@ -27,6 +27,13 @@ data class Recipe(
   /** El agua acumulada del último paso `POUR`. */
   val totalWaterG: Double get() = stages.lastOrNull { it.type == StageType.POUR }?.targetWaterG ?: 0.0
   val ratio: Double get() = totalWaterG / doseG
+
+  /**
+   * Lo que dura la preparación: el `endMs` mayor de los pasos (0 sin pasos). Incluye los huecos entre pasos y la espera
+   * o el drawdown final. No es `TargetCurve.endMs`, que termina en el último vertido, sino
+   * `TargetCurve.lastStepEndMs`.
+   */
+  val totalDurationMs: Long get() = stages.maxOfOrNull { it.endMs } ?: 0L
 }
 
 /** Qué hay que hacer en un paso: verter agua, remover o esperar. */

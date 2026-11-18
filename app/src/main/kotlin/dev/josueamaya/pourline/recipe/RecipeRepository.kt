@@ -23,8 +23,11 @@ data class RecipeListItem(
   val methodOther: String?,
   val doseG: Double,
   val totalWaterG: Double,
+  /** Todos los pasos de la receta, de cualquier tipo (verter, remover, esperar y acción), no solo los vertidos. */
   val stageCount: Int,
   val builtIn: Boolean,
+  /** El fin del último paso, como [Recipe.totalDurationMs]. */
+  val totalDurationMs: Long,
 )
 
 /**
@@ -62,8 +65,9 @@ class RecipeRepository(
             methodOther = recipe.methodOther,
             doseG = recipe.doseG,
             totalWaterG = with.stages.filter { it.type == StageType.POUR }.maxByOrNull { it.position }?.targetWaterG ?: 0.0,
-            stageCount = with.stages.count { it.type == StageType.POUR },
+            stageCount = with.stages.size,
             builtIn = recipe.builtInKey != null,
+            totalDurationMs = with.stages.maxOfOrNull { it.startMs + it.durationMs } ?: 0L,
           )
         }
     }

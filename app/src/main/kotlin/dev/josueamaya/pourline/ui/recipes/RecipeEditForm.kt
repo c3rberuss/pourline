@@ -270,6 +270,20 @@ data class RecipeEditForm(
     return water / dose
   }
 
+  /**
+   * El tiempo total en vivo: el mayor inicio más duración de los pasos. `null` si algún inicio o alguna duración no se
+   * puede leer (una duración vacía tampoco). No mira el tipo ni el agua.
+   */
+  fun totalDurationMs(): Long? {
+    var total = 0L
+    for (stage in stages) {
+      val start = parseStart(stage.start) ?: return null
+      val duration = parseSeconds(stage.duration) ?: return null
+      total = maxOf(total, start + duration)
+    }
+    return total
+  }
+
   private val tempResult: TempResult get() = parseWaterTemp(waterTemp)
 
   private class ParsedStage(val start: Long?, val water: Double?, val duration: Long?)

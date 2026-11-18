@@ -418,7 +418,7 @@ class RecipeEditScreenTest {
     rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsEnabled().performClick()
     rule.waitUntil(5_000) { backCount == 1 }
     val saved = runBlocking { recipes.list().first().single { !it.builtIn } }
-    assertEquals(3, saved.stageCount)
+    assertEquals(5, saved.stageCount) // tres vertidos y dos esperas
     assertTrue(saved.name.endsWith(context.getString(R.string.recipe_from_brew_name, "").trim().ifEmpty { "(" }.take(1)).not())
   }
 

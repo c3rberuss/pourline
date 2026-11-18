@@ -362,4 +362,40 @@ class RecipeEditFormTest {
     assertEquals(GrindSetting(5, 21.0, null), form.toRecipe(id = 1)!!.grind)
     assertEquals(GrindChoice.Live(5, 21.0), RecipeEditForm.from(form.toRecipe(id = 1)!!.copy(grind = GrindSetting(5, 21.0, "x"))).grind)
   }
+
+  @Test
+  fun `the live total time is the end of the last step, gaps included`() {
+    val one = RecipeEditForm(stages = listOf(StageForm(start = "0:00", water = "50", duration = "10")))
+    assertEquals(10_000L, one.totalDurationMs())
+    val two = one.copy(stages = one.stages + StageForm(start = "0:30", water = "100", duration = "20"))
+    assertEquals(50_000L, two.totalDurationMs())
+    // Cambiar una duración desplaza el resto de pasos y el total.
+    val longer = two.updateStage(0, two.stages[0].copy(duration = "20"))
+    assertEquals("0:40", longer.stages[1].start)
+    assertEquals(60_000L, longer.totalDurationMs())
+    // Un paso que acaba antes que el anterior no recorta el total.
+    val shorter = two.copy(stages = two.stages + StageForm(start = "0:05", water = "", duration = "1", type = StageType.WAIT))
+    assertEquals(50_000L, shorter.totalDurationMs())
+  }
+
+  @Test
+  fun `the live total time is null while a start or a duration cannot be read`() {
+    val form = RecipeEditForm(
+      stages = listOf(
+        StageForm(start = "0:00", water = "50", duration = "10"),
+        StageForm(start = "0:20", water = "100", duration = "10"),
+      ),
+    )
+    assertEquals(30_000L, form.totalDurationMs())
+    for (bad in listOf("1:7", "")) {
+      assertNull("inicio '$bad'", form.updateStage(1, form.stages[1].copy(start = bad)).totalDurationMs())
+    }
+    for (bad in listOf("abc", "")) {
+      assertNull("duración '$bad'", form.updateStage(1, form.stages[1].copy(duration = bad)).totalDurationMs())
+    }
+    // Al corregirlo, vuelve.
+    val broken = form.updateStage(1, form.stages[1].copy(start = "1:7"))
+    assertNull(broken.totalDurationMs())
+    assertEquals(40_000L, broken.updateStage(1, broken.stages[1].copy(start = "0:30")).totalDurationMs())
+  }
 }

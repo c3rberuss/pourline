@@ -68,13 +68,13 @@ class RecipesScreenTest {
     rule.onAllNodesWithTag("recipe_builtin_tag", useUnmergedTree = true).assertCountEquals(2)
     rule.onNodeWithText(texts.builtInName(BuiltInRecipes.V60_CLASSIC)).assertIsDisplayed()
     rule.onNodeWithText(texts.builtInName(BuiltInRecipes.FOUR_SIX)).assertIsDisplayed()
-    // "15 g · 250 g · 1:16,7 · 3 etapas" con los números del idioma actual.
+    // "15 g · 250 g · 1:16,7 · 5 pasos" con los números del idioma actual.
     val summary = context.getString(
       R.string.recipe_summary,
       "15",
       "250",
       context.getString(R.string.scale_ratio_value, 250.0 / 15),
-      context.resources.getQuantityString(R.plurals.recipe_stage_count, 3, 3),
+      context.resources.getQuantityString(R.plurals.recipe_stage_count, 5, 5),
     )
     rule.onNodeWithText(summary).assertIsDisplayed()
   }
