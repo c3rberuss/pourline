@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Implementado, pendiente de revisión de textos (D34) y code-review. Plan: [`plan-recorrido-guiado.md`](plan-recorrido-guiado.md) |
+| Estado | Implementado; textos aprobados por el usuario el 2026-11-17; pendiente de code-review. Plan: [`plan-recorrido-guiado.md`](plan-recorrido-guiado.md) |
 | Fecha | 2026-11-17 |
 | Rama | `feat/guided-tour`, creada desde `develop` (`1015b12`) |
 | Deriva de | Petición del usuario: que quien abra la app la conozca sin explicación externa |
@@ -414,7 +414,7 @@ Las anclas `session_close` y `session_options` solo se registran fuera de `Activ
   - `settings_tour_replay` ("Ver recorrido") con su texto de ayuda.
 - Sin emojis. Frases cortas: el cuerpo, como máximo dos frases.
 - La redacción final está en `values/strings.xml` y `values-en/strings.xml`, y en el §2.7 del
-  plan. El usuario la revisa sobre las capturas (D34 del plan).
+  plan. El usuario la aprobó sobre las capturas el 2026-11-17 (D34 del plan).
 - `settings_tour_replay_hint` es el texto de ayuda de la fila "Ver recorrido".
 
 ### 3.9 Flujo de ejecución
@@ -501,11 +501,11 @@ Las anclas `session_close` y `session_options` solo se registran fuera de `Activ
 - [x] Verificación manual en el emulador con `adb` (`uiautomator dump`, `input tap`,
       `screencap`), sin ARTEMIS: cada recorrido de §3.7 se ve en claro y en oscuro, con el globo
       dentro de la pantalla, en vertical y en un caso en horizontal.
-- [ ] Con TalkBack, el título y el texto del globo se anuncian al cambiar de paso.
+- [x] Con TalkBack, el título y el texto del globo se anuncian al cambiar de paso.
       Verificado en el emulador: al abrirse el recorrido TalkBack anuncia el título del panel
       ("Welcome to Pourline" / "Your scale") y el árbol de accesibilidad solo contiene el globo.
-      La escucha completa (cambio de paso, foco inicial en el globo) queda para el teléfono
-      físico (D35).
+      El usuario completó la escucha (cambio de paso, foco inicial en el globo) en su teléfono
+      físico el 2026-11-17 (D35).
 - [ ] `SessionPerformanceTest` no empeora respecto a `develop` (`1015b12`).
       Medido contra el commit previo a los recorridos (`a652d16`): por medianas no empeora, pero
       el emulador iba muy cargado y el p95 es ruidoso; hay que repetirlo en un equipo libre.
@@ -513,8 +513,8 @@ Las anclas `session_close` y `session_options` solo se registran fuera de `Activ
 ## 6. Preguntas abiertas
 
 - Redacción final de cada paso, ajustada al comportamiento real de cada pantalla. La redactó el
-  plan (§2.7) y quedó en `values` y `values-en`. **Abierta:** el usuario la revisa sobre las
-  capturas de la verificación (D34 del plan).
+  plan (§2.7) y quedó en `values` y `values-en`. **Resuelta:** el usuario la aprobó sobre las
+  capturas de la verificación el 2026-11-17 (D34 del plan).
 - Resueltas por el plan: las anclas se consideran estabilizadas tras 300 ms sin altas ni bajas
   (D9), y las anclas de una `LazyColumn` se declaran con `TourLazyAnchor` y se buscan
   desplazando la lista (D10).
