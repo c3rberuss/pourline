@@ -31,6 +31,7 @@ import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
 import dev.josueamaya.pourline.recipe.StageType
 import dev.josueamaya.pourline.recipe.share.DecodeResult
+import dev.josueamaya.pourline.recipe.share.QrReadResult
 import dev.josueamaya.pourline.recipe.share.RecipeShareCodec
 import dev.josueamaya.pourline.recipe.share.isIdentical
 import dev.josueamaya.pourline.settings.ExperienceMode
@@ -43,7 +44,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -270,7 +270,7 @@ class RecipeShareTest {
       rule.onNodeWithTag("ant_modal_confirm").performClick()
       waitForChooser()
 
-      assertNull("la imagen no debe llevar ningún QR", runBlocking { reader.read(sentStream()) })
+      assertEquals("la imagen no debe llevar ningún QR", QrReadResult.NoRecipe, runBlocking { reader.read(sentStream()) })
     } finally {
       reader.close()
     }
@@ -286,9 +286,9 @@ class RecipeShareTest {
       tapShare()
       waitForChooser()
       assertEquals(1080 to 1350, pngBounds())
-      val text = runBlocking { reader.read(sentStream()) }
-      assertNotNull("no se leyó ningún QR", text)
-      val decoded = RecipeShareCodec.decode(text!!) as DecodeResult.Ok
+      val read = runBlocking { reader.read(sentStream()) }
+      assertTrue("no se leyó ningún QR: $read", read is QrReadResult.Found)
+      val decoded = RecipeShareCodec.decode((read as QrReadResult.Found).text) as DecodeResult.Ok
       val saved = runBlocking { recipes.get(shortId) }!!
       assertTrue(isIdentical(saved, decoded.shared.recipe))
     } finally {
@@ -306,7 +306,7 @@ class RecipeShareTest {
       tapShare()
       waitForChooser()
       assertEquals(1080 to 1920, pngBounds())
-      val decoded = RecipeShareCodec.decode(runBlocking { reader.read(sentStream()) }!!) as DecodeResult.Ok
+      val decoded = RecipeShareCodec.decode((runBlocking { reader.read(sentStream()) } as QrReadResult.Found).text) as DecodeResult.Ok
       assertEquals(20, decoded.shared.recipe.stages.size)
     } finally {
       reader.close()

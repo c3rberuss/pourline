@@ -194,7 +194,7 @@ Orden: F0 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9. F2 y F
 | F4 | Tarjeta de receta con QR y tamaño variable | M | Hecha |
 | F5 | Compartir desde el editor | M | Hecha |
 | F6 | Vista previa, guardado, navegación común y mensajes | L | Hecha |
-| F7 | Entradas internas: escáner y galería | M | Pendiente |
+| F7 | Entradas internas: escáner y galería | M | Hecha (escáner pendiente de prueba manual) |
 | F8 | Entradas externas: `ACTION_SEND`, `ACTION_VIEW`, `singleTask` y aplazamiento | M | Pendiente |
 | F9 | Verificación: suites, lint, manifiesto, E2E por adb, prueba con dos móviles y capturas | M | Pendiente |
 
@@ -686,6 +686,34 @@ quita el molino de "Mis molinos" (`setOwned(false)`) antes de guardar, que es el
 un QR sin preparar la escena.
 
 Commit sugerido: `feat(recipes): import a recipe from the scanner or a gallery image`.
+
+**Resultado de F7 (2026-11-18).** En `emulator-5560`: `RecipesImportTest` (13 tests, con el lector real de Play Services en los casos con
+imagen, incluido el de 6 000 × 6 000 px) y `RecipeShareTest` / `RecipeQrLegibilityTest` (adaptados a `QrReadResult`): verdes. En
+`emulator-5556`: `RecipesScreenTest`, `RecipesHistoryTourTest`, `TabsNavigationTest` y `RecipeImportNavigationTest` (35 tests): verdes y sin
+cambios. Unitarios de `:app`: verdes. `:app:lintDebug`: 2 errores y 21 avisos, igual que la línea base. Manifiesto fusionado de `debug`:
+sin `INTERNET` ni `CAMERA`. **Falta la prueba manual del escáner real en el móvil** (ver abajo): es lo que cierra F7.
+
+Desviaciones menores respecto a D18, D19 y D27: `MlKitQrImageReader.read` captura cualquier excepción salvo la cancelación y solo da
+`ModelNotReady` si es `MlKitException.UNAVAILABLE` (la causa puede venir anidada); con `ModelNotReady` pide el módulo con
+`ModuleInstall` sin esperar. `RecipeImportEntryViewModel` gana `scan(scanner)`, que lanza el escáner en el `viewModelScope` (una
+rotación a mitad no pierde la lectura) y delega en `onScan`. `rememberQrScanner` trata también un fallo `CODE_SCANNER_CANCELLED` (13)
+como `Cancelled`. Los casos con imagen usan la tarjeta real capturada con `ShareCaptureHost` dentro de la misma composición (no hay
+un PNG preparado a mano). `anUnreadableFileShowsNoRecipeFound` usa el lector real porque el decodificado falla antes de tocar el modelo.
+
+### Prueba manual del escáner en la app (cierra F7)
+
+Con el APK de debug de esta rama instalado en el móvil, en Pourline: pestaña **Recetas**, icono **Importar** (bandeja con flecha) de
+la barra superior, **Escanear QR**. El QR a leer es `~/Downloads/pourline-recipe-share/scanner-spike/qr-432.png` abierto en el
+Mac al 100 % y con brillo alto (es el URI de 331 caracteres de arriba). Resultado esperado: se abre el escáner de Google, lee el
+QR y aparece **Importar receta** con 20 pasos, el nombre de 60 caracteres y las notas, sin barra inferior. Casos:
+
+1. **Normal:** el QR delante de la cámara. Pasa si se abre la vista previa. Guardar añade la receta y muestra "Receta añadida".
+2. **Modo avión** (con el módulo ya descargado por el punto 1): lo mismo. Pasa si lee sin red.
+3. **Tiempo:** de tocar "Escanear QR" a ver la vista previa, 5 s o menos (tres veces, con el QR ya a la vista).
+4. **Cancelar:** abrir el escáner y cerrarlo con la X o con atrás. Pasa si no ocurre nada (ni vista previa ni mensaje).
+
+Si el escáner no abre o falla, es el criterio de salida 2 de F0 y se aplica la alternativa del §6 (CameraX + `CAMERA`), que solo
+afecta a `QrScanner.kt` y al manifiesto. "Desde una imagen" no necesita esta prueba: la cubren los tests de F7.
 
 ### F8. Entradas externas
 

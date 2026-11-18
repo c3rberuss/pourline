@@ -498,6 +498,9 @@
     <string name="recipe_trimmed_list_two">%1$s y %2$s</string>
     <string name="recipe_trimmed_list_three">%1$s, %2$s y %3$s</string>
     <string name="recipe_import_title">Importar receta</string>
+    <string name="recipe_import_action">Importar receta</string>
+    <string name="recipe_import_scan">Escanear QR</string>
+    <string name="recipe_import_from_image">Desde una imagen</string>
     <string name="recipe_import_save">Guardar</string>
     <string name="recipe_import_cancel">Cancelar</string>
     <string name="recipe_import_trimmed">La receta original tenía %1$s que no cupieron en el QR.</string>

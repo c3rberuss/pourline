@@ -72,6 +72,7 @@ import dev.josueamaya.pourline.ui.prepare.PrepareScreen
 import dev.josueamaya.pourline.ui.prepare.PrepareViewModel
 import dev.josueamaya.pourline.ui.recipes.RecipeEditScreen
 import dev.josueamaya.pourline.ui.recipes.RecipeEditViewModel
+import dev.josueamaya.pourline.ui.recipes.RecipeImportEntryViewModel
 import dev.josueamaya.pourline.ui.recipes.RecipeImportScreen
 import dev.josueamaya.pourline.ui.recipes.RecipeImportViewModel
 import dev.josueamaya.pourline.ui.recipes.RecipesScreen
@@ -344,12 +345,16 @@ private fun tabEntryProvider(
     val session = deps.scaleSession
     val activeRecipeId by remember { session.ui.map(::activeRecipeIdOf).distinctUntilChanged() }
       .collectAsStateWithLifecycle(remember { activeRecipeIdOf(session.ui.value) })
+    val importer = viewModel {
+      RecipeImportEntryViewModel(deps.recipeImports, deps.qrImageReader) { deps.scaleSession.ui.value.hasSession }
+    }
     RecipesScreen(
       viewModel { RecipesViewModel(deps.recipeRepository) },
       onBack = null,
       onOpenRecipe = { id -> stack.add(RecipeEdit(id = id)) },
       onCreateRecipe = { stack.add(RecipeEdit()) },
       activeRecipeId = activeRecipeId,
+      importer = importer,
     )
   }
   tabEntry<RecipeEdit>(tab, stack, activeTab) { key ->

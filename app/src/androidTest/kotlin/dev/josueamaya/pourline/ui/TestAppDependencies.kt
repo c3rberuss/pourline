@@ -29,6 +29,8 @@ import dev.josueamaya.pourline.protocol.ScaleMessage
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
 import dev.josueamaya.pourline.recipe.share.PendingRecipeImport
+import dev.josueamaya.pourline.recipe.share.QrReadResult
+import dev.josueamaya.pourline.share.QrImageReader
 import dev.josueamaya.pourline.scale.ConnectionState
 import dev.josueamaya.pourline.scale.ConnectionStep
 import dev.josueamaya.pourline.scale.ScaleConnection
@@ -177,6 +179,9 @@ class TestAppDependencies(
   val coffees = CoffeeRepository(db, photoStore)
   val recipes = RecipeRepository(db, texts)
   val recipeImports = PendingRecipeImport()
+
+  /** El lector de QR de las imágenes; un test lo cambia por el suyo. Por defecto no encuentra ninguna receta. */
+  var qrImageReader: QrImageReader = QrImageReader { QrReadResult.NoRecipe }
   val grinderSettings = GrinderSettings(context, PREFS)
   val grindTexts = ResourcesGrindTexts(context)
   val grinders = GrinderRepository(db, grinderSettings, grindTexts)
@@ -228,6 +233,7 @@ class TestAppDependencies(
     recipeRepository = recipes,
     recipeTexts = texts,
     recipeImports = recipeImports,
+    qrImageReader = { uri -> qrImageReader.read(uri) },
     grinderSettings = grinderSettings,
     grinderRepository = grinders,
     grindTexts = grindTexts,

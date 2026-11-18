@@ -128,6 +128,14 @@ object AntIcons {
       "M8.6 10.5L15.4 6.5", "M8.6 13.5L15.4 17.5",
     )
   }
+  /** Una bandeja con una flecha hacia abajo: importar. */
+  val Import: ImageVector by lazy {
+    strokeIcon(
+      "Import",
+      "M4 14V19A1 1 0 0 0 5 20H19A1 1 0 0 0 20 19V14",
+      "M12 4V15", "M8 11.5L12 15.5L16 11.5",
+    )
+  }
   val Search: ImageVector by lazy {
     strokeIcon("Search", "M17 11A6 6 0 1 1 5 11A6 6 0 1 1 17 11Z", "M21 21L15.5 15.5")
   }

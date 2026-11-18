@@ -18,6 +18,7 @@ import dev.josueamaya.pourline.history.HistoryDatabase
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
 import dev.josueamaya.pourline.recipe.share.PendingRecipeImport
+import dev.josueamaya.pourline.share.MlKitQrImageReader
 import dev.josueamaya.pourline.session.AndroidScaleConnections
 import dev.josueamaya.pourline.session.AutoReconnect
 import dev.josueamaya.pourline.session.BrewKeepAlive
@@ -109,6 +110,9 @@ class PourlineApp : Application() {
   /** Las recetas importadas que esperan su vista previa: todas las entradas de SPEC-009 la usan. */
   val recipeImports = PendingRecipeImport()
 
+  /** El lector de QR de ML Kit sobre Play Services; el modelo se descarga bajo demanda. */
+  val qrImageReader by lazy { MlKitQrImageReader(this) }
+
   val grinderRepository by lazy { GrinderRepository(historyDatabase, grinderSettings, grindTexts) }
 
   /** Sincroniza el catálogo de molinos con la base; se invoca al arrancar ([onCreate]). */
@@ -175,6 +179,7 @@ class PourlineApp : Application() {
       recipeRepository = recipeRepository,
       recipeTexts = ResourcesRecipeTexts(this),
       recipeImports = recipeImports,
+      qrImageReader = qrImageReader,
       grinderSettings = grinderSettings,
       grinderRepository = grinderRepository,
       grindTexts = grindTexts,

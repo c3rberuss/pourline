@@ -23,6 +23,7 @@ import dev.josueamaya.pourline.settings.GrinderSettings
 import dev.josueamaya.pourline.settings.TargetSettings
 import dev.josueamaya.pourline.settings.ThemeSettings
 import dev.josueamaya.pourline.settings.TourSettings
+import dev.josueamaya.pourline.share.QrImageReader
 import dev.josueamaya.pourline.tools.FourSixTexts
 
 /**
@@ -44,6 +45,8 @@ class AppDependencies(
   val recipeTexts: RecipeTexts,
   /** La cola de recetas importadas que esperan su vista previa (SPEC-009, D14). */
   val recipeImports: PendingRecipeImport,
+  /** Lee el QR de una imagen de la galería o de otra app (SPEC-009, D18). */
+  val qrImageReader: QrImageReader,
   val grinderSettings: GrinderSettings,
   val grinderRepository: GrinderRepository,
   val grindTexts: GrindTexts,
