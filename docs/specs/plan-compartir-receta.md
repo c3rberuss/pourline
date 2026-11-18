@@ -190,7 +190,7 @@ Orden: F0 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9. F2 y F
 | F0 | Spike en el dispositivo: línea base, dependencias, manifiesto sin `INTERNET`, Code Scanner y `MAX_URI_LENGTH` | M | Hecha (escáner se verifica a mano en F7) |
 | F1 | Códec JVM puro (formato binario del §3.1): `RecipeShareCodec`, recorte y errores | M | Hecha |
 | F2 | Reglas de importación JVM: idéntica, sufijo, `routeImport` y `PendingRecipeImport` | S | Hecha |
-| F3 | Resolución de molienda JVM | S | Pendiente |
+| F3 | Resolución de molienda JVM | S | Hecha |
 | F4 | Tarjeta de receta con QR y tamaño variable | M | Pendiente |
 | F5 | Compartir desde el editor | M | Pendiente |
 | F6 | Vista previa, guardado, navegación común y mensajes | L | Pendiente |
