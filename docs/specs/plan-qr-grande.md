@@ -162,7 +162,7 @@ la cadena nueva).
 | Fase | Contenido | Tamaño | Estado |
 |---|---|---|---|
 | F0 | Línea base, tarjeta con el QR de 6 px y alto variable, medición sobre la tarjeta real y `MAX_URI_LENGTH` | L | Hecha |
-| F1 | Códec: instrucciones de una en una, recuentos, `EncodeResult` y la receta 4:6 del usuario | M | Pendiente |
+| F1 | Códec: instrucciones de una en una, recuentos, `EncodeResult` y la receta 4:6 del usuario | M | Hecha |
 | F2 | Compartir: motivo de "sin QR", "algunos pasos" y aviso de datos no válidos | M | Pendiente |
 | F3 | Importar: aviso de recorte parcial | S | Pendiente |
 | F4 | Verificación: suites, comprobaciones, E2E por adb, capturas y cierre | M | Pendiente |
@@ -333,6 +333,17 @@ instrumentados siguen usando `encode`). Sin instrumentados: F1 no cambia la inte
 usuario (450 esperados) y los dos URIs de D44.
 
 Commit sugerido: `feat(recipes): trim step instructions one at a time to fit the QR`.
+
+#### Resultado de F1
+
+- `./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.recipe.share.*" --tests "dev.josueamaya.pourline.share.*"`:
+  en verde (`RecipeShareCodecTest`: 46 tests, 0 fallos). `GOLDEN_V60_PAYLOAD` y `RecipeShareBinary.kt` sin tocar.
+- URI de la 4:6 del usuario (con `femobookA2`): **450 caracteres**, QR de la versión 16, sin recorte ni instrucciones quitadas.
+- URI del peor caso para el E2E (D43, sin molino): **576 caracteres** (`MAX_URI_LENGTH − 24`), QR de la versión 19. Los dos
+  URIs completos salen con `println` en `app/build/test-results/testDebugUnitTest/TEST-dev.josueamaya.pourline.recipe.share.RecipeShareCodecTest.xml`
+  (`4:6 URI:` y `E2E URI:`).
+- El nombre del test de la 4:6 es `the four six recipe of the user is shared without trimming`: JVM no admite `:` en los
+  nombres de método.
 
 ### F2. Compartir: motivo de "sin QR", "algunos pasos" y datos no válidos
 

@@ -46,19 +46,29 @@ object RecipeShareCodec {
 
   /**
    * El URI de [recipe] y lo que hubo que quitar para que quepa en [MAX_URI_LENGTH]. [grinder] es el molino vivo de
-   * `recipe.grind` (`null` si no hay o ya no existe). `null` si ni recortando cabe o si la receta no es válida.
+   * `recipe.grind` (`null` si no hay o ya no existe). `null` si ni recortando cabe o si la receta no es válida; para
+   * distinguirlo, [encodeResult].
    */
-  fun encode(recipe: Recipe, grinder: Grinder?): EncodedRecipe? = encode(recipe, grinder, MAX_URI_LENGTH)
+  fun encode(recipe: Recipe, grinder: Grinder?): EncodedRecipe? = (encodeResult(recipe, grinder) as? EncodeResult.Encoded)?.encoded
 
-  internal fun encode(recipe: Recipe, grinder: Grinder?, maxLength: Int): EncodedRecipe? {
+  /** Como [encode], pero dice si no hay URI porque la receta no es válida ([EncodeResult.Invalid]) o porque no cabe ([EncodeResult.TooLong]). */
+  fun encodeResult(recipe: Recipe, grinder: Grinder?): EncodeResult = encodeResult(recipe, grinder, MAX_URI_LENGTH)
+
+  internal fun encode(recipe: Recipe, grinder: Grinder?, maxLength: Int): EncodedRecipe? =
+    (encodeResult(recipe, grinder, maxLength) as? EncodeResult.Encoded)?.encoded
+
+  /** Valida primero: una receta inválida y además larga es `Invalid`. Después prueba [trimPlans] en orden y se queda con el primero que cabe. */
+  internal fun encodeResult(recipe: Recipe, grinder: Grinder?, maxLength: Int): EncodeResult {
     val ordered = recipe.copy(stages = recipe.stages.sortedBy { it.startMs })
-    if (RecipeValidator.validate(ordered).isNotEmpty()) return null
-    for (level in TrimLevel.entries) {
-      val payload = encodePayload(ordered, grinder, level)
+    if (RecipeValidator.validate(ordered).isNotEmpty()) return EncodeResult.Invalid
+    for (plan in trimPlans(ordered)) {
+      val payload = encodePayload(ordered, grinder, plan)
       val uri = uriFor(payload.bytes)
-      if (uri.length <= maxLength) return EncodedRecipe(uri, payload.trimmed)
+      if (uri.length <= maxLength) {
+        return EncodeResult.Encoded(EncodedRecipe(uri, payload.trimmed, payload.droppedInstructions, payload.keptInstructions))
+      }
     }
-    return null
+    return EncodeResult.TooLong
   }
 
   fun decode(text: String): DecodeResult {

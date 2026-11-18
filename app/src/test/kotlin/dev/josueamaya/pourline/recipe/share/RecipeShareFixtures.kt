@@ -35,6 +35,18 @@ val catalogGrinder = Grinder(
   owned = true,
 )
 
+/** El molino Femobook A2 de la base de datos del móvil del usuario: vueltas y clics (40 por vuelta), de 0 a 120. */
+val femobookA2 = Grinder(
+  id = 9,
+  catalogKey = "femobook-a2",
+  brand = "Femobook",
+  model = "A2",
+  units = listOf(GrindUnitLevel(GrindUnit.ROTATIONS), GrindUnitLevel(GrindUnit.CLICKS, perParent = 40)),
+  scaleMin = 0.0,
+  scaleMax = 120.0,
+  owned = true,
+)
+
 private val letters = ('a'..'z') + ('A'..'Z') + ('0'..'9')
 
 /** Texto aleatorio (poco comprimible) y determinista de [length] caracteres. */
@@ -107,8 +119,8 @@ fun everyField(unitMs: Long = 1_000) = Recipe(
 )
 
 /** La V60 clásica con notas y con instrucciones largas (poco comprimibles), para probar el recorte. */
-fun withLongTexts(notesLength: Int, instructionLength: Int): Recipe {
-  val stages = alternatingStages(count = 5, names = true).mapIndexed { i, stage ->
+fun withLongTexts(notesLength: Int, instructionLength: Int, stageCount: Int = 5): Recipe {
+  val stages = alternatingStages(count = stageCount, names = true).mapIndexed { i, stage ->
     stage.copy(instruction = randomText(instructionLength, seed = 10L + i))
   }
   return Recipe(
@@ -119,3 +131,36 @@ fun withLongTexts(notesLength: Int, instructionLength: Int): Recipe {
     stages = stages,
   )
 }
+
+private const val FIRST_POURS = "Vierte despacio y de forma uniforme: este vertido define el dulzor y la acidez."
+private const val LAST_POURS = "Vierte despacio y de forma uniforme: este vertido define la intensidad."
+private const val WAIT_TEXT = "Espera a que baje el agua."
+
+private fun fourSixStage(name: String?, startS: Long, waterG: Double, durationS: Long, type: StageType, instruction: String) =
+  RecipeStage(name, startS * 1_000, waterG, durationS * 1_000, type, instruction)
+
+/**
+ * La receta 4:6 equilibrada de intensidad media del Xiaomi del usuario, con los valores literales de su base de datos (D42):
+ * 18,8 g, V60, 90 °C, notas, 10 pasos con nombre e instrucción y el molino [femobookA2] con el ajuste 34. Con el códec de
+ * la enmienda 1 mide 450 caracteres.
+ */
+fun fourSixUserRecipe(grinderId: Long = femobookA2.id) = Recipe(
+  name = "4:6 · Equilibrado · Media",
+  method = BrewMethod.V60,
+  waterTempC = 90.0,
+  notes = "Generada con el método 4:6: el 40 % del agua define el sabor y el 60 % restante, la intensidad. Molienda gruesa.",
+  doseG = 18.8,
+  grind = GrindSetting(grinderId, 34.0, "A2 · 0 · 34"),
+  stages = listOf(
+    fourSixStage("1.er vertido", 0, 64.0, 20, StageType.POUR, FIRST_POURS),
+    fourSixStage(null, 20, 64.0, 25, StageType.WAIT, WAIT_TEXT),
+    fourSixStage("2.º vertido", 45, 128.0, 20, StageType.POUR, FIRST_POURS),
+    fourSixStage(null, 65, 128.0, 25, StageType.WAIT, WAIT_TEXT),
+    fourSixStage("3.er vertido", 90, 192.0, 20, StageType.POUR, LAST_POURS),
+    fourSixStage(null, 110, 192.0, 25, StageType.WAIT, WAIT_TEXT),
+    fourSixStage("4.º vertido", 135, 256.0, 20, StageType.POUR, LAST_POURS),
+    fourSixStage(null, 155, 256.0, 25, StageType.WAIT, WAIT_TEXT),
+    fourSixStage("5.º vertido", 180, 320.0, 20, StageType.POUR, "Último vertido: sin prisa, hasta el agua total."),
+    fourSixStage(null, 200, 320.0, 10, StageType.WAIT, "Deja que drene y retira el filtro."),
+  ),
+)
