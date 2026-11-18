@@ -44,17 +44,14 @@ class QrCodeTest {
   }
 
   @Test
-  fun `cell edges are integer and contiguous and cover the whole size`() {
-    for ((cells, size) in listOf(33 to 432, 45 to 432, 61 to 432, 37 to 144)) {
-      assertEquals(0, qrCellEdge(0, cells, size))
-      assertEquals(size, qrCellEdge(cells, cells, size))
-      var previous = 0
-      for (i in 1..cells) {
-        val edge = qrCellEdge(i, cells, size)
-        assertTrue("el borde $i retrocede", edge > previous)
-        previous = edge
-      }
+  fun `the box side is the modules plus four quiet modules per side`() {
+    for (version in listOf(1, 13, 21)) {
+      val modules = 4 * version + 17
+      val matrix = QrMatrix(modules, BooleanArray(modules * modules))
+      assertEquals(modules + 8, matrix.cells)
     }
+    assertEquals(77, QrMatrix(69, BooleanArray(69 * 69)).cells)
+    assertEquals(109, QrMatrix(101, BooleanArray(101 * 101)).cells)
   }
 
   private fun binary(matrix: QrMatrix): BinaryBitmap {

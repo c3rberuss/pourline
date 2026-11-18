@@ -10,11 +10,37 @@ import dev.josueamaya.pourline.recipe.StageType
 import dev.josueamaya.pourline.recipe.share.ShareFormat.TimeUnit
 import dev.josueamaya.pourline.recipe.withDerivedWater
 
-/** Cuánto se quita del payload para que quepa (D6). Cada nivel incluye los anteriores. */
-internal enum class TrimLevel { NONE, NOTES, INSTRUCTIONS, STAGE_NAMES }
+/**
+ * Cuánto se quita del payload para que quepa (D6, enmienda 1 de SPEC-009): las notas, las instrucciones de los últimos
+ * [droppedInstructions] pasos que la tienen (en orden de `startMs`) y, solo cuando ya no queda ninguna instrucción, los
+ * nombres de los pasos.
+ */
+internal data class TrimPlan(val notes: Boolean = false, val droppedInstructions: Int = 0, val stageNames: Boolean = false) {
+  companion object {
+    val NONE = TrimPlan()
+  }
+}
 
-/** El payload binario y lo que se quitó para escribirlo. */
-internal class EncodedPayload(val bytes: ByteArray, val trimmed: Set<TrimmedPart>)
+/**
+ * El payload binario, lo que se quitó para escribirlo y cuántas instrucciones se quitaron ([droppedInstructions]) y se
+ * conservaron ([keptInstructions]).
+ */
+internal class EncodedPayload(val bytes: ByteArray, val trimmed: Set<TrimmedPart>, val droppedInstructions: Int, val keptInstructions: Int)
+
+/**
+ * Los recortes de [recipe] de menos a más, sin repetir: nada, sin notas, sin la instrucción del último paso que la tenga, sin
+ * las dos últimas... hasta sin ninguna, y por fin sin los nombres. Un recorte que no quita nada (sin notas, o sin
+ * instrucciones o nombres) no aparece.
+ */
+internal fun trimPlans(recipe: Recipe): Sequence<TrimPlan> = sequence {
+  val stages = recipe.stages
+  val hasNotes = !recipe.notes.isNullOrBlank()
+  val instructions = stages.count { !it.instruction.isNullOrBlank() }
+  yield(TrimPlan.NONE)
+  if (hasNotes) yield(TrimPlan(notes = true))
+  for (k in 1..instructions) yield(TrimPlan(notes = hasNotes, droppedInstructions = k))
+  if (stages.any { !it.name.isNullOrBlank() }) yield(TrimPlan(notes = hasNotes, droppedInstructions = instructions, stageNames = true))
+}
 
 /** Mayor valor en unidades de tiempo que se acepta al decodificar: evita desbordar al multiplicar. */
 private const val MAX_TIME_UNITS = 1_000_000_000L
@@ -23,17 +49,17 @@ private const val MAX_TIME_UNITS = 1_000_000_000L
  * El payload `v=1` del §3.1 de [recipe]. [grinder] es el molino vivo de `recipe.grind` (`null` si ya no existe). No valida
  * la receta: quien llama (`RecipeShareCodec.encode`) lo hace antes.
  */
-internal fun encodePayload(recipe: Recipe, grinder: Grinder?, trim: TrimLevel): EncodedPayload {
+internal fun encodePayload(recipe: Recipe, grinder: Grinder?, trim: TrimPlan): EncodedPayload {
   val stages = recipe.stages.sortedBy { it.startMs }
   val notes = recipe.notes?.takeIf { it.isNotBlank() }
-  val hasInstructions = stages.any { !it.instruction.isNullOrBlank() }
   val hasNames = stages.any { !it.name.isNullOrBlank() }
-  val trimNotes = notes != null && trim >= TrimLevel.NOTES
-  val trimInstructions = hasInstructions && trim >= TrimLevel.INSTRUCTIONS
-  val trimNames = hasNames && trim >= TrimLevel.STAGE_NAMES
-  val writeNotes = if (trim >= TrimLevel.NOTES) null else notes
-  val keepInstructions = trim < TrimLevel.INSTRUCTIONS
-  val keepNames = trim < TrimLevel.STAGE_NAMES
+  val withInstruction = stages.indices.filter { !stages[it].instruction.isNullOrBlank() }
+  val dropped = withInstruction.takeLast(trim.droppedInstructions).toSet()
+  val trimNotes = notes != null && trim.notes
+  val trimInstructions = dropped.isNotEmpty()
+  val trimNames = hasNames && trim.stageNames
+  val writeNotes = if (trim.notes) null else notes
+  val keepNames = !trim.stageNames
   val methodOther = recipe.methodOther?.takeIf { recipe.method == BrewMethod.OTHER && it.isNotBlank() }
   val grind = sharedGrindOf(recipe.grind, grinder)
   val unit = timeUnitOf(stages)
@@ -60,9 +86,9 @@ internal fun encodePayload(recipe: Recipe, grinder: Grinder?, trim: TrimLevel): 
   out.uvar(stages.size.toLong())
   var previousEndMs = 0L
   var accumulatedTenths = 0L
-  for (stage in stages) {
+  for ((index, stage) in stages.withIndex()) {
     val name = if (keepNames) stage.name?.takeIf { it.isNotBlank() } else null
-    val instruction = if (keepInstructions) stage.instruction?.takeIf { it.isNotBlank() } else null
+    val instruction = if (index !in dropped) stage.instruction?.takeIf { it.isNotBlank() } else null
     var sflags = when (stage.type) {
       StageType.POUR -> 0
       StageType.SWIRL -> 1
@@ -87,7 +113,7 @@ internal fun encodePayload(recipe: Recipe, grinder: Grinder?, trim: TrimLevel): 
     if (trimInstructions) add(TrimmedPart.INSTRUCTIONS)
     if (trimNames) add(TrimmedPart.STAGE_NAMES)
   }
-  return EncodedPayload(out.toByteArray(), trimmed)
+  return EncodedPayload(out.toByteArray(), trimmed, dropped.size, withInstruction.size - dropped.size)
 }
 
 private fun tenths(value: Double): Long = Math.round(value * 10)

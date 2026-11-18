@@ -29,8 +29,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 /** Lo que se dibuja en la imagen. La foto del café ya viene decodificada: la captura no espera a ninguna carga. */
 @Stable
 sealed interface ShareRequest {
-  /** El tamaño de la tarjeta: 4:5 salvo la receta con muchos pasos (D10). */
+  /** El tamaño de la tarjeta: 4:5. Con [fitsContent] es el mínimo (D10). */
   val size: DpSize get() = SHARE_SIZE
+
+  /** La tarjeta de receta mantiene el ancho y crece con su contenido (enmienda 1, D33); las demás son de tamaño fijo. */
+  val fitsContent: Boolean get() = false
 
   data class Coffee(val data: CoffeeShareData, val photo: ImageBitmap?) : ShareRequest
 
@@ -39,7 +42,7 @@ sealed interface ShareRequest {
   data class Compare(val data: CompareShareData) : ShareRequest
 
   data class Recipe(val data: RecipeShareData) : ShareRequest {
-    override val size: DpSize get() = recipeCardSize(data.recipe.stages.size)
+    override val fitsContent: Boolean get() = true
   }
 }
 
@@ -55,8 +58,9 @@ private const val QUIET_MS = 100L
 private const val MAX_SETTLE_ROUNDS = 10
 
 /**
- * Dibuja la tarjeta de [request] fuera de pantalla y la entrega como [ImageBitmap] de 1080 × 1350 px, o 1080 × 1920 px en la receta larga (D30, D10). La
- * tarjeta se mide al tamaño fijo dentro de un nodo de 1 × 1 px, con tema claro y densidad fija, y se graba en una
+ * Dibuja la tarjeta de [request] fuera de pantalla y la entrega como [ImageBitmap] de 1080 × 1350 px; la de receta mide 1080 px
+ * de ancho y al menos 1350 de alto, según su contenido (D30, D33). La tarjeta se mide al tamaño fijo, o con el alto mínimo y
+ * sin tope si [ShareRequest.fitsContent], dentro de un nodo de 1 × 1 px, con tema claro y densidad fija, y se graba en una
  * `GraphicsLayer` **sin** dibujarla en pantalla. Con `request == null` no compone nada. Un fallo al leer la capa
  * llama a [onFailed].
  */
@@ -83,7 +87,12 @@ fun ShareCaptureHost(request: ShareRequest?, onCaptured: (ImageBitmap) -> Unit, 
       }
     },
   ) { measurables, _ ->
-    val placeable = measurables.firstOrNull()?.measure(Constraints.fixed(width, height))
+    val constraints = if (request.fitsContent) {
+      Constraints(minWidth = width, maxWidth = width, minHeight = height, maxHeight = Constraints.Infinity)
+    } else {
+      Constraints.fixed(width, height)
+    }
+    val placeable = measurables.firstOrNull()?.measure(constraints)
     layout(1, 1) { placeable?.place(0, 0) }
   }
 

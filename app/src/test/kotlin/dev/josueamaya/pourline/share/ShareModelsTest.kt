@@ -103,21 +103,27 @@ class ShareModelsTest {
   }
 
   @Test
-  fun `up to the compact limit the recipe card is 4 by 5 and 9 by 16 after it`() {
-    assertEquals(10, RECIPE_CARD_COMPACT_MAX_STAGES)
-    for (count in 1..RECIPE_CARD_COMPACT_MAX_STAGES) assertEquals("pasos: $count", SHARE_SIZE, recipeCardSize(count))
-    for (count in RECIPE_CARD_COMPACT_MAX_STAGES + 1..20) assertEquals("pasos: $count", SHARE_SIZE_TALL, recipeCardSize(count))
-    assertEquals(1080, (SHARE_SIZE_TALL.width.value * SHARE_DENSITY).toInt())
-    assertEquals(1920, (SHARE_SIZE_TALL.height.value * SHARE_DENSITY).toInt())
-    assertEquals(432, (SHARE_QR_SIZE.value * SHARE_DENSITY).toInt())
+  fun `the qr box is 6 px per module with the quiet zone`() {
+    fun px(modules: Int) = (qrBoxSize(modules).value * SHARE_DENSITY).toInt()
+    assertEquals(6, (SHARE_QR_MODULE.value * SHARE_DENSITY).toInt())
+    assertEquals(462, px(69))
+    assertEquals(654, px(101))
+    assertEquals(246, px(33))
   }
 
   @Test
-  fun `a recipe request takes its size from the number of stages`() {
+  fun `a recipe request fits its content from the minimum size and the other cards are fixed`() {
     fun request(count: Int) = ShareRequest.Recipe(
       RecipeShareData(Recipe(name = "R", doseG = 15.0, stages = alternatingStages(count)), grindText = null, unit = WeightUnit.GRAMS, qr = null),
     )
-    assertEquals(SHARE_SIZE, request(10).size)
-    assertEquals(SHARE_SIZE_TALL, request(11).size)
+    for (count in listOf(1, 10, 11, 20)) {
+      assertTrue(request(count).fitsContent)
+      assertEquals(SHARE_SIZE, request(count).size)
+    }
+    assertEquals(1080, (SHARE_SIZE.width.value * SHARE_DENSITY).toInt())
+    assertEquals(1350, (SHARE_SIZE.height.value * SHARE_DENSITY).toInt())
+    val coffee = ShareRequest.Coffee(CoffeeEntity(id = 1, name = "Guji", createdAtEpochMs = 1_000).toShareData(daysSinceRoast = null), photo = null)
+    assertFalse(coffee.fitsContent)
+    assertEquals(SHARE_SIZE, coffee.size)
   }
 }

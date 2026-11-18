@@ -275,9 +275,9 @@ fun RecipeEditScreen(
     AntModal(
       title = stringResource(R.string.recipe_share_dialog_title),
       text = if (prompt.withoutQr) {
-        stringResource(R.string.recipe_share_too_long_text)
+        stringResource(prompt.dialogTextRes())
       } else {
-        stringResource(R.string.recipe_share_trimmed_text, trimmedPartsText(prompt.trimmed))
+        stringResource(prompt.dialogTextRes(), trimmedPartsText(prompt.trimmed, prompt.partialInstructions))
       },
       confirmText = stringResource(R.string.recipe_share_confirm),
       cancelText = stringResource(R.string.recipe_share_cancel),

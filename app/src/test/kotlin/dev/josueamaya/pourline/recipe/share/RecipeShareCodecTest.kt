@@ -78,7 +78,7 @@ class RecipeShareCodecTest {
 
   @Test
   fun `the time unit is the largest that divides every start and duration`() {
-    fun flagsOf(recipe: Recipe) = (firstUvar(encodePayload(recipe, null, TrimLevel.NONE).bytes) shr ShareFormat.TIME_UNIT_SHIFT) and 3
+    fun flagsOf(recipe: Recipe) = (firstUvar(encodePayload(recipe, null, TrimPlan.NONE).bytes) shr ShareFormat.TIME_UNIT_SHIFT) and 3
     assertEquals(0L, flagsOf(everyField(1_000)))
     assertEquals(1L, flagsOf(everyField(100)))
     assertEquals(2L, flagsOf(everyField(1)))
@@ -98,7 +98,7 @@ class RecipeShareCodecTest {
 
   @Test
   fun `water is incremental in tenths of a gram`() {
-    val payload = encodePayload(v60Classic(), null, TrimLevel.NONE).bytes
+    val payload = encodePayload(v60Classic(), null, TrimPlan.NONE).bytes
     // El primer vertido añade 40,0 g (400 décimas: 90 03) y el segundo 110,0 g (1 100 décimas: CC 08).
     val text = hex(payload)
     assertTrue(text, text.contains("0C000A9003"))
@@ -168,7 +168,7 @@ class RecipeShareCodecTest {
   fun `no grind, an empty grind or a deleted grinder without label omit the block`() {
     for (grind in listOf(null, GrindSetting(null, null, null), GrindSetting(null, null, " "), GrindSetting(99, 18.0, null))) {
       val recipe = v60Classic().copy(grind = grind)
-      val payload = encodePayload(recipe, null, TrimLevel.NONE).bytes
+      val payload = encodePayload(recipe, null, TrimPlan.NONE).bytes
       assertEquals("flags de $grind", 0L, (firstUvar(payload) and ShareFormat.F_GRIND.toLong()))
       assertNull(roundTrip(recipe).grind)
     }
@@ -178,13 +178,21 @@ class RecipeShareCodecTest {
 
   private val longTexts = withLongTexts(notesLength = 120, instructionLength = 60)
 
-  private fun lengthAt(recipe: Recipe, level: TrimLevel) = uriOf(encodePayload(recipe, null, level).bytes).length
+  /** El plan con las notas fuera y las instrucciones de los [dropped] últimos pasos fuera. */
+  private fun noNotes(dropped: Int) = TrimPlan(notes = true, droppedInstructions = dropped)
+
+  private val noInstructions = TrimPlan(notes = true, droppedInstructions = 5)
+  private val noNames = TrimPlan(notes = true, droppedInstructions = 5, stageNames = true)
+
+  private fun lengthAt(recipe: Recipe, plan: TrimPlan) = uriOf(encodePayload(recipe, null, plan).bytes).length
 
   @Test
   fun `notes go first`() {
-    val limit = lengthAt(longTexts, TrimLevel.NONE) - 1
+    val limit = lengthAt(longTexts, TrimPlan.NONE) - 1
     val encoded = RecipeShareCodec.encode(longTexts, null, limit)!!
     assertEquals(setOf(TrimmedPart.NOTES), encoded.trimmed)
+    assertEquals(0, encoded.droppedInstructions)
+    assertEquals(5, encoded.keptInstructions)
     val shared = decoded(encoded.uri)
     assertNull(shared.recipe.notes)
     assertEquals(longTexts.stages.map { it.instruction }, shared.recipe.stages.map { it.instruction })
@@ -192,37 +200,65 @@ class RecipeShareCodecTest {
   }
 
   @Test
-  fun `then instructions`() {
-    val limit = lengthAt(longTexts, TrimLevel.NOTES) - 1
+  fun `then instructions go one at a time from the last stage that has one`() {
+    val limit = lengthAt(longTexts, noNotes(0)) - 1
     val encoded = RecipeShareCodec.encode(longTexts, null, limit)!!
     assertEquals(setOf(TrimmedPart.NOTES, TrimmedPart.INSTRUCTIONS), encoded.trimmed)
+    assertEquals(1, encoded.droppedInstructions)
+    assertEquals(4, encoded.keptInstructions)
     val shared = decoded(encoded.uri)
-    assertTrue(shared.recipe.stages.all { it.instruction == null })
+    assertEquals(longTexts.stages.take(4).map { it.instruction }, shared.recipe.stages.take(4).map { it.instruction })
+    assertNull(shared.recipe.stages.last().instruction)
     assertEquals(longTexts.stages.map { it.name }, shared.recipe.stages.map { it.name })
   }
 
   @Test
-  fun `then stage names`() {
-    val limit = lengthAt(longTexts, TrimLevel.INSTRUCTIONS) - 1
+  fun `only the instructions needed are removed`() {
+    val recipe = withLongTexts(notesLength = 0, instructionLength = 60, stageCount = 6).copy(notes = null)
+    val lengths = (0..6).map { lengthAt(recipe, TrimPlan(droppedInstructions = it)) }
+    for (k in 1..6) assertTrue("quitar $k no acorta: $lengths", lengths[k] < lengths[k - 1])
+    for (k in 0..6) {
+      val encoded = RecipeShareCodec.encode(recipe, null, lengths[k])!!
+      assertEquals("tope en la longitud sin $k instrucciones", k, encoded.droppedInstructions)
+      assertEquals(6 - k, encoded.keptInstructions)
+      val shared = decoded(encoded.uri)
+      assertEquals(recipe.stages.take(6 - k).map { it.instruction }, shared.recipe.stages.take(6 - k).map { it.instruction })
+      assertTrue(shared.recipe.stages.drop(6 - k).all { it.instruction == null })
+      assertEquals(k > 0, TrimmedPart.INSTRUCTIONS in encoded.trimmed)
+    }
+  }
+
+  @Test
+  fun `stage names go only after every instruction`() {
+    val limit = lengthAt(longTexts, noInstructions) - 1
     val encoded = RecipeShareCodec.encode(longTexts, null, limit)!!
     assertEquals(setOf(TrimmedPart.NOTES, TrimmedPart.INSTRUCTIONS, TrimmedPart.STAGE_NAMES), encoded.trimmed)
-    assertTrue(decoded(encoded.uri).recipe.stages.all { it.name == null })
+    assertEquals(5, encoded.droppedInstructions)
+    assertEquals(0, encoded.keptInstructions)
+    assertTrue(decoded(encoded.uri).recipe.stages.all { it.name == null && it.instruction == null })
+    // Con un carácter más de sitio, los nombres se conservan.
+    val roomy = RecipeShareCodec.encode(longTexts, null, limit + 1)!!
+    assertEquals(setOf(TrimmedPart.NOTES, TrimmedPart.INSTRUCTIONS), roomy.trimmed)
+    assertEquals(longTexts.stages.map { it.name }, decoded(roomy.uri).recipe.stages.map { it.name })
   }
 
   @Test
   fun `the trim bits and trimmed list only what was actually removed`() {
     val noNotes = longTexts.copy(notes = null)
-    val limit = lengthAt(noNotes, TrimLevel.NONE) - 1
+    val limit = lengthAt(noNotes, TrimPlan.NONE) - 1
     val encoded = RecipeShareCodec.encode(noNotes, null, limit)!!
     assertEquals(setOf(TrimmedPart.INSTRUCTIONS), encoded.trimmed)
     assertEquals(setOf(TrimmedPart.INSTRUCTIONS), decoded(encoded.uri).trimmed)
+    // El bit 6 vale 1 con un recorte parcial: se quitó una instrucción y quedan cuatro.
+    assertEquals(1, encoded.droppedInstructions)
+    assertTrue(firstUvar(inflatedPayload(encoded.uri)) and ShareFormat.F_TRIMMED_INSTRUCTIONS.toLong() != 0L)
     // Sin nada que quitar no se anota nada.
     assertEquals(emptySet<TrimmedPart>(), RecipeShareCodec.encode(longTexts, null, Int.MAX_VALUE)!!.trimmed)
   }
 
   @Test
   fun `encode is null only when the fully trimmed uri does not fit`() {
-    val fullyTrimmed = lengthAt(longTexts, TrimLevel.STAGE_NAMES)
+    val fullyTrimmed = lengthAt(longTexts, noNames)
     assertNull(RecipeShareCodec.encode(longTexts, null, fullyTrimmed - 1))
     assertNotNull(RecipeShareCodec.encode(longTexts, null, fullyTrimmed))
   }
@@ -230,7 +266,7 @@ class RecipeShareCodecTest {
   @Test
   fun `steps, times, water, dose, temperature, method and grind are never trimmed`() {
     val recipe = longTexts.copy(waterTempC = 91.5, grind = catalogGrind(), method = BrewMethod.CHEMEX)
-    val limit = lengthAt(recipe.copy(), TrimLevel.STAGE_NAMES)
+    val limit = lengthAt(recipe.copy(), noNames)
     val encoded = RecipeShareCodec.encode(recipe, catalogGrinder, limit + 40)!!
     val shared = decoded(encoded.uri)
     assertEquals(recipe.stages.map { Triple(it.startMs, it.durationMs, it.targetWaterG) }, shared.recipe.stages.map { Triple(it.startMs, it.durationMs, it.targetWaterG) })
@@ -244,7 +280,7 @@ class RecipeShareCodecTest {
 
   @Test
   fun `the uri never exceeds the limit`() {
-    for (limit in 60..500 step 7) {
+    for (limit in 60..900 step 7) {
       val encoded = RecipeShareCodec.encode(longTexts, catalogGrinder, limit)
       if (encoded != null) assertTrue("$limit < ${encoded.uri.length}", encoded.uri.length <= limit)
     }
@@ -255,6 +291,101 @@ class RecipeShareCodecTest {
     val encoded = RecipeShareCodec.encode(withLongTexts(notesLength = 300, instructionLength = 120), null)!!
     assertTrue(encoded.uri.length <= RecipeShareCodec.MAX_URI_LENGTH)
     assertTrue(encoded.trimmed.isNotEmpty())
+  }
+
+  // --- Recuento y recorte parcial ---
+
+  @Test
+  fun `the sharer is told how many instructions were removed and how many were kept`() {
+    val none = RecipeShareCodec.encode(longTexts, null, Int.MAX_VALUE)!!
+    assertEquals(0 to 5, none.droppedInstructions to none.keptInstructions)
+    assertFalse(none.partialInstructions)
+    val some = RecipeShareCodec.encode(longTexts, null, lengthAt(longTexts, noNotes(2)))!!
+    assertEquals(2 to 3, some.droppedInstructions to some.keptInstructions)
+    assertTrue(some.partialInstructions)
+    val all = RecipeShareCodec.encode(longTexts, null, lengthAt(longTexts, noInstructions))!!
+    assertEquals(5 to 0, all.droppedInstructions to all.keptInstructions)
+    assertFalse(all.partialInstructions)
+  }
+
+  @Test
+  fun `a partially trimmed qr is partial on import and a fully trimmed one is not`() {
+    val partial = RecipeShareCodec.encode(longTexts, null, lengthAt(longTexts, noNotes(2)))!!
+    assertTrue(decoded(partial.uri).partialInstructions)
+    // El QR que generaba la app anterior: todas las instrucciones fuera de golpe.
+    val old = uriOf(encodePayload(longTexts, null, noInstructions).bytes)
+    val shared = decoded(old)
+    assertTrue(TrimmedPart.INSTRUCTIONS in shared.trimmed)
+    assertFalse(shared.partialInstructions)
+    assertFalse(decoded(RecipeShareCodec.encode(longTexts, null, Int.MAX_VALUE)!!.uri).partialInstructions)
+  }
+
+  // --- Inválida frente a demasiado larga ---
+
+  @Test
+  fun `an invalid recipe and a recipe that does not fit give different results`() {
+    val invalid = v60Classic().copy(doseG = 0.0)
+    val tooLong = lengthAt(longTexts, noNames) - 1
+    assertEquals(EncodeResult.Invalid, RecipeShareCodec.encodeResult(invalid, null))
+    assertEquals(EncodeResult.TooLong, RecipeShareCodec.encodeResult(longTexts, null, tooLong))
+    assertNull(RecipeShareCodec.encode(invalid, null))
+    assertNull(RecipeShareCodec.encode(longTexts, null, tooLong))
+    assertTrue(RecipeShareCodec.encodeResult(v60Classic(), null) is EncodeResult.Encoded)
+  }
+
+  @Test
+  fun `an invalid recipe is invalid even when it is also too long`() {
+    val invalid = longTexts.copy(doseG = 0.0)
+    assertEquals(EncodeResult.Invalid, RecipeShareCodec.encodeResult(invalid, null, 10))
+  }
+
+  // --- La receta del usuario y el E2E ---
+
+  @Test
+  fun `the four six recipe of the user is shared without trimming`() {
+    val recipe = fourSixUserRecipe()
+    val result = RecipeShareCodec.encodeResult(recipe, femobookA2)
+    assertTrue("se esperaba Encoded y fue $result", result is EncodeResult.Encoded)
+    val encoded = (result as EncodeResult.Encoded).encoded
+    println("4:6 del usuario: ${encoded.uri.length} caracteres, QR versión ${qrVersionOf(encoded.uri)}")
+    println("4:6 URI: ${encoded.uri}")
+    assertTrue(encoded.trimmed.isEmpty())
+    assertEquals(0, encoded.droppedInstructions)
+    val shared = decoded(encoded.uri)
+    assertEquals(expected(recipe), shared.recipe)
+    assertEquals(recipe.notes, shared.recipe.notes)
+    assertEquals(10, shared.recipe.stages.count { it.instruction != null })
+    assertEquals(5, shared.recipe.stages.count { it.name != null })
+    assertEquals(SharedGrind("femobook-a2", "Femobook", "A2", 34.0, null), shared.grind)
+    assertTrue(encoded.uri.length <= RecipeShareCodec.MAX_URI_LENGTH)
+  }
+
+  @Test
+  fun `the worst case uri for the end to end check is printed`() {
+    val max = RecipeShareCodec.MAX_URI_LENGTH
+    fun recipe(notesLength: Int) = Recipe(
+      name = randomText(60, seed = 7),
+      method = BrewMethod.V60,
+      waterTempC = 93.0,
+      notes = if (notesLength > 0) randomText(notesLength, seed = 7) else null,
+      doseG = 20.0,
+      stages = alternatingStages(),
+    )
+    fun uri(n: Int) = RecipeShareCodec.encode(recipe(n), null, max)?.takeIf { it.trimmed.isEmpty() }?.uri
+    var low = 0
+    var high = 1_000
+    while (low < high) {
+      val mid = (low + high + 1) / 2
+      if (uri(mid) != null) low = mid else high = mid - 1
+    }
+    // Entre MAX − 24 y MAX − 8: la misma versión de QR y margen para la diferencia de zlib entre la JVM y Android (D43).
+    val chosen = (maxOf(0, low - 40)..low).first { n -> uri(n)?.length?.let { it <= max - 8 } == true && uri(n)!!.length >= max - 24 }
+    val worst = uri(chosen)!!
+    println("E2E peor caso: ${worst.length} caracteres, QR versión ${qrVersionOf(worst)}")
+    println("E2E URI: $worst")
+    assertTrue(worst.length in max - 24..max - 8)
+    assertTrue(decoded(worst).trimmed.isEmpty())
+    assertEquals(20, decoded(worst).recipe.stages.size)
   }
 
   // --- Tope real ---
@@ -432,7 +563,7 @@ class RecipeShareCodecTest {
 
   @Test
   fun `the classic V60 payload matches the golden bytes`() {
-    assertEquals(GOLDEN_V60_PAYLOAD, hex(encodePayload(v60Classic(), null, TrimLevel.NONE).bytes))
+    assertEquals(GOLDEN_V60_PAYLOAD, hex(encodePayload(v60Classic(), null, TrimPlan.NONE).bytes))
   }
 
   @Test
@@ -454,6 +585,24 @@ class RecipeShareCodecTest {
   }
 
   // --- Ayudas ---
+
+  private fun qrVersionOf(uri: String): Int = dev.josueamaya.pourline.share.qrVersion(uri)
+
+  /** El payload inflado de [uri]: lo que escribió `encodePayload` antes de `deflate`. */
+  private fun inflatedPayload(uri: String): ByteArray {
+    val compressed = Base64.getUrlDecoder().decode(uri.substringAfter("&d="))
+    val inflater = java.util.zip.Inflater(true)
+    inflater.setInput(compressed + byteArrayOf(0))
+    val out = ByteArrayOutputStream()
+    val buffer = ByteArray(1024)
+    while (!inflater.finished()) {
+      val read = inflater.inflate(buffer)
+      if (read == 0) break
+      out.write(buffer, 0, read)
+    }
+    inflater.end()
+    return out.toByteArray()
+  }
 
   private fun hexBytes(hex: String) = ByteArray(hex.length / 2) { hex.substring(it * 2, it * 2 + 2).toInt(16).toByte() }
 

@@ -12,6 +12,9 @@ class QrMatrix(val modules: Int, private val dark: BooleanArray) {
     require(dark.size == modules * modules) { "La matriz no es cuadrada" }
   }
 
+  /** Celdas por lado con la zona de silencio: los módulos más [QR_QUIET_ZONE] a cada lado. */
+  val cells: Int get() = modules + 2 * QR_QUIET_ZONE
+
   operator fun get(x: Int, y: Int): Boolean = dark[y * modules + x]
 }
 
@@ -29,9 +32,3 @@ fun qrMatrix(text: String): QrMatrix {
 
 /** La versión del QR (1 a 40) de [text] con corrección M. */
 fun qrVersion(text: String): Int = Encoder.encode(text, ErrorCorrectionLevel.M).version.versionNumber
-
-/**
- * El borde, en píxeles enteros, de la celda [index] de [cells] celdas en una caja de [sizePx]. Los bordes son
- * contiguos y cubren la caja entera: sin antialias entre módulos.
- */
-fun qrCellEdge(index: Int, cells: Int, sizePx: Int): Int = (index.toLong() * sizePx / cells).toInt()

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -37,22 +38,41 @@ private val BrandHeight = 20.dp
  * El marco común de las cuatro imágenes (F0.4): fondo `bgContainer`, barra de acento de 4 dp, márgenes de 20 dp a
  * los lados y 16 dp arriba y abajo, y la última fila con el pie del café ([footer]) y la marca. El [body] ocupa el
  * alto que queda, así que la gráfica puede pedir `weight(1f)` dentro de él.
+ *
+ * Con [fitContent] (la tarjeta de receta, enmienda 1 de SPEC-009) [size] es solo el mínimo: el ancho es fijo y el alto
+ * crece con el [body], con el pie abajo del todo si sobra sitio. En ese modo el [body] no puede usar `weight` en vertical
+ * ni `fillMaxHeight`, porque el alto que se le ofrece no está acotado.
  */
 @Composable
 fun ShareFrame(
   modifier: Modifier = Modifier,
   footer: List<ShareFooterLine> = emptyList(),
   size: DpSize = SHARE_SIZE,
+  fitContent: Boolean = false,
   body: @Composable ColumnScope.() -> Unit,
 ) {
-  Column(modifier.size(size).background(AntTheme.colors.bgContainer).testTag("share_card")) {
+  val frame = if (fitContent) Modifier.width(size.width).heightIn(min = size.height) else Modifier.size(size)
+  Column(modifier.then(frame).background(AntTheme.colors.bgContainer).testTag("share_card")) {
     Box(Modifier.fillMaxWidth().height(AccentHeight).background(AntTheme.colors.primary.base))
-    Column(
-      Modifier.weight(1f).fillMaxWidth().padding(start = SideMargin, end = SideMargin, top = VerticalMargin, bottom = VerticalMargin),
-    ) {
-      Column(Modifier.weight(1f).fillMaxWidth(), content = body)
-      Spacer(Modifier.height(BodyGap))
-      ShareBottomRow(footer)
+    if (fitContent) {
+      Column(
+        Modifier.fillMaxWidth().heightIn(min = size.height - AccentHeight).padding(horizontal = SideMargin, vertical = VerticalMargin),
+        verticalArrangement = Arrangement.SpaceBetween,
+      ) {
+        Column(Modifier.fillMaxWidth(), content = body)
+        Column(Modifier.fillMaxWidth()) {
+          Spacer(Modifier.height(BodyGap))
+          ShareBottomRow(footer)
+        }
+      }
+    } else {
+      Column(
+        Modifier.weight(1f).fillMaxWidth().padding(start = SideMargin, end = SideMargin, top = VerticalMargin, bottom = VerticalMargin),
+      ) {
+        Column(Modifier.weight(1f).fillMaxWidth(), content = body)
+        Spacer(Modifier.height(BodyGap))
+        ShareBottomRow(footer)
+      }
     }
   }
 }

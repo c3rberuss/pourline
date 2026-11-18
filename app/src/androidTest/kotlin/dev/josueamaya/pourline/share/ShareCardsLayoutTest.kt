@@ -2,6 +2,7 @@ package dev.josueamaya.pourline.share
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.util.Log
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -325,11 +326,23 @@ class ShareCardsLayoutTest {
     return RecipeShareData(recipe, grindText, WeightUnit.GRAMS, qr = if (withQr && uri != null) qrMatrix(uri) else null)
   }
 
-  private fun stepsAboveTheBrand(count: Int) {
-    val brandTop = node("share_brand").positionInRoot.y
+  private fun worstCaseData(): Pair<WorstCase, RecipeShareData> {
+    val worst = worstCaseRecipe(RecipeShareCodec.MAX_URI_LENGTH)
+    return worst to RecipeShareData(worst.recipe, worst.grindText, WeightUnit.GRAMS, qr = qrMatrix(worst.uri))
+  }
+
+  private fun fourSixData(): RecipeShareData {
+    val recipe = fourSixUserRecipe()
+    val uri = RecipeShareCodec.encode(recipe, grinder = null)!!.uri
+    return RecipeShareData(recipe, "Femobook A2 · 34", WeightUnit.GRAMS, qr = qrMatrix(uri))
+  }
+
+  /** Cada paso queda por encima de [below] (el tag de la franja del QR o de la marca) y no hay un paso más. */
+  private fun stepsAbove(below: String, count: Int) {
+    val limit = node(below).positionInRoot.y
     for (i in 0 until count) {
       val row = node("share_recipe_step_$i")
-      assertTrue("el paso $i debe quedar por encima de la marca", row.positionInRoot.y + row.size.height <= brandTop)
+      assertTrue("el paso $i debe quedar por encima de $below", row.positionInRoot.y + row.size.height <= limit)
     }
     assertEquals(0, rule.onAllNodesWithTag("share_recipe_step_$count", useUnmergedTree = true).fetchSemanticsNodes().size)
   }
@@ -337,35 +350,100 @@ class ShareCardsLayoutTest {
   private fun textOf(tag: String): String =
     node(tag).config.getOrNull(SemanticsProperties.Text)!!.joinToString("") { it.text }
 
+  private fun assertQrBoxIsPlacedOnEvenPixels() {
+    val box = node("share_recipe_qr")
+    assertEquals("x de la caja del QR", 0f, box.positionInRoot.x % 2f, 0f)
+    assertEquals("y de la caja del QR", 0f, box.positionInRoot.y % 2f, 0f)
+  }
+
   @Test
-  fun aShortRecipeCardIs1080x1350WithAQrOfAtLeast432px() {
-    capture(ShareRequest.Recipe(recipeData(recipe(4))))
+  fun aShortRecipeCardKeepsTheMinimum1080x1350WithTheQrBelowTheSteps() {
+    val data = recipeData(recipe(4))
+    capture(ShareRequest.Recipe(data))
 
     assertSize()
     brandInside()
     val qr = node("share_recipe_qr")
-    assertTrue("QR de ${qr.size.width} × ${qr.size.height} px", qr.size.width >= 432 && qr.size.height >= 432)
+    val side = data.qr!!.cells * 6
+    assertEquals("caja de ${qr.size.width} × ${qr.size.height} px", side to side, qr.size.width to qr.size.height)
     assertNotNull(node("share_recipe_qr_caption"))
-    stepsAboveTheBrand(4)
+    stepsAbove("share_recipe_qr_strip", 4)
+    val strip = node("share_recipe_qr_strip")
+    assertTrue("la franja del QR debe quedar por encima de la marca", strip.positionInRoot.y + strip.size.height <= node("share_brand").positionInRoot.y)
   }
 
   @Test
-  fun aRecipeCardAtTheCompactLimitStaysAt4x5() {
-    capture(ShareRequest.Recipe(recipeData(recipe(RECIPE_CARD_COMPACT_MAX_STAGES, name = randomName(60)))))
+  fun theRecipeCardGrowsWithItsContent() {
+    val capturer = CardCapturer(rule).also { it.start() }
+    val name = randomName(60)
+    val heights = listOf(4, 10, 20).map { count -> capturer.capture(ShareRequest.Recipe(recipeData(recipe(count, name = name)))).height }
 
-    assertSize()
-    brandInside()
-    stepsAboveTheBrand(RECIPE_CARD_COMPACT_MAX_STAGES)
+    assertEquals(1350, heights[0])
+    assertTrue("alturas $heights", heights[0] <= heights[1] && heights[1] <= heights[2])
+    assertTrue("con 20 pasos: ${heights[2]} px", heights[2] > 1350)
+    Log.i("RecipeCard", "alturas con 4, 10 y 20 pasos: $heights")
   }
 
   @Test
-  fun aTwentyStepRecipeWithA60CharNameIs1080x1920AndShowsEveryStep() {
-    capture(ShareRequest.Recipe(recipeData(recipe(20, name = randomName(60)))))
+  fun theTallestRecipeCardShowsEveryStepAndTheQr() {
+    val (worst, data) = worstCaseData()
+    capture(ShareRequest.Recipe(data))
 
-    assertSize(height = 1920)
-    brandInside(height = 1920)
-    assertTrue(lines("share_recipe_name") <= 2)
-    stepsAboveTheBrand(20)
+    val height = captured!!.height
+    Log.i("RecipeCard", "peor caso: ${worst.uri.length} caracteres, QR de ${data.qr!!.cells} celdas, tarjeta de 1080 × $height")
+    assertSize(height)
+    assertTrue("alto de $height px", height > 1350)
+    brandInside(height)
+    assertEquals(2, lines("share_recipe_name"))
+    assertEquals(2, lines("share_recipe_grind"))
+    stepsAbove("share_recipe_qr_strip", 20)
+    val qr = node("share_recipe_qr")
+    assertEquals(data.qr.cells * 6, qr.size.width)
+    assertEquals(qrMatrix(uriOfLength(RecipeShareCodec.MAX_URI_LENGTH, 0)).cells * 6, qr.size.width)
+  }
+
+  @Test
+  fun everyQrModuleIs6x6AndTheBoxIsModulesPlus8Times6() {
+    val capturer = CardCapturer(rule).also { it.start() }
+    val cases = listOf(recipeData(recipe(4)), worstCaseData().second)
+    for (data in cases) {
+      val bitmap = capturer.capture(ShareRequest.Recipe(data))
+      val box = node("share_recipe_qr")
+      val matrix = data.qr!!
+      assertEquals((matrix.modules + 8) * 6, box.size.width)
+      assertEquals((matrix.modules + 8) * 6, box.size.height)
+      val left = box.positionInRoot.x.toInt()
+      val top = box.positionInRoot.y.toInt()
+      assertEquals(android.graphics.Point(left, top), findQrBox(bitmap, 6))
+      assertQrModules(bitmap, matrix, left, top, 6)
+    }
+  }
+
+  @Test
+  fun theQrBoxSitsOnEvenPixels() {
+    val capturer = CardCapturer(rule).also { it.start() }
+    val worst = worstCaseData().second
+    val requests = listOf(
+      recipeData(recipe(4)),
+      recipeData(recipe(4), grindText = null),
+      fourSixData(),
+      fourSixData().copy(grindText = null),
+      worst,
+      worst.copy(grindText = null),
+    )
+    for (data in requests) {
+      capturer.capture(ShareRequest.Recipe(data))
+      assertQrBoxIsPlacedOnEvenPixels()
+    }
+  }
+
+  @Test
+  fun theHeaderUsesTheFullWidth() {
+    capture(ShareRequest.Recipe(recipeData(recipe(4, name = randomName(60)))))
+
+    assertEquals(960, node("share_recipe_name").size.width)
+    assertEquals(2, lines("share_recipe_name"))
+    assertEquals(960, node("share_recipe_grind").size.width)
   }
 
   @Test
@@ -376,7 +454,7 @@ class ShareCardsLayoutTest {
     brandInside()
     assertEquals(0, rule.onAllNodesWithTag("share_recipe_qr", useUnmergedTree = true).fetchSemanticsNodes().size)
     assertEquals(0, rule.onAllNodesWithTag("share_recipe_qr_caption", useUnmergedTree = true).fetchSemanticsNodes().size)
-    // La columna de datos ocupa todo el ancho.
+    assertEquals(0, rule.onAllNodesWithTag("share_recipe_qr_strip", useUnmergedTree = true).fetchSemanticsNodes().size)
     assertTrue(node("share_recipe_facts").size.width > 0)
   }
 
@@ -401,23 +479,23 @@ class ShareCardsLayoutTest {
 
   @Test
   fun theQrIsBlackOnWhite() {
-    capture(ShareRequest.Recipe(recipeData(recipe(4))))
+    val data = recipeData(recipe(4))
+    capture(ShareRequest.Recipe(data))
 
     val box = node("share_recipe_qr")
     val left = box.positionInRoot.x.toInt()
     val top = box.positionInRoot.y.toInt()
+    val side = box.size.width
     // La captura es un bitmap de hardware: no deja leer píxeles hasta copiarlo.
     val bitmap = captured!!.asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, false)
     // La zona de silencio (4 módulos) es blanca en las cuatro esquinas, aunque la tarjeta sea clara u oscura.
-    for ((x, y) in listOf(2 to 2, 429 to 2, 2 to 429, 429 to 429)) {
+    for ((x, y) in listOf(2 to 2, side - 3 to 2, 2 to side - 3, side - 3 to side - 3)) {
       assertEquals("esquina ($x, $y)", Color.WHITE, bitmap.getPixel(left + x, top + y))
     }
     // El primer módulo del patrón de posición (arriba a la izquierda) es negro.
-    val matrix = qrMatrix(RecipeShareCodec.encode(recipe(4), grinder = null)!!.uri)
-    val cells = matrix.modules + 2 * QR_QUIET_ZONE
-    val first = qrCellEdge(QR_QUIET_ZONE, cells, 432)
-    val next = qrCellEdge(QR_QUIET_ZONE + 1, cells, 432)
-    assertEquals(Color.BLACK, bitmap.getPixel(left + (first + next) / 2, top + (first + next) / 2))
+    val first = QR_QUIET_ZONE * 6
+    assertEquals(Color.BLACK, bitmap.getPixel(left + first + 3, top + first + 3))
+    assertTrue(data.qr!!.cells * 6 == side)
   }
 
   @Test

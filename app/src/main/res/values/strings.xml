@@ -491,11 +491,13 @@
     <string name="recipe_share_dialog_title">Compartir receta</string>
     <string name="recipe_share_trimmed_text">Esta receta es muy larga para el QR. Al importarla faltarán %1$s.</string>
     <string name="recipe_share_too_long_text">Esta receta es demasiado larga para importarse con QR. Se compartirá solo la imagen.</string>
+    <string name="recipe_share_invalid_text">Esta receta tiene datos no válidos y no se puede importar con QR. Se compartirá solo la imagen.</string>
     <string name="recipe_share_confirm">Compartir</string>
     <string name="recipe_share_cancel">Cancelar</string>
     <string name="recipe_trimmed_notes">las notas</string>
     <string name="recipe_trimmed_instructions">las instrucciones de los pasos</string>
     <string name="recipe_trimmed_stage_names">los nombres de los pasos</string>
+    <string name="recipe_trimmed_some_instructions">las instrucciones de algunos pasos</string>
     <string name="recipe_trimmed_list_two">%1$s y %2$s</string>
     <string name="recipe_trimmed_list_three">%1$s, %2$s y %3$s</string>
     <string name="recipe_import_title">Importar receta</string>

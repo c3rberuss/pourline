@@ -18,8 +18,12 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.grinder.FakeDefaultGrinderStore
+import dev.josueamaya.pourline.grinder.GrindUnit
+import dev.josueamaya.pourline.grinder.GrindUnitLevel
+import dev.josueamaya.pourline.grinder.Grinder
 import dev.josueamaya.pourline.grinder.GrinderRepository
 import dev.josueamaya.pourline.grinder.ResourcesGrindTexts
+import dev.josueamaya.pourline.grinder.addGrinder
 import dev.josueamaya.pourline.grinder.grinderRepository
 import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.history.BrewRepository
@@ -38,7 +42,11 @@ import dev.josueamaya.pourline.settings.ExperienceMode
 import dev.josueamaya.pourline.settings.LocalExperienceMode
 import dev.josueamaya.pourline.share.MlKitQrImageReader
 import dev.josueamaya.pourline.share.ShareSender
+import dev.josueamaya.pourline.share.assertQrModules
+import dev.josueamaya.pourline.share.fourSixUserRecipe
 import dev.josueamaya.pourline.share.awaitQrModel
+import dev.josueamaya.pourline.share.findQrBox
+import dev.josueamaya.pourline.share.qrMatrix
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -232,7 +240,7 @@ class RecipeShareTest {
 
   @Test
   fun aLongRecipeListsWhatWillBeMissingAndCancelSendsNothing() {
-    show(save(stageCount = 5, notes = randomText(300, 99), instructionLength = 100))
+    show(save(name = randomText(400, 3), stageCount = 5, notes = randomText(300, 99), instructionLength = 200))
     tapShare()
     rule.waitUntil(10_000) { exists("ant_modal") }
     val missing = context.getString(
@@ -249,13 +257,116 @@ class RecipeShareTest {
 
   @Test
   fun confirmingTheTrimDialogShares() {
-    show(save(stageCount = 5, notes = randomText(300, 99), instructionLength = 100))
+    show(save(name = randomText(400, 3), stageCount = 5, notes = randomText(300, 99), instructionLength = 200))
     tapShare()
     rule.waitUntil(10_000) { exists("ant_modal") }
     rule.onNodeWithTag("ant_modal_confirm").performClick()
     waitForChooser()
-    assertEquals(1080 to 1350, pngBounds())
+    val (width, height) = pngBounds()
+    assertEquals(1080, width)
+    assertTrue("alto de $height px", height >= 1350)
     assertTrue(!exists("ant_modal"))
+  }
+
+  @Test
+  fun aLongRecipeKeepsTheFirstInstructionsAndListsSomeSteps() {
+    val reader = MlKitQrImageReader(context)
+    try {
+      awaitQrModel(reader)
+      val id = save(stageCount = 10, notes = randomText(300, 99), instructionLength = 120)
+      val saved = runBlocking { recipes.get(id) }!!
+      val encoded = RecipeShareCodec.encode(saved, grinder = null)!!
+      assertTrue("el recorte debía ser parcial: ${encoded.droppedInstructions} quitadas y ${encoded.keptInstructions} conservadas", encoded.partialInstructions)
+
+      show(id)
+      tapShare()
+      rule.waitUntil(10_000) { exists("ant_modal") }
+      val missing = context.getString(
+        R.string.recipe_trimmed_list_two,
+        context.getString(R.string.recipe_trimmed_notes),
+        context.getString(R.string.recipe_trimmed_some_instructions),
+      )
+      assertTrue(showsText(context.getString(R.string.recipe_share_trimmed_text, missing)))
+      rule.onNodeWithTag("ant_modal_confirm").performClick()
+      waitForChooser()
+
+      val read = runBlocking { reader.read(sentStream()) }
+      assertTrue("no se leyó ningún QR: $read", read is QrReadResult.Found)
+      val shared = (RecipeShareCodec.decode((read as QrReadResult.Found).text) as DecodeResult.Ok).shared
+      assertTrue(shared.partialInstructions)
+      assertEquals(saved.stages.first().instruction, shared.recipe.stages.first().instruction)
+      assertNull(shared.recipe.stages.last().instruction)
+      assertNull(shared.recipe.notes)
+      assertEquals(encoded.keptInstructions, shared.recipe.stages.count { it.instruction != null })
+    } finally {
+      reader.close()
+    }
+  }
+
+  @Test
+  fun anInvalidSavedRecipeHasItsOwnNoticeAndSharesWithoutQr() {
+    val reader = MlKitQrImageReader(context)
+    try {
+      awaitQrModel(reader)
+      // El repositorio no valida: una dosis de 70 g (el máximo es 60) queda guardada.
+      val id = runBlocking {
+        recipes.save(Recipe(name = "Dosis no válida", method = BrewMethod.V60, doseG = 70.0, stages = stages(4)))
+      }
+      show(id)
+      tapShare()
+      rule.waitUntil(10_000) { exists("ant_modal") }
+      assertTrue(showsText(context.getString(R.string.recipe_share_invalid_text)))
+      assertTrue(!showsText(context.getString(R.string.recipe_share_too_long_text)))
+      rule.onNodeWithTag("ant_modal_confirm").performClick()
+      waitForChooser()
+
+      assertEquals("la imagen no debe llevar ningún QR", QrReadResult.NoRecipe, runBlocking { reader.read(sentStream()) })
+    } finally {
+      reader.close()
+    }
+  }
+
+  @Test
+  fun theUsersFourSixRecipeSharesWithoutAskingAndKeepsNotesAndInstructions() {
+    val reader = MlKitQrImageReader(context)
+    try {
+      awaitQrModel(reader)
+      val grinderId = runBlocking {
+        db.addGrinder(
+          Grinder(
+            catalogKey = "femobook-a2",
+            brand = "Femobook",
+            model = "A2",
+            units = listOf(GrindUnitLevel(GrindUnit.ROTATIONS), GrindUnitLevel(GrindUnit.CLICKS, perParent = 40)),
+            scaleMin = 0.0,
+            scaleMax = 120.0,
+            owned = true,
+          ),
+        )
+      }
+      val recipe = fourSixUserRecipe(grinderId)
+      val id = runBlocking { recipes.save(recipe) }
+      show(id)
+      tapShare()
+      waitForChooser()
+      assertTrue("no debía abrirse ningún diálogo", !exists("ant_modal"))
+
+      val read = runBlocking { reader.read(sentStream()) }
+      assertTrue("no se leyó ningún QR: $read", read is QrReadResult.Found)
+      val shared = (RecipeShareCodec.decode((read as QrReadResult.Found).text) as DecodeResult.Ok).shared
+      assertTrue(shared.trimmed.isEmpty())
+      assertEquals(recipe.notes, shared.recipe.notes)
+      assertEquals(recipe.stages.map { it.instruction }, shared.recipe.stages.map { it.instruction })
+      assertEquals(recipe.stages.map { it.name }, shared.recipe.stages.map { it.name })
+      val grind = shared.grind!!
+      assertEquals("femobook-a2", grind.catalogKey)
+      assertEquals(34.0, grind.value!!, 1e-9)
+      val (width, height) = pngBounds()
+      assertEquals(1080, width)
+      assertTrue("alto de $height px", height > 1350)
+    } finally {
+      reader.close()
+    }
   }
 
   @Test
@@ -263,7 +374,7 @@ class RecipeShareTest {
     val reader = MlKitQrImageReader(context)
     try {
       awaitQrModel(reader)
-      show(save(name = randomText(400, 5)))
+      show(save(name = randomText(800, 5)))
       tapShare()
       rule.waitUntil(10_000) { exists("ant_modal") }
       assertTrue(showsText(context.getString(R.string.recipe_share_too_long_text)))
@@ -297,7 +408,7 @@ class RecipeShareTest {
   }
 
   @Test
-  fun aTwentyStepRecipeIsSharedAt1080x1920() {
+  fun aTwentyStepRecipeGrowsAndItsQrDecodes() {
     val reader = MlKitQrImageReader(context)
     try {
       awaitQrModel(reader)
@@ -305,12 +416,31 @@ class RecipeShareTest {
       show(id)
       tapShare()
       waitForChooser()
-      assertEquals(1080 to 1920, pngBounds())
+      val (width, height) = pngBounds()
+      assertEquals(1080, width)
+      assertTrue("alto de $height px", height > 1350)
       val decoded = RecipeShareCodec.decode((runBlocking { reader.read(sentStream()) } as QrReadResult.Found).text) as DecodeResult.Ok
       assertEquals(20, decoded.shared.recipe.stages.size)
     } finally {
       reader.close()
     }
+  }
+
+  @Test
+  fun theSharedPngHas6x6QrModules() {
+    val id = save(name = "Mi V60", stageCount = 12)
+    show(id)
+    tapShare()
+    waitForChooser()
+    val saved = runBlocking { recipes.get(id) }!!
+    val uri = RecipeShareCodec.encode(saved, grinder = null)!!.uri
+    val matrix = qrMatrix(uri)
+    val png = BitmapFactory.decodeFile(sharedDir.listFiles().orEmpty().single().path)
+    val box = findQrBox(png, 6)
+    assertEquals("x par de la caja", 0, box.x % 2)
+    assertQrModules(png, matrix, box.x, box.y, 6)
+    assertEquals(1080, png.width)
+    assertTrue(box.x + matrix.cells * 6 <= png.width)
   }
 
   @Test

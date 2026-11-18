@@ -22,30 +22,53 @@ object RecipeShareCodec {
   const val URI_PREFIX = "pourline://recipe"
 
   /**
-   * Longitud máxima del URI del QR (D8). Medida en F0 con `QrLegibilityTest`, el lector de Play Services y el QR de
-   * 432 px: es la capacidad en modo byte con corrección M de la versión 13. La regla del plan daría 362 (versión 14),
-   * pero con 362 la lectura tras reducir al 50 % y JPEG 70 falla en 1 de 20 muestras; con 331 acierta 20 de 20.
+   * Longitud máxima del URI del QR (D8, enmienda 1 de SPEC-009). Medida el 2026-11-18 en `emulator-5560` con el lector de
+   * Play Services, sobre la tarjeta real de la receta de peor caso (20 pasos, nombre de 60 caracteres, molienda en 2 líneas;
+   * QR con módulos de 6 px, caja alineada a píxeles pares), con URIs aleatorios y tres lecturas por muestra: tal cual,
+   * reducida al 50 % y en JPEG 70, y reducida a 2048 px de lado mayor como la lee la importación
+   * (`RecipeQrLegibilityTest.cardSweep`, 20 muestras por longitud):
+   *
+   * | Longitud | Versión | Tal cual | 50 % + JPEG 70 | Importación |
+   * |---|---|---|---|---|
+   * | 600 | 19 | 20/20 | 20/20 | 20/20 |
+   * | 625 | 20 | 20/20 | 19/20 | 20/20 |
+   * | 650 | 20 | 20/20 | 19/20 | 20/20 |
+   * | 675 | 21 | 20/20 | 19/20 | 20/20 |
+   * | 700 | 21 | 20/20 | 17/20 | 20/20 |
+   *
+   * De 300 a 550 (10 muestras) acierta todo. Los 700 caracteres del spec fallan al reducir y recomprimir, así que, por la
+   * regla del plan (la mayor longitud con 20 de 20 en las tres lecturas, y todas las menores también), el tope es 600.
    */
-  const val MAX_URI_LENGTH = 331
+  const val MAX_URI_LENGTH = 600
 
   /** Tope del payload ya inflado: un QR legítimo ocupa unos cientos de bytes. Evita una bomba de descompresión. */
   internal const val MAX_INFLATED_BYTES = 65_536
 
   /**
    * El URI de [recipe] y lo que hubo que quitar para que quepa en [MAX_URI_LENGTH]. [grinder] es el molino vivo de
-   * `recipe.grind` (`null` si no hay o ya no existe). `null` si ni recortando cabe o si la receta no es válida.
+   * `recipe.grind` (`null` si no hay o ya no existe). `null` si ni recortando cabe o si la receta no es válida; para
+   * distinguirlo, [encodeResult].
    */
-  fun encode(recipe: Recipe, grinder: Grinder?): EncodedRecipe? = encode(recipe, grinder, MAX_URI_LENGTH)
+  fun encode(recipe: Recipe, grinder: Grinder?): EncodedRecipe? = (encodeResult(recipe, grinder) as? EncodeResult.Encoded)?.encoded
 
-  internal fun encode(recipe: Recipe, grinder: Grinder?, maxLength: Int): EncodedRecipe? {
+  /** Como [encode], pero dice si no hay URI porque la receta no es válida ([EncodeResult.Invalid]) o porque no cabe ([EncodeResult.TooLong]). */
+  fun encodeResult(recipe: Recipe, grinder: Grinder?): EncodeResult = encodeResult(recipe, grinder, MAX_URI_LENGTH)
+
+  internal fun encode(recipe: Recipe, grinder: Grinder?, maxLength: Int): EncodedRecipe? =
+    (encodeResult(recipe, grinder, maxLength) as? EncodeResult.Encoded)?.encoded
+
+  /** Valida primero: una receta inválida y además larga es `Invalid`. Después prueba [trimPlans] en orden y se queda con el primero que cabe. */
+  internal fun encodeResult(recipe: Recipe, grinder: Grinder?, maxLength: Int): EncodeResult {
     val ordered = recipe.copy(stages = recipe.stages.sortedBy { it.startMs })
-    if (RecipeValidator.validate(ordered).isNotEmpty()) return null
-    for (level in TrimLevel.entries) {
-      val payload = encodePayload(ordered, grinder, level)
+    if (RecipeValidator.validate(ordered).isNotEmpty()) return EncodeResult.Invalid
+    for (plan in trimPlans(ordered)) {
+      val payload = encodePayload(ordered, grinder, plan)
       val uri = uriFor(payload.bytes)
-      if (uri.length <= maxLength) return EncodedRecipe(uri, payload.trimmed)
+      if (uri.length <= maxLength) {
+        return EncodeResult.Encoded(EncodedRecipe(uri, payload.trimmed, payload.droppedInstructions, payload.keptInstructions))
+      }
     }
-    return null
+    return EncodeResult.TooLong
   }
 
   fun decode(text: String): DecodeResult {
