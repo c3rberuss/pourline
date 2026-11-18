@@ -75,51 +75,98 @@
   ```
 
   - `v`: entero, versión del formato. Este spec define `v=1`.
-  - `d`: `base64url` sin relleno de `deflate` (raw, nivel 9) del JSON del payload, en UTF-8.
+  - `d`: `base64url` sin relleno de `deflate` (raw, nivel 9) del **payload binario** descrito abajo.
   - Corrección de errores del QR: **M**. Zona de silencio: 4 módulos.
-- **Payload `v=1`:** JSON con claves cortas. Los campos opcionales se omiten cuando faltan.
-  Magnitudes siempre en gramos, milisegundos y °C, sea cual sea la unidad de quien comparte.
+- **Por qué binario:**
+  - F0 midió que el QR de 432 px, reducido al 50 % y recomprimido en JPEG 70, solo se lee de forma
+    fiable con URI de hasta unos 331 caracteres.
+  - Con JSON, una receta de 20 pasos sin textos ocupaba entre 430 y 490 caracteres.
+  - El binario la deja en torno a 200.
+- **Primitivas del payload `v=1`:**
+  - `uvar`: entero sin signo en LEB128 (7 bits por byte, el bit alto indica que sigue otro byte).
+  - `svar`: entero con signo en zigzag sobre `uvar`.
+  - `str`: `uvar` con la longitud en bytes, seguido de los bytes UTF-8.
+  - Los campos van en el orden de la tabla, sin separadores ni relleno. Un campo opcional solo está
+    presente si su bit en `flags` vale 1.
+- **Cabecera y receta:**
 
-  | Clave | Tipo | Obligatorio | Origen en `Recipe` |
+  | Orden | Campo | Tipo | Contenido |
   |---|---|---|---|
-  | `n` | string | sí | `name`, tal como se muestra (las predefinidas sin renombrar, ya traducidas) |
-  | `m` | string | no | `method.name` (`BrewMethod`) |
-  | `mo` | string | no | `methodOther`, solo con `m = "OTHER"` |
-  | `t` | number | no | `waterTempC` |
-  | `no` | string | no | `notes` |
-  | `d` | number | sí | `doseG` |
-  | `g` | object | no | molienda, ver abajo; se omite si `grind` es `null` o `isEmpty` |
-  | `s` | array | sí | pasos, ordenados por `startMs` |
-  | `x` | array de string | no | lo que se recortó para que cupiera: `"notes"`, `"instructions"`, `"stageNames"` |
+  | 1 | `flags` | `uvar` | bits de presencia y de recorte, más la unidad de tiempo (tabla siguiente) |
+  | 2 | `name` | `str` | `name`, tal como se muestra (las predefinidas sin renombrar, ya traducidas) |
+  | 3 | `dose` | `uvar` | `doseG` en décimas de gramo |
+  | 4 | `method` | `uvar` | código de `BrewMethod` (tabla abajo) |
+  | 5 | `methodOther` | `str` | `methodOther`, solo con `OTHER` |
+  | 6 | `temp` | `uvar` | `waterTempC` en décimas de °C |
+  | 7 | `notes` | `str` | `notes` |
+  | 8 | molienda | bloque | ver abajo |
+  | 9 | `stageCount` | `uvar` | número de pasos, de 1 a 20 |
+  | 10 | pasos | bloque × `stageCount` | ver abajo, ordenados por `startMs` |
 
-  - **Molienda `g`:**
+  Bits de `flags`:
 
-    | Clave | Tipo | Contenido |
-    |---|---|---|
-    | `k` | string | `Grinder.catalogKey`, si el molino viene del catálogo |
-    | `b` | string | `Grinder.brand` |
-    | `md` | string | `Grinder.model` |
-    | `v` | number | `GrindSetting.value`, si hay ajuste |
-    | `l` | string | `GrindSetting.label`, solo si el molino ya fue eliminado (`grinderId = null`) |
+  | Bit | Significado |
+  |---|---|
+  | 0 | hay `method` |
+  | 1 | hay `methodOther` |
+  | 2 | hay temperatura |
+  | 3 | hay notas |
+  | 4 | hay molienda |
+  | 5 | se recortaron las notas |
+  | 6 | se recortaron las instrucciones |
+  | 7 | se recortaron los nombres de paso |
+  | 8-9 | unidad de tiempo: 0 = s, 1 = 0,1 s, 2 = ms |
 
-    Con un molino eliminado solo viaja `l`.
-  - **Paso `s[i]`:**
+  Un bit de `flags` distinto de los definidos, o bytes sobrantes al final, es `Corrupt`.
+- **Códigos de `BrewMethod`:** fijos, sin depender del orden del enum. Un código desconocido es
+  `Corrupt`.
 
-    | Clave | Tipo | Contenido |
-    |---|---|---|
-    | `y` | string | `"P"`, `"S"` o `"W"` (`StageType.POUR`, `SWIRL`, `WAIT`) |
-    | `n` | string | `RecipeStage.name`, tal como se muestra |
-    | `a` | integer | `startMs` |
-    | `u` | integer | `durationMs` |
-    | `w` | number | `targetWaterG`, solo en `"P"` |
-    | `i` | string | `instruction` |
+  | Código | Método |
+  |---|---|
+  | 0 | `V60` |
+  | 1 | `KALITA_WAVE` |
+  | 2 | `CHEMEX` |
+  | 3 | `ORIGAMI` |
+  | 4 | `AEROPRESS` |
+  | 5 | `FRENCH_PRESS` |
+  | 6 | `ESPRESSO` |
+  | 7 | `COLD_BREW` |
+  | 8 | `MOKA` |
+  | 9 | `OTHER` |
+- **Bloque de molienda.** Se omite, con su bit a 0, si `grind` es `null` o `isEmpty`.
 
-    Al decodificar, el agua de `SWIRL` y `WAIT` se deriva con `withDerivedWater()`.
+  | Orden | Campo | Tipo | Contenido |
+  |---|---|---|---|
+  | 1 | `gflags` | `uvar` | bit 0 `catalogKey`; bit 1 marca y modelo; bit 2 ajuste; bit 3 `label` |
+  | 2 | `catalogKey` | `str` | `Grinder.catalogKey`, si el molino viene del catálogo |
+  | 3 | `brand`, `model` | `str`, `str` | `Grinder.brand` y `Grinder.model` |
+  | 4 | `value` | `svar` | `GrindSetting.value` en centésimas |
+  | 5 | `label` | `str` | `GrindSetting.label`, solo si el molino ya fue eliminado (`grinderId = null`) |
+
+  Con un molino eliminado solo viaja `label`.
+- **Bloque de paso:**
+
+  | Orden | Campo | Tipo | Contenido |
+  |---|---|---|---|
+  | 1 | `sflags` | `uvar` | bits 0-1: tipo (0 `POUR`, 1 `SWIRL`, 2 `WAIT`; 3 es `Corrupt`). Bit 2: nombre. Bit 3: instrucción |
+  | 2 | `gap` | `uvar` | tiempo desde el fin del paso anterior hasta el inicio de este (`startMs` en el primero), en la unidad de tiempo |
+  | 3 | `duration` | `uvar` | `durationMs`, en la unidad de tiempo |
+  | 4 | `water` | `uvar` | solo en `POUR`: agua que añade sobre el acumulado del `POUR` anterior (o sobre 0), en décimas de gramo |
+  | 5 | `name` | `str` | `RecipeStage.name`, tal como se muestra |
+  | 6 | `instruction` | `str` | `instruction` |
+
+  Al decodificar, el agua de `SWIRL` y `WAIT` se deriva con `withDerivedWater()`.
+- **Unidad de tiempo:** el codificador elige la mayor de s, 0,1 s y ms que divida exactamente todos
+  los `startMs` y `durationMs`. El tiempo nunca pierde precisión.
+- **Precisión:**
+  - Dosis y temperatura: exactas, porque `RecipeValidator` ya exige un decimal como máximo.
+  - Agua: se redondea a décimas de gramo. Es exacta para valores con un decimal como máximo.
+  - Ajuste de molienda: se redondea a centésimas. Todos los molinos del catálogo usan paso 1.0.
 - **Versionado:**
   - Cualquier cambio que una versión anterior de la app no pueda representar incrementa `v`.
-    Por ejemplo: un valor nuevo de `BrewMethod` o de `StageType`, o un campo nuevo con significado.
+    Por ejemplo: un valor nuevo de `BrewMethod` o de `StageType`, o un campo nuevo.
   - Una app que lee `v` mayor que la suya rechaza el QR (§4).
-  - Dentro de la misma `v`, una clave desconocida es un error de formato.
+  - Dentro de la misma `v`, un bit, código o byte inesperado es un error de formato.
 - **No viaja:** `id`, `builtInKey`, `localizedNames`, `grinderId`, ni nada del usuario (cafés,
   preparaciones, molinos propios).
 
@@ -140,7 +187,7 @@
     data class Ok(val shared: SharedRecipe) : DecodeResult
     data object NotPourline : DecodeResult     // otro esquema, otro host o sin `d`
     data object NewerVersion : DecodeResult    // `v` > versión soportada
-    data object Corrupt : DecodeResult         // base64, deflate o JSON inválidos
+    data object Corrupt : DecodeResult         // base64, deflate o binario inválidos
     data object Invalid : DecodeResult         // no pasa RecipeValidator
   }
 
@@ -157,13 +204,13 @@
     leerse tras reducir la imagen a la mitad y recomprimirla en JPEG calidad 70.
 - **Orden del recorte**, que se detiene en cuanto el URI cabe:
   1. Receta completa.
-  2. Sin `no` (notas).
-  3. Además, sin `i` en los pasos (instrucciones).
-  4. Además, sin `n` en los pasos (nombres de paso).
+  2. Sin las notas.
+  3. Además, sin las instrucciones de los pasos.
+  4. Además, sin los nombres de los pasos.
   5. Si aún no cabe, `encode` devuelve `null` (§4).
 
-  Lo quitado se anota en `x`. Pasos, tiempos, agua, dosis, temperatura, método y molienda nunca se
-  recortan.
+  Lo quitado se anota en los bits 5-7 de `flags`. Pasos, tiempos, agua, dosis, temperatura, método
+  y molienda nunca se recortan.
 - **`decode`:**
   - Acepta el URI exacto y también con espacios alrededor.
   - Rechaza esquema distinto de `pourline` o host distinto de `recipe`.
@@ -234,8 +281,9 @@
     restaurado).
 - **Lectura desde imagen** (galería y `ACTION_SEND`):
   - Se decodifica el bitmap reducido a un máximo de 2048 px de lado.
-  - Se pasa por ML Kit `barcode-scanning` en su variante **incluida en el APK** (sin descarga de
-    modelo), solo QR.
+  - Se pasa por ML Kit en su variante **de Google Play Services**
+    (`play-services-mlkit-barcode-scanning`), solo QR. El modelo lo descarga Play Services y no
+    va en el APK.
   - Se toma el primer QR cuyo texto empiece por `pourline://recipe`.
 - **Destino común:**
   - Todas las entradas producen un texto de QR, que se pasa a `RecipeShareCodec.decode`.
@@ -308,7 +356,7 @@
 | Dependencia | Uso |
 |---|---|
 | `com.google.zxing:core` | Generar la matriz del QR (JVM puro) |
-| `com.google.mlkit:barcode-scanning` (variante incluida en el APK) | Leer QR desde un bitmap sin red |
+| `com.google.android.gms:play-services-mlkit-barcode-scanning` | Leer QR desde un bitmap. El modelo lo descarga Play Services; el incluido en el APK sumaba 20,8 MB (medido en F0) |
 | `com.google.android.gms:play-services-code-scanner` | Escáner de cámara sin permiso de cámara |
 
 - El manifiesto final sigue sin `INTERNET` y sin `CAMERA`.
@@ -338,7 +386,8 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
 - **Falta `v`** o no es un entero -> `Corrupt`.
 - **Versión futura** (`v` > 1) -> "Esta receta se creó con una versión más nueva de Pourline.
   Actualiza la app para importarla." No se importa nada.
-- **Payload corrupto** (base64, deflate o JSON inválidos, o clave desconocida en `v=1`) -> `Corrupt`
+- **Payload corrupto** (base64 o deflate inválidos, binario truncado, bytes sobrantes, o bit o
+  código desconocido en `v=1`) -> `Corrupt`
   -> "No se pudo leer la receta del QR".
 - **Payload que no pasa `RecipeValidator`** (dosis fuera de rango, 0 o más de 20 pasos, tiempos
   inválidos…) -> `Invalid` -> "La receta del QR no es válida". No se abre la vista previa.
@@ -349,6 +398,9 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
 - **Escáner no disponible** (sin Google Play Services, o módulo sin descargar y sin conexión) ->
   "El escáner no está disponible. Prueba con «Desde una imagen»".
 - **El usuario cancela el escáner o el selector de fotos** -> no pasa nada.
+- **El modelo de lectura de QR de Play Services aún no está descargado** (galería o `ACTION_SEND`)
+  -> se pide la descarga y se muestra "El lector de QR se está preparando. Inténtalo en unos
+  segundos".
 - **Imagen ilegible o enorme** -> se reduce a 2048 px. Si no se puede decodificar, se muestra "No se
   encontró ninguna receta en la imagen".
 - **`ACTION_SEND` sin `EXTRA_STREAM`, o URI sin permiso de lectura** -> el mismo mensaje.
@@ -379,10 +431,10 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
 - [ ] **Unitario:** ida y vuelta. `decode(encode(r))` reproduce nombre, método, `methodOther`, dosis,
       temperatura, notas y pasos (tipo, nombre, inicio, duración, agua e instrucción) de las
       predefinidas y de una receta con todos los campos.
-- [ ] **Unitario:** recorte en orden notas → instrucciones → nombres de paso, con `x` y `trimmed`
-      correctos. `null` solo cuando ni el recorte completo cabe.
-- [ ] **Unitario:** `NotPourline`, `NewerVersion`, `Corrupt` (base64, deflate, JSON, clave
-      desconocida, método desconocido) e `Invalid`.
+- [ ] **Unitario:** recorte en orden notas → instrucciones → nombres de paso, con los bits de
+      recorte y `trimmed` correctos. `null` solo cuando ni el recorte completo cabe.
+- [ ] **Unitario:** `NotPourline`, `NewerVersion`, `Corrupt` (base64, deflate, binario
+      truncado, bytes sobrantes, bit o código desconocido) e `Invalid`.
 - [ ] **Unitario:** resolución de molienda en los tres casos (mismo molino por `catalogKey` y por
       marca y modelo, conversión con varios molinos propios, texto) y sin molienda.
 - [ ] **Unitario:** detección de idéntica y sufijo " (2)" y " (3)".
@@ -411,16 +463,20 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
 
 ## 6. Preguntas abiertas y riesgos
 
-- **`MAX_URI_LENGTH`:** lo fija el plan con el test de recompresión. Si con el tamaño de QR del §3.3
-  el tope no deja cabida a una receta de 20 pasos sin textos, hay que agrandar el QR o la tarjeta de
-  9:16.
+- **`MAX_URI_LENGTH`:**
+  - F0 midió 331 con el QR de 432 px y el lector incluido en el APK.
+  - Hay que volver a medirlo con el lector de Play Services.
+  - Con el formato binario, la receta de 20 pasos sin textos debe quedar muy por debajo; el
+    plan fija el margen mínimo.
 - **Code Scanner sin `INTERNET`:**
   - La primera fase del plan debe verificar en el dispositivo que funciona con el permiso eliminado.
     El módulo lo descarga Play Services.
   - Si no funciona, la alternativa es CameraX + ML Kit, que exige el permiso `CAMERA`. Esa decisión
     vuelve al usuario.
-- **Variante incluida de ML Kit:** confirmar que no reintroduce `INTERNET` tras el `tools:node="remove"`
-  actual, que ya cubre la telemetría de `text-recognition`.
+- **ML Kit de Play Services:**
+  - Confirmar que no reintroduce `INTERNET` tras el `tools:node="remove"` actual.
+  - Confirmar que lee QR con el permiso eliminado, una vez descargado el modelo.
+  - Mientras el modelo no esté descargado, la lectura desde imagen falla: ver §4.
 
 - **Al cerrar la implementación:** anotar en este spec el valor final de `MAX_URI_LENGTH` y el
   número de pasos a partir del cual la tarjeta pasa de 4:5 a 9:16.
