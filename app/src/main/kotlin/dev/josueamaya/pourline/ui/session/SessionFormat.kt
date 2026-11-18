@@ -16,6 +16,15 @@ fun formatClock(ms: Long): String {
   return String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60)
 }
 
+/**
+ * `m:ss` de un tiempo que falta, redondeado hacia arriba al segundo: así cambia a la vez que el cronómetro (que trunca)
+ * y enlaza sin repetir ni saltarse un segundo con la cuenta atrás de `GuideState.countdownS` (que también redondea
+ * hacia arriba). Con 5,4 s por delante dice "0:06", como el cronómetro que aún no ha llegado al segundo siguiente.
+ */
+fun formatRemaining(ms: Long): String = formatClock(ceilToSecond(ms))
+
+private fun ceilToSecond(ms: Long): Long = if (ms <= 0) 0 else (ms + 999) / 1000 * 1000
+
 @StringRes
 fun stepTypeLabel(type: StageType): Int = when (type) {
   StageType.POUR -> R.string.step_type_pour
@@ -55,7 +64,7 @@ fun nextStepInfo(next: TargetStage?, elapsedMs: Long, countdownS: Int?): NextSte
   next?.let { NextStepInfo(it, (it.startMs - elapsedMs).coerceAtLeast(0), countdownS) }
 
 /** El tiempo de "Siguiente … en": la cuenta atrás ("5 s" es un texto traducido, por eso lo da el composable) o `m:ss`. */
-fun nextStepClock(info: NextStepInfo): String = formatClock(info.remainingMs)
+fun nextStepClock(info: NextStepInfo): String = formatRemaining(info.remainingMs)
 
 /** El paso en curso de una sesión sin báscula (SPEC-007 §3.4): "paso n/N · quedan m:ss" y el avance del dial. */
 data class TimedStepView(
