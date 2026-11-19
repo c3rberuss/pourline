@@ -17,25 +17,42 @@ App Android para preparar café de filtro con las básculas TIMEMORE Black Mirro
 
 ---
 
+## Capturas
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/images/screenshots/01-preparar.png" width="200" alt="Pantalla Preparar"><br><sub><b>Preparar</b><br>Receta, café, dosis y molienda sugerida para tu molino</sub></td>
+    <td align="center"><img src="docs/images/screenshots/02-sesion-grafica.png" width="200" alt="Sesión con gráfica en tiempo real"><br><sub><b>Sesión con báscula</b><br>Peso y flujo en tiempo real frente a la curva objetivo</sub></td>
+    <td align="center"><img src="docs/images/screenshots/03-resumen.png" width="200" alt="Resumen de la preparación"><br><sub><b>Resumen</b><br>Flujo, estabilidad del chorro y ajuste a la receta</sub></td>
+    <td align="center"><img src="docs/images/screenshots/04-sin-bascula.png" width="200" alt="Sesión sin báscula"><br><sub><b>Sin báscula</b><br>Temporizador guiado paso a paso</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/screenshots/05-editor-receta.png" width="200" alt="Editor de recetas"><br><sub><b>Editor de recetas</b><br>Pasos de Verter, Remover, Esperar y Acción</sub></td>
+    <td align="center"><img src="docs/images/screenshots/06-metodo-4-6.png" width="200" alt="Generador del método 4:6"><br><sub><b>Método 4:6</b><br>Sabor, intensidad y ritmo de vertido</sub></td>
+    <td align="center"><img src="docs/images/screenshots/07-leer-etiqueta.png" width="200" alt="Lectura de la etiqueta del café"><br><sub><b>Leer etiqueta</b><br>Los datos del café salen de una foto de la bolsa</sub></td>
+    <td align="center"><img src="docs/images/screenshots/08-ficha-cafe.png" width="200" alt="Ficha del café"><br><sub><b>Ficha del café</b><br>Lo que queda en la bolsa y la bitácora de cata</sub></td>
+  </tr>
+</table>
+
 ## Qué hace
 
-### ☕ Preparar
+### Preparar
 - **Recetas paso a paso** con cuatro tipos de paso: Verter, Remover, Esperar y Acción. Cada tipo tiene su color, y el cambio de paso se avisa con sonido y vibración.
 - **Cuenta atrás de inicio** y tiempo total de la receta a la vista.
 - **Gráfica de vertido en tiempo real**: peso, flujo y regularidad del chorro, comparados con la curva objetivo de la receta.
 - **Con o sin báscula**: sin báscula, la app te guía con el temporizador de cada paso.
 
-### 📒 Registrar
+### Registrar
 - **Historial** de cada preparación, con su gráfica, notas de cata y comparación con preparaciones anteriores.
 - **Catálogo de cafés**: tostador, origen, proceso y fecha de tueste. Los datos se leen de la etiqueta con la cámara mediante OCR en el propio dispositivo, sin conexión.
 - **Molinos** con conversión de molienda entre ellos a partir de pares de calibración.
 
-### 🧰 Herramientas
+### Herramientas
 - **Calculadora de ratio** café/agua.
 - **Generador del método 4:6** (Tetsu Kasuya): elige sabor, intensidad y ritmo de vertido, y guárdalo como receta.
 - **Compartir recetas** como imagen con un código QR que otra instalación de Pourline puede importar.
 
-### ✨ Y además
+### Y además
 - Modos **Básico** y **Experto** según cuánto detalle quieras ver.
 - **Recorrido guiado** la primera vez que abres la app.
 - Disponible en **español** e **inglés**.
