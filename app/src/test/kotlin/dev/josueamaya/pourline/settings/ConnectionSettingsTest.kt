@@ -34,4 +34,15 @@ class ConnectionSettingsTest {
     assertEquals(false, prefs.values[ConnectionSettings.KEY_USE_SCALE])
     assertFalse(ConnectionSettings(prefs).useScale.value)
   }
+
+  @Test
+  fun `the mode counts as chosen only once it is set, also after a restart`() {
+    val settings = ConnectionSettings(prefs)
+    assertFalse(settings.scaleModeChosen.value)
+
+    settings.setUseScale(true)
+
+    assertTrue(settings.scaleModeChosen.value)
+    assertTrue(ConnectionSettings(prefs).scaleModeChosen.value)
+  }
 }

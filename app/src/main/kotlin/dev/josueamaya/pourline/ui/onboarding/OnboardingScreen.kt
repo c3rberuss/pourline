@@ -110,9 +110,18 @@ fun OnboardingScreen(
   }
 }
 
+/**
+ * La pregunta "¿Usas báscula?" suelta, para quien terminó el onboarding antes de que existiera: sale una vez al abrir
+ * la app y [onChoose] guarda la respuesta. Es el mismo paso del onboarding, sin flecha de volver.
+ */
+@Composable
+fun ScaleQuestionScreen(onChoose: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+  ScaleStep(onBack = null, onChoose = onChoose, modifier = modifier)
+}
+
 /** "¿Usas báscula?": con báscula, Preparar muestra la tarjeta de conexión; sin ella, se prepara con el reloj. */
 @Composable
-private fun ScaleStep(onBack: () -> Unit, onChoose: (Boolean) -> Unit, modifier: Modifier) {
+private fun ScaleStep(onBack: (() -> Unit)?, onChoose: (Boolean) -> Unit, modifier: Modifier) {
   val spacing = AntTheme.spacing
   Column(
     modifier
@@ -123,12 +132,14 @@ private fun ScaleStep(onBack: () -> Unit, onChoose: (Boolean) -> Unit, modifier:
     verticalArrangement = Arrangement.spacedBy(spacing.sm),
   ) {
     Row(Modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.CenterVertically) {
-      AntIconButton(
-        AntIcons.ArrowLeft,
-        contentDescription = stringResource(R.string.scale_back),
-        onClick = onBack,
-        modifier = Modifier.testTag("onboarding_scale_back"),
-      )
+      if (onBack != null) {
+        AntIconButton(
+          AntIcons.ArrowLeft,
+          contentDescription = stringResource(R.string.scale_back),
+          onClick = onBack,
+          modifier = Modifier.testTag("onboarding_scale_back"),
+        )
+      }
     }
     AntTitle(stringResource(R.string.onboarding_scale_title), level = 3)
     AntText(stringResource(R.string.onboarding_hint), type = AntTextType.Secondary)

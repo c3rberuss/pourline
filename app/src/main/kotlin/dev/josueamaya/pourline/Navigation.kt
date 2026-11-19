@@ -69,6 +69,7 @@ import dev.josueamaya.pourline.ui.history.HistoryScreen
 import dev.josueamaya.pourline.ui.history.HistoryViewModel
 import dev.josueamaya.pourline.ui.onboarding.OnboardingScreen
 import dev.josueamaya.pourline.ui.onboarding.OnboardingViewModel
+import dev.josueamaya.pourline.ui.onboarding.ScaleQuestionScreen
 import dev.josueamaya.pourline.ui.prepare.PrepareScreen
 import dev.josueamaya.pourline.ui.prepare.PrepareViewModel
 import dev.josueamaya.pourline.ui.recipes.RecipeEditScreen
@@ -98,12 +99,16 @@ import kotlinx.coroutines.flow.map
 
 /**
  * La app: la elección del primer arranque (D11) mientras `onboardingDone` sea falso y, después, las cinco
- * pestañas con su pila cada una (D30).
+ * pestañas con su pila cada una (D30). Quien terminó el onboarding antes de que preguntara por la báscula ve esa
+ * pregunta una vez antes de las pestañas.
  */
 @Composable
 fun MainNavigation(deps: AppDependencies) {
   val onboardingDone by deps.experienceSettings.onboardingDone.collectAsStateWithLifecycle()
-  if (onboardingDone) {
+  val scaleModeChosen by deps.scaleMode.scaleModeChosen.collectAsStateWithLifecycle()
+  if (onboardingDone && !scaleModeChosen) {
+    ScaleQuestionScreen(onChoose = deps.scaleMode::setUseScale)
+  } else if (onboardingDone) {
     TabsNavigation(deps)
   } else {
     val viewModel = viewModel { OnboardingViewModel(deps.grinderRepository, deps.grinderSettings, deps.experienceSettings, deps.scaleMode) }

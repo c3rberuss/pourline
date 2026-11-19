@@ -158,6 +158,8 @@ class TestAppDependencies(
   clock: () -> Long = SystemClock::elapsedRealtime,
   /** Los segundos de la cuenta regresiva de "Empezar timer"; 0 (sin cuenta) salvo en los tests que la prueban. */
   countdownSeconds: Int = 0,
+  /** El modo de báscula ya elegido; `null` es una instalación que aún no lo eligió (la pregunta de quien actualiza). */
+  useScale: Boolean? = true,
 ) {
   init {
     context.deleteSharedPreferences(PREFS)
@@ -174,7 +176,7 @@ class TestAppDependencies(
   val experienceSettings = ExperienceSettings(context, PREFS)
   val tourSettings = TourSettings(context, PREFS)
   /** Con báscula: los tests de Preparar conectan la simulada. Los que prueban el modo sin báscula lo cambian. */
-  val connectionSettings = ConnectionSettings(context, PREFS).also { it.setUseScale(true) }
+  val connectionSettings = ConnectionSettings(context, PREFS).also { settings -> useScale?.let(settings::setUseScale) }
   val brews = BrewRepository(db)
   val photoStore = CoffeePhotoStore(photosDir, context.cacheDir)
   val coffees = CoffeeRepository(db, photoStore)

@@ -17,6 +17,9 @@ interface ScaleModeStore {
    */
   val useScale: StateFlow<Boolean>
 
+  /** El usuario ya eligió el modo (en el onboarding, en Ajustes o en la pregunta de quien actualiza). */
+  val scaleModeChosen: StateFlow<Boolean>
+
   fun setUseScale(enabled: Boolean)
 }
 
@@ -45,9 +48,13 @@ class ConnectionSettings internal constructor(private val prefs: SharedPreferenc
   )
   override val useScale: StateFlow<Boolean> = _useScale.asStateFlow()
 
+  private val _scaleModeChosen = MutableStateFlow(prefs.contains(KEY_USE_SCALE))
+  override val scaleModeChosen: StateFlow<Boolean> = _scaleModeChosen.asStateFlow()
+
   override fun setUseScale(enabled: Boolean) {
     prefs.edit { putBoolean(KEY_USE_SCALE, enabled) }
     _useScale.value = enabled
+    _scaleModeChosen.value = true
   }
 
   private fun read(): RememberedScale? {
