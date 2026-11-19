@@ -20,8 +20,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.josueamaya.pourline.R
@@ -53,7 +55,6 @@ private val CaptionGap = 4.dp
 private val InfoLineGap = 2.dp
 private val StepIconSize = 12.dp
 private val StepStartWidth = 32.dp
-private val StepTypeWidth = 44.dp
 private val StepDurationWidth = 32.dp
 private val StepWaterWidth = 44.dp
 private val StepGap = 4.dp
@@ -85,7 +86,8 @@ fun RecipeShareCard(data: RecipeShareData, modifier: Modifier = Modifier) {
     Spacer(Modifier.height(NameGap))
     RecipeFacts(data, Modifier.fillMaxWidth())
     Spacer(Modifier.height(InfoGap))
-    recipe.stages.forEachIndexed { index, stage -> StepRow(stage, index, data.unit) }
+    val typeWidth = stepTypeWidth()
+    recipe.stages.forEachIndexed { index, stage -> StepRow(stage, index, data.unit, typeWidth) }
     if (data.qr != null) {
       Spacer(Modifier.height(QrGap))
       QrStrip(data.qr)
@@ -152,7 +154,7 @@ private fun Separator(style: TextStyle) {
 
 /** Una fila de [RECIPE_STEP_ROW_HEIGHT]: inicio, icono y tipo, nombre, duración y agua acumulada (solo en `POUR`). */
 @Composable
-private fun StepRow(stage: RecipeStage, index: Int, unit: WeightUnit) {
+private fun StepRow(stage: RecipeStage, index: Int, unit: WeightUnit, typeWidth: Dp) {
   val style = compactStyle()
   Row(
     Modifier.fillMaxWidth().height(RECIPE_STEP_ROW_HEIGHT).testTag("share_recipe_step_$index"),
@@ -161,7 +163,7 @@ private fun StepRow(stage: RecipeStage, index: Int, unit: WeightUnit) {
   ) {
     AntText(formatClock(stage.startMs), Modifier.width(StepStartWidth), type = AntTextType.Secondary, style = style, maxLines = 1)
     Icon(stepTypeIcon(stage.type), contentDescription = null, modifier = Modifier.size(StepIconSize), tint = AntTheme.colors.textSecondary)
-    AntText(stringResource(stepTypeLabel(stage.type)), Modifier.width(StepTypeWidth), style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    AntText(stringResource(stepTypeLabel(stage.type)), Modifier.width(typeWidth).testTag("share_recipe_step_type_$index"), style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
     AntText(stage.name.orEmpty(), Modifier.weight(1f), style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
     AntText(
       stringResource(R.string.recipe_card_step_duration, (stage.durationMs / 1000.0).roundToLong().toInt()),
@@ -200,6 +202,19 @@ fun QrCodeBox(matrix: QrMatrix, modifier: Modifier = Modifier) {
       }
     }
   }
+}
+
+/**
+ * El ancho de la columna del tipo: el de la etiqueta más larga en el idioma actual, para que ninguna se corte y las
+ * columnas sigan alineadas entre filas.
+ */
+@Composable
+private fun stepTypeWidth(): Dp {
+  val style = compactStyle()
+  val measurer = rememberTextMeasurer()
+  val labels = StageType.entries.map { stringResource(stepTypeLabel(it)) }
+  val widthPx = labels.maxOf { measurer.measure(it, style, maxLines = 1, softWrap = false).size.width }
+  return with(LocalDensity.current) { widthPx.toDp() }
 }
 
 /** `textSM` con 16 sp de interlineado: las filas de la tarjeta tienen alto fijo (D10). */

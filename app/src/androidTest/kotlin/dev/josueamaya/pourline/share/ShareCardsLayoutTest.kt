@@ -374,6 +374,20 @@ class ShareCardsLayoutTest {
   }
 
   @Test
+  fun noStepTypeLabelIsCutOnTheRecipeCard() {
+    val recipe = aeroPressWithActions()
+    assertEquals(StageType.entries.toSet(), recipe.stages.map { it.type }.toSet())
+    capture(ShareRequest.Recipe(recipeData(recipe)))
+
+    recipe.stages.indices.forEach { i ->
+      val results = mutableListOf<TextLayoutResult>()
+      node("share_recipe_step_type_$i").config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+      val layout = results.single()
+      assertTrue("la etiqueta del paso $i no debe cortarse", !layout.hasVisualOverflow && !layout.isLineEllipsized(0))
+    }
+  }
+
+  @Test
   fun aRecipeCardWithActionsKeepsTheMinimumSizeAndShowsTheTotalTime() {
     val recipe = aeroPressWithActions()
     capture(ShareRequest.Recipe(recipeData(recipe)))
