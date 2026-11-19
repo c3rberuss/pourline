@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-paso-accion.md`](spec-paso-accion.md) (SPEC-010), aprobado el 2026-11-18 |
-| Estado | Implementado en `feat/step-action` (F0 a F7, 2026-11-18). Pendiente: prueba manual del usuario (§7.5) y `/code-review` antes de fusionar |
+| Estado | Implementado (F0 a F7) y fusionado a `develop` (2026-11-18). Prueba manual del usuario (§7.5) superada. Pendiente de `/code-review` |
 | Fecha | 2026-11-18 |
 | Rama | `feat/step-action`, desde `develop` (`00eb163`), con el spec commiteado (`a0a71b9`) |
 | Módulos | `:app` (`:protocol` no cambia) |

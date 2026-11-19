@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado (2026-11-18). Plan aprobado: [`plan-paso-accion.md`](plan-paso-accion.md). Pendiente de implementación |
+| Estado | Implementado y fusionado a `develop` (2026-11-18). Plan: [`plan-paso-accion.md`](plan-paso-accion.md). Prueba manual en el móvil del usuario superada. Pendiente de `/code-review` |
 | Fecha | 2026-11-18 |
 | Rama | `feat/step-action` |
 | Deriva de | Uso real: recetas de AeroPress con pasos como "Pon la tapa", y recetas sin duración visible |
