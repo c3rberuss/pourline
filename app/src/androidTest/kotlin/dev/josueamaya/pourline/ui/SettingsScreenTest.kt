@@ -18,6 +18,7 @@ import dev.josueamaya.pourline.recipe.BuiltInRecipes
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
 import dev.josueamaya.pourline.settings.BrewSettings
+import dev.josueamaya.pourline.settings.ConnectionSettings
 import dev.josueamaya.pourline.settings.ExperienceMode
 import dev.josueamaya.pourline.settings.ExperienceSettings
 import dev.josueamaya.pourline.settings.GrinderSettings
@@ -53,6 +54,8 @@ class SettingsScreenTest {
   private var restoreCalls = 0
   private var grindersOpened = 0
   private var replayCalls = 0
+  private var scaleOffCalls = 0
+  private lateinit var scaleMode: ConnectionSettings
   private lateinit var grinderSettings: GrinderSettings
   private lateinit var grinders: GrinderRepository
 
@@ -63,6 +66,7 @@ class SettingsScreenTest {
     targetSettings.setStageSound(true)
     context.getSharedPreferences(TEST_PREFS, android.content.Context.MODE_PRIVATE).edit().clear().commit()
     experience.setMode(ExperienceMode.EXPERT)
+    scaleMode = ConnectionSettings(context, TEST_PREFS).also { it.setUseScale(true) }
     theme.setMode(ThemeMode.SYSTEM)
     db = HistoryDatabase.inMemory(context)
     recipes = RecipeRepository(db, ResourcesRecipeTexts(context))
@@ -77,6 +81,8 @@ class SettingsScreenTest {
           theme,
           grinderRepository = grinders,
           grinderDefaults = grinderSettings,
+          scaleMode = scaleMode,
+          onScaleOff = { scaleOffCalls++ },
           onOpenGrinders = { grindersOpened++ },
           onRestoreRecipes = {
             restoreCalls++
@@ -130,6 +136,22 @@ class SettingsScreenTest {
 
     rule.onNodeWithText(context.getString(R.string.theme_light)).performClick()
     assertEquals("LIGHT", testPrefs().getString(ThemeSettings.KEY_MODE, null))
+  }
+
+  @Test
+  fun theScaleSegmentedSavesTheModeAndClosesTheConnectionWhenLeavingIt() {
+    rule.onNodeWithText(context.getString(R.string.settings_scale_with_hint)).assertExists()
+
+    rule.onNodeWithText(context.getString(R.string.settings_scale_without)).performScrollTo().performClick()
+
+    assertEquals(false, scaleMode.useScale.value)
+    assertEquals(false, testPrefs().getBoolean(ConnectionSettings.KEY_USE_SCALE, true))
+    assertEquals(1, scaleOffCalls)
+    rule.onNodeWithText(context.getString(R.string.settings_scale_without_hint)).assertExists()
+
+    rule.onNodeWithText(context.getString(R.string.settings_scale_with)).performClick()
+    assertEquals(true, scaleMode.useScale.value)
+    assertEquals(1, scaleOffCalls)
   }
 
   @Test

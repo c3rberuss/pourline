@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -79,35 +80,24 @@ class PrepareScreenTest {
   // --- la tarjeta de báscula ---
 
   @Test
-  fun withoutPermissionsTheCardAsksForThemAndOffersTheSimulatedScale() {
+  fun withoutPermissionsTheCardAsksForThemWithoutTheSimulatedScale() {
     env.bluetooth.permissions = false
     show()
 
     assertCardHas(context.getString(R.string.scale_card_no_permission))
     rule.onNodeWithTag("scale_card_grant").assertIsDisplayed()
-    rule.onNodeWithTag("scale_card_simulated").assertIsDisplayed()
+    // La simulada solo se ofrece en la hoja de conexión.
+    assertTrue(!exists("scale_card_simulated"))
   }
 
   @Test
-  fun withBluetoothOffTheCardOffersToTurnItOnAndTheSimulatedScale() {
+  fun withBluetoothOffTheCardOffersToTurnItOnWithoutTheSimulatedScale() {
     env.bluetooth.on.value = false
     show()
 
     assertCardHas(context.getString(R.string.scale_card_bluetooth_off))
     rule.onNodeWithTag("scale_card_enable").assertIsDisplayed()
-    rule.onNodeWithTag("scale_card_simulated").assertIsDisplayed()
-  }
-
-  @Test
-  fun theSimulatedLinkConnectsWithoutPermissions() {
-    env.bluetooth.permissions = false
-    show()
-
-    rule.onNodeWithTag("scale_card_simulated").performClick()
-
-    rule.waitUntil(10_000) { env.scaleSession.ui.value.connection == ConnectionState.Ready }
-    waitFor("scale_card_menu")
-    rule.onNodeWithTag("prepare_start").assertIsEnabled()
+    assertTrue(!exists("scale_card_simulated"))
   }
 
   @Test
@@ -408,6 +398,41 @@ class PrepareScreenTest {
     waitFor("scaleless_start")
     assertEquals(12.0, env.scaleSession.ui.value.plannedDoseG!!, 0.0)
     assertEquals(200.0, env.scaleSession.ui.value.targetWaterG!!, 1e-9)
+  }
+
+  // --- sin báscula ---
+
+  @Test
+  fun withoutAScaleThereIsNoCardAndASingleStartOpensTheScalelessSession() {
+    env.connectionSettings.setUseScale(false)
+    show()
+    waitFor("prepare_start_scaleless")
+
+    assertTrue(!exists("scale_card"))
+    assertTrue(!exists("prepare_start"))
+    assertTrue(!exists("prepare_start_hint"))
+    rule.onNodeWithTag("prepare_start_scaleless").assert(hasText(context.getString(R.string.prepare_start)))
+
+    rule.onNodeWithTag("prepare_start_scaleless").performScrollTo().assertIsEnabled().performClick()
+
+    waitFor("scaleless_start")
+    assertTrue(env.scaleSession.ui.value.scaleless)
+    assertTrue(env.connectionsMade.isEmpty())
+  }
+
+  @Test
+  fun switchingToWithoutAScaleInSettingsHidesTheCardAndDisconnects() {
+    show()
+    connectSimulated()
+
+    rule.onNodeWithTag("prepare_settings").performClick()
+    waitFor("settings_scale")
+    rule.onNodeWithText(context.getString(R.string.settings_scale_without)).performClick()
+    rule.onNodeWithContentDescription(context.getString(R.string.scale_back)).performClick()
+
+    waitFor("prepare_start_scaleless")
+    assertTrue(!exists("scale_card"))
+    rule.waitUntil(5_000) { env.scaleSession.ui.value.connection != ConnectionState.Ready }
   }
 
   // --- receta y café ---

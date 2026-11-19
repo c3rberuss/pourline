@@ -75,8 +75,9 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * Preparar, la raíz de la primera pestaña: la tarjeta de báscula, la receta y el café, la dosis y el ratio, y
- * "Empezar" (habilitado con la báscula `Ready`).
+ * Preparar, la raíz de la primera pestaña: la receta y el café, la dosis y el ratio, y "Empezar". Con báscula
+ * ([PrepareUiState.useScale]) se añaden la tarjeta de báscula, "Empezar" habilitado con la báscula `Ready` y "Empezar
+ * sin báscula" como respaldo; sin báscula, un solo "Empezar" abre la preparación sin báscula.
  */
 @Composable
 fun PrepareScreen(
@@ -142,7 +143,6 @@ fun PrepareScreen(
     onConnect = viewModel::connectLast,
     onRetry = viewModel::retry,
     onDisconnect = viewModel::disconnect,
-    onUseSimulated = { viewModel.connect(ScaleTarget.Simulated(simulatedName)) },
   )
 
   Scaffold(
@@ -170,7 +170,7 @@ fun PrepareScreen(
         .padding(AntTheme.spacing.base),
       verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
     ) {
-      ScaleCard(ui.card, actions, Modifier.tourAnchor("scale_card"))
+      if (ui.useScale) ScaleCard(ui.card, actions, Modifier.tourAnchor("scale_card"))
       TargetSelectRow(
         ui.target,
         enabled = true,
@@ -203,37 +203,51 @@ fun PrepareScreen(
         onOpenConverter = onOpenConverter,
         modifier = Modifier.tourAnchor("grind_card"),
       )
-      Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
-        AntButton(
-          text = stringResource(R.string.prepare_start),
-          onClick = {
-            if (context.needsNotificationPermission()) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            viewModel.startSession()
-            onStart()
-          },
-          modifier = Modifier.fillMaxWidth().tourAnchor("prepare_start").testTag("prepare_start"),
-          type = AntButtonType.Primary,
-          size = AntSize.Large,
-          enabled = ui.canStart,
-        )
-        if (!ui.canStart) {
-          AntText(
-            stringResource(R.string.prepare_start_disabled),
-            Modifier.fillMaxWidth().testTag("prepare_start_hint"),
-            type = AntTextType.Secondary,
+      val canStartScaleless = canStartScaleless(ui.target != null, doseText, ratioText, recipeDoseText.takeIf { recipeDoseEditable })
+      val startScaleless = {
+        if (context.needsNotificationPermission()) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        viewModel.startScalelessSession()
+        onStart()
+      }
+      if (ui.useScale) {
+        Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+          AntButton(
+            text = stringResource(R.string.prepare_start),
+            onClick = {
+              if (context.needsNotificationPermission()) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+              viewModel.startSession()
+              onStart()
+            },
+            modifier = Modifier.fillMaxWidth().tourAnchor("prepare_start").testTag("prepare_start"),
+            type = AntButtonType.Primary,
+            size = AntSize.Large,
+            enabled = ui.canStart,
+          )
+          if (!ui.canStart) {
+            AntText(
+              stringResource(R.string.prepare_start_disabled),
+              Modifier.fillMaxWidth().testTag("prepare_start_hint"),
+              type = AntTextType.Secondary,
+            )
+          }
+          // El respaldo sin báscula (SPEC-007): la báscula no interviene.
+          AntButton(
+            text = stringResource(R.string.prepare_start_scaleless),
+            onClick = startScaleless,
+            modifier = Modifier.fillMaxWidth().tourAnchor("prepare_start_scaleless").testTag("prepare_start_scaleless"),
+            type = AntButtonType.Link,
+            enabled = canStartScaleless,
           )
         }
-        // Sin báscula (SPEC-007): siempre visible, la báscula no interviene.
+      } else {
+        // Sin báscula, el único "Empezar" es el de la preparación sin báscula; conserva su ancla y su paso del recorrido.
         AntButton(
-          text = stringResource(R.string.prepare_start_scaleless),
-          onClick = {
-            if (context.needsNotificationPermission()) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            viewModel.startScalelessSession()
-            onStart()
-          },
+          text = stringResource(R.string.prepare_start),
+          onClick = startScaleless,
           modifier = Modifier.fillMaxWidth().tourAnchor("prepare_start_scaleless").testTag("prepare_start_scaleless"),
+          type = AntButtonType.Primary,
           size = AntSize.Large,
-          enabled = canStartScaleless(ui.target != null, doseText, ratioText, recipeDoseText.takeIf { recipeDoseEditable }),
+          enabled = canStartScaleless,
         )
       }
     }

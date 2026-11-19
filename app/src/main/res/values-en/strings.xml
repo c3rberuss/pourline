@@ -286,6 +286,11 @@
     <string name="settings_countdown_value">%1$d s</string>
     <string name="settings_countdown_hint">Seconds before the timer starts when you tap “Start timer”, with or without a scale. With a scale, if you start pouring earlier, the brew starts right away.</string>
     <string name="settings_stage_title">Step guide</string>
+    <string name="settings_scale_title">Scale</string>
+    <string name="settings_scale_without">Without scale</string>
+    <string name="settings_scale_with">With scale</string>
+    <string name="settings_scale_without_hint">You brew with the timer: Prepare hides the scale and does not connect to it.</string>
+    <string name="settings_scale_with_hint">Connect your scale in Prepare and the session follows the weight live.</string>
     <string name="settings_stage_vibration">Vibrate when each step starts</string>
     <string name="settings_stage_sound">Beep when each step starts</string>
     <string name="settings_recipes_title">Recipes</string>
@@ -955,7 +960,7 @@
     <string name="tour_prepare_welcome_title">Welcome to Pourline</string>
     <string name="tour_prepare_welcome_body">Pourline guides every brew with your scale. Here are the basics, in a minute.</string>
     <string name="tour_prepare_scale_title">Your scale</string>
-    <string name="tour_prepare_scale_body">Connect it here. No scale at hand? Use the simulated scale.</string>
+    <string name="tour_prepare_scale_body">Connect it here. Brewing without a scale? Change it in Settings.</string>
     <string name="tour_prepare_recipe_title">Recipe</string>
     <string name="tour_prepare_recipe_body">Pick a recipe and the session guides you step by step. Without one, you brew freely.</string>
     <string name="tour_prepare_coffee_title">Coffee</string>

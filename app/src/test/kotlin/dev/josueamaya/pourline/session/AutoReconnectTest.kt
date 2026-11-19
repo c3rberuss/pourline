@@ -132,6 +132,17 @@ class AutoReconnectTest {
   }
 
   @Test
+  fun `brewing without a scale never reconnects`() {
+    remember()
+    val off = AutoReconnect(manager, memory, bluetooth, scope) { false }
+
+    off.onForeground()
+    off.onTrigger(ReconnectTrigger.BLUETOOTH_ON)
+
+    assertTrue(factory.targets.isEmpty())
+  }
+
+  @Test
   fun `without a remembered scale nothing connects`() {
     autoReconnect.onForeground()
 

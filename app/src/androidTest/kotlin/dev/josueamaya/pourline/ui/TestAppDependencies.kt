@@ -173,7 +173,8 @@ class TestAppDependencies(
   val themeSettings = ThemeSettings(context, PREFS)
   val experienceSettings = ExperienceSettings(context, PREFS)
   val tourSettings = TourSettings(context, PREFS)
-  val connectionSettings = ConnectionSettings(context, PREFS)
+  /** Con báscula: los tests de Preparar conectan la simulada. Los que prueban el modo sin báscula lo cambian. */
+  val connectionSettings = ConnectionSettings(context, PREFS).also { it.setUseScale(true) }
   val brews = BrewRepository(db)
   val photoStore = CoffeePhotoStore(photosDir, context.cacheDir)
   val coffees = CoffeeRepository(db, photoStore)
@@ -218,7 +219,7 @@ class TestAppDependencies(
     scope = appScope,
   )
 
-  val autoReconnect = AutoReconnect(scaleSession, connectionSettings, bluetooth, MainScope())
+  val autoReconnect = AutoReconnect(scaleSession, connectionSettings, bluetooth, MainScope()) { connectionSettings.useScale.value }
 
   val dependencies = AppDependencies(
     brewSettings = brewSettings,
@@ -228,6 +229,7 @@ class TestAppDependencies(
     tourSettings = tourSettings,
     freeBrewDefaults = brewSettings,
     scaleMemory = connectionSettings,
+    scaleMode = connectionSettings,
     brewRepository = brews,
     coffeeRepository = coffees,
     recipeRepository = recipes,

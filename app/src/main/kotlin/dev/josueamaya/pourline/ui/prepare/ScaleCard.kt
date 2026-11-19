@@ -46,7 +46,6 @@ class ScaleCardActions(
   val onConnect: () -> Unit,
   val onRetry: () -> Unit,
   val onDisconnect: () -> Unit,
-  val onUseSimulated: () -> Unit,
 )
 
 /** La tarjeta de báscula de Preparar: un estado con su acción (§3.3 y D12). */
@@ -54,17 +53,12 @@ class ScaleCardActions(
 fun ScaleCard(state: ScaleCardState, actions: ScaleCardActions, modifier: Modifier = Modifier) {
   AntCard(modifier.fillMaxWidth().testTag("scale_card")) {
     when (state) {
-      ScaleCardState.NoPermission -> {
-        StatusRow(AntIcons.Bluetooth, stringResource(R.string.scale_card_no_permission)) {
-          CardButton(R.string.scale_card_grant, "scale_card_grant", actions.onGrantPermissions)
-        }
-        SimulatedLink(actions.onUseSimulated)
+      // La simulada solo se ofrece en la hoja de conexión.
+      ScaleCardState.NoPermission -> StatusRow(AntIcons.Bluetooth, stringResource(R.string.scale_card_no_permission)) {
+        CardButton(R.string.scale_card_grant, "scale_card_grant", actions.onGrantPermissions)
       }
-      ScaleCardState.BluetoothOff -> {
-        StatusRow(AntIcons.Bluetooth, stringResource(R.string.scale_card_bluetooth_off)) {
-          CardButton(R.string.scale_card_enable, "scale_card_enable", actions.onEnableBluetooth)
-        }
-        SimulatedLink(actions.onUseSimulated)
+      ScaleCardState.BluetoothOff -> StatusRow(AntIcons.Bluetooth, stringResource(R.string.scale_card_bluetooth_off)) {
+        CardButton(R.string.scale_card_enable, "scale_card_enable", actions.onEnableBluetooth)
       }
       ScaleCardState.NoScale -> StatusRow(AntIcons.Scale, stringResource(R.string.scale_card_connect_prompt)) {
         CardButton(R.string.scale_card_connect, "scale_card_connect", actions.onOpenSheet)
@@ -134,18 +128,6 @@ private fun StatusRow(icon: ImageVector, text: String, action: @Composable () ->
 @Composable
 private fun CardButton(text: Int, tag: String, onClick: () -> Unit, type: AntButtonType = AntButtonType.Primary) {
   AntButton(stringResource(text), onClick, Modifier.testTag(tag), type = type, size = AntSize.Small)
-}
-
-@Composable
-private fun SimulatedLink(onClick: () -> Unit) {
-  AntButton(
-    text = stringResource(R.string.connect_simulated),
-    onClick = onClick,
-    modifier = Modifier.testTag("scale_card_simulated"),
-    type = AntButtonType.Link,
-    size = AntSize.Small,
-    icon = AntIcons.Play,
-  )
 }
 
 @Composable

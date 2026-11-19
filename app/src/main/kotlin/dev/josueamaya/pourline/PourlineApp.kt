@@ -161,7 +161,7 @@ class PourlineApp : Application() {
 
   /** Reconecta a la última báscula real al abrir la app, al volver a primer plano y al encender el Bluetooth. */
   val autoReconnect by lazy {
-    AutoReconnect(scaleSession, connectionSettings, bluetoothEnvironment, MainScope())
+    AutoReconnect(scaleSession, connectionSettings, bluetoothEnvironment, MainScope()) { connectionSettings.useScale.value }
   }
 
   /** Lo que reciben las pantallas (D32). */
@@ -174,6 +174,7 @@ class PourlineApp : Application() {
       tourSettings = tourSettings,
       freeBrewDefaults = brewSettings,
       scaleMemory = connectionSettings,
+      scaleMode = connectionSettings,
       brewRepository = brewRepository,
       coffeeRepository = coffeeRepository,
       recipeRepository = recipeRepository,
