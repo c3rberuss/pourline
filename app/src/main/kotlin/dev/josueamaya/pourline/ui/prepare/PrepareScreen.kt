@@ -9,16 +9,22 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,10 +32,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -54,7 +63,6 @@ import dev.josueamaya.pourline.ui.components.AntIcons
 import dev.josueamaya.pourline.ui.components.AntInput
 import dev.josueamaya.pourline.ui.components.AntInputStatus
 import dev.josueamaya.pourline.ui.components.AntMessageHost
-import dev.josueamaya.pourline.ui.components.AntStatistic
 import dev.josueamaya.pourline.ui.components.AntStatus
 import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
@@ -317,7 +325,7 @@ fun PrepareScreen(
 
 /**
  * Con receta, el ratio y el agua son suyos y de solo lectura; la dosis se edita si la receta la tiene ([recipeDoseText]
- * no es `null`) y la receta se escala a ella. Sin receta se editan la dosis y el ratio.
+ * no es `null`) y la receta se escala a ella. Sin receta se editan la dosis y el ratio. Las tres columnas comparten etiqueta y alto de fila.
  */
 @Composable
 private fun DoseCard(
@@ -332,35 +340,30 @@ private fun DoseCard(
 ) {
   AntCard(Modifier.fillMaxWidth().tourAnchor("prepare_dose_card").testTag("prepare_dose_card")) {
     if (ui.target != null) {
-      Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm)) {
+      Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm)) {
         if (recipeDoseText != null) {
-          Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
-            AntText(stringResource(R.string.prepare_dose), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
-            AntInput(
-              value = recipeDoseText,
-              onValueChange = {
-                onRecipeDoseText(it)
-                viewModel.setRecipeDose(it)
-              },
-              modifier = Modifier.fillMaxWidth().testTag("prepare_dose"),
-              suffix = { AntText(stringResource(R.string.prepare_grams), type = AntTextType.Secondary) },
-              status = if (parseFreeDose(recipeDoseText) != null) AntInputStatus.Default else AntInputStatus.Error,
-              keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            )
-          }
-        } else {
-          AntStatistic(
-            value = stringResource(R.string.prepare_empty_value),
-            modifier = Modifier.weight(1f).testTag("prepare_dose"),
-            title = stringResource(R.string.prepare_dose),
+          DoseInput(
+            label = stringResource(R.string.prepare_dose),
+            value = recipeDoseText,
+            onValueChange = {
+              onRecipeDoseText(it)
+              viewModel.setRecipeDose(it)
+            },
+            valid = parseFreeDose(recipeDoseText) != null,
+            tag = "prepare_dose",
+            modifier = Modifier.weight(1f),
+            suffix = stringResource(R.string.prepare_grams),
           )
+        } else {
+          DoseValue(stringResource(R.string.prepare_dose), stringResource(R.string.prepare_empty_value), "prepare_dose", Modifier.weight(1f))
         }
-        AntStatistic(
+        DoseValue(
+          label = stringResource(R.string.prepare_ratio),
           value = ui.recipeRatio?.let { stringResource(R.string.prepare_ratio_value, formatRatio(it)) } ?: stringResource(R.string.prepare_empty_value),
-          modifier = Modifier.weight(1f).testTag("prepare_ratio"),
-          title = stringResource(R.string.prepare_ratio),
+          tag = "prepare_ratio",
+          modifier = Modifier.weight(1f),
         )
-        WaterStatistic(ui, Modifier.weight(1f))
+        WaterValue(ui, Modifier.weight(1f))
       }
       when {
         recipeDoseText != null && parseFreeDose(recipeDoseText) == null -> AntText(
@@ -376,15 +379,6 @@ private fun DoseCard(
           style = AntTheme.typography.textSM,
         )
       }
-      // Atajo: volver a la dosis y el ratio libres sin subir al selector de receta.
-      AntButton(
-        text = stringResource(R.string.brew_setup_target_clear),
-        onClick = { viewModel.selectTarget(null) },
-        modifier = Modifier.testTag("prepare_dose_clear_recipe"),
-        type = AntButtonType.Link,
-        size = AntSize.Small,
-        icon = AntIcons.Close,
-      )
     } else {
       FreeFields(ui, viewModel, doseText, onDoseText, ratioText, onRatioText)
     }
@@ -402,36 +396,32 @@ private fun FreeFields(
 ) {
   val doseValid = parseFreeDose(doseText) != null
   val ratioValid = parseFreeRatio(ratioText) != null
-  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm)) {
-    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
-      AntText(stringResource(R.string.prepare_dose), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
-      AntInput(
-        value = doseText,
-        onValueChange = {
-          onDoseText(it)
-          viewModel.setDose(it)
-        },
-        modifier = Modifier.fillMaxWidth().testTag("prepare_dose"),
-        suffix = { AntText(stringResource(R.string.prepare_grams), type = AntTextType.Secondary) },
-        status = if (doseValid) AntInputStatus.Default else AntInputStatus.Error,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-      )
-    }
-    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
-      AntText(stringResource(R.string.prepare_ratio), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
-      AntInput(
-        value = ratioText,
-        onValueChange = {
-          onRatioText(it)
-          viewModel.setRatio(it)
-        },
-        modifier = Modifier.fillMaxWidth().testTag("prepare_ratio"),
-        prefix = { AntText(stringResource(R.string.prepare_ratio_prefix), type = AntTextType.Secondary) },
-        status = if (ratioValid) AntInputStatus.Default else AntInputStatus.Error,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-      )
-    }
-    WaterStatistic(ui, Modifier.weight(1f))
+  Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm)) {
+    DoseInput(
+      label = stringResource(R.string.prepare_dose),
+      value = doseText,
+      onValueChange = {
+        onDoseText(it)
+        viewModel.setDose(it)
+      },
+      valid = doseValid,
+      tag = "prepare_dose",
+      modifier = Modifier.weight(1f),
+      suffix = stringResource(R.string.prepare_grams),
+    )
+    DoseInput(
+      label = stringResource(R.string.prepare_ratio),
+      value = ratioText,
+      onValueChange = {
+        onRatioText(it)
+        viewModel.setRatio(it)
+      },
+      valid = ratioValid,
+      tag = "prepare_ratio",
+      modifier = Modifier.weight(1f),
+      prefix = stringResource(R.string.prepare_ratio_prefix),
+    )
+    WaterValue(ui, Modifier.weight(1f))
   }
   if (!doseValid || !ratioValid) {
     AntText(
@@ -443,14 +433,70 @@ private fun FreeFields(
   }
 }
 
+/** La etiqueta de una columna de la tarjeta de dosis: la misma para los campos y para los valores calculados. */
 @Composable
-private fun WaterStatistic(ui: PrepareUiState, modifier: Modifier) {
-  AntStatistic(
-    value = formatGrams(ui.waterG),
-    modifier = modifier.testTag("prepare_water"),
-    title = stringResource(R.string.prepare_water),
-    suffix = stringResource(R.string.prepare_grams),
-  )
+private fun DoseLabel(text: String) {
+  AntText(text, type = AntTextType.Secondary, style = AntTheme.typography.textSM)
+}
+
+@Composable
+private fun DoseInput(
+  label: String,
+  value: String,
+  onValueChange: (String) -> Unit,
+  valid: Boolean,
+  tag: String,
+  modifier: Modifier,
+  prefix: String? = null,
+  suffix: String? = null,
+) {
+  Column(modifier, verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
+    DoseLabel(label)
+    AntInput(
+      value = value,
+      onValueChange = onValueChange,
+      modifier = Modifier.fillMaxWidth().testTag(tag),
+      prefix = prefix?.let { { AntText(it, type = AntTextType.Secondary) } },
+      suffix = suffix?.let { { AntText(it, type = AntTextType.Secondary) } },
+      status = if (valid) AntInputStatus.Default else AntInputStatus.Error,
+      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+    )
+  }
+}
+
+/**
+ * Un valor de solo lectura: la misma etiqueta que un campo y, debajo, el valor centrado en el alto que ocupa el campo
+ * vecino (la fila de la tarjeta mide sus columnas con `IntrinsicSize.Min`), así queda a la altura de su texto.
+ */
+@Composable
+private fun DoseValue(label: String, value: String, tag: String, modifier: Modifier, suffix: String? = null) {
+  Column(
+    modifier.fillMaxHeight().semantics(mergeDescendants = true) {}.testTag(tag),
+    verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
+  ) {
+    DoseLabel(label)
+    // La caja centra en vertical; dentro, el valor y su unidad comparten línea base (que anula el centrado de una fila).
+    Box(
+      Modifier.weight(1f).fillMaxWidth().heightIn(min = AntTheme.controlHeight.of(AntSize.Middle)),
+      contentAlignment = Alignment.CenterStart,
+    ) {
+      Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
+        Text(
+          value,
+          Modifier.alignByBaseline(),
+          color = AntTheme.colors.text,
+          style = AntTheme.typography.textLG.copy(fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum"),
+          maxLines = 1,
+        )
+        suffix?.let { Text(it, Modifier.alignByBaseline(), color = AntTheme.colors.textSecondary, style = AntTheme.typography.text) }
+      }
+    }
+  }
+}
+
+@Composable
+private fun WaterValue(ui: PrepareUiState, modifier: Modifier) {
+  DoseValue(stringResource(R.string.prepare_water), formatGrams(ui.waterG), "prepare_water", modifier, suffix = stringResource(R.string.prepare_grams))
 }
 
 /** Gramos sin decimales si son enteros y con uno si no: "240" y "275,4". */

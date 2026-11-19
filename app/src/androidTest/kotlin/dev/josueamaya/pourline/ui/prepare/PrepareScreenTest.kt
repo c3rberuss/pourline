@@ -438,20 +438,6 @@ class PrepareScreenTest {
   // --- receta y café ---
 
   @Test
-  fun theDoseCardClearsTheRecipeAndBringsBackTheFreeFields() {
-    show()
-    assertTrue(!exists("prepare_dose_clear_recipe"))
-    pickV60()
-
-    rule.onNodeWithTag("prepare_dose_clear_recipe").performScrollTo().performClick()
-
-    rule.waitUntil(5_000) { env.scaleSession.ui.value.target == null }
-    assertTrue(!exists("target_picker"))
-    assertTrue(!exists("prepare_dose_clear_recipe"))
-    rule.onNodeWithTag("prepare_ratio").assertIsEnabled()
-  }
-
-  @Test
   fun theXClearsTheRecipeAndTheCoffeeWithoutOpeningThePickers() {
     runBlocking { env.coffees.save(CoffeeDraft(name = "Etiopía Guji")) }
     show()
