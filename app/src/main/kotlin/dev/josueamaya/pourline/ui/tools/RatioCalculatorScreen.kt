@@ -1,0 +1,97 @@
+package dev.josueamaya.pourline.ui.tools
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import dev.josueamaya.pourline.R
+import dev.josueamaya.pourline.tools.RatioCalculatorState
+import dev.josueamaya.pourline.tools.RatioField
+import dev.josueamaya.pourline.ui.components.AntCard
+import dev.josueamaya.pourline.ui.components.AntIconButton
+import dev.josueamaya.pourline.ui.components.AntIcons
+import dev.josueamaya.pourline.ui.components.AntInput
+import dev.josueamaya.pourline.ui.components.AntInputStatus
+import dev.josueamaya.pourline.ui.components.AntText
+import dev.josueamaya.pourline.ui.components.AntTextType
+import dev.josueamaya.pourline.ui.components.AntTopBar
+import dev.josueamaya.pourline.ui.theme.AntSize
+import dev.josueamaya.pourline.ui.theme.AntTheme
+import dev.josueamaya.pourline.ui.tour.TourHost
+import dev.josueamaya.pourline.ui.tour.Tours
+import dev.josueamaya.pourline.ui.tour.tourAnchor
+
+@Composable
+fun RatioCalculatorScreen(viewModel: RatioCalculatorViewModel, onBack: () -> Unit) {
+  val state = viewModel.state
+  TourHost(Tours.ratioCalculator)
+  Scaffold(
+    containerColor = AntTheme.colors.bgLayout,
+    topBar = {
+      AntTopBar(
+        title = stringResource(R.string.tools_ratio_title),
+        navigationIcon = {
+          AntIconButton(AntIcons.ArrowLeft, contentDescription = stringResource(R.string.scale_back), onClick = onBack)
+        },
+      )
+    },
+  ) { padding ->
+    Column(
+      Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(AntTheme.spacing.base).testTag("ratio_calculator"),
+      verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
+    ) {
+      AntCard(Modifier.fillMaxWidth()) {
+        RatioInput(state, RatioField.DOSE, R.string.ratio_coffee, viewModel::edit, suffix = R.string.prepare_grams)
+        RatioInput(state, RatioField.RATIO, R.string.ratio_ratio, viewModel::edit, prefix = R.string.prepare_ratio_prefix)
+        RatioInput(state, RatioField.WATER, R.string.ratio_water, viewModel::edit, suffix = R.string.prepare_grams, last = true)
+      }
+      AntText(stringResource(R.string.ratio_hint), Modifier.fillMaxWidth(), type = AntTextType.Secondary)
+      if (state.invalid.isNotEmpty()) {
+        AntText(
+          stringResource(R.string.ratio_error),
+          Modifier.fillMaxWidth().testTag("ratio_error"),
+          type = AntTextType.Danger,
+          style = AntTheme.typography.textSM,
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun RatioInput(
+  state: RatioCalculatorState,
+  field: RatioField,
+  label: Int,
+  onEdit: (RatioField, String) -> Unit,
+  prefix: Int? = null,
+  suffix: Int? = null,
+  last: Boolean = false,
+) {
+  // Los pasos del recorrido resaltan el campo del café y el del agua, con su etiqueta.
+  val anchor = Modifier.tourAnchor("ratio_${field.name.lowercase()}", enabled = field != RatioField.RATIO)
+  Column(Modifier.fillMaxWidth().then(anchor), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
+    AntText(stringResource(label), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
+    AntInput(
+      value = state.text(field),
+      onValueChange = { onEdit(field, it) },
+      modifier = Modifier.fillMaxWidth().testTag("ratio_${field.name.lowercase()}"),
+      prefix = prefix?.let { { AntText(stringResource(it), type = AntTextType.Secondary) } },
+      suffix = suffix?.let { { AntText(stringResource(it), type = AntTextType.Secondary) } },
+      size = AntSize.Large,
+      status = if (field in state.invalid) AntInputStatus.Error else AntInputStatus.Default,
+      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = if (last) ImeAction.Done else ImeAction.Next),
+    )
+  }
+}

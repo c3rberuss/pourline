@@ -1,0 +1,1154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pourline</string>
+
+    <!-- Scan -->
+    <string name="scan_start">Scan</string>
+    <string name="scan_stop">Stop</string>
+    <string name="scan_show_all">Show all</string>
+    <string name="scan_scanning">Scanning…</string>
+    <string name="scan_idle">Scan stopped</string>
+    <string name="scan_empty">Turn the scale on and bring it close to the phone.</string>
+    <string name="scan_unknown_device">Unnamed device</string>
+    <string name="scan_rssi">%1$d dBm</string>
+
+    <!-- Scale -->
+    <string name="scale_back">Back</string>
+    <string name="scale_battery">Battery %1$d%%</string>
+    <string name="scale_battery_short">%1$d%%</string>
+    <string name="scale_flow_value">%1$s/s</string>
+    <string name="scale_dose">Dose</string>
+    <string name="scale_ratio">Ratio</string>
+    <string name="scale_ratio_value">1:%1$.1f</string>
+    <string name="scale_ratio_empty">—</string>
+    <string name="scale_error_command">Could not send the command</string>
+    <string name="scale_error_save">Could not save the brew</string>
+    <string name="scale_simulation">Simulation</string>
+    <string name="scale_sim_add">+%1$d g</string>
+
+    <!-- Connection state -->
+    <string name="conn_disconnected">Disconnected</string>
+    <string name="conn_connecting">Connecting…</string>
+    <string name="conn_discovering">Discovering services…</string>
+    <string name="conn_bonding">Pairing… accept the request if it appears.</string>
+    <string name="conn_configuring">Configuring…</string>
+    <string name="conn_handshake">Reading scale data…</string>
+    <string name="conn_failed">Could not connect: %1$s</string>
+
+    <!-- Appearance -->
+    <string name="theme_title">Appearance</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_hint">“System” follows the light or dark mode of the phone.</string>
+    <string name="mode_title">Mode</string>
+    <string name="mode_basic">Basic</string>
+    <string name="mode_expert">Expert</string>
+    <string name="mode_basic_hint">We guide you step by step. Just the essentials.</string>
+    <string name="mode_expert_hint">Charts, flow stability and brew comparison.</string>
+
+    <!-- Common -->
+    <string name="action_close">Close</string>
+
+    <!-- Pour chart -->
+    <string name="brew_chart_title">Pour</string>
+    <string name="brew_chart_description">Pour chart. Water: %1$s %2$s. Flow: %3$s %2$s per second. Stability: %4$s.</string>
+    <string name="brew_level_stable">Stable</string>
+    <string name="brew_level_irregular">Irregular</string>
+    <string name="brew_level_turbulent">Turbulent</string>
+    <string name="brew_level_value">%1$s · %2$d</string>
+    <string name="brew_level_measuring">Measuring…</string>
+    <string name="brew_level_idle">Not pouring</string>
+
+    <!-- Summary -->
+    <string name="brew_summary_title">Summary</string>
+    <string name="brew_summary_total_time">Total time</string>
+    <string name="brew_summary_total_water">Total water</string>
+    <string name="brew_summary_avg_flow">Average flow</string>
+    <string name="brew_summary_max_flow">Peak flow</string>
+    <string name="brew_summary_stability">Stability</string>
+    <string name="brew_summary_stability_none">Not enough data</string>
+    <string name="brew_summary_share">%1$s %2$d%%</string>
+    <string name="brew_summary_pours">Pours</string>
+    <string name="brew_summary_pour">Pour %1$d</string>
+    <string name="brew_summary_pour_detail">%1$s · %2$s</string>
+    <string name="brew_summary_interrupted">Brew interrupted by a disconnection</string>
+    <string name="brew_reason_inactivity">Ended by inactivity</string>
+    <string name="brew_reason_timer_paused">Timer paused</string>
+    <string name="brew_reason_timer_reset">Timer reset</string>
+    <string name="brew_reason_manual">Finished manually</string>
+    <string name="brew_reason_disconnected">Scale disconnected</string>
+    <string name="brew_reason_max_duration">Maximum duration reached</string>
+
+    <!-- Simulation -->
+    <string name="sim_pour_stable">Simulate steady pour</string>
+    <string name="sim_pour_irregular">Simulate uneven pour</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_open">Open settings</string>
+    <string name="settings_auto_finish_title">Auto finish</string>
+    <string name="settings_auto_finish_value">%1$d s</string>
+    <string name="settings_auto_finish_hint">Seconds without pouring after which the brew is considered finished. Raise it if you do long blooms: the bloom pause should not end the brew.</string>
+
+    <!-- History -->
+    <string name="history_title">History</string>
+    <string name="history_filter_coffee">Coffee</string>
+    <string name="history_filter_method">Method</string>
+    <string name="history_filter_all">All</string>
+    <string name="history_filter_coffee_roasted">%1$s · roasted %2$s</string>
+    <string name="history_filter_coffee_no_date">%1$s · no date</string>
+    <string name="history_progress_title">Stability progress</string>
+    <string name="history_progress_empty">Make at least two real brews with a score to see your progress</string>
+    <plurals name="history_progress_description">
+        <item quantity="one">Stability progress: %1$d brew, average %2$d, latest %3$d.</item>
+        <item quantity="other">Stability progress: %1$d brews, average %2$d, latest %3$d.</item>
+    </plurals>
+    <string name="history_empty">No brews yet</string>
+    <string name="history_empty_filtered">No brews match the filter</string>
+    <string name="history_row_no_score">No score</string>
+    <string name="history_row_simulated">Simulated</string>
+    <string name="history_row_scaleless">No scale</string>
+    <string name="history_row_stats">%1$s · %2$s</string>
+    <string name="history_deleted">Brew deleted</string>
+    <string name="history_undo">Undo</string>
+
+    <!-- Brew detail -->
+    <string name="brew_detail_edit">Edit</string>
+    <string name="brew_detail_delete">Delete</string>
+    <string name="brew_detail_details">Details</string>
+    <string name="brew_detail_tasting">Tasting</string>
+    <string name="brew_detail_rating">Rating</string>
+    <string name="brew_detail_coffee_legacy">Not in the catalog</string>
+    <string name="brew_facts_title">Details</string>
+    <string name="brew_facts_date">Date</string>
+    <string name="brew_facts_recipe">Recipe</string>
+    <string name="brew_detail_method">Method</string>
+    <string name="brew_detail_grind">Grind</string>
+    <string name="brew_detail_temp">Temperature</string>
+    <string name="brew_detail_temp_value">%1$s °C</string>
+    <string name="brew_detail_notes">Tasting notes</string>
+    <string name="brew_detail_target_chart">Target curve</string>
+    <string name="brew_detail_curve_error">This brew\'s curve could not be read</string>
+    <string name="brew_detail_old_metric">Score calculated with an earlier version of the metric</string>
+    <string name="brew_method_other">Other</string>
+    <string name="brew_method_french_press">French press</string>
+    <string name="brew_method_cold_brew">Cold brew</string>
+    <string name="brew_method_moka">Moka pot</string>
+
+    <!-- Brew edit -->
+    <string name="brew_summary_add_details">Add details</string>
+    <string name="brew_edit_title">Brew details</string>
+    <string name="brew_edit_name">Name</string>
+    <string name="brew_edit_coffee">Coffee</string>
+    <string name="brew_edit_method">Method</string>
+    <string name="brew_edit_method_none">No method</string>
+    <string name="brew_edit_method_other">Method name</string>
+    <string name="brew_edit_temp">Temperature (°C)</string>
+    <string name="brew_edit_dose">Dose (g)</string>
+    <string name="brew_edit_dose_error">Between 5 and 60 g, with at most one decimal.</string>
+    <string name="brew_edit_water">Water (g)</string>
+    <string name="brew_edit_water_error">Above 0 and up to 1000 g, with at most one decimal.</string>
+    <string name="brew_edit_temp_error">Enter a value from 0 to 100 with at most one decimal</string>
+    <string name="brew_edit_notes">Tasting notes</string>
+    <string name="brew_edit_rating">Rating</string>
+    <string name="brew_edit_rating_clear">Clear rating</string>
+    <string name="brew_edit_coffee_legacy">Not in the catalog. Pick a coffee to link this brew.</string>
+    <string name="brew_edit_save">Save</string>
+    <string name="brew_edit_discard_title">Discard changes?</string>
+    <string name="brew_edit_discard_text">Changes you haven\'t saved will be lost.</string>
+    <string name="brew_edit_discard">Discard</string>
+    <string name="brew_edit_keep">Keep editing</string>
+
+    <!-- Recipes -->
+    <string name="recipe_builtin_v60_classic">Classic V60</string>
+    <string name="recipe_builtin_four_six">4:6 method</string>
+    <string-array name="recipe_builtin_v60_classic_stages">
+        <item>Bloom</item>
+        <item></item>
+        <item>2nd pour</item>
+        <item></item>
+        <item>3rd pour</item>
+    </string-array>
+    <string-array name="recipe_builtin_four_six_stages">
+        <item>1st pour</item>
+        <item></item>
+        <item>2nd pour</item>
+        <item></item>
+        <item>3rd pour</item>
+        <item></item>
+        <item>4th pour</item>
+        <item></item>
+        <item>5th pour</item>
+    </string-array>
+    <string-array name="recipe_builtin_v60_classic_instructions">
+        <item>Pour in a spiral to wet all the grounds.</item>
+        <item>Let the coffee bloom.</item>
+        <item>Pour in slow circles from the center.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Pour in slow circles and finish pouring.</item>
+    </string-array>
+    <string-array name="recipe_builtin_four_six_instructions">
+        <item>Pour slowly and evenly: it sets the sweetness.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Pour slowly and evenly: it sets the acidity.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Pour to start building body.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Pour without rushing.</item>
+        <item>Wait for the water to draw down.</item>
+        <item>Last pour: take your time, up to the total water.</item>
+    </string-array>
+    <string name="recipe_copy_name">%1$s (copy)</string>
+    <string name="recipe_from_brew_name">%1$s (recipe)</string>
+
+    <!-- Recipes: list -->
+    <string name="recipe_title">Recipes</string>
+    <string name="recipe_add">Create recipe</string>
+    <string name="recipe_empty">No recipes yet</string>
+    <string name="recipe_deleted">Recipe deleted</string>
+    <string name="recipe_undo">Undo</string>
+    <string name="recipe_builtin_tag">Built-in</string>
+    <string name="recipe_active_tag">Active</string>
+    <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s · %5$s</string>
+    <plurals name="recipe_stage_count">
+        <item quantity="one">%1$d step</item>
+        <item quantity="other">%1$d steps</item>
+    </plurals>
+
+    <!-- Recipes: editor -->
+    <string name="recipe_edit_title_new">New recipe</string>
+    <string name="recipe_edit_title">Edit recipe</string>
+    <string name="recipe_edit_name">Name</string>
+    <string name="recipe_edit_method">Method</string>
+    <string name="recipe_edit_method_none">No method</string>
+    <string name="recipe_edit_method_other">Which one?</string>
+    <string name="recipe_edit_temp">Water temperature (°C)</string>
+    <string name="recipe_edit_notes">Notes (instructions)</string>
+    <string name="recipe_edit_dose">Dose (g)</string>
+    <string name="recipe_edit_stages">Steps</string>
+    <string name="recipe_edit_stage_name">Step %1$d (optional name)</string>
+    <string name="recipe_edit_stage_start">Start (m:ss)</string>
+    <string name="recipe_edit_stage_water">Up to (g)</string>
+    <string name="recipe_edit_stage_duration">Duration (s)</string>
+    <string name="step_type_pour">Pour</string>
+    <string name="step_type_swirl">Swirl</string>
+    <string name="step_type_wait">Wait</string>
+    <string name="step_type_action">Action</string>
+    <string name="recipe_stage_instruction">Instruction (optional)</string>
+    <string name="recipe_action_instruction_hint">Describe the action, for example \"Put the cap on\"</string>
+    <string name="recipe_stage_instruction_counter">%1$d/%2$d</string>
+    <string name="recipe_edit_stage_remove">Remove step %1$d</string>
+    <string name="recipe_edit_stage_up">Move step %1$d up</string>
+    <string name="recipe_edit_stage_down">Move step %1$d down</string>
+    <string name="recipe_edit_stage_up_short">Up</string>
+    <string name="recipe_edit_stage_down_short">Down</string>
+    <string name="recipe_edit_stage_position">Step %1$d of %2$d</string>
+    <string name="recipe_edit_stage_moved">Moved to position %1$d of %2$d</string>
+    <string name="recipe_edit_add_stage">Add step</string>
+    <string name="recipe_edit_four_six">Generate with the 4:6 method</string>
+    <string name="recipe_edit_totals">Total water %1$s g · Ratio 1:%2$s</string>
+    <string name="recipe_edit_totals_water">Total water %1$s g</string>
+    <string name="recipe_edit_totals_time">Total water %1$s g · Ratio 1:%2$s · %3$s</string>
+    <string name="recipe_edit_totals_water_time">Total water %1$s g · %2$s</string>
+    <string name="recipe_total_time_description">Total time %1$s</string>
+    <string name="recipe_edit_preview">Curve preview</string>
+    <string name="recipe_edit_save">Save</string>
+    <string name="recipe_edit_duplicate">Duplicate</string>
+    <string name="recipe_edit_delete">Delete</string>
+    <string name="recipe_edit_adjusted_title">The brew was adjusted to turn it into a recipe</string>
+    <plurals name="recipe_edit_adjusted_merged">
+        <item quantity="one">%1$d pair of pours was merged to end up with 10 pours.</item>
+        <item quantity="other">%1$d pairs of pours were merged to end up with 10 pours.</item>
+    </plurals>
+    <string name="recipe_edit_adjusted_clamped">Pours longer than 120 s were cut to 120 s.</string>
+    <string name="recipe_edit_adjusted_dose">The brew\'s dose is not between 5 and 60 g: enter it to be able to save.</string>
+    <string name="recipe_edit_discard_title">Discard changes?</string>
+    <string name="recipe_edit_discard_text">Changes you haven\'t saved will be lost.</string>
+    <string name="recipe_edit_discard">Discard</string>
+    <string name="recipe_edit_keep">Keep editing</string>
+    <string name="recipe_error_name">Enter a name</string>
+    <string name="recipe_error_dose">Between 5 and 60 g, one decimal at most</string>
+    <string name="recipe_error_temp">Between 0 and 100 °C, one decimal at most</string>
+    <string name="recipe_error_start">Enter m:ss (1:30) or seconds (90)</string>
+    <string name="recipe_error_start_overlaps">Starts before the previous step ends</string>
+    <string name="recipe_error_start_late">The last step must start before 10:00</string>
+    <string name="recipe_error_water">Between 0 and 1000 g, one decimal at most</string>
+    <string name="recipe_error_water_order">Must be more than the previous pour</string>
+    <string name="recipe_error_duration">Between 1 and 120 s</string>
+    <string name="recipe_error_stage_count">Between 1 and 20 steps</string>
+    <string name="recipe_error_instruction_long">200 characters at most</string>
+    <string name="recipe_error_no_pour">Add at least one Pour step</string>
+
+    <!-- Settings: step guide and recipes -->
+    <string name="settings_countdown_title">Countdown</string>
+    <string name="settings_countdown_off">Off</string>
+    <string name="settings_countdown_value">%1$d s</string>
+    <string name="settings_countdown_hint">Seconds before the timer starts when you tap “Start timer”, with or without a scale. With a scale, if you start pouring earlier, the brew starts right away.</string>
+    <string name="settings_stage_title">Step guide</string>
+    <string name="settings_scale_title">Scale</string>
+    <string name="settings_scale_without">Without scale</string>
+    <string name="settings_scale_with">With scale</string>
+    <string name="settings_scale_without_hint">You brew with the timer: Prepare hides the scale and does not connect to it.</string>
+    <string name="settings_scale_with_hint">Connect your scale in Prepare and the session follows the weight live.</string>
+    <string name="settings_stage_vibration">Vibrate when each step starts</string>
+    <string name="settings_stage_sound">Beep when each step starts</string>
+    <string name="settings_recipes_title">Recipes</string>
+    <string name="settings_recipes_restore">Restore built-in recipes</string>
+    <string name="settings_recipes_restore_title">Restore the built-in recipes?</string>
+    <string name="settings_recipes_restore_text">The built-in recipes go back to their factory values and any you deleted are created again. Your own recipes don\'t change.</string>
+    <string name="settings_recipes_restore_confirm">Restore</string>
+    <string name="settings_recipes_restore_cancel">Cancel</string>
+    <string name="settings_recipes_restored">Built-in recipes restored</string>
+
+    <string name="target_chip">Target: %1$s</string>
+    <string name="target_chip_none">Target: none</string>
+    <string name="target_description">Target: %1$s in %2$s</string>
+    <string name="target_error_removed">The chosen target no longer exists</string>
+    <string name="target_error_unreadable">Couldn\'t read that brew\'s curve</string>
+    <string name="target_picker_title">Choose a target</string>
+    <string name="target_picker_recipes">Recipes</string>
+    <string name="target_picker_history">History</string>
+    <string name="target_picker_clear">Remove target</string>
+    <string name="target_picker_manage">Manage recipes</string>
+    <string name="target_picker_empty_recipes">No recipes yet</string>
+    <string name="target_picker_empty_history">No saved brews yet</string>
+    <string name="target_sim_follow">Follow target</string>
+    <string name="target_sim_deviated">Follow with deviation</string>
+    <string name="fit_title">Target fit</string>
+    <string name="fit_score">%1$d / 100</string>
+    <string name="fit_score_none">No score</string>
+    <string name="fit_water">Water %1$s (%2$s)</string>
+    <string name="fit_time">Time %1$s</string>
+    <string name="fit_reference">Reference: %1$s</string>
+    <string name="fit_percent">%1$s %%</string>
+    <string name="fit_seconds">%1$s s</string>
+
+    <string name="history_row_fit">Fit %1$d</string>
+    <string name="brew_detail_compare">Compare with…</string>
+    <string name="brew_detail_save_recipe">Save as recipe</string>
+    <string name="brew_detail_target_error">Couldn\'t read the target curve</string>
+    <string name="compare_pick_title">Compare with…</string>
+    <string name="compare_pick_empty">There are no other brews to compare</string>
+    <string name="compare_title">Comparison</string>
+    <string name="compare_legend_item">%1$s: %2$s</string>
+    <string name="compare_water_title">Water</string>
+    <string name="compare_flow_title">Flow</string>
+    <string name="compare_water_description">Water poured in brews A and B, in %1$s</string>
+    <string name="compare_flow_description">Flow of brews A and B, in %1$s</string>
+    <string name="compare_curve_error">Couldn\'t read the curve of brew %1$s</string>
+    <string name="compare_table_title">Summary</string>
+    <string name="compare_column_a">A</string>
+    <string name="compare_column_b">B</string>
+    <string name="compare_column_diff">B−A</string>
+    <string name="compare_none">—</string>
+
+    <!-- Components -->
+    <string name="rate_description">Rating: %1$d of %2$d</string>
+    <string name="rate_none">Not rated</string>
+    <plurals name="rate_star">
+        <item quantity="one">%1$d star</item>
+        <item quantity="other">%1$d stars</item>
+    </plurals>
+    <string name="date_picker_accept">OK</string>
+    <string name="date_picker_cancel">Cancel</string>
+    <string name="date_picker_clear">Clear date</string>
+    <string name="collapse_expanded">Expanded</string>
+    <string name="collapse_collapsed">Collapsed</string>
+    <string name="collapse_expand">Expand</string>
+    <string name="collapse_collapse">Collapse</string>
+
+    <!-- Coffees -->
+    <string name="coffees_title">Coffees</string>
+    <string name="coffees_add">Add coffee</string>
+    <string name="coffees_search_hint">Search by name, roaster or origin</string>
+    <string name="coffees_search_clear">Clear search</string>
+    <string name="coffees_tab_active">Active</string>
+    <string name="coffees_tab_archived">Archived</string>
+    <string name="coffees_empty">No coffees yet. Add the first one with a photo of its label.</string>
+    <string name="coffees_empty_archived">No archived coffees</string>
+    <string name="coffees_empty_search">No coffee matches “%1$s”</string>
+    <string name="coffee_row_roasted">Roasted %1$s · day %2$d</string>
+    <string name="coffee_row_roasted_no_days">Roasted %1$s</string>
+    <string name="coffee_row_no_roast_date">No roast date</string>
+    <string name="coffee_row_stock">%1$s left</string>
+    <string name="coffee_sold_out">Sold out</string>
+    <string name="coffee_archived_tag">Archived</string>
+    <string name="coffee_selected_tag">Selected</string>
+    <string name="coffee_none">Not set</string>
+
+    <string name="coffee_detail_sold_out_title">Sold out</string>
+    <string name="coffee_detail_sold_out_text">There is no coffee left in the bag.</string>
+    <string name="coffee_detail_archived_alert">Archived: it does not appear in the Scale picker</string>
+    <string name="coffee_detail_archived_message">Coffee archived</string>
+    <string name="coffee_detail_unarchived_message">Coffee unarchived</string>
+    <string name="coffee_detail_days">Days since roast</string>
+    <string name="coffee_detail_stock">Left</string>
+    <string name="coffee_detail_stock_of">%1$s of %2$s</string>
+    <string name="coffee_detail_log_title">Brew log</string>
+    <plurals name="coffee_detail_log_count">
+        <item quantity="one">%1$d brew</item>
+        <item quantity="other">%1$d brews</item>
+    </plurals>
+    <string name="coffee_detail_log_empty">No brews with this coffee yet. Pick it in Scale before pouring.</string>
+    <string name="coffee_detail_facts">Coffee details</string>
+    <string name="coffee_detail_edit">Edit</string>
+    <string name="coffee_detail_new_bag">New bag</string>
+    <string name="coffee_detail_archive">Archive</string>
+    <string name="coffee_detail_unarchive">Unarchive</string>
+    <string name="coffee_detail_delete">Delete</string>
+    <string name="coffee_detail_delete_title">Delete this coffee?</string>
+    <plurals name="coffee_detail_delete_with_brews">
+        <item quantity="one">It has %1$d brew. It will lose the link but keep the name. If you no longer buy it, you can archive it.</item>
+        <item quantity="other">It has %1$d brews. They will lose the link but keep the name. If you no longer buy it, you can archive it.</item>
+    </plurals>
+    <string name="coffee_detail_delete_empty">Its photos will be deleted too.</string>
+    <string name="coffee_detail_delete_cancel">Cancel</string>
+    <string name="coffee_log_day">Day %1$d</string>
+
+    <string name="coffee_field_name">Name</string>
+    <string name="coffee_field_roaster">Roaster</string>
+    <string name="coffee_field_origin">Origin</string>
+    <string name="coffee_field_country">Country</string>
+    <string name="coffee_field_region">Region</string>
+    <string name="coffee_field_farm">Farm or producer</string>
+    <string name="coffee_field_varieties">Varieties</string>
+    <string name="coffee_field_process">Process</string>
+    <string name="coffee_field_process_other">Process name</string>
+    <string name="coffee_field_altitude">Altitude (m)</string>
+    <string name="coffee_field_altitude_short">Altitude</string>
+    <string name="coffee_field_altitude_from">From</string>
+    <string name="coffee_field_altitude_to">To</string>
+    <string name="coffee_field_roast">Roast</string>
+    <string name="coffee_field_roast_level">Level</string>
+    <string name="coffee_field_roast_date">Roast date</string>
+    <string name="coffee_field_roaster_notes">Roaster notes</string>
+    <string name="coffee_field_bag">Bag</string>
+    <string name="coffee_field_bag_weight">Weight (g)</string>
+    <string name="coffee_field_price">Price (USD)</string>
+    <string name="coffee_field_opened">Opened</string>
+    <string name="coffee_field_opened_date">Opening date</string>
+    <string name="coffee_field_date_hint">Pick a date</string>
+    <string name="coffee_process_washed">Washed</string>
+    <string name="coffee_process_natural">Natural</string>
+    <string name="coffee_process_honey">Honey</string>
+    <string name="coffee_process_anaerobic">Anaerobic</string>
+    <string name="coffee_process_wet_hulled">Wet hulled</string>
+    <string name="coffee_process_other">Other</string>
+    <string name="coffee_roast_light">Light</string>
+    <string name="coffee_roast_medium">Medium</string>
+    <string name="coffee_roast_dark">Dark</string>
+
+    <string name="coffee_edit_title_new">New coffee</string>
+    <string name="coffee_edit_title_edit">Edit coffee</string>
+    <string name="coffee_edit_title_bag">New bag</string>
+    <string name="coffee_edit_save">Save</string>
+    <string name="coffee_edit_section_coffee">Coffee</string>
+    <string name="coffee_edit_section_origin">Origin</string>
+    <string name="coffee_edit_section_roast">Roast</string>
+    <string name="coffee_edit_section_bag">Bag</string>
+    <string name="coffee_edit_photo_label">Label photo %1$d</string>
+    <string name="coffee_photo_camera">Camera</string>
+    <string name="coffee_photo_gallery">Gallery</string>
+    <string name="coffee_photo_replace">Replace</string>
+    <string name="coffee_photo_remove">Remove</string>
+    <string name="coffee_edit_read_label">Read label</string>
+    <plurals name="ocr_alert_title">
+        <item quantity="one">%1$d field was read from the label</item>
+        <item quantity="other">%1$d fields were read from the label</item>
+    </plurals>
+    <string name="ocr_alert_text">Check them before saving.</string>
+    <string name="ocr_mark">Read from the label</string>
+    <string name="ocr_failed">The label could not be read</string>
+    <string name="coffee_photo_failed">The photo could not be saved</string>
+    <string name="coffee_edit_variety_hint">Add variety</string>
+    <string name="coffee_edit_variety_add">Add variety</string>
+    <string name="coffee_error_name">Enter a name</string>
+    <string name="coffee_error_altitude_invalid">Altitude must be a whole number greater than 0</string>
+    <string name="coffee_error_altitude_range">“From” cannot be greater than “to”</string>
+    <string name="coffee_error_bag_weight">Enter a weight greater than 0, for example 250 or 340.5</string>
+    <string name="coffee_error_price">Enter a price greater than 0, for example 18.50</string>
+    <string name="coffee_error_date_future">The date cannot be in the future</string>
+
+    <string name="coffee_picker_title">Coffee for this brew</string>
+    <string name="coffee_picker_search">Search coffee</string>
+    <string name="coffee_picker_clear">No coffee</string>
+    <string name="coffee_picker_new">New coffee</string>
+    <string name="coffee_picker_empty">No coffees yet</string>
+
+    <string name="brew_setup_target">Target</string>
+    <string name="brew_setup_target_none">None</string>
+    <string name="brew_setup_coffee">Coffee</string>
+    <string name="brew_setup_coffee_none">No coffee</string>
+    <string name="brew_setup_target_clear">Clear recipe</string>
+    <string name="brew_setup_coffee_clear">Clear coffee</string>
+    <string name="brew_setup_coffee_value">%1$s · day %2$d</string>
+    <plurals name="brew_setup_coffee_description">
+        <item quantity="one">Coffee: %1$s, day %2$d since roast</item>
+        <item quantity="other">Coffee: %1$s, day %2$d since roast</item>
+    </plurals>
+    <string name="brew_setup_coffee_description_plain">Coffee: %1$s</string>
+    <string name="brew_setup_coffee_description_none">Coffee: none</string>
+
+    <!-- Share as image -->
+    <string name="share_roaster_notes">Roaster notes</string>
+    <string name="share_days_one">day %1$d</string>
+    <string name="share_days_two">days %1$d, %2$d</string>
+    <string name="share_metric_time">Time</string>
+    <string name="share_chooser_title">Share image</string>
+    <string name="share_error">The image could not be generated</string>
+    <string name="share_action">Share</string>
+    <string name="share_image_action">Share image</string>
+    <string name="recipe_card_qr_caption">Scan it with Pourline to add this recipe</string>
+    <string name="recipe_card_dose">%1$s %2$s</string>
+    <string name="recipe_card_water">%1$s %2$s</string>
+    <string name="recipe_card_ratio">1:%1$s</string>
+    <string name="recipe_card_temp">%1$s °C</string>
+    <string name="recipe_card_grind">Grind: %1$s</string>
+    <string name="recipe_card_step_duration">%1$d s</string>
+    <string name="recipe_share_action">Share recipe</string>
+    <string name="recipe_share_dialog_title">Share recipe</string>
+    <string name="recipe_share_trimmed_text">This recipe is too long for the QR code. When imported, it will be missing %1$s.</string>
+    <string name="recipe_share_too_long_text">This recipe is too long to import with a QR code. Only the image will be shared.</string>
+    <string name="recipe_share_invalid_text">This recipe has invalid data and can\'t be imported with a QR code. Only the image will be shared.</string>
+    <string name="recipe_share_confirm">Share</string>
+    <string name="recipe_share_cancel">Cancel</string>
+    <string name="recipe_trimmed_notes">the notes</string>
+    <string name="recipe_trimmed_instructions">the step instructions</string>
+    <string name="recipe_trimmed_stage_names">the step names</string>
+    <string name="recipe_trimmed_some_instructions">the instructions of some steps</string>
+    <string name="recipe_trimmed_list_two">%1$s and %2$s</string>
+    <string name="recipe_trimmed_list_three">%1$s, %2$s and %3$s</string>
+    <string name="recipe_import_title">Import recipe</string>
+    <string name="recipe_import_action">Import recipe</string>
+    <string name="recipe_import_scan">Scan QR code</string>
+    <string name="recipe_import_from_image">From an image</string>
+    <string name="recipe_import_save">Save</string>
+    <string name="recipe_import_cancel">Cancel</string>
+    <string name="recipe_import_trimmed">The original recipe had %1$s that did not fit in the QR code.</string>
+    <string name="recipe_import_identical">You already have this recipe</string>
+    <string name="recipe_import_notes">Notes</string>
+    <string name="recipe_import_grind">Grind</string>
+    <string name="recipe_import_grind_use">Use with %1$s · %2$s</string>
+    <string name="recipe_import_grind_as_text">Save as text</string>
+    <string name="recipe_import_added">Recipe added</string>
+    <string name="recipe_import_deferred">Recipe received. You will see it when the brew ends.</string>
+    <string name="recipe_import_not_pourline">This QR code is not a Pourline recipe</string>
+    <string name="recipe_import_no_recipe">No recipe was found in the image</string>
+    <string name="recipe_import_newer">This recipe was created with a newer version of Pourline. Update the app to import it.</string>
+    <string name="recipe_import_corrupt">The recipe in the QR code could not be read</string>
+    <string name="recipe_import_invalid">The recipe in the QR code is not valid</string>
+    <string name="recipe_import_scanner_unavailable">The scanner is not available. Try “From an image”</string>
+    <string name="recipe_import_reader_preparing">The QR reader is getting ready. Try again in a few seconds</string>
+    <string name="tab_prepare">Brew</string>
+    <string name="tab_coffees">Coffees</string>
+    <string name="tab_recipes">Recipes</string>
+    <string name="tab_history">History</string>
+    <string name="prepare_recipe">Recipe</string>
+    <string name="prepare_dose">Dose</string>
+    <string name="prepare_ratio">Ratio</string>
+    <string name="prepare_water">Water</string>
+    <string name="prepare_grams">g</string>
+    <string name="prepare_ratio_prefix">1:</string>
+    <string name="prepare_ratio_value">1:%1$s</string>
+    <string name="prepare_empty_value">—</string>
+    <string name="prepare_start">Start</string>
+    <string name="prepare_start_disabled">Connect the scale to start.</string>
+    <string name="prepare_start_scaleless">Start without scale</string>
+    <string name="prepare_range_error">The dose goes from 5 to 60 g and the ratio from 10 to 20.</string>
+    <string name="prepare_dose_range_error">The dose goes from 5 to 60 g.</string>
+    <string name="prepare_recipe_scaled">The recipe is for %1$s g: water and steps are adjusted to your dose.</string>
+    <string name="scale_card_no_permission">We need Bluetooth permission</string>
+    <string name="scale_card_grant">Grant permission</string>
+    <string name="scale_card_bluetooth_off">Bluetooth is off</string>
+    <string name="scale_card_enable">Turn on</string>
+    <string name="scale_card_connect_prompt">Connect your scale</string>
+    <string name="scale_card_connect">Connect</string>
+    <string name="scale_card_connecting">Connecting to %1$s…</string>
+    <string name="scale_card_connected">%1$s connected</string>
+    <string name="scale_card_failed">Could not connect to %1$s</string>
+    <string name="scale_card_retry">Retry</string>
+    <string name="scale_card_change">Change scale</string>
+    <string name="scale_card_disconnected">%1$s disconnected</string>
+    <string name="scale_card_disconnect">Disconnect</string>
+    <string name="scale_card_menu">Scale options</string>
+    <string name="connect_title">Connect scale</string>
+    <string name="connect_simulated">Use simulated scale</string>
+    <string name="onboarding_title">How do you brew your coffee?</string>
+    <string name="onboarding_hint">You can change it any time in Settings.</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_scale_title">Do you use a scale?</string>
+    <string name="onboarding_scale_without_hint">You brew with the timer. If you get one later, change it in Settings.</string>
+    <string name="onboarding_grinder_title">Which grinder do you use?</string>
+    <string name="onboarding_grinder_hint">We will use it to convert recipe settings to your grinder.</string>
+    <string name="onboarding_grinder_skip">Skip</string>
+    <string name="onboarding_grinder_empty">There are no grinders in the catalog yet. You can add yours in Settings → Grinders.</string>
+    <string name="onboarding_grinder_footer">If yours is not listed, create it in Settings → Grinders.</string>
+    <!-- Guided session -->
+    <string name="session_close">Leave the session</string>
+    <string name="session_options">Options</string>
+    <string name="session_title_free">Free brew</string>
+    <string name="session_retry">Retry</string>
+    <string name="session_dial_description">%1$s of %2$s, %3$d %%</string>
+    <string name="session_dial_description_expected">%1$s of %2$s, %3$d %%; the target says %4$s by now</string>
+    <string name="session_dial_legend">How to read the dial</string>
+    <string name="session_dial_legend_ring">The ring fills with the water poured, up to the target. The gaps split the pours of the recipe.</string>
+    <string name="session_dial_legend_colors">The colour of each stretch is how steady you poured that water:</string>
+    <string name="session_dial_legend_measuring">Measuring: at the start of each pour, while steadiness is worked out</string>
+    <string name="session_dial_legend_marker">The mark is where you should be now on the target curve. If the fill falls short of it you are behind; past it, you are ahead.</string>
+    <string name="session_dial_legend_sparkline">Below the numbers, the flow of the last 30 s, in the same colours. The flat part is a wait.</string>
+    <string name="session_dial_ratio_flow">%1$s · %2$s</string>
+    <string name="session_step_description">Step %1$d of %2$d, %3$s</string>
+    <string name="session_step_title">%1$s · %2$s</string>
+    <string name="session_step_up_to">up to %1$s</string>
+    <string name="session_step_waiting">Wait for the first step</string>
+    <string name="session_steps_done">All steps complete</string>
+    <string name="session_free_step">Pour up to %1$s</string>
+    <string name="session_next">Next: %1$s in %2$s</string>
+    <string name="session_next_seconds">%1$d s</string>
+    <string name="session_next_label">Next:</string>
+    <string name="session_deviation">Deviation %1$s</string>
+    <string name="session_finish">Finish</string>
+    <string name="session_options_expert">Expert mode</string>
+    <string name="session_options_unit">Unit</string>
+    <string name="session_options_restart">Restart</string>
+    <string name="session_options_simulation">Simulation</string>
+    <string name="scaleless_pour_to">Pour to %1$s g</string>
+    <string name="scaleless_step_progress">step %1$d/%2$d · %3$s left</string>
+    <string name="scaleless_water_goal">Water goal: %1$s g</string>
+    <string name="scaleless_done_hint">All steps done. Tap Finish when it stops dripping</string>
+    <string name="scaleless_dial_description">Time %1$s. %2$s</string>
+    <string name="prep_stepper">Step %1$d of 4</string>
+    <string name="prep_step_label">Step %1$d of 4 · %2$s</string>
+    <string name="prep_step_tare">Tare</string>
+    <string name="prep_step_dose">Dose</string>
+    <string name="prep_step_tare_pour">Tare to pour</string>
+    <string name="prep_step_pour">Pour</string>
+    <string name="prep_instruction_tare">Place the filter and the carafe, then tare</string>
+    <string name="prep_instruction_dose">Add the ground coffee</string>
+    <string name="prep_instruction_dose_target">Add the ground coffee (%1$s)</string>
+    <string name="prep_instruction_tare_pour">Tare again and start pouring</string>
+    <string name="prep_instruction_pour">Start pouring</string>
+    <string name="prep_tare">Tare</string>
+    <string name="prep_skip">Skip</string>
+    <string name="prep_capture">Capture now</string>
+    <string name="prep_skip_dose">Skip (no dose)</string>
+    <string name="prep_start_timer">Start timer</string>
+    <string name="countdown_title">Get ready to pour</string>
+    <string name="countdown_hint">The timer starts when it reaches zero</string>
+    <string name="countdown_description">Starting in %1$d</string>
+    <string name="countdown_cancel">Cancel</string>
+    <string name="prep_waiting_tare">Waiting for the tare…</string>
+    <string name="prep_dose_value">Dose: %1$s</string>
+    <string name="prep_no_dose">No dose</string>
+    <string name="summary_saved">Brew saved</string>
+    <string name="summary_saving">Saving the brew…</string>
+    <string name="summary_failed">The brew could not be saved</string>
+    <string name="summary_dose">Dose</string>
+    <string name="summary_ratio_coffee">Ratio %1$s · Coffee %2$s</string>
+    <string name="summary_ratio">Ratio %1$s</string>
+    <string name="summary_reason">Reason it ended</string>
+    <string name="summary_details">Add details</string>
+    <string name="summary_share">Share</string>
+    <string name="summary_done">Done</string>
+    <string name="exit_title">Finish the brew?</string>
+    <string name="exit_text">You can save it or discard it.</string>
+    <string name="exit_save">Finish and save</string>
+    <string name="exit_discard">Discard</string>
+    <string name="exit_continue">Keep brewing</string>
+
+    <!-- Molinos (SPEC-006): unidades de ajuste -->
+    <plurals name="grind_unit_clicks">
+        <item quantity="one">%s click</item>
+        <item quantity="other">%s clicks</item>
+    </plurals>
+    <string name="grind_unit_name_clicks">Clicks</string>
+    <plurals name="grind_unit_points">
+        <item quantity="one">%s point</item>
+        <item quantity="other">%s points</item>
+    </plurals>
+    <string name="grind_unit_name_points">Points</string>
+    <plurals name="grind_unit_notches">
+        <item quantity="one">%s notch</item>
+        <item quantity="other">%s notches</item>
+    </plurals>
+    <string name="grind_unit_name_notches">Notches</string>
+    <plurals name="grind_unit_numbers">
+        <item quantity="one">%s number</item>
+        <item quantity="other">%s numbers</item>
+    </plurals>
+    <string name="grind_unit_name_numbers">Numbers</string>
+    <plurals name="grind_unit_rotations">
+        <item quantity="one">%s rotation</item>
+        <item quantity="other">%s rotations</item>
+    </plurals>
+    <string name="grind_unit_name_rotations">Rotations</string>
+    <plurals name="grind_unit_steps">
+        <item quantity="one">%s step</item>
+        <item quantity="other">%s steps</item>
+    </plurals>
+    <string name="grind_unit_name_steps">Steps</string>
+    <string name="grinder_copy_name">%1$s (copy)</string>
+
+    <!-- Molinos (SPEC-006): Ajustes, lista, catálogo y detalle -->
+    <string name="settings_grinders">Grinders</string>
+    <string name="settings_grinders_none">You have no grinders yet</string>
+    <plurals name="settings_grinders_count">
+        <item quantity="one">%d grinder</item>
+        <item quantity="other">%d grinders</item>
+    </plurals>
+    <string name="settings_grinders_default">%1$s · %2$s</string>
+    <string name="grinders_title">Grinders</string>
+    <string name="grinders_add">Add grinder</string>
+    <string name="grinders_empty">You have no grinders yet</string>
+    <string name="grinder_tag_default">Default</string>
+    <string name="grinder_tag_own">Own</string>
+    <string name="grinder_tag_predefined">Predefined</string>
+    <string name="grinder_tag_retired">Removed from the catalog</string>
+    <string name="grinder_catalog_title">Add grinder</string>
+    <string name="grinder_catalog_search_hint">Search brand or model</string>
+    <string name="grinder_catalog_search_clear">Clear search</string>
+    <string name="grinder_catalog_own">I have it</string>
+    <string name="grinder_catalog_owned">In my grinders</string>
+    <string name="grinder_catalog_create">Create my own grinder</string>
+    <string name="grinder_catalog_empty">There are no grinders in the catalog</string>
+    <string name="grinder_catalog_empty_search">No grinder matches “%s”</string>
+    <string name="grinder_detail_scale">Scale</string>
+    <string name="grinder_detail_scale_value">%1$s – %2$s · step %3$s</string>
+    <string name="grinder_detail_direction">Direction</string>
+    <string name="grinder_detail_units">Units</string>
+    <string name="grinder_detail_method">Method</string>
+    <string name="grinder_detail_ranges">Ranges</string>
+    <string name="grinder_detail_anchors">Anchors</string>
+    <string name="grinder_detail_no_ranges">No ranges per method</string>
+    <string name="grinder_detail_range_item">%1$s %2$s–%3$s</string>
+    <string name="grinder_detail_anchor_item">%1$s %2$s</string>
+    <string name="grinder_direction_coarser">Higher = coarser</string>
+    <string name="grinder_direction_finer">Higher = finer</string>
+    <string name="grinder_detail_default">Use as default</string>
+    <string name="grinder_detail_duplicate">Duplicate to customize</string>
+    <string name="grinder_detail_unown">Remove from my grinders</string>
+    <string name="grinder_detail_own">I have it</string>
+    <string name="grinder_detail_edit">Edit</string>
+    <string name="grinder_detail_delete">Delete</string>
+    <string name="grinder_delete_title">Delete %s?</string>
+    <plurals name="grinder_delete_usage">
+        <item quantity="one">It is used in %d recipe. Recipes and brews keep the setting as a copy.</item>
+        <item quantity="other">It is used in %d recipes. Recipes and brews keep the setting as a copy.</item>
+    </plurals>
+    <string name="grinder_delete_unused">It is not used in any recipe.</string>
+    <string name="grinder_delete_confirm">Delete</string>
+    <string name="grinder_delete_cancel">Cancel</string>
+    <string name="grinder_source_unknown">catalog</string>
+    <string name="grinder_attribution">Source: %1$s · approximate values</string>
+    <string name="grind_ruler_coarse">Coarse</string>
+    <string name="grind_ruler_fine">Fine</string>
+    <string name="grind_ruler_description">Grind ruler, from coarse to fine.</string>
+    <string name="grind_ruler_range">%1$s from %2$s to %3$s.</string>
+    <string name="grind_ruler_value">Setting: %s</string>
+    <string name="grind_input_empty">No setting</string>
+    <string name="grind_input_placeholder">—</string>
+    <string name="grind_input_increase">Increase %s</string>
+    <string name="grind_input_decrease">Decrease %s</string>
+    <string name="grind_level_extra_fine">Extra fine</string>
+    <string name="grind_level_fine">Fine</string>
+    <string name="grind_level_medium_fine">Medium-fine</string>
+    <string name="grind_level_medium">Medium</string>
+    <string name="grind_level_medium_coarse">Medium-coarse</string>
+    <string name="grind_level_coarse">Coarse</string>
+    <string name="grind_level_extra_coarse">Extra coarse</string>
+    <string name="grind_level_extra_fine_abbr">XF</string>
+    <string name="grind_level_fine_abbr">F</string>
+    <string name="grind_level_medium_fine_abbr">MF</string>
+    <string name="grind_level_medium_abbr">M</string>
+    <string name="grind_level_medium_coarse_abbr">MC</string>
+    <string name="grind_level_coarse_abbr">C</string>
+    <string name="grind_level_extra_coarse_abbr">XC</string>
+
+    <!-- Molinos (SPEC-006): editor -->
+    <string name="grinder_edit_title_new">New grinder</string>
+    <string name="grinder_edit_title">Edit grinder</string>
+    <string name="grinder_edit_save">Save</string>
+    <string name="grinder_edit_tab_description">Description</string>
+    <string name="grinder_edit_tab_ranges">Ranges</string>
+    <string name="grinder_edit_brand">Brand</string>
+    <string name="grinder_edit_model">Model</string>
+    <string name="grinder_edit_unit_primary">Primary unit</string>
+    <string name="grinder_edit_unit_n">Unit %d</string>
+    <string name="grinder_edit_per_parent">Per 1 %s</string>
+    <string name="grinder_edit_add_unit">Add unit</string>
+    <string name="grinder_edit_remove_unit">Remove unit</string>
+    <string name="grinder_edit_step">Minimum step</string>
+    <string name="grinder_edit_direction">Direction</string>
+    <string name="grinder_edit_scale">Total scale</string>
+    <string name="grinder_edit_from">from</string>
+    <string name="grinder_edit_to">to</string>
+    <string name="grinder_edit_ranges_title">Ranges per method</string>
+    <string name="grinder_edit_anchors_title">Grind anchors</string>
+    <string name="grinder_edit_add_range">Add range</string>
+    <string name="grinder_edit_add_anchor">Add</string>
+    <string name="grinder_edit_remove">Remove</string>
+    <string name="grinder_edit_discard_title">Discard the changes?</string>
+    <string name="grinder_edit_discard_text">Unsaved changes will be lost.</string>
+    <string name="grinder_edit_discard">Discard</string>
+    <string name="grinder_edit_keep">Keep editing</string>
+    <string name="grinder_error_brand">Enter the brand</string>
+    <string name="grinder_error_model">Enter the model</string>
+    <string name="grinder_error_units">Add at least one unit</string>
+    <string name="grinder_error_scale_order">The minimum must be lower than the maximum</string>
+    <string name="grinder_error_step">The step must be greater than 0</string>
+    <string name="grinder_error_scale_step">The scale must be a multiple of the step</string>
+    <string name="grinder_error_negative_scale">The scale of a compound grinder cannot be negative</string>
+    <string name="grinder_error_duplicate_unit">Repeated unit</string>
+    <string name="grinder_error_per_parent">Each unit must contain at least 2 of the next one</string>
+    <string name="grinder_error_missing">A value is missing</string>
+    <string name="grinder_error_range_order">The minimum must be lower than the maximum</string>
+    <string name="grinder_error_outside_scale">Outside the scale</string>
+    <string name="grinder_error_anchors_order">Anchors must go from fine to coarse</string>
+
+    <!-- Molinos (SPEC-006): molienda en recetas y preparaciones -->
+    <string name="grind_none">No grinder</string>
+    <string name="grind_choose">Choose a grinder</string>
+    <string name="grind_grinder">Grinder</string>
+    <string name="grind_value">Setting</string>
+    <string name="grind_value_hint">Tap + or − to start from the suggested value</string>
+    <string name="grind_out_of_scale">Outside the scale</string>
+    <string name="grinder_tag_deleted">grinder deleted</string>
+    <string name="grind_card_title">Grind</string>
+    <string name="grind_card_recipe">Recipe: %s</string>
+    <string name="grind_card_recipe_none">The recipe has no grind setting</string>
+    <string name="grind_card_grind_with">Grind with</string>
+    <string name="grind_card_approximate">approximate</string>
+    <string name="grind_card_calibrated">per your calibration</string>
+    <string name="grind_card_suggested">suggested</string>
+    <string name="grind_card_at_limit">at the grinder\'s limit</string>
+    <string name="grind_card_no_equivalent">No equivalent</string>
+    <string name="grind_card_fix_complete">Complete the ranges</string>
+    <string name="grind_card_fix_duplicate">Duplicate to customize</string>
+    <string name="grind_card_fix_calibration">Add another equivalence</string>
+    <string name="grind_card_orphan">Assign a grinder to the recipe to convert</string>
+    <string name="grind_card_no_reference">No recipe: no setting to convert</string>
+    <string name="grind_card_add">Add your grinder to see the equivalent</string>
+    <string name="grind_card_converter">See in my other grinders</string>
+    <string name="converter_title">Converter</string>
+    <string name="converter_source">Source grinder</string>
+    <string name="converter_source_placeholder">Choose a grinder</string>
+    <string name="converter_value">Setting</string>
+    <string name="converter_results">In my grinders</string>
+    <string name="converter_pick_source">Choose a source grinder to start</string>
+    <string name="converter_pick_value">Choose the setting with + or −</string>
+    <string name="converter_no_others">You have no other grinders</string>
+    <string name="converter_empty">Add your grinders to see the equivalent in each one</string>
+    <string name="converter_empty_action">Go to My grinders</string>
+    <string name="converter_picker_title">Source grinder</string>
+    <string name="converter_picker_search">Search brand or model</string>
+    <string name="converter_picker_owned">My grinders</string>
+    <string name="converter_picker_catalog">Catalog</string>
+    <string name="converter_picker_empty">No results</string>
+    <string name="converter_correct">Correct</string>
+    <string name="grind_calibration_add">Add equivalence</string>
+    <string name="grind_calibration_save">Save equivalence</string>
+    <string name="grind_calibration_sheet_title">Equivalence</string>
+    <string name="grind_calibration_other">Other grinder</string>
+    <string name="grind_calibration_updated">Equivalence updated</string>
+    <plurals name="grind_calibration_conflict">
+        <item quantity="one">Contradicts the equivalence %s</item>
+        <item quantity="other">Contradicts the equivalences %s</item>
+    </plurals>
+    <string name="grind_calibration_replace">Replace</string>
+    <string name="grind_calibration_invalid">Check the settings: each one must be within its grinder\'s scale</string>
+    <string name="grind_calibration_pair">%1$s %2$s = %3$s %4$s</string>
+    <string name="grinder_detail_calibrations">Equivalences</string>
+    <string name="grinder_detail_calibrations_empty">Save the settings that grind the same on your grinders to fine-tune the conversion</string>
+    <string name="grind_calibration_delete_title">Delete the equivalence %s?</string>
+    <string name="grind_calibration_edit_description">Edit %s</string>
+    <string name="grind_calibration_delete_description">Delete %s</string>
+    <string name="brew_notice_channel">Brew in progress</string>
+    <string name="brew_notice_channel_description">Keeps the brew running when you leave the app</string>
+    <string name="brew_notice_water">%1$s of %2$s</string>
+    <string name="brew_notice_saving">Saving the brew…</string>
+    <string name="brew_notice_scaleless_ready">Ready to start</string>
+    <string name="brew_notice_step">Step %1$d/%2$d · %3$s</string>
+    <string name="brew_notice_step_pour">Step %1$d/%2$d · %3$s to %4$s</string>
+
+    <!-- Tools -->
+    <string name="tab_tools">Tools</string>
+    <string name="tools_title">Tools</string>
+    <string name="tools_ratio_title">Ratio calculator</string>
+    <string name="tools_ratio_description">Coffee, ratio and water: change one and the rest follow.</string>
+    <string name="tools_four_six_title">4:6 generator</string>
+    <string name="tools_four_six_description">The pours of Tetsu Kasuya\'s method for the taste and strength you want.</string>
+    <string name="tools_converter_title">Grind converter</string>
+    <string name="tools_converter_description">The equivalent setting on your grinders.</string>
+
+    <!-- Tools: ratio calculator -->
+    <string name="ratio_coffee">Coffee</string>
+    <string name="ratio_ratio">Ratio</string>
+    <string name="ratio_water">Water</string>
+    <string name="ratio_hint">Changing the coffee or the ratio updates the water; changing the water updates the coffee.</string>
+    <string name="ratio_error">Enter numbers above 0. The ratio goes from 1:1 to 1:50.</string>
+
+    <!-- Tools: 4:6 generator -->
+    <string name="four_six_title">4:6 method</string>
+    <string name="four_six_range_error">The dose goes from 5 to 60 g and the ratio from 1:10 to 1:20, with one decimal at most.</string>
+    <string name="four_six_water_error">The total water can\'t exceed 1000 g.</string>
+    <string name="four_six_taste">Taste</string>
+    <string name="four_six_strength">Strength</string>
+    <string name="four_six_taste_sweet">Very sweet</string>
+    <string name="four_six_taste_medium_sweet">Sweet</string>
+    <string name="four_six_taste_balanced">Balanced</string>
+    <string name="four_six_taste_medium_bright">Bright</string>
+    <string name="four_six_taste_bright">Very bright</string>
+    <string name="four_six_strength_lightest">Very light</string>
+    <string name="four_six_strength_light">Light</string>
+    <string name="four_six_strength_standard">Medium</string>
+    <string name="four_six_strength_strong">Strong</string>
+    <string name="four_six_strength_strongest">Very strong</string>
+    <string name="four_six_taste_start">Sweet</string>
+    <string name="four_six_taste_end">Bright</string>
+    <string name="four_six_strength_start">Light</string>
+    <string name="four_six_strength_end">Strong</string>
+    <string name="four_six_level_value">%1$s · %2$s</string>
+    <string name="four_six_taste_split">%1$s/%2$s g</string>
+    <plurals name="four_six_strength_pours">
+        <item quantity="one">%d pour</item>
+        <item quantity="other">%d pours</item>
+    </plurals>
+    <string name="four_six_pace">Pour speed</string>
+    <string name="four_six_pace_normal">Normal</string>
+    <string name="four_six_pace_slow">Slow</string>
+    <string name="four_six_pace_slowest">Very slow</string>
+    <string name="four_six_pace_custom">Custom</string>
+    <string name="four_six_pace_unit">g/s</string>
+    <string name="four_six_pace_value">%1$s g/s · %2$s g in %3$d s</string>
+    <string name="four_six_pace_error">The pour speed goes from 2 to 15 g/s, with one decimal at most.</string>
+    <string name="four_six_pace_hint">A slower pour lasts longer and the wait gets shorter: each pour still starts on time.</string>
+    <string name="four_six_split_taste">40% taste</string>
+    <string name="four_six_split_strength">60% strength</string>
+    <string name="four_six_pours">Pours</string>
+    <string name="four_six_time">Time</string>
+    <string name="four_six_pour_detail">%1$s–%2$s · up to %3$s g</string>
+    <string name="four_six_pour_amount">+%1$s g</string>
+    <string name="four_six_end">Remove the filter</string>
+    <string name="four_six_note">Coarse grind and water at 92 °C. Each pour starts 45 s after the previous one, and the filter comes off 30 s after the last.</string>
+    <string name="four_six_save">Save as recipe</string>
+    <string name="four_six_recipe_name">4:6 · %1$s · %2$s</string>
+    <string-array name="four_six_pour_names">
+        <item>1st pour</item>
+        <item>2nd pour</item>
+        <item>3rd pour</item>
+        <item>4th pour</item>
+        <item>5th pour</item>
+        <item>6th pour</item>
+        <item>7th pour</item>
+    </string-array>
+    <string name="four_six_pour_name_n">Pour %1$d</string>
+    <string name="four_six_instruction_taste">Pour slowly and evenly: this pour sets the sweetness and acidity.</string>
+    <string name="four_six_instruction_strength">Pour slowly and evenly: this pour sets the strength.</string>
+    <string name="four_six_instruction_last">Last pour: take your time, up to the total water.</string>
+    <string name="four_six_instruction_wait">Wait for the water to draw down.</string>
+    <string name="four_six_instruction_drain">Let it drain and remove the filter.</string>
+    <string name="four_six_recipe_notes">Generated with the 4:6 method: the first 40% of the water sets the taste and the remaining 60% the strength. Coarse grind.</string>
+
+    <!-- Guided tour (SPEC-008) -->
+    <string name="tour_next">Next</string>
+    <string name="tour_prev">Previous</string>
+    <string name="tour_done">Done</string>
+    <string name="tour_skip">Skip</string>
+    <string name="tour_counter">%1$d/%2$d</string>
+    <string name="tour_skipped_hint">You can see it again in Settings > Replay tour</string>
+    <string name="tour_decline">Not now</string>
+    <string name="tour_accept">Show me</string>
+    <string name="settings_tour_replay">Replay tour</string>
+    <string name="settings_tour_replay_hint">Shows the tours of every screen again.</string>
+
+    <!-- prepare -->
+    <string name="tour_prepare_welcome_title">Want a quick tour?</string>
+    <string name="tour_prepare_welcome_body">A short walkthrough of each screen. If you already use coffee apps, you can skip it.</string>
+    <string name="tour_prepare_scale_title">Your scale</string>
+    <string name="tour_prepare_scale_body">Connect it here. Brewing without a scale? Change it in Settings.</string>
+    <string name="tour_prepare_recipe_title">Recipe</string>
+    <string name="tour_prepare_recipe_body">Pick a recipe and the session guides you step by step. Without one, you brew freely.</string>
+    <string name="tour_prepare_coffee_title">Coffee</string>
+    <string name="tour_prepare_coffee_body">Choose the coffee you are brewing: its log and what is left in the bag update on their own.</string>
+    <string name="tour_prepare_dose_title">Dose and ratio</string>
+    <string name="tour_prepare_dose_body">Dose and ratio set the water. With a recipe, they come from it.</string>
+    <string name="tour_prepare_grind_title">Grind</string>
+    <string name="tour_prepare_grind_body">The setting for your grinder. Pick another grinder and Pourline converts it.</string>
+    <string name="tour_prepare_grind_ruler_title">Grind ruler</string>
+    <string name="tour_prepare_grind_ruler_body">Shows where the setting sits within your grinder\'s range.</string>
+    <string name="tour_prepare_start_title">Start</string>
+    <string name="tour_prepare_start_body">With the scale connected, Start opens the guided session.</string>
+    <string name="tour_prepare_start_scaleless_title">Without a scale</string>
+    <string name="tour_prepare_start_scaleless_body">Follow the recipe with just the timer.</string>
+    <string name="tour_prepare_settings_title">Settings</string>
+    <string name="tour_prepare_settings_body">Mode, appearance, grinders, alerts and countdown.</string>
+    <string name="tour_prepare_tab_coffees_title">Coffees</string>
+    <string name="tour_prepare_tab_coffees_body">Your bags, with label photos, roast date and what is left.</string>
+    <string name="tour_prepare_tab_recipes_title">Recipes</string>
+    <string name="tour_prepare_tab_recipes_body">Built-in recipes and your own, step by step.</string>
+    <string name="tour_prepare_tab_history_title">History</string>
+    <string name="tour_prepare_tab_history_body">Every brew, with its rating and details.</string>
+    <string name="tour_prepare_tab_tools_title">Tools</string>
+    <string name="tour_prepare_tab_tools_body">Ratio calculator, 4:6 generator and grind converter.</string>
+
+    <!-- session_prep -->
+    <string name="tour_session_prep_stepper_title">Before you pour</string>
+    <string name="tour_session_prep_stepper_body">Four steps: tare, weigh the coffee, tare again and pour.</string>
+    <string name="tour_session_prep_weight_title">Live weight</string>
+    <string name="tour_session_prep_weight_body">What the scale reads right now.</string>
+    <string name="tour_session_prep_actions_title">Tare or skip</string>
+    <string name="tour_session_prep_actions_body">Tare here or on the scale. You can skip any step.</string>
+    <string name="tour_session_prep_timer_title">The timer</string>
+    <string name="tour_session_prep_timer_body">It starts by itself when you pour, or with Start timer after the countdown. While you pour, the dial shows the water, the time and the step.</string>
+    <string name="tour_session_prep_options_title">Options</string>
+    <string name="tour_session_prep_options_body">Expert mode, unit, restart and, with the simulated scale, test pours.</string>
+    <string name="tour_session_prep_close_title">Leave</string>
+    <string name="tour_session_prep_close_body">Leave the session whenever you want.</string>
+
+    <!-- session_scaleless -->
+    <string name="tour_session_scaleless_plan_title">The plan</string>
+    <string name="tour_session_scaleless_plan_body">Dose, ratio and target water.</string>
+    <string name="tour_session_scaleless_start_title">Start timer</string>
+    <string name="tour_session_scaleless_start_body">Tap it when you are ready. You can set the countdown in Settings.</string>
+    <string name="tour_session_scaleless_dial_title">No scale</string>
+    <string name="tour_session_scaleless_dial_body">The dial shows the time of each step and alerts you when the step changes, even with the screen off.</string>
+    <string name="tour_session_scaleless_close_title">Leave</string>
+    <string name="tour_session_scaleless_close_body">Leave the session whenever you want.</string>
+
+    <!-- summary -->
+    <string name="tour_summary_rating_title">Rate it</string>
+    <string name="tour_summary_rating_body">Give the brew stars and note what you tasted.</string>
+    <string name="tour_summary_details_title">Add details</string>
+    <string name="tour_summary_details_body">Fill in the name, method, temperature and tasting notes.</string>
+    <string name="tour_summary_share_title">Share</string>
+    <string name="tour_summary_share_body">Create an image of the brew to share it.</string>
+    <string name="tour_summary_expert_title">Metrics</string>
+    <string name="tour_summary_expert_body">Flow, stability and fit to the target curve.</string>
+
+    <!-- coffees -->
+    <string name="tour_coffees_add_title">Add coffee</string>
+    <string name="tour_coffees_add_body">Add a bag. With a photo of the label, Pourline fills in the details.</string>
+    <string name="tour_coffees_search_title">Search</string>
+    <string name="tour_coffees_search_body">By name, roaster or origin.</string>
+    <string name="tour_coffees_tabs_title">Active and archived</string>
+    <string name="tour_coffees_tabs_body">Finished coffees are archived here.</string>
+    <string name="tour_coffees_row_title">A coffee</string>
+    <string name="tour_coffees_row_body">Open it to see days since roast, what is left and its log.</string>
+
+    <!-- coffee_edit -->
+    <string name="tour_coffee_edit_photos_title">Photos</string>
+    <string name="tour_coffee_edit_photos_body">Take a photo of the front and the back of the bag.</string>
+    <string name="tour_coffee_edit_read_label_title">Read label</string>
+    <string name="tour_coffee_edit_read_label_body">Fills in the fields from the photos. Check the ones marked as read.</string>
+    <string name="tour_coffee_edit_save_title">Save</string>
+    <string name="tour_coffee_edit_save_body">Save the coffee.</string>
+
+    <!-- coffee_detail -->
+    <string name="tour_coffee_detail_status_title">Status</string>
+    <string name="tour_coffee_detail_status_body">Days since roast and coffee left in the bag.</string>
+    <string name="tour_coffee_detail_log_title">Brew log</string>
+    <string name="tour_coffee_detail_log_body">The brews made with this coffee.</string>
+    <string name="tour_coffee_detail_new_bag_title">New bag</string>
+    <string name="tour_coffee_detail_new_bag_body">Start another bag of the same coffee, or archive it when it is finished.</string>
+    <string name="tour_coffee_detail_share_title">Share</string>
+    <string name="tour_coffee_detail_share_body">Share a card of the coffee.</string>
+
+    <!-- recipes -->
+    <string name="tour_recipes_builtin_title">Built-in</string>
+    <string name="tour_recipes_builtin_body">Use them as they are or duplicate them to adjust them.</string>
+    <string name="tour_recipes_active_title">Active</string>
+    <string name="tour_recipes_active_body">The recipe chosen in Brew.</string>
+    <string name="tour_recipes_add_title">Create recipe</string>
+    <string name="tour_recipes_add_body">Build your own recipe step by step.</string>
+
+    <!-- recipe_edit -->
+    <string name="tour_recipe_edit_method_title">Method</string>
+    <string name="tour_recipe_edit_method_body">The brewing method.</string>
+    <string name="tour_recipe_edit_stage_title">Steps</string>
+    <string name="tour_recipe_edit_stage_body">Each step is a pour, a swirl, a wait or an action, with its timing.</string>
+    <string name="tour_recipe_edit_add_stage_title">Add step</string>
+    <string name="tour_recipe_edit_add_stage_body">Add more steps to the recipe.</string>
+    <string name="tour_recipe_edit_totals_title">Totals</string>
+    <string name="tour_recipe_edit_totals_body">The recipe\'s water, ratio and duration.</string>
+    <string name="tour_recipe_edit_preview_title">Target curve</string>
+    <string name="tour_recipe_edit_preview_body">The curve the session will follow.</string>
+
+    <!-- history -->
+    <string name="tour_history_filters_title">Filters</string>
+    <string name="tour_history_filters_body">Filter by coffee and by method.</string>
+    <string name="tour_history_progress_title">Progress</string>
+    <string name="tour_history_progress_body">How the stability of your pours evolves.</string>
+    <string name="tour_history_row_title">A brew</string>
+    <string name="tour_history_row_body">Open it to see its details.</string>
+    <string name="tour_history_scaleless_title">No scale</string>
+    <string name="tour_history_scaleless_body">Made without a scale: no curve, and left out of comparisons.</string>
+
+    <!-- brew_detail -->
+    <string name="tour_brew_detail_chart_title">Chart</string>
+    <string name="tour_brew_detail_chart_body">The actual pour curve, or the target one if it was made without a scale.</string>
+    <string name="tour_brew_detail_details_title">Details</string>
+    <string name="tour_brew_detail_details_body">The grind and the rest of the brew\'s details.</string>
+    <string name="tour_brew_detail_edit_title">Edit</string>
+    <string name="tour_brew_detail_edit_body">Change the rating, notes, method and temperature. Without a scale, also the dose and water.</string>
+    <string name="tour_brew_detail_compare_title">Compare</string>
+    <string name="tour_brew_detail_compare_body">Compare it with another brew.</string>
+    <string name="tour_brew_detail_save_recipe_title">Save as recipe</string>
+    <string name="tour_brew_detail_save_recipe_body">Turn it into a recipe.</string>
+    <string name="tour_brew_detail_share_title">Share</string>
+    <string name="tour_brew_detail_share_body">Share an image of the brew.</string>
+
+    <!-- compare -->
+    <string name="tour_compare_chart_title">Curves</string>
+    <string name="tour_compare_chart_body">The water of both brews, overlaid.</string>
+    <string name="tour_compare_legend_title">Legend</string>
+    <string name="tour_compare_legend_body">Which color is each brew.</string>
+    <string name="tour_compare_table_title">Differences</string>
+    <string name="tour_compare_table_body">Both brews, detail by detail.</string>
+
+    <!-- tools -->
+    <string name="tour_tools_ratio_title">Ratio calculator</string>
+    <string name="tour_tools_ratio_body">Work out coffee, ratio and water.</string>
+    <string name="tour_tools_four_six_title">4:6 generator</string>
+    <string name="tour_tools_four_six_body">Builds a 4:6 recipe from taste and strength.</string>
+    <string name="tour_tools_converter_title">Grind converter</string>
+    <string name="tour_tools_converter_body">Translates a grind setting from one grinder to another.</string>
+
+    <!-- ratio_calculator -->
+    <string name="tour_ratio_calculator_fields_title">Three fields</string>
+    <string name="tour_ratio_calculator_fields_body">Edit any of them: coffee or ratio recalculate the water, and water recalculates the coffee.</string>
+    <string name="tour_ratio_calculator_validation_title">Invalid values</string>
+    <string name="tour_ratio_calculator_validation_body">An invalid field is marked, and the rest is worked out from the other two.</string>
+
+    <!-- four_six -->
+    <string name="tour_four_six_dose_title">Dose and ratio</string>
+    <string name="tour_four_six_dose_body">Dose and ratio set the total water.</string>
+    <string name="tour_four_six_sliders_title">Taste and strength</string>
+    <string name="tour_four_six_sliders_body" formatted="false">Taste splits the first 40%, sweeter or brighter. Strength sets how many pours the remaining 60% takes.</string>
+    <string name="tour_four_six_pours_title">Pours</string>
+    <string name="tour_four_six_pours_body">Each pour with its time and running total.</string>
+    <string name="tour_four_six_save_title">Save as recipe</string>
+    <string name="tour_four_six_save_body">Save it as a recipe to use it in Brew.</string>
+
+    <!-- converter -->
+    <string name="tour_converter_source_title">Source</string>
+    <string name="tour_converter_source_body">The grinder and the setting to start from.</string>
+    <string name="tour_converter_rows_title">Equivalents</string>
+    <string name="tour_converter_rows_body">The matching setting on your other grinders.</string>
+
+    <!-- settings -->
+    <string name="tour_settings_scale_title">Scale</string>
+    <string name="tour_settings_scale_body">Choose whether you brew with a scale or just the timer.</string>
+    <string name="tour_settings_mode_title">Mode</string>
+    <string name="tour_settings_mode_body">Basic or Expert. Expert adds charts, stability and comparisons.</string>
+    <string name="tour_settings_grinders_title">Grinders</string>
+    <string name="tour_settings_grinders_body">Your grinders and the default one.</string>
+    <string name="tour_settings_theme_title">Appearance</string>
+    <string name="tour_settings_theme_body">Light, dark or the system\'s.</string>
+    <string name="tour_settings_alerts_title">Step guide</string>
+    <string name="tour_settings_alerts_body">Vibration and sound when each step starts.</string>
+    <string name="tour_settings_countdown_title">Countdown</string>
+    <string name="tour_settings_countdown_body">Seconds before the timer starts.</string>
+    <string name="tour_settings_replay_title">Replay tour</string>
+    <string name="tour_settings_replay_body">See all the tours again.</string>
+</resources>

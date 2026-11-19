@@ -1,0 +1,183 @@
+package dev.josueamaya.pourline.ui.prepare
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.josueamaya.pourline.ble.BluetoothEnvironment
+import dev.josueamaya.pourline.coffee.PickedCoffee
+import dev.josueamaya.pourline.grinder.GrindCardState
+import dev.josueamaya.pourline.scale.ConnectionState
+import dev.josueamaya.pourline.session.ActiveTarget
+import dev.josueamaya.pourline.session.BrewPlan
+import dev.josueamaya.pourline.session.RememberedScale
+import dev.josueamaya.pourline.session.ScaleError
+import dev.josueamaya.pourline.session.ScaleMemory
+import dev.josueamaya.pourline.session.GrindSelection
+import dev.josueamaya.pourline.session.ScaleSessionManager
+import dev.josueamaya.pourline.session.ScaleTarget
+import dev.josueamaya.pourline.session.ScaleUiState
+import dev.josueamaya.pourline.session.targetWaterG
+import dev.josueamaya.pourline.settings.FreeBrewDefaults
+import dev.josueamaya.pourline.settings.ReferenceKey
+import dev.josueamaya.pourline.settings.ScaleModeStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+
+/**
+ * Lo que muestra Preparar. Con receta ([target] no es `null`) el ratio es el suyo y la dosis se puede cambiar si la receta
+ * la tiene: la receta (agua y pasos) se escala a ella. Sin receta se editan la dosis ([plan]) y el ratio, y el agua se
+ * calcula.
+ */
+data class PrepareUiState(
+  val card: ScaleCardState,
+  val target: ActiveTarget?,
+  val coffee: PickedCoffee?,
+  val plan: BrewPlan,
+  val waterG: Double,
+  /** La dosis con la que se va a preparar la receta (la escrita o la suya); `null` si la receta no tiene dosis. */
+  val recipeDoseG: Double?,
+  /** La dosis para la que está hecha la receta; `null` si no la tiene (entonces no se puede escalar). */
+  val recipeNominalDoseG: Double? = recipeDoseG,
+  val canStart: Boolean,
+  /** Con báscula (tarjeta y "Empezar" guiado) o sin ella (solo "Empezar" sin báscula). Ver [ScaleModeStore]. */
+  val useScale: Boolean = true,
+) {
+  /** El ratio agua:café de la receta; `null` sin dosis. */
+  val recipeRatio: Double? get() = recipeDoseG?.takeIf { it > 0 }?.let { waterG / it }
+
+  /** La receta se ha escalado a una dosis distinta de la suya. */
+  val recipeScaled: Boolean get() = recipeNominalDoseG != null && recipeDoseG != recipeNominalDoseG
+}
+
+/**
+ * Combina el gestor de la báscula, la báscula recordada, el Bluetooth y la dosis y el ratio de Preparar. Las
+ * acciones de conexión, receta y café se delegan en el gestor, que sobrevive a la pantalla.
+ */
+class PrepareViewModel(
+  private val manager: ScaleSessionManager,
+  private val memory: ScaleMemory,
+  private val defaults: FreeBrewDefaults,
+  private val bluetooth: BluetoothEnvironment,
+  private val grindSelection: GrindSelection,
+  private val scaleMode: ScaleModeStore,
+) : ViewModel() {
+  private val permissions = MutableStateFlow(bluetooth.permissionsGranted())
+
+  private val environment: Flow<Pair<Boolean, Boolean>> = combine(permissions, bluetooth.enabled) { p, e -> p to e }
+  private val plan: Flow<BrewPlan> = combine(defaults.defaultDoseG, defaults.defaultRatio, ::BrewPlan)
+
+  private val scaleSide: Flow<Triple<ScaleTarget?, RememberedScale?, Boolean>> =
+    combine(manager.target, memory.lastScale, scaleMode.useScale, ::Triple)
+
+  val ui: StateFlow<PrepareUiState> = combine(manager.ui, scaleSide, environment, plan) { scale, side, env, brewPlan ->
+    build(scale, side.first, side.second, env.first, env.second, brewPlan, side.third)
+  }.stateIn(
+    viewModelScope,
+    SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
+    build(
+      manager.ui.value,
+      manager.target.value,
+      memory.lastScale.value,
+      permissions.value,
+      bluetooth.enabled.value,
+      BrewPlan(defaults.defaultDoseG.value, defaults.defaultRatio.value),
+      scaleMode.useScale.value,
+    ),
+  )
+
+  /** La tarjeta de molienda: "Moler con" y el ajuste convertido (D23). */
+  val grind: StateFlow<GrindCardState> get() = grindSelection.state
+
+  fun chooseGrinder(id: Long) = grindSelection.choose(id)
+
+  /** Los errores del gestor (`TargetRemoved`, `SaveFailed`, `Command`); los muestra la pantalla. */
+  val errors: Flow<ScaleError> get() = manager.errors
+
+  private fun build(
+    scale: ScaleUiState,
+    scaleTarget: ScaleTarget?,
+    remembered: RememberedScale?,
+    permissionsGranted: Boolean,
+    bluetoothOn: Boolean,
+    plan: BrewPlan,
+    useScale: Boolean,
+  ): PrepareUiState {
+    val target = scale.target
+    return PrepareUiState(
+      card = scaleCardState(
+        permissions = permissionsGranted,
+        bluetoothOn = bluetoothOn,
+        remembered = remembered,
+        target = scaleTarget,
+        connection = scale.connection,
+        lastFailure = scale.lastFailure,
+        batteryPercent = scale.batteryPercent,
+      ),
+      target = target,
+      coffee = scale.coffee,
+      plan = plan,
+      waterG = targetWaterG(target, null, plan),
+      recipeDoseG = target?.let { it.scaledDoseG ?: it.nominalDoseG },
+      recipeNominalDoseG = target?.nominalDoseG,
+      canStart = scale.connection == ConnectionState.Ready,
+      useScale = useScale,
+    )
+  }
+
+  /** Vuelve a leer los permisos (al volver de su diálogo o de Ajustes). */
+  fun refreshPermissions() {
+    permissions.value = bluetooth.permissionsGranted()
+  }
+
+  fun connect(target: ScaleTarget) = manager.connect(target)
+
+  /** "Conectar" con la báscula desconectada: al último destino o, si no hay, a la recordada. */
+  fun connectLast() {
+    val last = manager.target.value ?: memory.lastScale.value?.let { ScaleTarget.Real(it.address, it.name) } ?: return
+    manager.connect(last)
+  }
+
+  fun retry() = manager.retry()
+
+  /** "Empezar": abre la sesión guiada con la dosis y el ratio de Preparar. */
+  fun startSession() = manager.startSession(ui.value.plan)
+
+  /** "Empezar sin báscula" (SPEC-007): abre la sesión cronometrada con el plan de Preparar. */
+  fun startScalelessSession() = manager.startScalelessSession(ui.value.plan)
+
+  fun disconnect() = manager.disconnect()
+
+  fun selectTarget(key: ReferenceKey?) = manager.selectTarget(key)
+
+  fun selectCoffee(id: Long?) = manager.selectCoffee(id)
+
+  fun requestNewCoffee() = manager.requestNewCoffee()
+
+  /** Guarda la dosis si el texto vale (D27); devuelve si valía. */
+  fun setDose(text: String): Boolean {
+    val dose = parseFreeDose(text) ?: return false
+    defaults.setDefaultDoseG(dose)
+    return true
+  }
+
+  /** La dosis para la receta elegida: la escala si el texto vale (mismo rango que la dosis libre); devuelve si valía. */
+  fun setRecipeDose(text: String): Boolean {
+    val dose = parseFreeDose(text) ?: return false
+    manager.setRecipeDose(dose)
+    return true
+  }
+
+  /** Guarda el ratio si el texto vale (D27); devuelve si valía. */
+  fun setRatio(text: String): Boolean {
+    val ratio = parseFreeRatio(text) ?: return false
+    defaults.setDefaultRatio(ratio)
+    return true
+  }
+
+  private companion object {
+    const val STOP_TIMEOUT_MS = 5_000L
+  }
+}
