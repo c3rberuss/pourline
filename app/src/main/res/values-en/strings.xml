@@ -955,12 +955,14 @@
     <string name="tour_skip">Skip</string>
     <string name="tour_counter">%1$d/%2$d</string>
     <string name="tour_skipped_hint">You can see it again in Settings > Replay tour</string>
+    <string name="tour_decline">Not now</string>
+    <string name="tour_accept">Show me</string>
     <string name="settings_tour_replay">Replay tour</string>
     <string name="settings_tour_replay_hint">Shows the tours of every screen again.</string>
 
     <!-- prepare -->
-    <string name="tour_prepare_welcome_title">Welcome to Pourline</string>
-    <string name="tour_prepare_welcome_body">Pourline guides every brew with your scale. Here are the basics, in a minute.</string>
+    <string name="tour_prepare_welcome_title">Want a quick tour?</string>
+    <string name="tour_prepare_welcome_body">A short walkthrough of each screen. If you already use coffee apps, you can skip it.</string>
     <string name="tour_prepare_scale_title">Your scale</string>
     <string name="tour_prepare_scale_body">Connect it here. Brewing without a scale? Change it in Settings.</string>
     <string name="tour_prepare_recipe_title">Recipe</string>
@@ -1133,6 +1135,8 @@
     <string name="tour_converter_rows_body">The matching setting on your other grinders.</string>
 
     <!-- settings -->
+    <string name="tour_settings_scale_title">Scale</string>
+    <string name="tour_settings_scale_body">Choose whether you brew with a scale or just the timer.</string>
     <string name="tour_settings_mode_title">Mode</string>
     <string name="tour_settings_mode_body">Basic or Expert. Expert adds charts, stability and comparisons.</string>
     <string name="tour_settings_grinders_title">Grinders</string>

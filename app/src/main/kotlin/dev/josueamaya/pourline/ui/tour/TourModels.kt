@@ -9,6 +9,8 @@ import dev.josueamaya.pourline.settings.ExperienceMode
  * @property id único en toda la app: `"<recorrido>.<paso>"`, p. ej. `"prepare.scale"`. Es lo que se guarda como visto.
  * @property anchor id del ancla (`Modifier.tourAnchor`) que se resalta; `null` es un paso centrado, sin hueco.
  * @property expertOnly el paso solo se muestra en modo Experto.
+ * @property invitation el paso pregunta si se quiere el recorrido: "Sí, vamos" sigue ([TourAction.Next]) y "Ahora no"
+ *   ([TourAction.Decline]) marca como vistos todos los recorridos. Va primero y no cuenta en "n/N".
  */
 data class TourStep(
   val id: String,
@@ -16,6 +18,7 @@ data class TourStep(
   @param:StringRes val title: Int,
   @param:StringRes val body: Int,
   val expertOnly: Boolean = false,
+  val invitation: Boolean = false,
 )
 
 /** Los pasos de una pantalla, en el orden en que se presentan. */
@@ -39,19 +42,25 @@ fun pendingSteps(tour: Tour, seen: Set<String>, mode: ExperienceMode, anchors: S
 
 /**
  * Un recorrido abierto: la lista de pasos de esa apertura ([steps]) y el paso en pantalla ([index]). El contador
- * "n/N" es [position]/[count] sobre esa lista, no sobre el recorrido completo.
+ * "n/N" es [position]/[count] sobre esa lista, no sobre el recorrido completo, y sin contar la invitación.
  */
 data class TourRun(val tourId: String, val steps: List<TourStep>, val index: Int = 0) {
   val current: TourStep get() = steps[index]
 
-  /** Número del paso en pantalla, desde 1. */
-  val position: Int get() = index + 1
+  /** Las invitaciones de esta apertura, que no cuentan en "n/N". */
+  private val invitations: Int get() = steps.count { it.invitation }
 
-  val count: Int get() = steps.size
+  /** Número del paso en pantalla, desde 1; 0 en la invitación. */
+  val position: Int get() = if (current.invitation) 0 else index + 1 - invitations
+
+  val count: Int get() = steps.size - invitations
 
   val isFirst: Boolean get() = index == 0
 
   val isLast: Boolean get() = index == steps.lastIndex
+
+  /** El primer paso que no es la invitación: desde él no se retrocede. */
+  internal val isFirstStep: Boolean get() = isFirst || steps[index - 1].invitation
 }
 
 /** Lo que hace el usuario (o la pantalla) con un recorrido abierto. */
@@ -66,6 +75,9 @@ sealed interface TourAction {
 
   /** Saltar: marca todos los pasos de esta apertura y cierra. */
   data object Skip : TourAction
+
+  /** "Ahora no" en la invitación: marca todos los pasos de todos los recorridos ([Tours.allStepIds]) y cierra. */
+  data object Decline : TourAction
 
   /** El ancla del paso actual desapareció: se descarta sin marcarlo. */
   data object AnchorLost : TourAction
@@ -89,12 +101,22 @@ fun TourRun.reduce(action: TourAction): TourTransition = when (action) {
   TourAction.Next ->
     if (isLast) TourTransition(null, listOf(current.id)) else TourTransition(copy(index = index + 1), listOf(current.id))
 
-  TourAction.Prev -> TourTransition(if (isFirst) this else copy(index = index - 1))
+  // No se vuelve a la invitación: el primer paso tras ella hace de primero.
+  TourAction.Prev -> TourTransition(if (isFirstStep) this else copy(index = index - 1))
 
-  TourAction.Back -> reduce(if (isFirst) TourAction.Skip else TourAction.Prev)
+  // En la invitación, "Atrás" es "Ahora no": cerrarla sin aceptar es no querer el recorrido.
+  TourAction.Back -> reduce(
+    when {
+      current.invitation -> TourAction.Decline
+      isFirstStep -> TourAction.Skip
+      else -> TourAction.Prev
+    },
+  )
 
   // Solo los pasos de esta apertura: los que no se veían (por modo o por ancla) ni otros recorridos no se tocan.
   TourAction.Skip -> TourTransition(null, steps.map { it.id }, skippedHint = true)
+
+  TourAction.Decline -> TourTransition(null, Tours.allStepIds.toList(), skippedHint = true)
 
   TourAction.AnchorLost -> {
     val remaining = steps.filterIndexed { i, _ -> i != index }

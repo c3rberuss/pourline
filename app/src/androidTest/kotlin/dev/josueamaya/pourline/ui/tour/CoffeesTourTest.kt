@@ -69,7 +69,8 @@ class CoffeesTourTest {
   fun skippingTheGeneralTourStillShowsTheCoffeesTour() {
     env.skipOnboarding(showTours = listOf(Tours.prepare, Tours.coffees))
     show()
-    rule.waitForTour("1/13")
+    // Tras aceptar la invitación, Saltar solo salta el recorrido de esta pantalla.
+    rule.acceptInvitation()
 
     rule.tapTourSkip()
     rule.waitUntil(5_000) { !rule.tourVisible() }

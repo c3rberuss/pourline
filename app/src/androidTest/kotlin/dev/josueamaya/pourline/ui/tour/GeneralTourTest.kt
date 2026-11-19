@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -75,7 +76,7 @@ class GeneralTourTest {
     waitFor("onboarding_skip")
     rule.onNodeWithTag("onboarding_skip").performClick()
 
-    rule.waitForTour("1/13", env.tourSettings.seen.value)
+    rule.waitForInvitation()
     rule.completeTour()
     assertEquals(basicIds, Tours.prepare.steps.map { it.id }.filter { it in env.tourSettings.seen.value }.toSet())
 
@@ -85,10 +86,44 @@ class GeneralTourTest {
   }
 
   @Test
+  fun theInvitationAsksFirstWithoutCounterNorSkip() {
+    env.skipOnboarding(showTours = listOf(Tours.prepare))
+    show()
+    rule.waitForInvitation()
+
+    assertEquals(context.getString(R.string.tour_prepare_welcome_title), rule.textOf("tour_title"))
+    assertEquals(null, rule.tourCounter())
+    assertTrue(!exists("tour_skip"))
+    rule.onNodeWithTag("tour_next").assertTextEquals(context.getString(R.string.tour_accept))
+    rule.onNodeWithTag("tour_decline").assertTextEquals(context.getString(R.string.tour_decline))
+
+    rule.tapTourNext()
+    rule.waitForTour("1/12")
+    assertEquals(context.getString(R.string.tour_prepare_scale_title), rule.textOf("tour_title"))
+  }
+
+  @Test
+  fun notNowMarksEveryTourAndShowsTheHint() {
+    env.skipOnboarding(showTours = Tours.all)
+    show()
+    rule.waitForInvitation()
+
+    rule.onNodeWithTag("tour_decline").performClick()
+
+    rule.waitUntil(5_000) { !rule.tourVisible() }
+    rule.waitUntil(5_000) { hintShown() }
+    assertEquals(Tours.allStepIds, env.tourSettings.seen.value)
+    // Otra pestaña con su recorrido pendiente antes de la respuesta: ya no sale.
+    rule.onNodeWithTag("tab_tools").performClick()
+    waitFor("tools")
+    rule.assertNoTourFor()
+  }
+
+  @Test
   fun skipClosesTheGeneralTourAndShowsTheHint() {
     env.skipOnboarding(showTours = listOf(Tours.prepare))
     show()
-    rule.waitForTour("1/13")
+    rule.acceptInvitation()
 
     rule.tapTourSkip()
 
@@ -101,12 +136,13 @@ class GeneralTourTest {
   fun previousGoesBackAndBackOnTheFirstStepClosesWithTheHint() {
     env.skipOnboarding(showTours = listOf(Tours.prepare))
     show()
-    rule.waitForTour("1/13")
+    rule.acceptInvitation()
 
     rule.tapTourNext()
-    rule.waitForTour("2/13")
+    rule.waitForTour("2/12")
     rule.tapTourPrev()
-    rule.waitForTour("1/13")
+    rule.waitForTour("1/12")
+    // Desde el primer paso no se vuelve a la invitación: Atrás salta este recorrido.
     backPressed()
 
     rule.waitUntil(5_000) { !rule.tourVisible() }
@@ -165,7 +201,9 @@ class GeneralTourTest {
 
     rule.onNodeWithTag("settings_tour_replay").performScrollTo().performClick()
 
-    rule.waitForTour("1/13")
+    // Ya se pidió el recorrido: empieza sin preguntar.
+    rule.waitForTour("1/12")
+    assertTrue(!exists("tour_decline"))
     waitFor("prepare_start")
   }
 
@@ -173,23 +211,23 @@ class GeneralTourTest {
   fun tappingTheHighlightedRecipeDoesNotOpenThePicker() {
     env.skipOnboarding(showTours = listOf(Tours.prepare))
     show()
-    rule.waitForTour("1/13")
-    goTo("3/13")
+    rule.acceptInvitation()
+    goTo("2/12")
     assertEquals(context.getString(R.string.tour_prepare_recipe_title), rule.textOf("tour_title"))
 
     rule.onNodeWithTag("prepare_recipe").performClick()
 
     rule.waitForIdle()
     assertTrue(!exists("target_picker"))
-    assertEquals("3/13", rule.tourCounter())
+    assertEquals("2/12", rule.tourCounter())
   }
 
   @Test
   fun theTabBarStepsHighlightTheTabs() {
     env.skipOnboarding(showTours = listOf(Tours.prepare))
     show()
-    rule.waitForTour("1/13")
-    goTo("10/13")
+    rule.acceptInvitation()
+    goTo("9/12")
     assertEquals(context.getString(R.string.tour_prepare_tab_coffees_title), rule.textOf("tour_title"))
 
     // El hueco deja ver la pestaña resaltada y el velo oscurece las demás.
@@ -203,15 +241,15 @@ class GeneralTourTest {
   }
 
   @Test
-  fun theSettingsTourHasSixStepsAndTheReplayRow() {
+  fun theSettingsTourHasSevenStepsAndTheReplayRow() {
     env.skipOnboarding(showTours = listOf(Tours.settings))
     show()
     waitFor("prepare_settings")
     rule.onNodeWithTag("prepare_settings").performClick()
 
-    rule.waitForTour("1/6")
-    assertEquals(context.getString(R.string.tour_settings_mode_title), rule.textOf("tour_title"))
-    goTo("6/6")
+    rule.waitForTour("1/7")
+    assertEquals(context.getString(R.string.tour_settings_scale_title), rule.textOf("tour_title"))
+    goTo("7/7")
     assertEquals(context.getString(R.string.tour_settings_replay_title), rule.textOf("tour_title"))
     rule.completeTour()
     assertTrue(env.tourSettings.seen.value.containsAll(Tours.settings.steps.map { it.id }))
@@ -223,12 +261,12 @@ class GeneralTourTest {
     // `recreate()` más un `setContent` tardío no restaura `rememberSaveable`; el probador de restauración sí.
     val tester = StateRestorationTester(rule)
     tester.setContent { TestApp(env) }
-    rule.waitForTour("1/13")
-    goTo("3/13")
+    rule.acceptInvitation()
+    goTo("2/12")
 
     tester.emulateSavedInstanceStateRestore()
 
-    rule.waitForTour("3/13")
+    rule.waitForTour("2/12")
   }
 
   /** La luminancia del píxel de la esquina izquierda del nodo [tag], medio de alto: fondo de la pestaña, con o sin velo. */

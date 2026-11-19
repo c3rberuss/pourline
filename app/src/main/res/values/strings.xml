@@ -954,12 +954,14 @@
     <string name="tour_skip">Saltar</string>
     <string name="tour_counter">%1$d/%2$d</string>
     <string name="tour_skipped_hint">Puedes volver a verlo en Ajustes > Ver recorrido</string>
+    <string name="tour_decline">Ahora no</string>
+    <string name="tour_accept">Sí, vamos</string>
     <string name="settings_tour_replay">Ver recorrido</string>
     <string name="settings_tour_replay_hint">Vuelve a mostrar los recorridos de todas las pantallas.</string>
 
     <!-- prepare -->
-    <string name="tour_prepare_welcome_title">Te damos la bienvenida</string>
-    <string name="tour_prepare_welcome_body">Pourline te guía en cada preparación con tu báscula. En un minuto te enseñamos lo básico.</string>
+    <string name="tour_prepare_welcome_title">¿Te enseñamos la app?</string>
+    <string name="tour_prepare_welcome_body">Un recorrido corto por cada pantalla. Si ya usas apps de café, puedes omitirlo.</string>
     <string name="tour_prepare_scale_title">Tu báscula</string>
     <string name="tour_prepare_scale_body">Conéctala aquí. Si preparas sin báscula, cámbialo en Ajustes.</string>
     <string name="tour_prepare_recipe_title">Receta</string>
@@ -1132,6 +1134,8 @@
     <string name="tour_converter_rows_body">El ajuste equivalente en tus otros molinos.</string>
 
     <!-- settings -->
+    <string name="tour_settings_scale_title">Báscula</string>
+    <string name="tour_settings_scale_body">Elige si preparas con báscula o solo con el reloj.</string>
     <string name="tour_settings_mode_title">Modo</string>
     <string name="tour_settings_mode_body">Básico o Experto. Experto añade gráficas, estabilidad y comparaciones.</string>
     <string name="tour_settings_grinders_title">Molinos</string>

@@ -255,12 +255,14 @@ private fun Balloon(presentation: TourPresentation) {
           color = colors.text,
           style = AntTheme.typography.heading5,
         )
-        Text(
-          stringResource(R.string.tour_counter, presentation.position, presentation.count),
-          Modifier.testTag("tour_counter"),
-          color = colors.textSecondary,
-          style = AntTheme.typography.textSM,
-        )
+        if (!presentation.step.invitation) {
+          Text(
+            stringResource(R.string.tour_counter, presentation.position, presentation.count),
+            Modifier.testTag("tour_counter"),
+            color = colors.textSecondary,
+            style = AntTheme.typography.textSM,
+          )
+        }
       }
       Text(
         stringResource(presentation.step.body),
@@ -275,29 +277,47 @@ private fun Balloon(presentation: TourPresentation) {
       verticalArrangement = Arrangement.spacedBy(spacing.xs),
       itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-      AntButton(
-        stringResource(R.string.tour_skip),
-        { presentation.onAction(TourAction.Skip) },
-        Modifier.testTag("tour_skip"),
-        type = AntButtonType.Link,
-        size = AntSize.Small,
-      )
-      Spacer(Modifier.weight(1f))
-      if (presentation.position > 1) {
+      if (presentation.step.invitation) {
         AntButton(
-          stringResource(R.string.tour_prev),
-          { presentation.onAction(TourAction.Prev) },
-          Modifier.testTag("tour_prev"),
+          stringResource(R.string.tour_decline),
+          { presentation.onAction(TourAction.Decline) },
+          Modifier.testTag("tour_decline"),
+          type = AntButtonType.Link,
+          size = AntSize.Small,
+        )
+        Spacer(Modifier.weight(1f))
+        AntButton(
+          stringResource(R.string.tour_accept),
+          { presentation.onAction(TourAction.Next) },
+          Modifier.testTag("tour_next"),
+          type = AntButtonType.Primary,
+          size = AntSize.Small,
+        )
+      } else {
+        AntButton(
+          stringResource(R.string.tour_skip),
+          { presentation.onAction(TourAction.Skip) },
+          Modifier.testTag("tour_skip"),
+          type = AntButtonType.Link,
+          size = AntSize.Small,
+        )
+        Spacer(Modifier.weight(1f))
+        if (presentation.position > 1) {
+          AntButton(
+            stringResource(R.string.tour_prev),
+            { presentation.onAction(TourAction.Prev) },
+            Modifier.testTag("tour_prev"),
+            size = AntSize.Small,
+          )
+        }
+        AntButton(
+          stringResource(if (isLast) R.string.tour_done else R.string.tour_next),
+          { presentation.onAction(TourAction.Next) },
+          Modifier.testTag("tour_next"),
+          type = AntButtonType.Primary,
           size = AntSize.Small,
         )
       }
-      AntButton(
-        stringResource(if (isLast) R.string.tour_done else R.string.tour_next),
-        { presentation.onAction(TourAction.Next) },
-        Modifier.testTag("tour_next"),
-        type = AntButtonType.Primary,
-        size = AntSize.Small,
-      )
     }
   }
 }

@@ -91,6 +91,7 @@ import dev.josueamaya.pourline.ui.tools.ToolsScreen
 import dev.josueamaya.pourline.ui.tour.TourBar
 import dev.josueamaya.pourline.ui.tour.TourRoot
 import dev.josueamaya.pourline.ui.tour.TourScreen
+import dev.josueamaya.pourline.ui.tour.Tours
 import dev.josueamaya.pourline.ui.tour.tourAnchor
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -297,6 +298,8 @@ private fun tabEntryProvider(
       // Ajustes solo se abre desde Preparar: su pila es la de Preparar y su raíz, donde sale el recorrido general.
       onReplayTour = {
         deps.tourSettings.reset()
+        // Ya se pidió el recorrido: no se vuelve a preguntar.
+        deps.tourSettings.markSeen(listOf(Tours.INVITATION_ID))
         stack.popToRoot()
         selectTab(Tab.PREPARE)
       },

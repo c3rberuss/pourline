@@ -101,6 +101,18 @@ fun ComposeTestRule.tapTourSkip() {
   onNodeWithTag("tour_skip").performClick()
 }
 
+/** Espera hasta 5 s a la invitación del recorrido general ("¿Te enseñamos la app?"). */
+fun ComposeTestRule.waitForInvitation() {
+  waitUntil(5_000) { exists("tour_decline") }
+}
+
+/** "Sí, vamos" en la invitación: espera al primer paso. */
+fun ComposeTestRule.acceptInvitation() {
+  waitForInvitation()
+  tapTourNext()
+  waitUntil(5_000) { tourCounter() != null }
+}
+
 /** Pulsa Siguiente hasta que el recorrido se cierra (el último paso es "Listo"). */
 fun ComposeTestRule.completeTour() {
   var guard = 0

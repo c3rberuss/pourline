@@ -46,11 +46,11 @@ class ToursCatalogTest {
     val expected = listOf(
       "prepare" to 14, "session_prep" to 6, "session_scaleless" to 4, "summary" to 4, "coffees" to 4, "coffee_edit" to 3,
       "coffee_detail" to 4, "recipes" to 3, "recipe_edit" to 5, "history" to 4, "brew_detail" to 6, "compare" to 3,
-      "tools" to 3, "ratio_calculator" to 2, "four_six" to 4, "converter" to 2, "settings" to 6,
+      "tools" to 3, "ratio_calculator" to 2, "four_six" to 4, "converter" to 2, "settings" to 7,
     )
 
     assertEquals(expected, Tours.all.map { it.id to it.steps.size })
-    assertEquals(77, steps.size)
+    assertEquals(78, steps.size)
   }
 
   @Test
@@ -66,7 +66,7 @@ class ToursCatalogTest {
   fun `every resource exists in values and values-en`() {
     val common = listOf(
       "tour_next", "tour_prev", "tour_done", "tour_skip", "tour_counter", "tour_skipped_hint", "settings_tour_replay",
-      "settings_tour_replay_hint",
+      "settings_tour_replay_hint", "tour_decline", "tour_accept",
     )
     val names = common + steps.flatMap { step -> listOf(stringNames.getValue(step.title), stringNames.getValue(step.body)) }
 
