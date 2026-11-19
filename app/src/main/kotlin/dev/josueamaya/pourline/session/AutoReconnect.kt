@@ -28,14 +28,15 @@ fun shouldReconnect(
   (connection is ConnectionState.Disconnected || connection is ConnectionState.Failed)
 
 /**
- * Reconecta a la última báscula real al abrir la app, al volver a primer plano y al encenderse el Bluetooth.
- * No hay bucles en segundo plano: cada intento sale de un disparador.
+ * Reconecta a la última báscula real al abrir la app, al volver a primer plano y al encenderse el Bluetooth, salvo que
+ * [useScale] diga que se prepara sin báscula. No hay bucles en segundo plano: cada intento sale de un disparador.
  */
 class AutoReconnect(
   private val manager: ScaleSessionManager,
   private val memory: ScaleMemory,
   private val bluetooth: BluetoothEnvironment,
   scope: CoroutineScope,
+  private val useScale: () -> Boolean = { true },
 ) {
   private var started = false
 
@@ -53,6 +54,7 @@ class AutoReconnect(
   }
 
   fun onTrigger(@Suppress("UNUSED_PARAMETER") trigger: ReconnectTrigger) {
+    if (!useScale()) return
     val remembered = memory.lastScale.value
     val reconnect = shouldReconnect(
       remembered,

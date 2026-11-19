@@ -9,6 +9,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -16,10 +17,12 @@ import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.coffee.PickedCoffee
 import dev.josueamaya.pourline.coffee.daysSinceRoast
 import dev.josueamaya.pourline.session.ActiveTarget
+import dev.josueamaya.pourline.ui.components.AntIconButton
 import dev.josueamaya.pourline.ui.components.AntIcons
 import dev.josueamaya.pourline.ui.components.AntSelectTrigger
 import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
+import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
 import java.time.LocalDate
 
@@ -42,6 +45,7 @@ internal fun TargetSelectRow(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   label: String = stringResource(R.string.brew_setup_target),
+  onClear: (() -> Unit)? = null,
 ) {
   BrewSetupRow(label, modifier) { triggerModifier ->
     AntSelectTrigger(
@@ -49,6 +53,7 @@ internal fun TargetSelectRow(
       onClick = onClick,
       modifier = triggerModifier,
       leading = { Icon(AntIcons.Recipe, contentDescription = null, modifier = Modifier.size(SetupIconSize), tint = AntTheme.colors.textTertiary) },
+      trailing = clearButton(onClear.takeIf { target != null && enabled }, stringResource(R.string.brew_setup_target_clear), "target_clear"),
       enabled = enabled,
       description = target?.let { stringResource(R.string.target_chip, it.name) } ?: stringResource(R.string.target_chip_none),
       testTag = "target_chip",
@@ -63,6 +68,7 @@ internal fun CoffeeSelectRow(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   label: String = stringResource(R.string.brew_setup_coffee),
+  onClear: (() -> Unit)? = null,
 ) {
   val days = coffee?.let { daysSinceRoast(it.roastDate, LocalDate.now()) }
   val value = when {
@@ -81,9 +87,24 @@ internal fun CoffeeSelectRow(
       onClick = onClick,
       modifier = triggerModifier,
       leading = { Icon(AntIcons.Coffee, contentDescription = null, modifier = Modifier.size(SetupIconSize), tint = AntTheme.colors.textTertiary) },
+      trailing = clearButton(onClear.takeIf { coffee != null && enabled }, stringResource(R.string.brew_setup_coffee_clear), "coffee_clear"),
       enabled = enabled,
       description = description,
       testTag = "coffee_trigger",
     )
   }
 }
+
+/** La "×" que quita lo elegido sin abrir el selector (como `allowClear` de Ant Design); `null` deja el chevron. */
+private fun clearButton(onClear: (() -> Unit)?, description: String, tag: String): (@Composable () -> Unit)? =
+  onClear?.let { clear ->
+    {
+      AntIconButton(
+        AntIcons.Close,
+        contentDescription = description,
+        onClick = clear,
+        modifier = Modifier.testTag(tag),
+        size = AntSize.Small,
+      )
+    }
+  }

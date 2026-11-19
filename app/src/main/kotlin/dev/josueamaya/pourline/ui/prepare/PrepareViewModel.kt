@@ -18,6 +18,7 @@ import dev.josueamaya.pourline.session.ScaleUiState
 import dev.josueamaya.pourline.session.targetWaterG
 import dev.josueamaya.pourline.settings.FreeBrewDefaults
 import dev.josueamaya.pourline.settings.ReferenceKey
+import dev.josueamaya.pourline.settings.ScaleModeStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -41,6 +42,8 @@ data class PrepareUiState(
   /** La dosis para la que está hecha la receta; `null` si no la tiene (entonces no se puede escalar). */
   val recipeNominalDoseG: Double? = recipeDoseG,
   val canStart: Boolean,
+  /** Con báscula (tarjeta y "Empezar" guiado) o sin ella (solo "Empezar" sin báscula). Ver [ScaleModeStore]. */
+  val useScale: Boolean = true,
 ) {
   /** El ratio agua:café de la receta; `null` sin dosis. */
   val recipeRatio: Double? get() = recipeDoseG?.takeIf { it > 0 }?.let { waterG / it }
@@ -59,14 +62,18 @@ class PrepareViewModel(
   private val defaults: FreeBrewDefaults,
   private val bluetooth: BluetoothEnvironment,
   private val grindSelection: GrindSelection,
+  private val scaleMode: ScaleModeStore,
 ) : ViewModel() {
   private val permissions = MutableStateFlow(bluetooth.permissionsGranted())
 
   private val environment: Flow<Pair<Boolean, Boolean>> = combine(permissions, bluetooth.enabled) { p, e -> p to e }
   private val plan: Flow<BrewPlan> = combine(defaults.defaultDoseG, defaults.defaultRatio, ::BrewPlan)
 
-  val ui: StateFlow<PrepareUiState> = combine(manager.ui, manager.target, memory.lastScale, environment, plan) { scale, target, remembered, env, brewPlan ->
-    build(scale, target, remembered, env.first, env.second, brewPlan)
+  private val scaleSide: Flow<Triple<ScaleTarget?, RememberedScale?, Boolean>> =
+    combine(manager.target, memory.lastScale, scaleMode.useScale, ::Triple)
+
+  val ui: StateFlow<PrepareUiState> = combine(manager.ui, scaleSide, environment, plan) { scale, side, env, brewPlan ->
+    build(scale, side.first, side.second, env.first, env.second, brewPlan, side.third)
   }.stateIn(
     viewModelScope,
     SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
@@ -77,6 +84,7 @@ class PrepareViewModel(
       permissions.value,
       bluetooth.enabled.value,
       BrewPlan(defaults.defaultDoseG.value, defaults.defaultRatio.value),
+      scaleMode.useScale.value,
     ),
   )
 
@@ -95,6 +103,7 @@ class PrepareViewModel(
     permissionsGranted: Boolean,
     bluetoothOn: Boolean,
     plan: BrewPlan,
+    useScale: Boolean,
   ): PrepareUiState {
     val target = scale.target
     return PrepareUiState(
@@ -114,6 +123,7 @@ class PrepareViewModel(
       recipeDoseG = target?.let { it.scaledDoseG ?: it.nominalDoseG },
       recipeNominalDoseG = target?.nominalDoseG,
       canStart = scale.connection == ConnectionState.Ready,
+      useScale = useScale,
     )
   }
 

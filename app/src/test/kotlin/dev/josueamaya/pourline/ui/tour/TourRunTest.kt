@@ -125,4 +125,49 @@ class TourRunTest {
     assertNull(restore(tour, listOf("t.gone"), 0))
     assertEquals(0, restore(tour, listOf("t.a", "t.b"), -3)!!.index)
   }
+
+  private val invited = TourRun("t", listOf(TourStep("t.ask", null, 0, 0, invitation = true)) + tour.steps)
+
+  @Test
+  fun `the invitation does not count in the counter`() {
+    assertEquals(0, invited.position)
+    assertEquals(3, invited.count)
+
+    val accepted = invited.reduce(TourAction.Next)
+    assertEquals(1, accepted.run!!.position)
+    assertEquals(3, accepted.run!!.count)
+    assertEquals(listOf("t.ask"), accepted.markSeen)
+  }
+
+  @Test
+  fun `declining the invitation marks every step of every tour and shows the hint`() {
+    val t = invited.reduce(TourAction.Decline)
+
+    assertNull(t.run)
+    assertEquals(Tours.allStepIds, t.markSeen.toSet())
+    assertTrue(t.skippedHint)
+  }
+
+  @Test
+  fun `back on the invitation declines it`() {
+    assertEquals(invited.reduce(TourAction.Decline), invited.reduce(TourAction.Back))
+  }
+
+  @Test
+  fun `the step after the invitation acts as the first one`() {
+    val first = invited.copy(index = 1)
+
+    assertEquals(first, first.reduce(TourAction.Prev).run)
+    val back = first.reduce(TourAction.Back)
+    assertNull(back.run)
+    assertEquals(listOf("t.ask", "t.a", "t.b", "t.c"), back.markSeen)
+    assertTrue(back.skippedHint)
+  }
+
+  @Test
+  fun `back on a first step without invitation still skips only this opening`() {
+    val t = run().reduce(TourAction.Back)
+
+    assertEquals(listOf("t.a", "t.b", "t.c"), t.markSeen)
+  }
 }

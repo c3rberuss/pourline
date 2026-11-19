@@ -35,6 +35,7 @@ import dev.josueamaya.pourline.settings.DefaultGrinderStore
 import dev.josueamaya.pourline.settings.ExperienceMode
 import dev.josueamaya.pourline.settings.ExpertFeature
 import dev.josueamaya.pourline.settings.ModeStore
+import dev.josueamaya.pourline.settings.ScaleModeStore
 import dev.josueamaya.pourline.settings.TargetSettings
 import dev.josueamaya.pourline.settings.ThemeMode
 import dev.josueamaya.pourline.settings.ThemeSettings
@@ -62,7 +63,8 @@ import kotlinx.coroutines.launch
 /**
  * Recibe los ajustes por parámetro (sin `CompositionLocal`) para poder probarla aislada.
  * [onRestoreRecipes] devuelve las recetas predefinidas a fábrica, tras confirmar; [onOpenGrinders] abre Molinos;
- * [onReplayTour] borra los recorridos vistos y vuelve a Preparar. Con [onBack] `null` (es una
+ * [onReplayTour] borra los recorridos vistos y vuelve a Preparar; [onScaleOff] se llama al pasar a "Sin báscula". Con
+ * [onBack] `null` (es una
  * pestaña) no hay flecha de volver.
  */
 @Composable
@@ -73,11 +75,14 @@ fun SettingsScreen(
   themeSettings: ThemeSettings,
   grinderRepository: GrinderRepository,
   grinderDefaults: DefaultGrinderStore,
+  scaleMode: ScaleModeStore,
   onRestoreRecipes: suspend () -> Unit,
   onOpenGrinders: () -> Unit,
   onReplayTour: () -> Unit,
   onBack: (() -> Unit)?,
+  onScaleOff: () -> Unit = {},
 ) {
+  val useScale by scaleMode.useScale.collectAsStateWithLifecycle()
   val autoFinish by settings.autoFinishSeconds.collectAsStateWithLifecycle()
   val countdown by settings.countdownSeconds.collectAsStateWithLifecycle()
   val experience by experienceSettings.mode.collectAsStateWithLifecycle()
@@ -107,6 +112,26 @@ fun SettingsScreen(
       Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(AntTheme.spacing.base),
       verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.base),
     ) {
+      AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.settings_scale_title)) {
+        AntSegmented(
+          options = listOf(
+            AntSegmentedOption(false, stringResource(R.string.settings_scale_without)),
+            AntSegmentedOption(true, stringResource(R.string.settings_scale_with)),
+          ),
+          selected = useScale,
+          onSelect = { enabled ->
+            if (enabled != useScale) {
+              scaleMode.setUseScale(enabled)
+              if (!enabled) onScaleOff()
+            }
+          },
+          modifier = Modifier.fillMaxWidth().tourAnchor("settings_scale").testTag("settings_scale"),
+        )
+        AntText(
+          stringResource(if (useScale) R.string.settings_scale_with_hint else R.string.settings_scale_without_hint),
+          type = AntTextType.Secondary,
+        )
+      }
       GrindersRow(grinderRepository, grinderDefaults, onOpenGrinders)
       AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.mode_title)) {
         AntSegmented(

@@ -91,6 +91,7 @@ import dev.josueamaya.pourline.ui.tools.ToolsScreen
 import dev.josueamaya.pourline.ui.tour.TourBar
 import dev.josueamaya.pourline.ui.tour.TourRoot
 import dev.josueamaya.pourline.ui.tour.TourScreen
+import dev.josueamaya.pourline.ui.tour.Tours
 import dev.josueamaya.pourline.ui.tour.tourAnchor
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -105,7 +106,7 @@ fun MainNavigation(deps: AppDependencies) {
   if (onboardingDone) {
     TabsNavigation(deps)
   } else {
-    val viewModel = viewModel { OnboardingViewModel(deps.grinderRepository, deps.grinderSettings, deps.experienceSettings) }
+    val viewModel = viewModel { OnboardingViewModel(deps.grinderRepository, deps.grinderSettings, deps.experienceSettings, deps.scaleMode) }
     val catalog by viewModel.catalog.collectAsStateWithLifecycle()
     OnboardingScreen(catalog = catalog, onFinish = viewModel::finish)
   }
@@ -216,7 +217,7 @@ private fun tabEntryProvider(
   }
 
   tabEntry<Prepare>(tab, stack, activeTab) {
-    val viewModel = viewModel { PrepareViewModel(deps.scaleSession, deps.scaleMemory, deps.freeBrewDefaults, deps.bluetooth, deps.grindSelection) }
+    val viewModel = viewModel { PrepareViewModel(deps.scaleSession, deps.scaleMemory, deps.freeBrewDefaults, deps.bluetooth, deps.grindSelection, deps.scaleMode) }
     PrepareScreen(
       viewModel = viewModel,
       scanner = deps.scanner,
@@ -289,11 +290,16 @@ private fun tabEntryProvider(
       deps.themeSettings,
       grinderRepository = deps.grinderRepository,
       grinderDefaults = deps.grinderSettings,
+      scaleMode = deps.scaleMode,
+      // Sin báscula no se ve la tarjeta: la conexión se cierra para que no quede abierta sin que se sepa.
+      onScaleOff = { if (!deps.scaleSession.isArmed) deps.scaleSession.disconnect() },
       onRestoreRecipes = { deps.recipeRepository.restoreBuiltIns() },
       onOpenGrinders = { stack.add(Grinders) },
       // Ajustes solo se abre desde Preparar: su pila es la de Preparar y su raíz, donde sale el recorrido general.
       onReplayTour = {
         deps.tourSettings.reset()
+        // Ya se pidió el recorrido: no se vuelve a preguntar.
+        deps.tourSettings.markSeen(listOf(Tours.INVITATION_ID))
         stack.popToRoot()
         selectTab(Tab.PREPARE)
       },

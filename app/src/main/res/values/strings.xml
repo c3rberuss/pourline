@@ -285,6 +285,11 @@
     <string name="settings_countdown_value">%1$d s</string>
     <string name="settings_countdown_hint">Segundos antes de que arranque el reloj al pulsar «Empezar timer», con o sin báscula. Con báscula, si empiezas a verter antes, la preparación empieza enseguida.</string>
     <string name="settings_stage_title">Guía de pasos</string>
+    <string name="settings_scale_title">Báscula</string>
+    <string name="settings_scale_without">Sin báscula</string>
+    <string name="settings_scale_with">Con báscula</string>
+    <string name="settings_scale_without_hint">Preparas con el reloj: Preparar no muestra la báscula ni se conecta a ella.</string>
+    <string name="settings_scale_with_hint">Conecta tu báscula en Preparar y la sesión sigue el peso en tiempo real.</string>
     <string name="settings_stage_vibration">Vibrar al empezar cada paso</string>
     <string name="settings_stage_sound">Sonido al empezar cada paso</string>
     <string name="settings_recipes_title">Recetas</string>
@@ -474,6 +479,8 @@
     <string name="brew_setup_target_none">Ninguno</string>
     <string name="brew_setup_coffee">Café</string>
     <string name="brew_setup_coffee_none">Sin café</string>
+    <string name="brew_setup_target_clear">Quitar receta</string>
+    <string name="brew_setup_coffee_clear">Quitar café</string>
     <string name="brew_setup_coffee_value">%1$s · día %2$d</string>
     <plurals name="brew_setup_coffee_description">
         <item quantity="one">Café: %1$s, día %2$d desde el tueste</item>
@@ -569,6 +576,8 @@
     <string name="onboarding_title">¿Cómo preparas tu café?</string>
     <string name="onboarding_hint">Puedes cambiarlo cuando quieras en Ajustes.</string>
     <string name="onboarding_skip">Saltar</string>
+    <string name="onboarding_scale_title">¿Usas báscula?</string>
+    <string name="onboarding_scale_without_hint">Preparas con el reloj. Si luego consigues una, cámbialo en Ajustes.</string>
     <string name="onboarding_grinder_title">¿Qué molino usas?</string>
     <string name="onboarding_grinder_hint">Lo usaremos para convertir los ajustes de las recetas a tu molino.</string>
     <string name="onboarding_grinder_skip">Omitir</string>
@@ -947,14 +956,16 @@
     <string name="tour_skip">Saltar</string>
     <string name="tour_counter">%1$d/%2$d</string>
     <string name="tour_skipped_hint">Puedes volver a verlo en Ajustes > Ver recorrido</string>
+    <string name="tour_decline">Ahora no</string>
+    <string name="tour_accept">Sí, vamos</string>
     <string name="settings_tour_replay">Ver recorrido</string>
     <string name="settings_tour_replay_hint">Vuelve a mostrar los recorridos de todas las pantallas.</string>
 
     <!-- prepare -->
-    <string name="tour_prepare_welcome_title">Te damos la bienvenida</string>
-    <string name="tour_prepare_welcome_body">Pourline te guía en cada preparación con tu báscula. En un minuto te enseñamos lo básico.</string>
+    <string name="tour_prepare_welcome_title">¿Te enseñamos la app?</string>
+    <string name="tour_prepare_welcome_body">Un recorrido corto por cada pantalla. Si ya usas apps de café, puedes omitirlo.</string>
     <string name="tour_prepare_scale_title">Tu báscula</string>
-    <string name="tour_prepare_scale_body">Conéctala aquí. Si no tienes una a mano, usa la báscula simulada.</string>
+    <string name="tour_prepare_scale_body">Conéctala aquí. Si preparas sin báscula, cámbialo en Ajustes.</string>
     <string name="tour_prepare_recipe_title">Receta</string>
     <string name="tour_prepare_recipe_body">Elige una receta y la sesión te guiará paso a paso. Sin receta, preparas libre.</string>
     <string name="tour_prepare_coffee_title">Café</string>
@@ -1125,6 +1136,8 @@
     <string name="tour_converter_rows_body">El ajuste equivalente en tus otros molinos.</string>
 
     <!-- settings -->
+    <string name="tour_settings_scale_title">Báscula</string>
+    <string name="tour_settings_scale_body">Elige si preparas con báscula o solo con el reloj.</string>
     <string name="tour_settings_mode_title">Modo</string>
     <string name="tour_settings_mode_body">Básico o Experto. Experto añade gráficas, estabilidad y comparaciones.</string>
     <string name="tour_settings_grinders_title">Molinos</string>

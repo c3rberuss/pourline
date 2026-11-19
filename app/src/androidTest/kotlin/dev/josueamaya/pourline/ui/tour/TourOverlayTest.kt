@@ -91,6 +91,28 @@ class TourOverlayTest {
   }
 
   @Test
+  fun theInvitationDeclinesEveryTourWithTheHint() {
+    val tour = Tour(
+      "t",
+      listOf(
+        TourStep("t.ask", null, R.string.tour_prepare_welcome_title, R.string.tour_prepare_welcome_body, invitation = true),
+        testStep("a", "fake_button"),
+        testStep("b", "fake_button"),
+      ),
+    )
+    val store = InMemoryTourStore()
+    show(store, tour)
+    rule.waitForInvitation()
+    assertEquals(null, rule.tourCounter())
+
+    rule.onNodeWithTag("tour_decline").performClick()
+
+    rule.waitUntil(5_000) { !rule.tourVisible() }
+    assertTrue(store.seen.value.containsAll(Tours.allStepIds))
+    rule.waitUntil(5_000) { rule.onAllNodesWithText(context.getString(R.string.tour_skipped_hint)).fetchSemanticsNodes().isNotEmpty() }
+  }
+
+  @Test
   fun skipMarksOnlyThisOpeningAndShowsTheHint() {
     // `d` es de Experto y `e` tiene su ancla ausente: ni uno ni otro entran en la apertura, así que Saltar no los marca.
     val tour = Tour(

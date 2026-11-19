@@ -9,11 +9,14 @@ import dev.josueamaya.pourline.R
  */
 object Tours {
 
-  /** General, en Preparar: la pantalla y las cuatro pestañas. */
+  /** El primer paso del recorrido general: pregunta si se quiere el recorrido (ver [TourStep.invitation]). */
+  const val INVITATION_ID = "prepare.welcome"
+
+  /** General, en Preparar: la invitación, la pantalla y las cuatro pestañas. */
   val prepare = Tour(
     "prepare",
     listOf(
-      TourStep("prepare.welcome", null, R.string.tour_prepare_welcome_title, R.string.tour_prepare_welcome_body),
+      TourStep(INVITATION_ID, null, R.string.tour_prepare_welcome_title, R.string.tour_prepare_welcome_body, invitation = true),
       TourStep("prepare.scale", "scale_card", R.string.tour_prepare_scale_title, R.string.tour_prepare_scale_body),
       TourStep("prepare.recipe", "prepare_recipe", R.string.tour_prepare_recipe_title, R.string.tour_prepare_recipe_body),
       TourStep("prepare.coffee", "prepare_coffee", R.string.tour_prepare_coffee_title, R.string.tour_prepare_coffee_body),
@@ -196,6 +199,7 @@ object Tours {
   val settings = Tour(
     "settings",
     listOf(
+      TourStep("settings.scale", "settings_scale", R.string.tour_settings_scale_title, R.string.tour_settings_scale_body),
       TourStep("settings.mode", "settings_mode", R.string.tour_settings_mode_title, R.string.tour_settings_mode_body),
       TourStep("settings.grinders", "settings_grinders", R.string.tour_settings_grinders_title, R.string.tour_settings_grinders_body),
       TourStep("settings.theme", "settings_theme", R.string.tour_settings_theme_title, R.string.tour_settings_theme_body),

@@ -20,6 +20,7 @@ import dev.josueamaya.pourline.settings.BrewSettings
 import dev.josueamaya.pourline.settings.ExperienceSettings
 import dev.josueamaya.pourline.settings.FreeBrewDefaults
 import dev.josueamaya.pourline.settings.GrinderSettings
+import dev.josueamaya.pourline.settings.ScaleModeStore
 import dev.josueamaya.pourline.settings.TargetSettings
 import dev.josueamaya.pourline.settings.ThemeSettings
 import dev.josueamaya.pourline.settings.TourSettings
@@ -39,6 +40,8 @@ class AppDependencies(
   val tourSettings: TourSettings,
   val freeBrewDefaults: FreeBrewDefaults,
   val scaleMemory: ScaleMemory,
+  /** Con báscula o sin ella: decide la tarjeta y el "Empezar" de Preparar, y la reconexión automática. */
+  val scaleMode: ScaleModeStore,
   val brewRepository: BrewRepository,
   val coffeeRepository: CoffeeRepository,
   val recipeRepository: RecipeRepository,
