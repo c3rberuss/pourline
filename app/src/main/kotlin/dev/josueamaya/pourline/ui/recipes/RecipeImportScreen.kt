@@ -2,6 +2,8 @@ package dev.josueamaya.pourline.ui.recipes
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -146,6 +150,7 @@ fun RecipeImportScreen(viewModel: RecipeImportViewModel, onDone: () -> Unit, uni
   }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RecipeSummary(recipe: Recipe, unit: WeightUnit) {
   Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
@@ -153,13 +158,28 @@ private fun RecipeSummary(recipe: Recipe, unit: WeightUnit) {
     recipeMethodText(recipe.method, recipe.methodOther)?.let {
       AntText(it, Modifier.testTag("recipe_import_method"), type = AntTextType.Secondary)
     }
-    val facts = buildList {
-      add(stringResource(R.string.recipe_card_dose, weightNumber(recipe.doseG, unit), unit.symbol))
-      add(stringResource(R.string.recipe_card_water, weightNumber(recipe.totalWaterG, unit), unit.symbol))
-      add(stringResource(R.string.recipe_card_ratio, formatRatioNumber(recipe.ratio)))
-      recipe.waterTempC?.let { add(stringResource(R.string.recipe_card_temp, formatGrams(it))) }
+    val dose = stringResource(R.string.recipe_card_dose, weightNumber(recipe.doseG, unit), unit.symbol)
+    val water = stringResource(R.string.recipe_card_water, weightNumber(recipe.totalWaterG, unit), unit.symbol)
+    val ratio = stringResource(R.string.recipe_card_ratio, formatRatioNumber(recipe.ratio))
+    val temp = recipe.waterTempC?.let { stringResource(R.string.recipe_card_temp, formatGrams(it)) }
+    val time = formatClock(recipe.totalDurationMs)
+    val timeDescription = stringResource(R.string.recipe_total_time_description, time)
+    // Cada dato lleva su "·" detrás, salvo el último, para que el separador no quede solo al principio de una línea.
+    FlowRow(
+      Modifier.testTag("recipe_import_facts"),
+      horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs),
+      verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
+    ) {
+      AntText("$dose ·")
+      AntText("$water ·")
+      AntText("$ratio ·")
+      Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs), verticalAlignment = Alignment.CenterVertically) {
+        Icon(AntIcons.Clock, contentDescription = null, modifier = Modifier.size(StepIconSize), tint = AntTheme.colors.textSecondary)
+        AntText(time, Modifier.testTag("recipe_import_duration").semantics { contentDescription = timeDescription })
+        if (temp != null) AntText("·")
+      }
+      temp?.let { AntText(it) }
     }
-    AntText(facts.joinToString(" · "), Modifier.testTag("recipe_import_facts"))
   }
 }
 

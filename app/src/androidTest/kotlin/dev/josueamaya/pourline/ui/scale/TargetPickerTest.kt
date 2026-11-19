@@ -2,6 +2,8 @@ package dev.josueamaya.pourline.ui.scale
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -28,8 +30,8 @@ class TargetPickerTest {
   private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
   private val recipes = listOf(
-    RecipeListItem(1, "V60 clásica", BrewMethod.V60, null, 15.0, 250.0, 3, builtIn = true),
-    RecipeListItem(2, "Mi receta", BrewMethod.CHEMEX, null, 30.0, 500.0, 4, builtIn = false),
+    RecipeListItem(1, "V60 clásica", BrewMethod.V60, null, 15.0, 250.0, 3, builtIn = true, totalDurationMs = 115_000),
+    RecipeListItem(2, "Mi receta", BrewMethod.CHEMEX, null, 30.0, 500.0, 4, builtIn = false, totalDurationMs = 210_000),
   )
 
   private fun brew(id: Long, name: String, waterG: Double) = BrewListItem(
@@ -96,6 +98,14 @@ class TargetPickerTest {
     tab(R.string.target_picker_history).assertIsDisplayed()
     rule.onAllNodesWithTag("recipe_row").assertCountEquals(2)
     rule.onAllNodesWithTag("history_row").assertCountEquals(0)
+  }
+
+  @Test
+  fun aRecipeRowShowsItsTotalTime() {
+    show()
+    rule.onNode(hasText("1:55", substring = true)).assertIsDisplayed()
+    rule.onNode(hasText("3:30", substring = true)).assertIsDisplayed()
+    rule.onNode(hasContentDescription(context.getString(R.string.recipe_total_time_description, "3:30"), substring = true)).assertIsDisplayed()
   }
 
   @Test

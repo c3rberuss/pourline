@@ -9,6 +9,7 @@ import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.history.BrewDetails
 import dev.josueamaya.pourline.history.ReferenceType
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.aeroPressWithActions
 import dev.josueamaya.pourline.recipe.v60Classic
 import dev.josueamaya.pourline.settings.ReferenceKey
 import dev.josueamaya.pourline.protocol.WeightUnit
@@ -126,14 +127,15 @@ class BrewKeepAliveTest {
     withRecipe: Boolean = true,
     stageIndex: Int? = 0,
     done: Boolean = false,
+    targetCurve: TargetCurve = curve,
   ): ScaleUiState {
     val target = if (withRecipe) {
-      ActiveTarget(ReferenceKey.Recipe(1), ReferenceType.RECIPE, "V60 clásica", curve, 1.0, 15.0, null, BrewDetails())
+      ActiveTarget(ReferenceKey.Recipe(1), ReferenceType.RECIPE, "V60 clásica", targetCurve, 1.0, 15.0, null, BrewDetails())
     } else {
       null
     }
     val guide = target?.let {
-      GuideState(stageIndex?.let { i -> curve.stages[i] }, null, null, null, null, allStagesDone = done)
+      GuideState(stageIndex?.let { i -> targetCurve.stages[i] }, null, null, null, null, allStagesDone = done)
     }
     return open(phase, t0).copy(
       scaleless = true,
@@ -177,6 +179,17 @@ class BrewKeepAliveTest {
       val step = scaleless(BrewPhase.Active(pouring = false), t0 = 0, stageIndex = other).toBrewNotice().step!!
       assertNull(step.targetWaterG)
     }
+  }
+
+  @Test
+  fun `a scaleless notice of an action step has its type and no water`() {
+    val aeroPress = TargetCurve.fromRecipe(aeroPressWithActions())
+    val notice = scaleless(BrewPhase.Active(pouring = false), t0 = 0, stageIndex = 2, targetCurve = aeroPress).toBrewNotice()
+    val step = notice.step!!
+    assertEquals(StageType.ACTION, step.type)
+    assertNull(step.targetWaterG)
+    assertEquals(3, step.number)
+    assertEquals(6, step.count)
   }
 
   @Test

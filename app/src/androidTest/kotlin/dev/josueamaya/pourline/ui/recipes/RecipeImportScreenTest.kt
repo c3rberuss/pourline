@@ -3,7 +3,10 @@ package dev.josueamaya.pourline.ui.recipes
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
@@ -30,6 +33,7 @@ import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.aeroPressWithActions
 import dev.josueamaya.pourline.recipe.share.ImportError
 import dev.josueamaya.pourline.recipe.share.ImportNotice
 import dev.josueamaya.pourline.recipe.share.PendingRecipeImport
@@ -128,6 +132,15 @@ class RecipeImportScreenTest {
   }
 
   @Test
+  fun showsTheTotalTimeNextToTheWaterAndTheRatio() {
+    show(uriOf(recipe()))
+
+    // Los pasos acaban en 1:45 (45 s de inicio y 60 s de duración del último).
+    rule.onNodeWithTag("recipe_import_duration").performScrollTo().assertIsDisplayed().assertTextEquals("1:45")
+      .assertContentDescriptionEquals(context.getString(R.string.recipe_total_time_description, "1:45"))
+  }
+
+  @Test
   fun showsTheRecipeWithNotesAndStepInstructions() {
     show(uriOf(recipe(notes = "Agua filtrada y molienda media", withInstruction = true)))
 
@@ -177,6 +190,46 @@ class RecipeImportScreenTest {
     val names = parts.map { context.getString(it) }
     val list = if (names.size == 1) names[0] else context.getString(R.string.recipe_trimmed_list_two, names[0], names[1])
     return context.getString(R.string.recipe_import_trimmed, list)
+  }
+
+  @Test
+  fun showsActionStepsWithTheirTypeAndInstructionAndSavesThem() {
+    val action = context.getString(R.string.step_type_action)
+    show(uriOf(aeroPressWithActions()))
+
+    for (i in listOf(2, 4, 5)) {
+      rule.onNode(hasTestTag("recipe_import_step_$i") and hasAnyDescendant(hasText(action))).performScrollTo().assertIsDisplayed()
+    }
+    rule.onNodeWithTag("recipe_import_step_instruction_2").performScrollTo().assertTextEquals("Pon la tapa")
+    rule.onNodeWithTag("recipe_import_step_instruction_4").performScrollTo().assertTextEquals("Invierte")
+    assertFalse(exists("recipe_import_step_instruction_5"))
+    rule.onNodeWithTag("recipe_import_duration").performScrollTo().assertTextEquals("2:00")
+
+    save()
+    val stages = saved().single().stages
+    assertEquals(
+      listOf(StageType.POUR, StageType.SWIRL, StageType.ACTION, StageType.WAIT, StageType.ACTION, StageType.ACTION),
+      stages.map { it.type },
+    )
+    assertEquals(listOf(null, null, "Pon la tapa", null, "Invierte", null), stages.map { it.instruction })
+  }
+
+  @Test
+  fun aTrimmedActionShowsItsTypeAndThePartialWarning() {
+    // Como `showsThePartialInstructionsWarning`, pero con una Acción en lugar de cada espera.
+    val stages = stagesWithInstructions(10, 60).map { if (it.type == StageType.WAIT) it.copy(type = StageType.ACTION) else it }
+    val long = recipe(notes = randomText(300, 99), stages = stages)
+    val encoded = RecipeShareCodec.encode(long, null)!!
+    assertTrue("el recorte debía ser parcial: ${encoded.droppedInstructions} quitadas y ${encoded.keptInstructions} conservadas", encoded.partialInstructions)
+    show(encoded.uri)
+
+    rule.onNodeWithTag("recipe_import_trimmed").assertIsDisplayed()
+    rule.onNode(hasText(trimmedMessage(R.string.recipe_trimmed_notes, R.string.recipe_trimmed_some_instructions))).assertExists()
+    // Las Acciones siguen siendo Acciones; la del final se muestra sin instrucción y la primera con ella.
+    val action = context.getString(R.string.step_type_action)
+    rule.onNode(hasTestTag("recipe_import_step_9") and hasAnyDescendant(hasText(action))).performScrollTo().assertIsDisplayed()
+    assertFalse(exists("recipe_import_step_instruction_9"))
+    rule.onNodeWithTag("recipe_import_step_instruction_1").performScrollTo().assertIsDisplayed()
   }
 
   @Test

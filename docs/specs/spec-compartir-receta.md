@@ -151,7 +151,7 @@
 
   | Orden | Campo | Tipo | Contenido |
   |---|---|---|---|
-  | 1 | `sflags` | `uvar` | bits 0-1: tipo (0 `POUR`, 1 `SWIRL`, 2 `WAIT`; 3 es `Corrupt`). Bit 2: nombre. Bit 3: instrucción |
+  | 1 | `sflags` | `uvar` | bits 0-1: tipo (0 `POUR`, 1 `SWIRL`, 2 `WAIT`, 3 `ACTION` desde [SPEC-010](spec-paso-accion.md); antes, 3 era `Corrupt`). Bit 2: nombre. Bit 3: instrucción |
   | 2 | `gap` | `uvar` | tiempo desde el fin del paso anterior hasta el inicio de este (`startMs` en el primero), en la unidad de tiempo |
   | 3 | `duration` | `uvar` | `durationMs`, en la unidad de tiempo |
   | 4 | `water` | `uvar` | solo en `POUR`: agua que añade sobre el acumulado del `POUR` anterior (o sobre 0), en décimas de gramo |

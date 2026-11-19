@@ -27,10 +27,20 @@ data class Recipe(
   /** El agua acumulada del último paso `POUR`. */
   val totalWaterG: Double get() = stages.lastOrNull { it.type == StageType.POUR }?.targetWaterG ?: 0.0
   val ratio: Double get() = totalWaterG / doseG
+
+  /**
+   * Lo que dura la preparación: el `endMs` mayor de los pasos (0 sin pasos). Incluye los huecos entre pasos y la espera
+   * o el drawdown final. No es `TargetCurve.endMs`, que termina en el último vertido, sino
+   * `TargetCurve.lastStepEndMs`.
+   */
+  val totalDurationMs: Long get() = stages.maxOfOrNull { it.endMs } ?: 0L
 }
 
-/** Qué hay que hacer en un paso: verter agua, remover o esperar. */
-enum class StageType { POUR, SWIRL, WAIT }
+/**
+ * Qué hay que hacer en un paso: verter agua, remover, esperar o una acción genérica ([ACTION], por ejemplo "Pon la tapa",
+ * que se describe en la instrucción). Solo `POUR` añade agua.
+ */
+enum class StageType { POUR, SWIRL, WAIT, ACTION }
 
 data class RecipeStage(
   /** Opcional ("Bloom"). */
@@ -38,7 +48,7 @@ data class RecipeStage(
   /** Instante de inicio relativo a t0. */
   val startMs: Long,
   /**
-   * Agua ACUMULADA al terminar el paso. En `SWIRL` y `WAIT` no añaden agua y valen lo mismo que el `POUR`
+   * Agua ACUMULADA al terminar el paso. En `SWIRL`, `WAIT` y `ACTION` no añaden agua y valen lo mismo que el `POUR`
    * anterior (0 si no hay): ver [withDerivedWater].
    */
   val targetWaterG: Double,
@@ -51,7 +61,7 @@ data class RecipeStage(
   val endMs: Long get() = startMs + durationMs
 }
 
-/** Fija el agua de cada `SWIRL` y `WAIT` al acumulado del `POUR` anterior (0 si no hay). */
+/** Fija el agua de cada `SWIRL`, `WAIT` y `ACTION` al acumulado del `POUR` anterior (0 si no hay). */
 fun List<RecipeStage>.withDerivedWater(): List<RecipeStage> {
   var accumulated = 0.0
   return map { stage ->

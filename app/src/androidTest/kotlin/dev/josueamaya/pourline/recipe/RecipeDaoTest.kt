@@ -91,7 +91,8 @@ class RecipeDaoTest {
     val id = repository.save(recipe)
     assertEquals(recipe.copy(id = id), repository.get(id))
     val item = repository.list().first().single { it.id == id }
-    assertEquals(2, item.stageCount) // solo los vertidos
+    assertEquals(4, item.stageCount) // todos los pasos, de cualquier tipo
+    assertEquals(65_000, item.totalDurationMs)
     assertEquals(160.0, item.totalWaterG, 0.0)
   }
 
@@ -121,6 +122,7 @@ class RecipeDaoTest {
     assertEquals("Mi receta", item.name)
     assertEquals(160.0, item.totalWaterG, 0.0)
     assertEquals(2, item.stageCount)
+    assertEquals(65_000, item.totalDurationMs)
     assertFalse(item.builtIn)
     assertEquals(16.0, item.doseG, 0.0)
   }

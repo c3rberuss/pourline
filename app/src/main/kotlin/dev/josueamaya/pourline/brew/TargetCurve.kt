@@ -12,7 +12,7 @@ data class TargetStage(
   val startMs: Long,
   /** Fin del vertido de la etapa. */
   val endMs: Long,
-  /** Agua acumulada al terminar la etapa; en `SWIRL` y `WAIT`, la del vertido anterior. */
+  /** Agua acumulada al terminar la etapa; en `SWIRL`, `WAIT` y `ACTION`, la del vertido anterior. */
   val targetWaterG: Double,
   val type: StageType = StageType.POUR,
   val instruction: String? = null,
@@ -62,7 +62,7 @@ data class TargetCurve(
 
   companion object {
     /**
-     * Una rampa durante cada vertido y una meseta en los huecos y durante los `SWIRL` y `WAIT`. Los puntos salen
+     * Una rampa durante cada vertido y una meseta en los huecos y durante los `SWIRL`, `WAIT` y `ACTION`. Los puntos salen
      * solo de los pasos `POUR`; las etapas, de todos. Si el primer vertido no empieza en 0, se añade `(0, 0)`.
      */
     fun fromRecipe(recipe: Recipe): TargetCurve {

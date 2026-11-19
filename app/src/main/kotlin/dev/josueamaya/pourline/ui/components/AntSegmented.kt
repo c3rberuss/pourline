@@ -34,6 +34,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -45,9 +47,15 @@ data class AntSegmentedOption<T>(val value: T, val label: String, val icon: Imag
 
 private val TrackPadding = 2.dp
 
+private val IconOnlyItemWidth = 48.dp
+private val IconOnlyIconSize = 20.dp
+
 /**
  * `Segmented` de Ant Design: opciones del mismo ancho con un indicador que se desliza a la opción
  * elegida. Necesita un ancho acotado (por ejemplo `fillMaxWidth()` o `width(…)`).
+ *
+ * Con [iconOnly] cada opción es solo su icono (obligatorio), de 20 dp, y [AntSegmentedOption.label] pasa a ser su
+ * descripción para TalkBack. El componente toma entonces su propio ancho: 48 dp por opción más el relleno de la pista.
  */
 @Composable
 fun <T> AntSegmented(
@@ -57,7 +65,9 @@ fun <T> AntSegmented(
   modifier: Modifier = Modifier,
   size: AntSize = AntSize.Middle,
   enabled: Boolean = true,
+  iconOnly: Boolean = false,
 ) {
+  if (iconOnly) options.forEach { requireNotNull(it.icon) { "iconOnly exige un icono en cada opción" } }
   val colors = AntTheme.colors
   val motion = AntTheme.motion
   val radius = AntTheme.radius.of(size)
@@ -74,8 +84,10 @@ fun <T> AntSegmented(
     label = "AntSegmentedThumb",
   )
 
+  val ownWidth = if (iconOnly) Modifier.width(IconOnlyItemWidth * options.size + TrackPadding * 2) else Modifier
   Box(
     modifier
+      .then(ownWidth)
       .minimumInteractiveComponentSize()
       .height(AntTheme.controlHeight.of(size))
       .clip(trackShape)
@@ -118,12 +130,15 @@ fun <T> AntSegmented(
               role = Role.RadioButton,
               onClick = { onSelect(option.value) },
             )
+            .then(if (iconOnly) Modifier.semantics { contentDescription = option.label } else Modifier)
             .padding(horizontal = AntTheme.spacing.xs),
           horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
           verticalAlignment = Alignment.CenterVertically,
         ) {
-          option.icon?.let { Icon(it, contentDescription = null, modifier = Modifier.size(16.dp), tint = contentColor) }
-          Text(option.label, color = contentColor, style = AntTheme.typography.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+          option.icon?.let {
+            Icon(it, contentDescription = null, modifier = Modifier.size(if (iconOnly) IconOnlyIconSize else 16.dp), tint = contentColor)
+          }
+          if (!iconOnly) Text(option.label, color = contentColor, style = AntTheme.typography.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
       }
     }

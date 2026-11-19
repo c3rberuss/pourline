@@ -10,7 +10,7 @@ class AntColorsContrastTest {
 
   private fun ratio(a: Color, b: Color) = AntPalette.contrast(a.toArgb(), b.toArgb())
 
-  private fun AntColors.roles() = mapOf("primary" to primary, "success" to success, "warning" to warning, "error" to error, "info" to info)
+  private fun AntColors.roles() = mapOf("primary" to primary, "success" to success, "warning" to warning, "error" to error, "info" to info, "magenta" to magenta)
 
   private fun check(colors: AntColors) {
     val mode = if (colors.isDark) "dark" else "light"

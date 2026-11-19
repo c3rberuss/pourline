@@ -210,7 +210,7 @@
     <string name="recipe_undo">Undo</string>
     <string name="recipe_builtin_tag">Built-in</string>
     <string name="recipe_active_tag">Active</string>
-    <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s</string>
+    <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s · %5$s</string>
     <plurals name="recipe_stage_count">
         <item quantity="one">%1$d step</item>
         <item quantity="other">%1$d steps</item>
@@ -234,13 +234,18 @@
     <string name="step_type_pour">Pour</string>
     <string name="step_type_swirl">Swirl</string>
     <string name="step_type_wait">Wait</string>
+    <string name="step_type_action">Action</string>
     <string name="recipe_stage_instruction">Instruction (optional)</string>
+    <string name="recipe_action_instruction_hint">Describe the action, for example \"Put the cap on\"</string>
     <string name="recipe_stage_instruction_counter">%1$d/%2$d</string>
     <string name="recipe_edit_stage_remove">Remove step %1$d</string>
     <string name="recipe_edit_add_stage">Add step</string>
     <string name="recipe_edit_four_six">Generate with the 4:6 method</string>
     <string name="recipe_edit_totals">Total water %1$s g · Ratio 1:%2$s</string>
     <string name="recipe_edit_totals_water">Total water %1$s g</string>
+    <string name="recipe_edit_totals_time">Total water %1$s g · Ratio 1:%2$s · %3$s</string>
+    <string name="recipe_edit_totals_water_time">Total water %1$s g · %2$s</string>
+    <string name="recipe_total_time_description">Total time %1$s</string>
     <string name="recipe_edit_preview">Curve preview</string>
     <string name="recipe_edit_save">Save</string>
     <string name="recipe_edit_duplicate">Duplicate</string>
@@ -1044,7 +1049,7 @@
     <string name="tour_recipe_edit_method_title">Method</string>
     <string name="tour_recipe_edit_method_body">The brewing method.</string>
     <string name="tour_recipe_edit_stage_title">Steps</string>
-    <string name="tour_recipe_edit_stage_body">Each step is a pour, a swirl or a wait, with its timing.</string>
+    <string name="tour_recipe_edit_stage_body">Each step is a pour, a swirl, a wait or an action, with its timing.</string>
     <string name="tour_recipe_edit_add_stage_title">Add step</string>
     <string name="tour_recipe_edit_add_stage_body">Add more steps to the recipe.</string>
     <string name="tour_recipe_edit_totals_title">Totals</string>

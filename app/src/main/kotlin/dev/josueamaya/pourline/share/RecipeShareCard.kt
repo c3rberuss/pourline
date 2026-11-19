@@ -30,6 +30,7 @@ import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.protocol.WeightUnit
 import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.ui.components.AntIcons
 import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.history.label
@@ -65,9 +66,10 @@ private val StepGap = 4.dp
 private val EvenCenterHorizontally = Alignment.Horizontal { size, space, _ -> ((space - size) / 2) and 1.inv() }
 
 /**
- * La tarjeta de una receta (SPEC-009 §3.3, enmienda 1): el nombre y los datos a todo el ancho, una fila de alto fijo por
- * paso y, al final, una franja con el QR de módulos de 6 px y su texto. Sin notas ni instrucciones. Mide 1080 px de ancho
- * y al menos 1350 de alto: crece con el contenido (ver [ShareFrame]). Sin [RecipeShareData.qr] no hay franja.
+ * La tarjeta de una receta (SPEC-009 §3.3, enmienda 1): el nombre y los datos (dosis, agua, ratio y tiempo total con un
+ * reloj, SPEC-010) a todo el ancho, una fila de alto fijo por paso y, al final, una franja con el QR de módulos de 6 px
+ * y su texto. Sin notas ni instrucciones. Mide 1080 px de ancho y al menos 1350 de alto: crece con el contenido (ver
+ * [ShareFrame]). Sin [RecipeShareData.qr] no hay franja.
  */
 @Composable
 fun RecipeShareCard(data: RecipeShareData, modifier: Modifier = Modifier) {
@@ -106,6 +108,9 @@ private fun RecipeFacts(data: RecipeShareData, modifier: Modifier) {
       AntText(stringResource(R.string.recipe_card_water, weightNumber(recipe.totalWaterG, unit), unit.symbol), Modifier.testTag("share_recipe_water"), style = style, maxLines = 1)
       Separator(style)
       AntText(stringResource(R.string.recipe_card_ratio, formatRatioNumber(recipe.ratio)), Modifier.testTag("share_recipe_ratio"), style = style, maxLines = 1)
+      Separator(style)
+      Icon(AntIcons.Clock, contentDescription = null, modifier = Modifier.size(StepIconSize).align(Alignment.CenterVertically), tint = AntTheme.colors.textSecondary)
+      AntText(formatClock(recipe.totalDurationMs), Modifier.testTag("share_recipe_duration"), style = style, maxLines = 1)
     }
     recipe.waterTempC?.let {
       AntText(stringResource(R.string.recipe_card_temp, formatGrams(it)), Modifier.testTag("share_recipe_temp"), style = style, maxLines = 1)

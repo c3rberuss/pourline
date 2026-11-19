@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -68,15 +69,33 @@ class RecipesScreenTest {
     rule.onAllNodesWithTag("recipe_builtin_tag", useUnmergedTree = true).assertCountEquals(2)
     rule.onNodeWithText(texts.builtInName(BuiltInRecipes.V60_CLASSIC)).assertIsDisplayed()
     rule.onNodeWithText(texts.builtInName(BuiltInRecipes.FOUR_SIX)).assertIsDisplayed()
-    // "15 g · 250 g · 1:16,7 · 3 etapas" con los números del idioma actual.
+    // "15 g · 250 g · 1:16,7 · 5 pasos · 1:55" con los números del idioma actual.
     val summary = context.getString(
       R.string.recipe_summary,
       "15",
       "250",
       context.getString(R.string.scale_ratio_value, 250.0 / 15),
-      context.resources.getQuantityString(R.plurals.recipe_stage_count, 3, 3),
+      context.resources.getQuantityString(R.plurals.recipe_stage_count, 5, 5),
+      "1:55",
     )
     rule.onNodeWithText(summary).assertIsDisplayed()
+  }
+
+  @Test
+  fun theRowsShowTheirTotalTime() {
+    waitForRows(2)
+    // La 4:6 de fábrica: 9 pasos y 3:10 (el último vertido acaba en 3:10).
+    val summary = context.getString(
+      R.string.recipe_summary,
+      "20",
+      "300",
+      context.getString(R.string.scale_ratio_value, 300.0 / 20),
+      context.resources.getQuantityString(R.plurals.recipe_stage_count, 9, 9),
+      "3:10",
+    )
+    rule.onNodeWithText(summary).assertIsDisplayed()
+    val description = context.getString(R.string.recipe_total_time_description, "3:10")
+    rule.onNode(hasContentDescription(description, substring = true)).assertIsDisplayed()
   }
 
   @Test

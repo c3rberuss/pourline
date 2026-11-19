@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import dev.josueamaya.pourline.R
@@ -20,11 +22,12 @@ import dev.josueamaya.pourline.ui.components.AntTagColor
 import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.history.label
+import dev.josueamaya.pourline.ui.session.formatClock
 import dev.josueamaya.pourline.ui.theme.AntTheme
 import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 /**
- * Fila de una receta: nombre, método, "15 g · 250 g · 1:16,7 · 3 etapas" y las etiquetas "Predefinida" y,
+ * Fila de una receta: nombre, método, "15 g · 250 g · 1:16,7 · 5 pasos · 1:55" y las etiquetas "Predefinida" y,
  * si [active], "Activa". También la usa el selector de objetivo de Scale.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -44,7 +47,11 @@ fun RecipeRow(
       AntText(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
       val method = item.method?.let { if (it == BrewMethod.OTHER) item.methodOther ?: it.label() else it.label() }
       method?.let { AntText(it, type = AntTextType.Secondary, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-      AntText(recipeSummary(item.doseG, item.totalWaterG, item.stageCount), type = AntTextType.Secondary)
+      val time = formatClock(item.totalDurationMs)
+      val timeDescription = stringResource(R.string.recipe_total_time_description, time)
+      val summary = recipeSummary(item.doseG, item.totalWaterG, item.stageCount, time)
+      val summaryDescription = recipeSummary(item.doseG, item.totalWaterG, item.stageCount, timeDescription)
+      AntText(summary, Modifier.semantics { contentDescription = summaryDescription }, type = AntTextType.Secondary)
       if (item.builtIn || active) {
         FlowRow(
           horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),

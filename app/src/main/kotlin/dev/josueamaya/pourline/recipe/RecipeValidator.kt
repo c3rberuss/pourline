@@ -33,7 +33,7 @@ sealed interface RecipeError {
   /** Agua acumulada no mayor que la de la etapa anterior. */
   data class WaterNotIncreasing(override val index: Int) : StageError
 
-  /** Duración fuera de 1-120 s (`POUR` y `SWIRL`) o de 1-600 s (`WAIT`). */
+  /** Duración fuera de 1-120 s (`POUR`, `SWIRL` y `ACTION`) o de 1-600 s (`WAIT`). */
   data class DurationOutOfRange(override val index: Int) : StageError
 
   /** Instrucción de más de 200 caracteres. */

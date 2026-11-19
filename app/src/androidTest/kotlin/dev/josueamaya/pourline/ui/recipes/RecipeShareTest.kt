@@ -34,6 +34,7 @@ import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.aeroPressWithActions
 import dev.josueamaya.pourline.recipe.share.DecodeResult
 import dev.josueamaya.pourline.recipe.share.QrReadResult
 import dev.josueamaya.pourline.recipe.share.RecipeShareCodec
@@ -298,6 +299,30 @@ class RecipeShareTest {
       assertNull(shared.recipe.stages.last().instruction)
       assertNull(shared.recipe.notes)
       assertEquals(encoded.keptInstructions, shared.recipe.stages.count { it.instruction != null })
+    } finally {
+      reader.close()
+    }
+  }
+
+  @Test
+  fun aRecipeWithActionsSharesAQrThatKeepsTheActions() {
+    val reader = MlKitQrImageReader(context)
+    try {
+      awaitQrModel(reader)
+      val id = runBlocking { recipes.save(aeroPressWithActions()) }
+      show(id)
+      tapShare()
+      waitForChooser()
+
+      val read = runBlocking { reader.read(sentStream()) }
+      assertTrue("no se leyó ningún QR: $read", read is QrReadResult.Found)
+      val shared = (RecipeShareCodec.decode((read as QrReadResult.Found).text) as DecodeResult.Ok).shared
+      val stages = shared.recipe.stages
+      assertEquals(
+        listOf(StageType.POUR, StageType.SWIRL, StageType.ACTION, StageType.WAIT, StageType.ACTION, StageType.ACTION),
+        stages.map { it.type },
+      )
+      assertEquals(listOf(null, null, "Pon la tapa", null, "Invierte", null), stages.map { it.instruction })
     } finally {
       reader.close()
     }

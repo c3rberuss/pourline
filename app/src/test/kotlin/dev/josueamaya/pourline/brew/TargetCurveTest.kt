@@ -2,6 +2,7 @@ package dev.josueamaya.pourline.brew
 
 import dev.josueamaya.pourline.recipe.StageGaps
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.aeroPressWithActions
 import dev.josueamaya.pourline.recipe.recipeOf
 import dev.josueamaya.pourline.recipe.stage
 import dev.josueamaya.pourline.recipe.v60Classic
@@ -67,6 +68,19 @@ class TargetCurveTest {
     assertEquals(40.0, curve.waterAt(12_000), 0.0)
     assertEquals(40.0, curve.waterAt(30_000), 0.0)
     assertEquals(70.0, curve.waterAt(40_000), 1e-9)
+  }
+
+  @Test
+  fun `an action is a plateau and carries its type and instruction`() {
+    val curve = TargetCurve.fromRecipe(aeroPressWithActions())
+    assertEquals(StageType.ACTION, curve.stages[2].type)
+    assertEquals("Pon la tapa", curve.stages[2].instruction)
+    assertEquals(listOf(null, null, "Pon la tapa", null, "Invierte", null), curve.stages.map { it.instruction })
+    assertEquals(200.0, curve.stages[2].targetWaterG, 0.0)
+    assertEquals(200.0, curve.waterAt(22_000), 0.0)
+    assertEquals(200.0, curve.waterAt(100_000), 0.0)
+    assertEquals(120_000L, curve.lastStepEndMs)
+    assertEquals(10_000L, curve.endMs)
   }
 
   @Test

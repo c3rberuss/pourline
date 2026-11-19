@@ -153,4 +153,38 @@ class RecipeValidatorTest {
     assertTrue(errors(valid().copy(method = null)).isEmpty())
     assertTrue(errors(valid().copy(method = BrewMethod.OTHER, methodOther = null)).isEmpty())
   }
+
+  @Test
+  fun `an action lasts from 1 to 120 s`() {
+    val pour = stage(0, 40.0, 10)
+    fun actionOf(seconds: Long) = RecipeStage(null, 10_000, 40.0, seconds * 1_000, StageType.ACTION)
+    assertTrue(errors(recipeOf(pour, actionOf(1))).isEmpty())
+    assertTrue(errors(recipeOf(pour, actionOf(120))).isEmpty())
+    assertEquals(listOf(RecipeError.DurationOutOfRange(1)), errors(recipeOf(pour, actionOf(0))))
+    assertEquals(listOf(RecipeError.DurationOutOfRange(1)), errors(recipeOf(pour, actionOf(121))))
+  }
+
+  @Test
+  fun `a recipe with only actions, or with actions and waits, has no pour`() {
+    assertEquals(listOf(RecipeError.NoPour), errors(recipeOf(stage(0, 0.0, 10, type = StageType.ACTION))))
+    assertEquals(
+      listOf(RecipeError.NoPour),
+      errors(recipeOf(stage(0, 0.0, 10, type = StageType.ACTION), stage(10, 0.0, 10, type = StageType.WAIT))),
+    )
+  }
+
+  @Test
+  fun `an action without instruction is valid`() {
+    val recipe = recipeOf(stage(0, 40.0, 10), stage(10, 40.0, 5, type = StageType.ACTION, instruction = null))
+    assertTrue(errors(recipe).isEmpty())
+    assertTrue(errors(aeroPressWithActions()).isEmpty())
+  }
+
+  @Test
+  fun `an action that starts before the previous step ends overlaps`() {
+    assertEquals(
+      listOf(RecipeError.StartOverlaps(1)),
+      errors(recipeOf(stage(0, 40.0, 10), stage(5, 40.0, 5, type = StageType.ACTION))),
+    )
+  }
 }
