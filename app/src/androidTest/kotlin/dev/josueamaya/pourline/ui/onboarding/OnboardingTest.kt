@@ -238,4 +238,38 @@ class OnboardingTest {
     rule.waitUntil(5_000) { rule.onAllNodesWithTag("onboarding_grinder_acme-uno").fetchSemanticsNodes().isEmpty() }
     rule.onNodeWithTag("onboarding_grinder_acme-inverso").assertIsDisplayed()
   }
+
+  // --- La pregunta de báscula para quien ya había terminado el onboarding ---
+
+  @Test
+  fun skippingTheOnboardingSavesTheDefaultScaleModeSoItIsNotAskedLater() {
+    env.close()
+    env = TestAppDependencies(context, useScale = null)
+    env.skipTours()
+    show()
+
+    rule.onNodeWithTag("onboarding_skip").performClick()
+
+    waitFor("prepare_start_scaleless")
+    assertTrue(env.connectionSettings.scaleModeChosen.value)
+    rule.onNodeWithTag("onboarding_scale_with").assertDoesNotExist()
+  }
+
+  @Test
+  fun anExistingInstallIsAskedOnceAndThenOpensPrepare() {
+    env.close()
+    env = TestAppDependencies(context, useScale = null)
+    env.skipOnboarding()
+    show()
+
+    waitFor("onboarding_scale_without")
+    rule.onNodeWithTag("onboarding_scale_back").assertDoesNotExist()
+    rule.onNodeWithTag("tab_prepare").assertDoesNotExist()
+    rule.onNodeWithTag("onboarding_scale_without").performClick()
+
+    waitFor("prepare_start_scaleless")
+    assertFalse(env.connectionSettings.useScale.value)
+    assertTrue(env.connectionSettings.scaleModeChosen.value)
+    rule.onNodeWithTag("scale_card").assertDoesNotExist()
+  }
 }

@@ -24,11 +24,12 @@ class OnboardingViewModel(
   val catalog: StateFlow<List<Grinder>?> = grinders.catalog().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
   /**
-   * Termina el onboarding: guarda el modo de báscula si se eligió ([useScale] no es `null`), con [grinderId] marca el
-   * molino como "Lo tengo" y como predeterminado, y después guarda el modo y `onboarding_done` en una sola escritura.
+   * Termina el onboarding: guarda el modo de báscula elegido o, si se saltó la pregunta ([useScale] es `null`), el de por
+   * defecto, para no volver a preguntarlo; con [grinderId] marca el molino como "Lo tengo" y como predeterminado, y
+   * después guarda el modo y `onboarding_done` en una sola escritura.
    */
   fun finish(mode: ExperienceMode, useScale: Boolean?, grinderId: Long?) {
-    useScale?.let(scaleMode::setUseScale)
+    scaleMode.setUseScale(useScale ?: scaleMode.useScale.value)
     viewModelScope.launch {
       if (grinderId != null) {
         grinders.setOwned(grinderId, true)
