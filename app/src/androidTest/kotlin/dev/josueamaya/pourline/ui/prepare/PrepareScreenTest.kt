@@ -438,6 +438,32 @@ class PrepareScreenTest {
   // --- receta y café ---
 
   @Test
+  fun theXClearsTheRecipeAndTheCoffeeWithoutOpeningThePickers() {
+    runBlocking { env.coffees.save(CoffeeDraft(name = "Etiopía Guji")) }
+    show()
+    assertTrue(!exists("target_clear"))
+    assertTrue(!exists("coffee_clear"))
+    pickV60()
+    rule.onNodeWithTag("coffee_trigger").performClick()
+    waitFor("coffee_picker_row")
+    rule.onNodeWithTag("coffee_picker_row").performClick()
+    rule.waitUntil(5_000) { env.scaleSession.ui.value.coffee != null }
+    waitFor("coffee_clear")
+
+    rule.onNodeWithTag("target_clear").performClick()
+    rule.waitUntil(5_000) { env.scaleSession.ui.value.target == null }
+    rule.onNodeWithTag("coffee_clear").performClick()
+    rule.waitUntil(5_000) { env.scaleSession.ui.value.coffee == null }
+
+    assertTrue(!exists("target_picker"))
+    assertTrue(!exists("coffee_picker_row"))
+    rule.onNodeWithTag("target_chip").assert(hasText(context.getString(R.string.brew_setup_target_none)))
+    rule.onNodeWithTag("coffee_trigger").assert(hasText(context.getString(R.string.brew_setup_coffee_none)))
+    assertTrue(!exists("target_clear"))
+    assertTrue(!exists("coffee_clear"))
+  }
+
+  @Test
   fun theRecipeRowStartsWithoutARecipeAndShowsTheChosenOne() {
     show()
     rule.onNodeWithTag("target_chip").assert(hasText(context.getString(R.string.brew_setup_target_none)))

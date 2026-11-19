@@ -177,12 +177,14 @@ fun PrepareScreen(
         onClick = { pickerOpen = true },
         modifier = Modifier.tourAnchor("prepare_recipe").testTag("prepare_recipe"),
         label = stringResource(R.string.prepare_recipe),
+        onClear = { viewModel.selectTarget(null) },
       )
       CoffeeSelectRow(
         ui.coffee,
         enabled = true,
         onClick = { coffeePickerOpen = true },
         modifier = Modifier.tourAnchor("prepare_coffee").testTag("prepare_coffee"),
+        onClear = { viewModel.selectCoffee(null) },
       )
       DoseCard(
         ui,

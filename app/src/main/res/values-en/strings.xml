@@ -480,6 +480,8 @@
     <string name="brew_setup_target_none">None</string>
     <string name="brew_setup_coffee">Coffee</string>
     <string name="brew_setup_coffee_none">No coffee</string>
+    <string name="brew_setup_target_clear">Clear recipe</string>
+    <string name="brew_setup_coffee_clear">Clear coffee</string>
     <string name="brew_setup_coffee_value">%1$s · day %2$d</string>
     <plurals name="brew_setup_coffee_description">
         <item quantity="one">Coffee: %1$s, day %2$d since roast</item>

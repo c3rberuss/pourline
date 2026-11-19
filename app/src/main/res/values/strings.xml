@@ -479,6 +479,8 @@
     <string name="brew_setup_target_none">Ninguno</string>
     <string name="brew_setup_coffee">Café</string>
     <string name="brew_setup_coffee_none">Sin café</string>
+    <string name="brew_setup_target_clear">Quitar receta</string>
+    <string name="brew_setup_coffee_clear">Quitar café</string>
     <string name="brew_setup_coffee_value">%1$s · día %2$d</string>
     <plurals name="brew_setup_coffee_description">
         <item quantity="one">Café: %1$s, día %2$d desde el tueste</item>
