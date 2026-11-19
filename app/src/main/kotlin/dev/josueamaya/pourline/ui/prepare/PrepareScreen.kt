@@ -376,6 +376,15 @@ private fun DoseCard(
           style = AntTheme.typography.textSM,
         )
       }
+      // Atajo: volver a la dosis y el ratio libres sin subir al selector de receta.
+      AntButton(
+        text = stringResource(R.string.brew_setup_target_clear),
+        onClick = { viewModel.selectTarget(null) },
+        modifier = Modifier.testTag("prepare_dose_clear_recipe"),
+        type = AntButtonType.Link,
+        size = AntSize.Small,
+        icon = AntIcons.Close,
+      )
     } else {
       FreeFields(ui, viewModel, doseText, onDoseText, ratioText, onRatioText)
     }
