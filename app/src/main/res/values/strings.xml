@@ -238,6 +238,12 @@
     <string name="recipe_action_instruction_hint">Describe la acción, por ejemplo «Pon la tapa»</string>
     <string name="recipe_stage_instruction_counter">%1$d/%2$d</string>
     <string name="recipe_edit_stage_remove">Quitar paso %1$d</string>
+    <string name="recipe_edit_stage_up">Subir paso %1$d</string>
+    <string name="recipe_edit_stage_down">Bajar paso %1$d</string>
+    <string name="recipe_edit_stage_up_short">Subir</string>
+    <string name="recipe_edit_stage_down_short">Bajar</string>
+    <string name="recipe_edit_stage_position">Paso %1$d de %2$d</string>
+    <string name="recipe_edit_stage_moved">Movido a la posición %1$d de %2$d</string>
     <string name="recipe_edit_add_stage">Añadir paso</string>
     <string name="recipe_edit_four_six">Generar con el método 4:6</string>
     <string name="recipe_edit_totals">Agua total %1$s g · Ratio 1:%2$s</string>

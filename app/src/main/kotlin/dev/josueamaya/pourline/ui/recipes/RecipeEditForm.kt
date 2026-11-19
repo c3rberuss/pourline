@@ -161,6 +161,60 @@ data class RecipeEditForm(
   fun removeStage(index: Int): RecipeEditForm =
     if (!canRemoveStage || index !in stages.indices) this else copy(stages = stages.filterIndexed { i, _ -> i != index })
 
+  fun canMoveStageUp(index: Int): Boolean = index in 1..stages.lastIndex
+
+  fun canMoveStageDown(index: Int): Boolean = index in 0 until stages.lastIndex
+
+  fun moveStageUp(index: Int): RecipeEditForm = if (canMoveStageUp(index)) moveStage(index, index - 1) else this
+
+  fun moveStageDown(index: Int): RecipeEditForm = if (canMoveStageDown(index)) moveStage(index, index + 1) else this
+
+  /**
+   * Mueve un paso de [from] a [to] y rehace la línea de tiempo y el agua para que la receta siga siendo coherente:
+   * - Cada paso conserva su duración y los huecos entre pasos se quedan en su posición (el ritmo de la receta no
+   *   cambia); el primer paso empieza donde empezaba el primero de antes. Con algún inicio o duración ilegible, los
+   *   inicios no se tocan.
+   * - Cada vertido conserva los gramos que vierte (no el "Hasta") y el acumulado se recalcula en el nuevo orden, así el
+   *   agua total no cambia. Con algún agua ilegible, el agua no se toca.
+   */
+  private fun moveStage(from: Int, to: Int): RecipeEditForm {
+    fun <T> List<T>.moved(): List<T> = toMutableList().apply { add(to, removeAt(from)) }
+    val poured = pouredGrams()?.moved()
+    val moved = stages.moved().retimed(stages)
+    return copy(stages = if (poured == null) moved else moved.withAccumulatedWater(poured))
+  }
+
+  private fun List<StageForm>.retimed(old: List<StageForm>): List<StageForm> {
+    val oldStarts = old.map { parseStart(it.start) ?: return this }
+    val oldDurations = old.map { parseSeconds(it.duration) ?: return this }
+    val durations = map { parseSeconds(it.duration) ?: return this }
+    val gaps = oldStarts.indices.map { i -> if (i == 0) oldStarts[0] else oldStarts[i] - (oldStarts[i - 1] + oldDurations[i - 1]) }
+    var start = 0L
+    return mapIndexed { i, stage ->
+      start = if (i == 0) gaps[0] else start + durations[i - 1] + gaps[i]
+      stage.copy(start = formatStart(start.coerceAtLeast(0)))
+    }
+  }
+
+  /** Los gramos que vierte cada paso (`null` en los que no son `POUR`), o `null` si algún vertido es ilegible. */
+  private fun pouredGrams(): List<Double?>? {
+    var previous = 0.0
+    return stages.map { stage ->
+      if (stage.type != StageType.POUR) return@map null
+      val water = parseGrams(stage.water) ?: return null
+      (water - previous).also { previous = water }
+    }
+  }
+
+  private fun List<StageForm>.withAccumulatedWater(poured: List<Double?>): List<StageForm> {
+    var total = 0.0
+    return mapIndexed { i, stage ->
+      val grams = poured[i] ?: return@mapIndexed stage
+      total = Math.round((total + grams) * 10) / 10.0
+      stage.copy(water = formatNumber(total))
+    }
+  }
+
   /**
    * Reemplaza un paso. Si cambia su duración, los inicios de los pasos siguientes se desplazan lo mismo, de modo que
    * los huecos entre pasos se conservan. Una duración vacía cuenta como 0 s para que borrar y reescribir la cifra

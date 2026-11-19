@@ -20,6 +20,7 @@ object AntIcons {
   /** Restar: el trazo horizontal del más. */
   val Minus: ImageVector by lazy { strokeIcon("Minus", "M5 12H19") }
   val Down: ImageVector by lazy { strokeIcon("Down", "M6 9L12 15L18 9") }
+  val Up: ImageVector by lazy { strokeIcon("Up", "M6 15L12 9L18 15") }
   val Reload: ImageVector by lazy {
     strokeIcon("Reload", "M21 12A9 9 0 1 1 12 3C14.52 3 16.93 4 18.74 5.74L21 8", "M21 3V8H16")
   }
