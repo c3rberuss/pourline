@@ -106,7 +106,7 @@ fun MainNavigation(deps: AppDependencies) {
   if (onboardingDone) {
     TabsNavigation(deps)
   } else {
-    val viewModel = viewModel { OnboardingViewModel(deps.grinderRepository, deps.grinderSettings, deps.experienceSettings) }
+    val viewModel = viewModel { OnboardingViewModel(deps.grinderRepository, deps.grinderSettings, deps.experienceSettings, deps.scaleMode) }
     val catalog by viewModel.catalog.collectAsStateWithLifecycle()
     OnboardingScreen(catalog = catalog, onFinish = viewModel::finish)
   }

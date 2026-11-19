@@ -58,40 +58,94 @@ import dev.josueamaya.pourline.ui.theme.AntTheme
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
 
 /**
- * El primer arranque (D6): el paso 1 elige Básico o Experto y el paso 2, opcional, pregunta "¿Qué molino usas?". "Saltar"
- * del paso 1 termina en Básico sin preguntar por el molino; en el paso 2, "Omitir" termina sin molino y elegir uno lo
- * termina con él. [onFinish] recibe el modo y el molino elegido (o `null`); quien la use lo guarda y marca el primer
- * arranque como hecho. El paso se guarda con `rememberSaveable`.
+ * El primer arranque (D6): el paso 1 elige Básico o Experto, el paso 2 si se prepara con báscula o sin ella y el paso 3,
+ * opcional, pregunta "¿Qué molino usas?". "Saltar" del paso 1 termina en Básico sin preguntar nada más (el modo de
+ * báscula queda en su valor por defecto); en el paso 3, "Omitir" termina sin molino y elegir uno lo termina con él.
+ * [onFinish] recibe el modo, si se usa báscula (`null` si no se preguntó) y el molino elegido (o `null`); quien la use lo
+ * guarda y marca el primer arranque como hecho. El paso se guarda con `rememberSaveable`.
  *
  * @param catalog el catálogo de molinos con el que preguntar; `null` mientras carga.
  */
 @Composable
 fun OnboardingScreen(
   catalog: List<Grinder>?,
-  onFinish: (mode: ExperienceMode, grinderId: Long?) -> Unit,
+  onFinish: (mode: ExperienceMode, useScale: Boolean?, grinderId: Long?) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  // 0 = el modo; 1 = el molino. El modo elegido se guarda por nombre para sobrevivir a la rotación.
+  // 0 = el modo; 1 = la báscula; 2 = el molino. El modo elegido se guarda por nombre para sobrevivir a la rotación.
   var step by rememberSaveable { mutableIntStateOf(0) }
   var modeName by rememberSaveable { mutableStateOf(ExperienceMode.BASIC.name) }
+  var useScale by rememberSaveable { mutableStateOf(false) }
   val mode = ExperienceMode.valueOf(modeName)
-  if (step == 0) {
-    ModeStep(
+  when (step) {
+    0 -> ModeStep(
       onChoose = {
         modeName = it.name
         step = 1
       },
-      onSkip = { onFinish(ExperienceMode.BASIC, null) },
+      onSkip = { onFinish(ExperienceMode.BASIC, null, null) },
       modifier = modifier,
     )
-  } else {
-    BackHandler { step = 0 }
-    GrinderStep(
-      catalog = catalog,
-      onBack = { step = 0 },
-      onSkip = { onFinish(mode, null) },
-      onChoose = { onFinish(mode, it) },
-      modifier = modifier,
+    1 -> {
+      BackHandler { step = 0 }
+      ScaleStep(
+        onBack = { step = 0 },
+        onChoose = {
+          useScale = it
+          step = 2
+        },
+        modifier = modifier,
+      )
+    }
+    else -> {
+      BackHandler { step = 1 }
+      GrinderStep(
+        catalog = catalog,
+        onBack = { step = 1 },
+        onSkip = { onFinish(mode, useScale, null) },
+        onChoose = { onFinish(mode, useScale, it) },
+        modifier = modifier,
+      )
+    }
+  }
+}
+
+/** "¿Usas báscula?": con báscula, Preparar muestra la tarjeta de conexión; sin ella, se prepara con el reloj. */
+@Composable
+private fun ScaleStep(onBack: () -> Unit, onChoose: (Boolean) -> Unit, modifier: Modifier) {
+  val spacing = AntTheme.spacing
+  Column(
+    modifier
+      .fillMaxSize()
+      .background(AntTheme.colors.bgLayout)
+      .windowInsetsPadding(WindowInsets.safeDrawing)
+      .padding(horizontal = spacing.base),
+    verticalArrangement = Arrangement.spacedBy(spacing.sm),
+  ) {
+    Row(Modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.CenterVertically) {
+      AntIconButton(
+        AntIcons.ArrowLeft,
+        contentDescription = stringResource(R.string.scale_back),
+        onClick = onBack,
+        modifier = Modifier.testTag("onboarding_scale_back"),
+      )
+    }
+    AntTitle(stringResource(R.string.onboarding_scale_title), level = 3)
+    AntText(stringResource(R.string.onboarding_hint), type = AntTextType.Secondary)
+    Spacer(Modifier.height(spacing.xs))
+    ModeCard(
+      icon = AntIcons.Scale,
+      title = stringResource(R.string.settings_scale_with),
+      description = stringResource(R.string.settings_scale_with_hint),
+      tag = "onboarding_scale_with",
+      onClick = { onChoose(true) },
+    )
+    ModeCard(
+      icon = AntIcons.Clock,
+      title = stringResource(R.string.settings_scale_without),
+      description = stringResource(R.string.onboarding_scale_without_hint),
+      tag = "onboarding_scale_without",
+      onClick = { onChoose(false) },
     )
   }
 }
@@ -231,7 +285,7 @@ private fun ModeCard(icon: ImageVector, title: String, description: String, tag:
 @Preview(name = "Primer arranque · Claro", showBackground = true, heightDp = 640)
 @Composable
 private fun OnboardingLightPreview() {
-  PourlineTheme(darkTheme = false) { OnboardingScreen(catalog = emptyList(), onFinish = { _, _ -> }) }
+  PourlineTheme(darkTheme = false) { OnboardingScreen(catalog = emptyList(), onFinish = { _, _, _ -> }) }
 }
 
 @Preview(
@@ -243,5 +297,5 @@ private fun OnboardingLightPreview() {
 )
 @Composable
 private fun OnboardingDarkPreview() {
-  PourlineTheme(darkTheme = true) { OnboardingScreen(catalog = emptyList(), onFinish = { _, _ -> }) }
+  PourlineTheme(darkTheme = true) { OnboardingScreen(catalog = emptyList(), onFinish = { _, _, _ -> }) }
 }

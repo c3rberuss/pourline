@@ -39,7 +39,10 @@ class NewUserJourneyTest {
     // Primer arranque: elige "Básico".
     driver.waitFor("onboarding_basic")
     driver.node("onboarding_basic").performClick()
-    // Paso 2: "¿Qué molino usas?"; se omite.
+    // Paso 2: "¿Usas báscula?"; con báscula.
+    driver.waitFor("onboarding_scale_with")
+    driver.node("onboarding_scale_with").performClick()
+    // Paso 3: "¿Qué molino usas?"; se omite.
     driver.waitFor("onboarding_grinder_skip")
     driver.node("onboarding_grinder_skip").performClick()
     driver.waitFor("prepare_start")

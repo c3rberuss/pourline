@@ -42,6 +42,12 @@ class OnboardingTest {
 
   private fun waitFor(tag: String) = rule.waitUntil(5_000) { rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
 
+  /** Paso 2: "¿Usas báscula?". Con báscula, Preparar muestra "Empezar" con la tarjeta. */
+  private fun chooseScale(tag: String = "onboarding_scale_with") {
+    waitFor(tag)
+    rule.onNodeWithTag(tag).performClick()
+  }
+
   private fun assertPrepareIsShown() {
     waitFor("prepare_start")
     rule.onNodeWithTag("tab_prepare").assertIsDisplayed()
@@ -65,6 +71,7 @@ class OnboardingTest {
     show()
 
     rule.onNodeWithTag("onboarding_basic").performClick()
+    chooseScale()
     waitFor("onboarding_grinder_skip")
     // Elegir el modo no guarda nada todavía.
     assertFalse(env.experienceSettings.onboardingDone.value)
@@ -80,6 +87,7 @@ class OnboardingTest {
     show()
 
     rule.onNodeWithTag("onboarding_expert").performClick()
+    chooseScale()
     waitFor("onboarding_grinder_skip")
     rule.onNodeWithTag("onboarding_grinder_skip").performClick()
 
@@ -117,6 +125,7 @@ class OnboardingTest {
     show()
 
     rule.onNodeWithTag("onboarding_expert").performClick()
+    chooseScale()
     waitFor("onboarding_grinder_acme-uno")
     rule.onNodeWithTag("onboarding_grinder_acme-dos").assertIsDisplayed()
     rule.onNodeWithTag("onboarding_grinder_acme-uno").performClick()
@@ -134,6 +143,7 @@ class OnboardingTest {
     show()
 
     rule.onNodeWithTag("onboarding_expert").performClick()
+    chooseScale()
     waitFor("onboarding_grinder_skip")
     rule.onNodeWithTag("onboarding_grinder_skip").performClick()
 
@@ -157,21 +167,60 @@ class OnboardingTest {
   }
 
   @Test
-  fun backOnTheGrinderStepReturnsToTheModeChoice() {
+  fun backGoesFromTheGrinderToTheScaleAndThenToTheModeChoice() {
     show()
 
     rule.onNodeWithTag("onboarding_basic").performClick()
+    chooseScale()
     waitFor("onboarding_grinder_back")
     rule.onNodeWithTag("onboarding_grinder_back").performClick()
+    waitFor("onboarding_scale_back")
+    rule.onNodeWithTag("onboarding_scale_back").performClick()
 
     waitFor("onboarding_basic")
     assertFalse(env.experienceSettings.onboardingDone.value)
+  }
+
+  // --- El paso "¿Usas báscula?" ---
+
+  @Test
+  fun withoutAScaleSavesItAndPrepareHasASingleStart() {
+    env.connectionSettings.setUseScale(true)
+    show()
+
+    rule.onNodeWithTag("onboarding_basic").performClick()
+    chooseScale("onboarding_scale_without")
+    // Elegir no guarda nada hasta terminar.
+    assertTrue(env.connectionSettings.useScale.value)
+    waitFor("onboarding_grinder_skip")
+    rule.onNodeWithTag("onboarding_grinder_skip").performClick()
+
+    waitFor("prepare_start_scaleless")
+    assertFalse(env.connectionSettings.useScale.value)
+    rule.onNodeWithTag("scale_card").assertDoesNotExist()
+    rule.onNodeWithTag("prepare_start").assertDoesNotExist()
+  }
+
+  @Test
+  fun withAScaleSavesItAndPrepareShowsTheCard() {
+    env.connectionSettings.setUseScale(false)
+    show()
+
+    rule.onNodeWithTag("onboarding_expert").performClick()
+    chooseScale("onboarding_scale_with")
+    waitFor("onboarding_grinder_skip")
+    rule.onNodeWithTag("onboarding_grinder_skip").performClick()
+
+    assertPrepareIsShown()
+    assertTrue(env.connectionSettings.useScale.value)
+    rule.onNodeWithTag("scale_card").assertIsDisplayed()
   }
 
   @Test
   fun anEmptyCatalogShowsTheEmptyStateAndSkip() {
     show()
     rule.onNodeWithTag("onboarding_basic").performClick()
+    chooseScale()
     waitFor("onboarding_grinder_empty")
     rule.onNodeWithTag("onboarding_grinder_skip").assertIsDisplayed()
   }
@@ -181,6 +230,7 @@ class OnboardingTest {
     env.seedGrinders()
     show()
     rule.onNodeWithTag("onboarding_basic").performClick()
+    chooseScale()
     waitFor("onboarding_grinder_acme-uno")
 
     rule.onNodeWithTag("onboarding_grinder_search").performTextInput("inverso")

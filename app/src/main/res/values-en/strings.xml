@@ -577,6 +577,8 @@
     <string name="onboarding_title">How do you brew your coffee?</string>
     <string name="onboarding_hint">You can change it any time in Settings.</string>
     <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_scale_title">Do you use a scale?</string>
+    <string name="onboarding_scale_without_hint">You brew with the timer. If you get one later, change it in Settings.</string>
     <string name="onboarding_grinder_title">Which grinder do you use?</string>
     <string name="onboarding_grinder_hint">We will use it to convert recipe settings to your grinder.</string>
     <string name="onboarding_grinder_skip">Skip</string>

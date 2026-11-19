@@ -576,6 +576,8 @@
     <string name="onboarding_title">¿Cómo preparas tu café?</string>
     <string name="onboarding_hint">Puedes cambiarlo cuando quieras en Ajustes.</string>
     <string name="onboarding_skip">Saltar</string>
+    <string name="onboarding_scale_title">¿Usas báscula?</string>
+    <string name="onboarding_scale_without_hint">Preparas con el reloj. Si luego consigues una, cámbialo en Ajustes.</string>
     <string name="onboarding_grinder_title">¿Qué molino usas?</string>
     <string name="onboarding_grinder_hint">Lo usaremos para convertir los ajustes de las recetas a tu molino.</string>
     <string name="onboarding_grinder_skip">Omitir</string>
