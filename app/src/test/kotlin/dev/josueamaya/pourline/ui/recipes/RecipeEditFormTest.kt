@@ -217,6 +217,87 @@ class RecipeEditFormTest {
     assertEquals(listOf("Bloom", "2.º vertido", "", "3.er vertido"), five.removeStage(1).stages.map { it.name })
   }
 
+  /** Bloom 0:00-0:10 hasta 50 g, hueco de 20 s, vertido 0:30-0:45 hasta 150 g y remover 0:45-0:50. */
+  private fun threeStages() = RecipeEditForm(
+    name = "Prueba",
+    dose = "15",
+    stages = listOf(
+      StageForm(name = "Bloom", start = "0:00", water = "50", duration = "10"),
+      StageForm(name = "Vertido", start = "0:30", water = "150", duration = "15"),
+      StageForm(name = "Remover", start = "0:45", duration = "5", type = StageType.SWIRL),
+    ),
+  )
+
+  @Test
+  fun `the first stage cannot move up and the last cannot move down`() {
+    val form = threeStages()
+    assertFalse(form.canMoveStageUp(0))
+    assertTrue(form.canMoveStageUp(2))
+    assertTrue(form.canMoveStageDown(0))
+    assertFalse(form.canMoveStageDown(2))
+    assertEquals(form, form.moveStageUp(0))
+    assertEquals(form, form.moveStageDown(2))
+    assertEquals(form, form.moveStageUp(5))
+    val one = RecipeEditForm()
+    assertFalse(one.canMoveStageUp(0))
+    assertFalse(one.canMoveStageDown(0))
+  }
+
+  @Test
+  fun `moving a stage keeps durations and leaves the gaps in place`() {
+    val moved = threeStages().moveStageUp(2)
+    assertEquals(listOf("Bloom", "Remover", "Vertido"), moved.stages.map { it.name })
+    // El hueco de 20 s sigue tras el primer paso: el remover pasa a 0:30-0:35 y el vertido a 0:35-0:50.
+    assertEquals(listOf("0:00", "0:30", "0:35"), moved.stages.map { it.start })
+    assertEquals(listOf("10", "5", "15"), moved.stages.map { it.duration })
+    assertEquals(50_000L, moved.totalDurationMs())
+    assertFalse(moved.errors().any)
+  }
+
+  @Test
+  fun `moving pours keeps the grams of each pour and the total water`() {
+    val moved = threeStages().moveStageDown(0)
+    assertEquals(listOf("Vertido", "Bloom", "Remover"), moved.stages.map { it.name })
+    // El vertido echaba 100 g y el bloom 50 g: ahora hasta 100 g y luego hasta 150 g.
+    assertEquals(listOf("100", "150", ""), moved.stages.map { it.water })
+    assertEquals(listOf("0:00", "0:35", "0:45"), moved.stages.map { it.start })
+    assertEquals(150.0, moved.totalWaterG()!!, 0.0)
+    assertFalse(moved.errors().any)
+  }
+
+  @Test
+  fun `moving with decimals does not drift`() {
+    val form = RecipeEditForm(
+      dose = "15",
+      stages = listOf(
+        StageForm(start = "0:00", water = "40,1", duration = "10"),
+        StageForm(start = "0:10", water = "100,3", duration = "10"),
+      ),
+    )
+    assertEquals(listOf("60.2", "100.3"), form.moveStageUp(1).stages.map { it.water })
+  }
+
+  @Test
+  fun `moving with an unreadable field moves the stage without recalculating it`() {
+    val form = threeStages().let { it.updateStage(1, it.stages[1].copy(start = "abc")) }
+    val moved = form.moveStageUp(2)
+    assertEquals(listOf("0:00", "0:45", "abc"), moved.stages.map { it.start })
+    assertEquals(listOf("50", "", "150"), moved.stages.map { it.water })
+    val badWater = threeStages().let { it.updateStage(1, it.stages[1].copy(water = "x")) }
+    assertEquals(listOf("x", "50", ""), badWater.moveStageDown(0).stages.map { it.water })
+  }
+
+  @Test
+  fun `a stage added at the end can be moved into the middle`() {
+    var form = threeStages().addStage()
+    form = form.setStageType(3, StageType.WAIT).let { it.updateStage(3, it.stages[3].copy(name = "Espera", duration = "30")) }
+    form = form.moveStageUp(3).moveStageUp(2)
+    assertEquals(listOf("Bloom", "Espera", "Vertido", "Remover"), form.stages.map { it.name })
+    assertEquals(listOf("0:00", "0:30", "1:00", "1:15"), form.stages.map { it.start })
+    assertEquals(listOf("50", "", "150", ""), form.stages.map { it.water })
+    assertFalse(form.errors().any)
+  }
+
   @Test
   fun `localized names are kept only if the name and the stage names do not change`() {
     val initial = filled()

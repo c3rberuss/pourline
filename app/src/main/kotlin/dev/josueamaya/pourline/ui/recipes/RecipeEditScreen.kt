@@ -1,6 +1,27 @@
 package dev.josueamaya.pourline.ui.recipes
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import dev.josueamaya.pourline.ui.components.AntDivider
+import dev.josueamaya.pourline.ui.session.stepTypeColors
+import dev.josueamaya.pourline.ui.theme.AntColorRole
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -124,6 +145,15 @@ fun RecipeEditScreen(
 
   val errors = remember(form) { form.errors() }
 
+  // El paso recién movido se resalta un momento en su nuevo puesto.
+  var moved by remember { mutableStateOf<MovedStage?>(null) }
+  LaunchedEffect(moved) {
+    if (moved != null) {
+      delay(MOVED_HIGHLIGHT_MS)
+      moved = null
+    }
+  }
+
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
@@ -227,17 +257,39 @@ fun RecipeEditScreen(
       form.stages.forEachIndexed { i, stage ->
         StageCard(
           index = i,
+          count = form.stages.size,
           stage = stage,
           errors = errors.stages.getOrNull(i) ?: StageFieldErrors(),
           canRemove = form.canRemoveStage,
+          canMoveUp = form.canMoveStageUp(i),
+          canMoveDown = form.canMoveStageDown(i),
+          justMoved = moved?.takeIf { it.index == i },
           onChange = { changed -> viewModel.update { it.updateStage(i, changed) } },
           onTypeChange = { type -> viewModel.update { it.setStageType(i, type) } },
-          onRemove = { viewModel.update { it.removeStage(i) } },
+          onRemove = {
+            moved = null
+            viewModel.update { it.removeStage(i) }
+          },
+          onMoveUp = {
+            if (form.canMoveStageUp(i)) {
+              viewModel.update { it.moveStageUp(i) }
+              moved = MovedStage(i - 1, (moved?.serial ?: 0) + 1)
+            }
+          },
+          onMoveDown = {
+            if (form.canMoveStageDown(i)) {
+              viewModel.update { it.moveStageDown(i) }
+              moved = MovedStage(i + 1, (moved?.serial ?: 0) + 1)
+            }
+          },
         )
       }
       AntButton(
         text = stringResource(R.string.recipe_edit_add_stage),
-        onClick = { viewModel.update { it.addStage() } },
+        onClick = {
+          moved = null
+          viewModel.update { it.addStage() }
+        },
         modifier = Modifier.fillMaxWidth().tourAnchor("recipe_add_stage").testTag("recipe_add_stage"),
         enabled = form.canAddStage,
         icon = AntIcons.Plus,
@@ -328,21 +380,52 @@ private fun AdjustmentsAlert(adjustments: List<Adjustment>) {
   )
 }
 
+/** Un paso recién movido a [index]; [serial] distingue dos movimientos seguidos al mismo puesto. */
+private data class MovedStage(val index: Int, val serial: Int)
+
+private const val MOVED_HIGHLIGHT_MS = 2_000L
+private const val HIGHLIGHT_FADE_MS = 600
+
 @Composable
 private fun StageCard(
   index: Int,
+  count: Int,
   stage: StageForm,
   errors: StageFieldErrors,
   canRemove: Boolean,
+  canMoveUp: Boolean,
+  canMoveDown: Boolean,
+  justMoved: MovedStage?,
   onChange: (StageForm) -> Unit,
   onTypeChange: (StageType) -> Unit,
   onRemove: () -> Unit,
+  onMoveUp: () -> Unit,
+  onMoveDown: () -> Unit,
 ) {
   val number = index + 1
   val typeOptions = StageType.entries.map { AntSegmentedOption(it, stringResource(stepTypeLabel(it)), stepTypeIcon(it)) }
-  AntCard(Modifier.fillMaxWidth().tourAnchor("recipe_stage_0", enabled = index == 0).testTag("recipe_stage_$index"), size = AntCardSize.Small) {
-    // Con cuatro tipos no caben las etiquetas (D15 de SPEC-010): a la izquierda el tipo elegido y a la derecha las opciones.
+  val typeColors = stepTypeColors(stage.type, AntTheme.colors)
+  val requester = remember { BringIntoViewRequester() }
+  // Tras moverlo, la tarjeta se lleva a la vista y su borde se ilumina con el color del tipo hasta que se apaga.
+  LaunchedEffect(justMoved) { if (justMoved != null) requester.bringIntoView() }
+  val highlight by animateColorAsState(
+    if (justMoved != null) typeColors.base else Color.Transparent,
+    tween(if (justMoved != null) AntTheme.motion.durationFast else HIGHLIGHT_FADE_MS),
+    label = "StageMovedHighlight",
+  )
+  val shape = RoundedCornerShape(AntTheme.radius.lg)
+  AntCard(
+    Modifier.fillMaxWidth()
+      .bringIntoViewRequester(requester)
+      .border(2.dp, highlight, shape)
+      .tourAnchor("recipe_stage_0", enabled = index == 0)
+      .testTag("recipe_stage_$index"),
+    size = AntCardSize.Small,
+  ) {
+    // Con cuatro tipos no caben las etiquetas (D15 de SPEC-010): a la izquierda el número y el tipo elegido y a la
+    // derecha las opciones.
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+      StageNumber(number, typeColors)
       AntText(
         stringResource(stepTypeLabel(stage.type)),
         Modifier.weight(1f).testTag("recipe_stage_type_label_$index"),
@@ -444,6 +527,64 @@ private fun StageCard(
     errors.water?.let { ErrorText(it, "recipe_stage_water_error_$index") }
     errors.duration?.let { ErrorText(it, "recipe_stage_duration_error_$index") }
     errors.instruction?.let { ErrorText(it, "recipe_stage_instruction_error_$index") }
+    if (count > 1) StageMoveBar(index, count, canMoveUp, canMoveDown, justMoved != null, typeColors, onMoveUp, onMoveDown)
+  }
+}
+
+/** El número del paso en un círculo con el color de su tipo: así se ve en qué puesto queda al moverlo. */
+@Composable
+private fun StageNumber(number: Int, colors: AntColorRole) {
+  Box(
+    Modifier.size(28.dp).background(colors.bg, CircleShape).border(1.dp, colors.border, CircleShape).clearAndSetSemantics {},
+    contentAlignment = Alignment.Center,
+  ) {
+    Text(number.toString(), color = colors.text, style = AntTheme.typography.textSM.copy(fontWeight = FontWeight.SemiBold))
+  }
+}
+
+/**
+ * Reordenar sin borrar: "Paso N de M" y los botones Subir y Bajar. Recién movido, el texto dice a qué puesto fue, con
+ * el color del tipo, y se anuncia (región viva educada).
+ */
+@Composable
+private fun StageMoveBar(
+  index: Int,
+  count: Int,
+  canMoveUp: Boolean,
+  canMoveDown: Boolean,
+  justMoved: Boolean,
+  colors: AntColorRole,
+  onMoveUp: () -> Unit,
+  onMoveDown: () -> Unit,
+) {
+  val number = index + 1
+  AntDivider()
+  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+    val position = stringResource(if (justMoved) R.string.recipe_edit_stage_moved else R.string.recipe_edit_stage_position, number, count)
+    Text(
+      position,
+      Modifier.weight(1f).testTag("recipe_stage_position_$index").semantics { liveRegion = LiveRegionMode.Polite },
+      color = if (justMoved) colors.text else AntTheme.colors.textSecondary,
+      style = AntTheme.typography.textSM.copy(fontWeight = if (justMoved) FontWeight.SemiBold else FontWeight.Normal),
+    )
+    val up = stringResource(R.string.recipe_edit_stage_up, number)
+    val down = stringResource(R.string.recipe_edit_stage_down, number)
+    AntButton(
+      text = stringResource(R.string.recipe_edit_stage_up_short),
+      onClick = onMoveUp,
+      modifier = Modifier.testTag("recipe_stage_up_$index").semantics { contentDescription = up },
+      size = AntSize.Small,
+      icon = AntIcons.Up,
+      enabled = canMoveUp,
+    )
+    AntButton(
+      text = stringResource(R.string.recipe_edit_stage_down_short),
+      onClick = onMoveDown,
+      modifier = Modifier.testTag("recipe_stage_down_$index").semantics { contentDescription = down },
+      size = AntSize.Small,
+      icon = AntIcons.Down,
+      enabled = canMoveDown,
+    )
   }
 }
 

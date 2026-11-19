@@ -307,6 +307,68 @@ class RecipeEditScreenTest {
   }
 
   @Test
+  fun movingAStepReordersItAndRecalculatesItsStartAndWater() {
+    show()
+    rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick()
+    rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick()
+    replace("recipe_stage_name_0", "Bloom")
+    replace("recipe_stage_name_1", "Vertido")
+    replace("recipe_stage_name_2", "Espera")
+    chooseType(2, R.string.step_type_wait)
+    replace("recipe_stage_duration_2", "30")
+    // Los extremos no se mueven hacia fuera.
+    rule.onNodeWithContentDescription(context.getString(R.string.recipe_edit_stage_up, 1)).performScrollTo().assertIsNotEnabled()
+    rule.onNodeWithContentDescription(context.getString(R.string.recipe_edit_stage_down, 3)).performScrollTo().assertIsNotEnabled()
+
+    // La espera, añadida al final, sube entre el bloom y el vertido.
+    rule.onNodeWithContentDescription(context.getString(R.string.recipe_edit_stage_up, 3)).performScrollTo().performClick()
+    rule.onNodeWithTag("recipe_stage_name_1").performScrollTo().assertTextEquals("Espera", includeEditableText = true)
+    rule.onNodeWithTag("recipe_stage_start_1").assertTextEquals("0:10")
+    assertFalse(exists("recipe_stage_water_1"))
+    rule.onNodeWithTag("recipe_stage_name_2").performScrollTo().assertTextEquals("Vertido", includeEditableText = true)
+    rule.onNodeWithTag("recipe_stage_start_2").assertTextEquals("0:40")
+    rule.onNodeWithTag("recipe_stage_water_2").assertTextEquals("100")
+
+    // El vertido baja al primer puesto con los 50 g que echaba: ahora hasta 50 g y el bloom hasta 100 g.
+    rule.onNodeWithContentDescription(context.getString(R.string.recipe_edit_stage_up, 3)).performScrollTo().performClick()
+    rule.onNodeWithContentDescription(context.getString(R.string.recipe_edit_stage_up, 2)).performScrollTo().performClick()
+    rule.onNodeWithTag("recipe_stage_name_0").performScrollTo().assertTextEquals("Vertido", includeEditableText = true)
+    rule.onNodeWithTag("recipe_stage_water_0").assertTextEquals("50")
+    rule.onNodeWithTag("recipe_stage_name_1").performScrollTo().assertTextEquals("Bloom", includeEditableText = true)
+    rule.onNodeWithTag("recipe_stage_water_1").assertTextEquals("100")
+
+    type("recipe_edit_name", "Reordenada")
+    type("recipe_edit_dose", "15")
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsEnabled().performClick()
+    rule.waitUntil(5_000) { runBlocking { recipes.list().first().any { it.name == "Reordenada" } } }
+    val saved = runBlocking { recipes.get(recipes.list().first().single { it.name == "Reordenada" }.id)!! }
+    assertEquals(listOf("Vertido", "Bloom", "Espera"), saved.stages.map { it.name })
+    assertEquals(listOf(0L, 10_000L, 20_000L), saved.stages.map { it.startMs })
+  }
+
+  @Test
+  fun aMovedStepSaysWhereItWentForAMomentAndEachStepShowsItsPosition() {
+    show()
+    assertFalse(exists("recipe_stage_position_0")) // con un solo paso no hay nada que reordenar
+    rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick()
+    rule.onNodeWithTag("recipe_add_stage").performScrollTo().performClick()
+    rule.onNodeWithTag("recipe_stage_position_0").performScrollTo()
+      .assertTextEquals(context.getString(R.string.recipe_edit_stage_position, 1, 3))
+
+    rule.mainClock.autoAdvance = false
+    rule.onNodeWithContentDescription(context.getString(R.string.recipe_edit_stage_down, 1)).performScrollTo().performClick()
+    rule.mainClock.advanceTimeBy(500)
+    rule.onNodeWithTag("recipe_stage_position_1")
+      .assertTextEquals(context.getString(R.string.recipe_edit_stage_moved, 2, 3))
+    rule.onNodeWithTag("recipe_stage_position_0")
+      .assertTextEquals(context.getString(R.string.recipe_edit_stage_position, 1, 3))
+    rule.mainClock.advanceTimeBy(2_500)
+    rule.onNodeWithTag("recipe_stage_position_1")
+      .assertTextEquals(context.getString(R.string.recipe_edit_stage_position, 2, 3))
+    rule.mainClock.autoAdvance = true
+  }
+
+  @Test
   fun liveTotalsAndAPreviewAppearWithAValidRecipe() {
     show()
     type("recipe_edit_name", "Mi receta")
