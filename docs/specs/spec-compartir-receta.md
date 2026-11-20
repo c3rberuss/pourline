@@ -2,10 +2,11 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Implementado y fusionado a `develop` (2026-11-18, `bbc96aa`). Plan: [`plan-compartir-receta.md`](plan-compartir-receta.md). **Enmienda 1** (QR grande): Aprobado (2026-11-18). Plan aprobado: [`plan-qr-grande.md`](plan-qr-grande.md) (P1-P3 con la propuesta del plan). En implementación |
-| Fecha | 2026-11-17. Enmienda 1: 2026-11-18 |
-| Rama | `feat/share-recipe`, desde `develop` (`e64330a`). Enmienda 1: `feat/share-recipe-large-qr`, desde `develop` (`bbc96aa`) |
+| Estado | Implementado y fusionado a `develop` (2026-11-18, `bbc96aa`). Plan: [`plan-compartir-receta.md`](plan-compartir-receta.md). **Enmienda 1** (QR grande): Aprobado (2026-11-18). Plan aprobado: [`plan-qr-grande.md`](plan-qr-grande.md) (P1-P3 con la propuesta del plan). En implementación. **Enmienda 2** (QR con la marca): Aprobado (2026-11-20), pendiente de plan |
+| Fecha | 2026-11-17. Enmienda 1: 2026-11-18. Enmienda 2: 2026-11-20 |
+| Rama | `feat/share-recipe`, desde `develop` (`e64330a`). Enmienda 1: `feat/share-recipe-large-qr`, desde `develop` (`bbc96aa`). Enmienda 2: `feat/share-recipe-qr-style`, desde `develop` (`55359f8`) |
 | Enmienda 1 | El QR deja de tener una caja fija de 432 px: cada módulo mide 6 px exactos y la caja crece con la versión del QR, lo que sube `MAX_URI_LENGTH` de 331 a 600 (el plan partía de 700 y la medición sobre la tarjeta real lo bajó). El QR pasa a una franja propia al final de la tarjeta y el alto de la tarjeta se ajusta al contenido. Si aun así no cabe, las instrucciones se recortan de una en una desde el último paso, no todas de golpe. Cambia §3.1, §3.2, §3.3, §3.4, §3.6, §4, §5, §6 y §7. Motivo: la receta 4:6 generada por la app (10 pasos, con notas e instrucciones) ocupa 450 caracteres y perdía notas e instrucciones al compartirse |
+| Enmienda 2 | El QR de la tarjeta deja de ser negro genérico y lleva la marca: los módulos de datos se dibujan en el azul oscuro de la paleta (`#003EB3`) y los tres ojos (patrones de posición) se dibujan aparte, redondeados, con el anillo en el azul primario (`#1677FF`) y el centro en `#003EB3`. La matriz, la corrección M, los módulos de 6 px, la zona de silencio, el fondo blanco y `MAX_URI_LENGTH` = 600 no cambian, y la legibilidad se vuelve a medir. Cambia §3.3, §5, §6 y §7. Motivo: el usuario quiere que el QR se reconozca como de Pourline. Elegida sobre una maqueta con cuatro variantes (la actual, solo color, azul con ojos redondeados y tinta con ojos azules) |
 | Deriva de | [SPEC-004](spec-catalogo-cafes.md) (alcance Out: "Compartir como texto o como archivo importable por otra instalación") |
 | Módulos afectados | `:app`: `recipe` (nuevo códec), `share` (nueva tarjeta y QR), `ui/recipes` (compartir, importar, vista previa), `grinder` (resolución de molienda), `MainActivity` y manifiesto (intents de entrada), navegación |
 | Specs relacionados | [SPEC-003](spec-curva-objetivo.md) (recetas), [SPEC-004](spec-catalogo-cafes.md) (imágenes para compartir), [SPEC-005](spec-navegacion-modos.md) (pestañas y modos), [SPEC-006](spec-molinos.md) (molinos y conversión) |
@@ -257,7 +258,21 @@
     - Cada módulo mide exactamente 2 dp, es decir 6 px enteros, sin antialias. La caja mide
       `(módulos + 8) × 6` px, zona de silencio de 4 módulos por lado incluida: unos 462 px en
       versión 13 y 606 px en versión 19, el máximo con `MAX_URI_LENGTH`.
-    - Se dibuja en negro sobre blanco, también con tema oscuro.
+    - Se dibuja sobre fondo blanco, también con tema oscuro. Los colores (reescrito por la
+      enmienda 2) son constantes de la tarjeta y no dependen del tema:
+      - **Módulos de datos:** `#003EB3` (azul 8 de la paleta de Ant generada desde `primary`
+        `#1677FF`; contraste 9,0:1 sobre blanco). Siguen siendo cuadrados de 6 px enteros sin
+        antialias.
+      - **Ojos** (los tres patrones de posición de 7 × 7 módulos, arriba a la izquierda, arriba a la
+        derecha y abajo a la izquierda): no se dibujan módulo a módulo, sino como dos piezas
+        redondeadas encima de la matriz. El anillo (7 × 7 con el hueco de 5 × 5) va en `#1677FF`
+        (contraste 4,1:1) y el centro (3 × 3) en `#003EB3`. Radios de referencia, los de la maqueta
+        aprobada: 2,1 módulos en el borde exterior del anillo, 1,3 en el hueco y 0,9 en el centro. El
+        plan los fija en píxeles enteros. Solo las esquinas curvas llevan antialias; los bordes rectos
+        caen en píxeles enteros, como el resto de módulos.
+      - El separador blanco de cada ojo y la zona de silencio no cambian.
+      - Si la medición de §6 no llega a 20/20, el anillo pasa a `#003EB3` (todo el ojo en azul
+        oscuro) y se mide de nuevo.
   - **Orden:** cabecera, datos, pasos, franja del QR y pie. Sin QR (`encode` devolvió `null`), la
     franja no aparece.
   - **Pie:** el de las otras tarjetas.
@@ -460,6 +475,20 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
       `(módulos + 8) × 6` px. Lo comprueba un test instrumentado leyendo los píxeles.
 - [ ] **Enmienda 1:** la receta 4:6 equilibrada e intensidad media de 18,8 g, con molino del catálogo
       (la que se recortaba en el Xiaomi), se comparte sin recortar nada.
+- [ ] **Enmienda 2:** en el PNG generado, los módulos de datos son `#003EB3`, el anillo de cada ojo
+      `#1677FF` (o `#003EB3` si se aplicó la salida de §6) y su centro `#003EB3`, y el fondo blanco.
+      Cada módulo de datos sigue midiendo 6 × 6 px y la caja `(módulos + 8) × 6` px. Lo comprueba un
+      test instrumentado leyendo los píxeles con el mismo margen de 8 niveles por canal que hoy, ahora
+      contra el color esperado de cada zona en lugar de contra negro. Las esquinas curvas de los ojos
+      quedan fuera de la comprobación píxel a píxel.
+- [ ] **Enmienda 2:** `RecipeQrLegibilityTest#cardSweep` sobre la tarjeta real da 20/20 con
+      `MAX_URI_LENGTH` = 600 en las tres lecturas (tal cual, 50 % + JPEG 70 y reducida a 2048 px), con
+      20 muestras y semillas nuevas. El resultado queda anotado en §6.
+- [ ] **Enmienda 2:** los tests existentes de la tarjeta, compartir e importar (`ShareCardsLayoutTest`,
+      `RecipeShareTest`, `RecipesImportTest`, `RecipeIntentImportTest`, `RecipeQrLegibilityTest`,
+      `QrLegibilityTest`) pasan. Solo cambian las expectativas que comprobaban el color negro.
+- [ ] **Enmienda 2, manual en el Xiaomi:** compartir una receta por WhatsApp y volver a importarla desde
+      la imagen recibida, por la galería y por el escáner.
 - [ ] **Unitario:** ida y vuelta. `decode(encode(r))` reproduce nombre, método, `methodOther`, dosis,
       temperatura, notas y pasos (tipo, nombre, inicio, duración, agua e instrucción) de las
       predefinidas y de una receta con todos los campos.
@@ -544,6 +573,15 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
     - La caja del QR se coloca en píxeles pares (hasta 1 px a la izquierda del centro) y la captura de
       Compose mezcla un 1 % en el primer píxel de cada módulo, por lo que los tests comprueban "negro" y
       "blanco" con 8 niveles de margen.
+  - **Enmienda 2, riesgo:** los lectores binarizan la imagen, y el azul de los datos (9,0:1) y el de
+    los anillos (4,1:1) quedan oscuros, pero la reducción al 50 % con JPEG 70 mezcla el color con el
+    blanco y puede aclarar más el anillo que el negro. Por eso se vuelve a medir con
+    `RecipeQrLegibilityTest#cardSweep` en 600 caracteres antes de dar la enmienda por buena.
+    - **Salida decidida por el usuario:** si alguna de las tres lecturas baja de 20/20, el anillo pasa
+      de `#1677FF` a `#003EB3` y se repite la medición. `MAX_URI_LENGTH` no baja por esta enmienda.
+    - Si tampoco así llega a 20/20, la decisión vuelve al usuario.
+  - **Enmienda 2, pendiente:** anotar aquí el resultado de la medición (lecturas por longitud) y si se
+    aplicó la salida.
 
 ## 7. Alternativas descartadas
 
@@ -563,5 +601,14 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
   968 px), y también en recetas cortas.
 - **Recortar todas las instrucciones de golpe:** era el comportamiento original. La enmienda 1 las
   quita de una en una para conservar las que caben.
+- **Solo color, con ojos cuadrados (enmienda 2):** todo el QR en `#003EB3`. Cambia poco respecto al
+  negro y no se parece al icono.
+- **Tinta casi negra con ojos azules (enmienda 2):** datos en `#0B1A33` y la marca solo en los ojos.
+  Arriesgaba menos en la lectura, pero el usuario prefirió el azul en todo el código.
+- **Módulos redondeados o en puntos (enmienda 2):** reducen el área oscura de cada módulo y, con 6 px,
+  ponen en riesgo la lectura tras la compresión de las apps de mensajería.
+- **Logo en el centro (enmienda 2):** exige subir la corrección de M a Q o H, lo que agranda el QR o
+  baja `MAX_URI_LENGTH`.
+- **Colores invertidos (claro sobre oscuro, enmienda 2):** varios lectores no los leen.
 - **Importar QR de versión futura ignorando campos:** podría crear recetas incompletas sin que el
   usuario lo sepa.
