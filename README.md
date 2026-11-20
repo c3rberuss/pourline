@@ -122,7 +122,7 @@ En CI se usan las variables de entorno `POURLINE_KEYSTORE_FILE`, `POURLINE_KEYST
 
 #### Publicar una versión
 
-Al subir un tag `vX.Y.Z`, el workflow `.github/workflows/release.yml` compila el APK firmado y lo publica en GitHub Releases como `pourline-X.Y.Z.apk`. La versión sale del tag: `versionName = X.Y.Z` y `versionCode = X·1000000 + Y·1000 + Z`.
+Al subir un tag `vX.Y.Z`, el workflow `.github/workflows/release.yml` compila el APK firmado y lo publica en GitHub Releases como `pourline-X.Y.Z.apk`. La versión sale del tag: `versionName` es el tag sin la `v` y `versionCode = X·1000000 + Y·10000 + Z·100 + etapa`. Los tags `vX.Y.Z-alpha.N`, `-beta.N` y `-rc.N` (N de 1 a 29) se publican como pre-release, con etapa N, 30 + N y 60 + N; la versión final usa 99, así que siempre queda por encima de sus pre-releases. Obtainium solo instala pre-releases si se activa «Incluir pre-releases» en la app.
 
 ```bash
 git tag v1.0.0

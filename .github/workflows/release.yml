@@ -1,4 +1,9 @@
 # Publica el APK firmado en GitHub Releases al subir un tag vX.Y.Z (lo consume Obtainium).
+# Los tags vX.Y.Z-alpha.N, -beta.N y -rc.N se publican como pre-release.
+#
+# versionCode = X·1000000 + Y·10000 + Z·100 + etapa, con etapa alpha.N = N, beta.N = 30 + N,
+# rc.N = 60 + N y versión final = 99. Así cada pre-release queda por debajo de su versión final.
+# Límites: Y y Z < 100, N entre 1 y 29.
 #
 # Secretos del repositorio:
 #   POURLINE_KEYSTORE_BASE64    keystore de release codificado en base64
@@ -11,6 +16,9 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
 
 permissions:
   contents: write
@@ -30,12 +38,36 @@ jobs:
         id: version
         run: |
           name="${GITHUB_REF_NAME#v}"
-          IFS=. read -r major minor patch <<< "$name"
-          # 1.2.3 -> 1002003: crece con cada versión semántica mientras minor y patch sean < 1000.
-          code=$(( major * 1000000 + minor * 1000 + patch ))
+          if [[ ! "$name" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-(alpha|beta|rc)\.([0-9]+))?$ ]]; then
+            echo "::error::Tag no válido: $GITHUB_REF_NAME"
+            exit 1
+          fi
+          major=$((10#${BASH_REMATCH[1]})) minor=$((10#${BASH_REMATCH[2]})) patch=$((10#${BASH_REMATCH[3]}))
+          stage_name="${BASH_REMATCH[5]}"
+          prerelease=false
+          stage=99
+          if [ -n "$stage_name" ]; then
+            n=$((10#${BASH_REMATCH[6]}))
+            if (( n < 1 || n > 29 )); then
+              echo "::error::El número de pre-release debe estar entre 1 y 29"
+              exit 1
+            fi
+            case "$stage_name" in
+              alpha) stage=$n ;;
+              beta) stage=$(( 30 + n )) ;;
+              rc) stage=$(( 60 + n )) ;;
+            esac
+            prerelease=true
+          fi
+          if (( minor > 99 || patch > 99 )); then
+            echo "::error::minor y patch deben ser menores que 100"
+            exit 1
+          fi
+          code=$(( major * 1000000 + minor * 10000 + patch * 100 + stage ))
           echo "name=$name" >> "$GITHUB_OUTPUT"
           echo "code=$code" >> "$GITHUB_OUTPUT"
-          echo "versionName=$name versionCode=$code"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "versionName=$name versionCode=$code prerelease=$prerelease"
 
       - uses: actions/setup-java@v6
         with:
@@ -82,11 +114,15 @@ jobs:
       - name: Publicar la release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >
-          gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.path }}"
-          --title "Pourline ${{ steps.version.outputs.name }}"
-          --generate-notes
-          --verify-tag
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        run: |
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.path }}" \
+            --title "Pourline ${{ steps.version.outputs.name }}" \
+            --generate-notes \
+            --verify-tag \
+            "${flags[@]}"
 
       - name: Borrar el keystore
         if: always()
