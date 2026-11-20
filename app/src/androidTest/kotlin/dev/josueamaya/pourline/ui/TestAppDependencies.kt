@@ -10,6 +10,11 @@ import dev.josueamaya.pourline.AppDependencies
 import dev.josueamaya.pourline.brew.StageNotifier
 import dev.josueamaya.pourline.brew.TargetStage
 import dev.josueamaya.pourline.MainNavigation
+import dev.josueamaya.pourline.backup.AppVersion
+import dev.josueamaya.pourline.backup.BackupManager
+import dev.josueamaya.pourline.backup.BackupOperations
+import dev.josueamaya.pourline.backup.ContentResolverStreams
+import dev.josueamaya.pourline.backup.ThumbnailMaker
 import dev.josueamaya.pourline.ble.BluetoothEnvironment
 import dev.josueamaya.pourline.ble.DeviceScanner
 import dev.josueamaya.pourline.ble.ScannedDevice
@@ -160,6 +165,8 @@ class TestAppDependencies(
   countdownSeconds: Int = 0,
   /** El modo de báscula ya elegido; `null` es una instalación que aún no lo eligió (la pregunta de quien actualiza). */
   useScale: Boolean? = true,
+  /** La copia de seguridad; `null` usa un [BackupManager] real sobre la base y las fotos de prueba. */
+  backup: BackupOperations? = null,
 ) {
   init {
     context.deleteSharedPreferences(PREFS)
@@ -167,6 +174,9 @@ class TestAppDependencies(
 
   private val texts = ResourcesRecipeTexts(context)
   private val photosDir = File(context.cacheDir, "test_app_photos").also { it.deleteRecursively() }
+
+  /** El directorio de trabajo de la importación, en el mismo volumen que [photosDir] (el renombrado es atómico). */
+  private val backupDir = File(context.cacheDir, "test_app_backup").also { it.deleteRecursively() }
   private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
   val db: HistoryDatabase = HistoryDatabase.inMemory(context, texts)
@@ -223,6 +233,19 @@ class TestAppDependencies(
 
   val autoReconnect = AutoReconnect(scaleSession, connectionSettings, bluetooth, MainScope()) { connectionSettings.useScale.value }
 
+  val backup: BackupOperations = backup ?: BackupManager(
+    db = db,
+    photosDir = photosDir,
+    workDir = backupDir,
+    settings = listOf(themeSettings, experienceSettings, connectionSettings, brewSettings, targetSettings, grinderSettings),
+    seeder = GrinderCatalogSeeder(db.grinderDao(), { TestGrinderCatalog.JSON }, grinderSettings, grinderSettings),
+    streams = ContentResolverStreams(context.contentResolver),
+    thumbnails = ThumbnailMaker(photoStore::regenerateThumbnail),
+    appVersion = AppVersion("1.0", 1),
+    scope = appScope,
+    invalidateCaches = {},
+  )
+
   val dependencies = AppDependencies(
     brewSettings = brewSettings,
     targetSettings = targetSettings,
@@ -250,6 +273,7 @@ class TestAppDependencies(
     autoReconnect = autoReconnect,
     bluetooth = bluetooth,
     scanner = scanner,
+    backup = this.backup,
   )
 
   /** Siembra el catálogo de [json] (por defecto el de prueba, con marcas ficticias) con el sembrador real. */
@@ -277,6 +301,7 @@ class TestAppDependencies(
     appScope.cancel()
     db.close()
     photosDir.deleteRecursively()
+    backupDir.deleteRecursively()
     context.deleteSharedPreferences(PREFS)
   }
 

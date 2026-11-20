@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline
 
+import dev.josueamaya.pourline.backup.BackupOperations
 import dev.josueamaya.pourline.ble.BluetoothEnvironment
 import dev.josueamaya.pourline.ble.DeviceScanner
 import dev.josueamaya.pourline.coffee.CoffeeRepository
@@ -62,4 +63,6 @@ class AppDependencies(
   val autoReconnect: AutoReconnect,
   val bluetooth: BluetoothEnvironment,
   val scanner: DeviceScanner,
+  /** Exportar e importar todos los datos (SPEC-011). */
+  val backup: BackupOperations,
 )

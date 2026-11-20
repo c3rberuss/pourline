@@ -2,11 +2,17 @@ package dev.josueamaya.pourline
 
 import android.app.Application
 import android.util.Log
+import androidx.core.content.pm.PackageInfoCompat
+import dev.josueamaya.pourline.backup.AppVersion
+import dev.josueamaya.pourline.backup.BackupManager
+import dev.josueamaya.pourline.backup.ContentResolverStreams
+import dev.josueamaya.pourline.backup.ThumbnailMaker
 import dev.josueamaya.pourline.ble.AndroidBluetoothEnvironment
 import dev.josueamaya.pourline.ble.ScaleScanner
 import dev.josueamaya.pourline.coffee.CoffeeRepository
 import dev.josueamaya.pourline.coffee.label.MlKitLabelOcr
 import dev.josueamaya.pourline.coffee.photo.CoffeeImages
+import dev.josueamaya.pourline.coffee.photo.COFFEE_PHOTOS_DIR
 import dev.josueamaya.pourline.coffee.photo.CoffeePhotoStore
 import dev.josueamaya.pourline.grinder.AssetCatalogSource
 import dev.josueamaya.pourline.grinder.GrinderCatalogSeeder
@@ -48,6 +54,9 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 private const val SEEDER_TAG = "GrinderCatalogSeeder"
+
+/** El directorio de trabajo de la importación (staging, marcador y fotos anteriores), dentro de `filesDir`. */
+private const val BACKUP_WORK_DIR = "backup_import"
 
 class PourlineApp : Application() {
   /** Una sola instancia por proceso: sobrevive a la rotación y comparte el flujo con el ViewModel. */
@@ -95,7 +104,7 @@ class PourlineApp : Application() {
   val brewRepository by lazy { BrewRepository(historyDatabase) }
 
   /** Fotos de las etiquetas, con sus miniaturas, en `filesDir/coffee_photos`. */
-  val coffeePhotoStore by lazy { CoffeePhotoStore(File(filesDir, "coffee_photos"), cacheDir) }
+  val coffeePhotoStore by lazy { CoffeePhotoStore(File(filesDir, COFFEE_PHOTOS_DIR), cacheDir) }
 
   /** Decodifica y cachea (16 MB) las fotos para la interfaz. */
   val coffeeImages by lazy { CoffeeImages(coffeePhotoStore, maxBytes = 16 * 1024 * 1024) }
@@ -164,6 +173,29 @@ class PourlineApp : Application() {
     AutoReconnect(scaleSession, connectionSettings, bluetoothEnvironment, MainScope()) { connectionSettings.useScale.value }
   }
 
+  /** Exporta e importa todos los datos y los ajustes de uso (SPEC-011); una sola instancia por proceso. */
+  val backupManager by lazy {
+    BackupManager(
+      db = historyDatabase,
+      photosDir = File(filesDir, COFFEE_PHOTOS_DIR),
+      workDir = File(filesDir, BACKUP_WORK_DIR),
+      // `TourSettings` no va: el estado del recorrido guiado es del dispositivo.
+      settings = listOf(themeSettings, experienceSettings, connectionSettings, brewSettings, targetSettings, grinderSettings),
+      seeder = grinderCatalogSeeder,
+      streams = ContentResolverStreams(contentResolver),
+      thumbnails = ThumbnailMaker(coffeePhotoStore::regenerateThumbnail),
+      appVersion = appVersion(),
+      scope = applicationScope,
+      invalidateCaches = {},
+    )
+  }
+
+  @Suppress("DEPRECATION")
+  private fun appVersion(): AppVersion {
+    val info = packageManager.getPackageInfo(packageName, 0)
+    return AppVersion(info.versionName.orEmpty(), PackageInfoCompat.getLongVersionCode(info))
+  }
+
   /** Lo que reciben las pantallas (D32). */
   val dependencies by lazy {
     AppDependencies(
@@ -193,6 +225,7 @@ class PourlineApp : Application() {
       autoReconnect = autoReconnect,
       bluetooth = bluetoothEnvironment,
       scanner = ScaleScanner(this),
+      backup = backupManager,
     )
   }
 }
