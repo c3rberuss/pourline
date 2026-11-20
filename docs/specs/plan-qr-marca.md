@@ -122,8 +122,8 @@ Orden: F0 → F1 → F2 → F3. F2 depende de F1 (colores y geometría). F3 depe
 
 | Fase | Contenido | Tamaño | Estado |
 |---|---|---|---|
-| F0 | Línea base y referencia en negro con las semillas nuevas | S | Pendiente |
-| F1 | Colores y geometría de los ojos, con sus tests JVM | S | Pendiente |
+| F0 | Línea base y referencia en negro con las semillas nuevas | S | Hecha |
+| F1 | Colores y geometría de los ojos, con sus tests JVM | S | Hecha |
 | F2 | La marca en `QrCodeBox`, medición con la salida del §6 y tests de la tarjeta | L | Pendiente |
 | F3 | Verificación: suites afectadas, comprobaciones, E2E por adb, capturas y cierre | M | Pendiente |
 
@@ -284,7 +284,16 @@ Commit sugerido: `feat(share): define the brand colors and rounded eye geometry 
 
 #### Resultado de F1
 
-Pendiente.
+Hecha (2026-11-20).
+
+- `ShareSpec.kt`: `SHARE_QR_DARK` (`#003EB3`) y `SHARE_QR_EYE_RING` (`#1677FF`). `QrCode.kt`: `QR_EYE_SIZE`,
+  `QrMatrix.eyes` y `isEye`, `QrEyeRadii` y `qrEyeRadii`; sin `import android` (`grep` vacío).
+- Tests nuevos: 4 en `QrCodeTest` y 1 en `ShareModelsTest`. En `QrCodeTest`, las matrices de los ojos usan URIs de 40,
+  150, 331 y 600 caracteres: con 20 no cabe ni el prefijo de 24 caracteres.
+- JVM (`share.*`, `ui.theme.*` y `recipe.share.*`): 111 tests, 0 fallos (106 de la línea base más los 5 nuevos). La
+  tarjeta no cambia: `RecipeShareCard.kt` sin diff.
+- El raster en los colores de la marca, con módulos de 6 px y los ojos redondeados, lo lee zxing con el anillo en
+  `#1677FF` y en `#003EB3` (D56).
 
 ### F2. La marca en la tarjeta, medición y tests
 
