@@ -300,6 +300,53 @@
     <string name="settings_recipes_restore_cancel">Cancelar</string>
     <string name="settings_recipes_restored">Recetas predefinidas restauradas</string>
 
+    <!-- backup -->
+    <string name="backup_title">Copia de seguridad</string>
+    <string name="backup_hint">Guarda en un archivo tus cafés con sus fotos, molinos, calibraciones, recetas, historial y ajustes, o recupéralos desde uno. Importar reemplaza todos los datos actuales.</string>
+    <string name="backup_export">Exportar datos</string>
+    <string name="backup_import">Importar datos</string>
+    <string name="backup_import_blocked">Termina la preparación en curso para importar</string>
+    <string name="backup_exporting">Exportando…</string>
+    <string name="backup_reading">Leyendo la copia…</string>
+    <string name="backup_applying">Importando datos. No cierres la app.</string>
+    <string name="backup_confirm_title">¿Reemplazar tus datos?</string>
+    <string name="backup_confirm_text">Copia del %1$s, creada con Pourline %2$s: %3$s.\n\nTodos tus datos actuales se reemplazarán por los de la copia.</string>
+    <string name="backup_confirm_replace">Reemplazar</string>
+    <string name="backup_confirm_cancel">Cancelar</string>
+    <string name="backup_counts">%1$s, %2$s, %3$s, %4$s, %5$s</string>
+    <plurals name="backup_count_coffees">
+        <item quantity="one">%1$d café</item>
+        <item quantity="other">%1$d cafés</item>
+    </plurals>
+    <plurals name="backup_count_grinders">
+        <item quantity="one">%1$d molino</item>
+        <item quantity="other">%1$d molinos</item>
+    </plurals>
+    <plurals name="backup_count_recipes">
+        <item quantity="one">%1$d receta</item>
+        <item quantity="other">%1$d recetas</item>
+    </plurals>
+    <plurals name="backup_count_brews">
+        <item quantity="one">%1$d preparación</item>
+        <item quantity="other">%1$d preparaciones</item>
+    </plurals>
+    <plurals name="backup_count_photos">
+        <item quantity="one">%1$d foto</item>
+        <item quantity="other">%1$d fotos</item>
+    </plurals>
+    <string name="backup_export_done">Copia guardada: %1$s</string>
+    <string name="backup_import_done">Datos importados: %1$s</string>
+    <plurals name="backup_import_missing_photos">
+        <item quantity="one">%1$d foto no se pudo restaurar</item>
+        <item quantity="other">%1$d fotos no se pudieron restaurar</item>
+    </plurals>
+    <string name="backup_error_not_a_backup">Este archivo no es una copia de Pourline.</string>
+    <string name="backup_error_newer_format">Esta copia se creó con una versión más nueva de Pourline. Actualiza la app para importarla.</string>
+    <string name="backup_error_corrupt">La copia está dañada. Tus datos no se han modificado.</string>
+    <string name="backup_error_too_large">La copia es demasiado grande para importarla. Tus datos no se han modificado.</string>
+    <string name="backup_error_export_too_large">Tus datos superan el tamaño máximo de una copia.</string>
+    <string name="backup_error_io">No se pudo leer o escribir el archivo.</string>
+
     <string name="target_chip">Objetivo: %1$s</string>
     <string name="target_chip_none">Objetivo: ninguno</string>
     <string name="target_description">Objetivo: %1$s en %2$s</string>
