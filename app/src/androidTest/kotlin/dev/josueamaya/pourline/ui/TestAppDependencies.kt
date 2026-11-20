@@ -223,6 +223,8 @@ class TestAppDependencies(
     clock = clock,
   )
 
+  val images = CoffeeImages(photoStore, maxBytes = 1024 * 1024)
+
   val grindSelection = GrindSelection(
     targets = scaleSession.ui.map { it.target },
     grinders = RepositorySessionGrinders(grinders),
@@ -243,7 +245,12 @@ class TestAppDependencies(
     thumbnails = ThumbnailMaker(photoStore::regenerateThumbnail),
     appVersion = AppVersion("1.0", 1),
     scope = appScope,
-    invalidateCaches = {},
+    invalidateCaches = {
+      brews.clearPendingUndo()
+      recipes.clearPendingUndo()
+      grindSelection.clearChoice()
+      images.clear()
+    },
   )
 
   val dependencies = AppDependencies(
@@ -267,7 +274,7 @@ class TestAppDependencies(
     fourSixTexts = ResourcesFourSixTexts(context),
     grindSelection = grindSelection,
     coffeePhotoStore = photoStore,
-    coffeeImages = CoffeeImages(photoStore, maxBytes = 1024 * 1024),
+    coffeeImages = images,
     labelOcr = FakeLabelOcr(),
     scaleSession = scaleSession,
     autoReconnect = autoReconnect,

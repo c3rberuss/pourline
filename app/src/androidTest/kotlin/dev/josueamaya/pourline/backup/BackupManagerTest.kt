@@ -8,16 +8,23 @@ import dev.josueamaya.pourline.coffee.photo.thumbNameOf
 import dev.josueamaya.pourline.grinder.GrinderCatalogSeeder
 import dev.josueamaya.pourline.grinder.TestGrinderCatalog
 import dev.josueamaya.pourline.history.HistoryDatabase
+import dev.josueamaya.pourline.settings.ExperienceMode
+import dev.josueamaya.pourline.settings.ReferenceKey
+import dev.josueamaya.pourline.settings.SettingsSnapshot
+import dev.josueamaya.pourline.settings.ThemeMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -26,6 +33,8 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicInteger
 import java.time.OffsetDateTime
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
@@ -34,78 +43,34 @@ import java.util.zip.ZipOutputStream
 
 /** Exportar y leer una copia contra Room en memoria, fotos y ajustes de prueba: nunca los datos reales de la app. */
 class BackupManagerTest {
-  private val context = InstrumentationRegistry.getInstrumentation().targetContext
-  private lateinit var root: File
-  private lateinit var photosDir: File
-  private lateinit var workDir: File
-  private lateinit var db: HistoryDatabase
-  private lateinit var settings: BackupTestSettings
-  private lateinit var scope: CoroutineScope
-  private var invalidations = 0
+  private lateinit var h: BackupHarness
+  private val context get() = h.context
+  private val root get() = h.root
+  private val photosDir get() = h.photosDir
+  private val workDir get() = h.workDir
+  private val db get() = h.db
+  private val settings get() = h.settings
 
   @Before
   fun setUp() {
-    root = File(context.cacheDir, "backup-manager-test").apply {
-      deleteRecursively()
-      mkdirs()
-    }
-    photosDir = File(root, "coffee_photos")
-    workDir = File(root, "backup_import")
-    db = HistoryDatabase.inMemory(context)
-    settings = BackupTestSettings(context, PREFS)
-    settings.delete()
-    settings = BackupTestSettings(context, PREFS)
-    scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    invalidations = 0
+    h = BackupHarness(PREFS)
   }
 
   @After
-  fun tearDown() {
-    scope.cancel()
-    db.close()
-    settings.delete()
-    root.deleteRecursively()
-  }
+  fun tearDown() = h.close()
 
-  private fun manager(
-    streams: BackupStreams = ContentResolverStreams(context.contentResolver),
-    limits: BackupLimits = BackupLimits(),
-  ) = BackupManager(
-    db = db,
-    photosDir = photosDir,
-    workDir = workDir,
-    settings = settings.all,
-    seeder = GrinderCatalogSeeder(db.grinderDao(), { TestGrinderCatalog.JSON }, settings.grinder, settings.grinder),
-    streams = streams,
-    thumbnails = ThumbnailMaker(CoffeePhotoStore(photosDir, root)::regenerateThumbnail),
-    appVersion = AppVersion("1.0-test", 7),
-    scope = scope,
-    invalidateCaches = { invalidations++ },
-    limits = limits,
-  )
+  private fun manager(streams: BackupStreams = ContentResolverStreams(context.contentResolver), limits: BackupLimits = BackupLimits()) =
+    h.manager(streams, limits)
 
-  private fun uri(name: String): Uri = Uri.fromFile(File(root, name))
+  private fun uri(name: String): Uri = h.uri(name)
 
-  private fun exportTo(name: String, manager: BackupManager = manager()): ExportResult = runBlocking { manager.export(uri(name), {}) }
+  private fun exportTo(name: String, manager: BackupManager = manager()): ExportResult = h.exportTo(name, manager)
 
-  private fun entriesOf(file: File): List<String> = ZipFile(file).use { zip -> zip.entries().toList().map { it.name } }
+  private fun entriesOf(file: File): List<String> = h.entriesOf(file)
 
-  private fun textOf(file: File, entry: String): String = ZipFile(file).use { zip -> zip.getInputStream(zip.getEntry(entry)).readBytes().decodeToString() }
+  private fun textOf(file: File, entry: String): String = h.textOf(file, entry)
 
-  /** Copia [zip] sin las entradas para las que [drop] es verdadero. */
-  private fun withoutEntries(zip: File, target: File, drop: (String) -> Boolean) {
-    ZipInputStream(zip.inputStream()).use { input ->
-      ZipOutputStream(target.outputStream()).use { output ->
-        while (true) {
-          val entry = input.nextEntry ?: break
-          if (drop(entry.name)) continue
-          output.putNextEntry(ZipEntry(entry.name))
-          input.copyTo(output)
-          output.closeEntry()
-        }
-      }
-    }
-  }
+  private fun withoutEntries(zip: File, target: File, drop: (String) -> Boolean) = h.withoutEntries(zip, target, drop)
 
   @Test
   fun exportingWritesTheManifestDataSettingsAndEveryPhoto() = runBlocking {
@@ -228,7 +193,7 @@ class BackupManagerTest {
     assertEquals(0, prepared.missingPhotos)
     // Las fotos y las miniaturas están en el staging, no en `coffee_photos`.
     assertEquals(seeded.photoNames.flatMap { listOf(it, thumbNameOf(it)) }.toSet(), File(workDir, "staging").list()!!.toSet())
-    assertEquals(0, invalidations)
+    assertEquals(0, h.invalidations)
   }
 
   @Test
@@ -344,6 +309,181 @@ class BackupManagerTest {
     Thread.sleep(300)
     assertEquals(seeded.photoNames.size * 2, File(workDir, "staging").list()!!.size)
     assertNotNull(second)
+  }
+
+  private fun ready(name: String, manager: BackupManager): PreparedImport =
+    (runBlocking { manager.prepareImport(uri(name), {}) } as PrepareResult.Ready).import
+
+  @Test
+  fun exportWipeAndImportRestoreTheDataPhotosAndSettingsWithTheirIds() = runBlocking {
+    seedEverything(context, db, photosDir, settings)
+    val rowsBefore = db.backupDao().readAll()
+    val photosBefore = readFiles(photosDir)
+    val settingsBefore = settings.snapshot()
+    val export = exportTo("backup.zip") as ExportResult.Success
+
+    // Se borra todo y se cambia cada ajuste, también `tour_seen`.
+    h.wipe()
+    h.scrambleSettings()
+    settings.tour.markSeen(listOf("prepare.start", "history.list"))
+    val tourBefore = settings.tour.seen.value
+    assertFalse(photosDir.exists())
+
+    val manager = manager()
+    val result = manager.apply(ready("backup.zip", manager)) {}
+
+    assertEquals(ImportResult.Success(export.counts, 0), result)
+    assertRowsEqual(rowsBefore, db.backupDao().readAll())
+    assertFilesEqual(photosBefore, readFiles(photosDir))
+    assertEquals(settingsBefore.copy(onboardingDone = true), settings.snapshot())
+    assertEquals(tourBefore, settings.tour.seen.value)
+    assertFalse(workDir.exists())
+    assertFalse(manager.applying.value)
+  }
+
+  @Test
+  fun importingReplacesTheCurrentDataAndRemovesTheAbsentKeys() = runBlocking {
+    // Una copia de una app vacía (solo las recetas predefinidas, sin ajustes).
+    val emptyRows = db.backupDao().readAll()
+    exportTo("empty.zip")
+    seedEverything(context, db, photosDir, settings)
+    assertTrue(readFiles(photosDir).isNotEmpty())
+    // Sin catálogo que sincronizar: la sincronización de después de importar no añade molinos a la comparación.
+    h.catalogJson = TestGrinderCatalog.catalog(0, emptyList())
+
+    val manager = manager()
+    val result = manager.apply(ready("empty.zip", manager)) {}
+
+    assertTrue(result.toString(), result is ImportResult.Success)
+    assertRowsEqual(emptyRows, db.backupDao().readAll())
+    // `coffee_photos` queda con exactamente las fotos de la copia: ninguna.
+    assertEquals(emptyMap<String, ByteArray>().keys, readFiles(photosDir).keys)
+    // Las claves ausentes de la copia se borran; solo queda lo que fuerza la importación.
+    assertEquals(SettingsSnapshot(onboardingDone = true), settings.snapshot())
+  }
+
+  @Test
+  fun theSettingsFlowsEmitTheImportedValuesWithoutRecreatingThem() = runBlocking {
+    val seeded = seedEverything(context, db, photosDir, settings)
+    exportTo("backup.zip")
+    h.scrambleSettings()
+    assertEquals(ThemeMode.LIGHT, settings.theme.mode.value)
+
+    val manager = manager()
+    manager.apply(ready("backup.zip", manager)) {}
+
+    // Las mismas instancias, sin recrearlas.
+    assertEquals(ThemeMode.DARK, settings.theme.mode.value)
+    assertEquals(ExperienceMode.EXPERT, settings.experience.mode.value)
+    assertTrue(settings.experience.onboardingDone.value)
+    assertFalse(settings.connection.useScale.value)
+    assertEquals("TIMEMORE DOT", settings.connection.lastScale.value?.name)
+    assertEquals(90, settings.brew.autoFinishSeconds.value)
+    assertEquals(5, settings.brew.countdownSeconds.value)
+    assertEquals(seeded.coffeeIds[0], settings.brew.lastCoffeeId.value)
+    assertEquals(18.5, settings.brew.defaultDoseG.value, 0.0)
+    assertEquals(15.5, settings.brew.defaultRatio.value, 0.0)
+    assertEquals(ReferenceKey.Recipe(seeded.recipeId), settings.target.reference.value)
+    assertFalse(settings.target.stageVibration.value)
+    assertTrue(settings.target.stageSound.value)
+    assertEquals(seeded.grinderIds[0], settings.grinder.defaultGrinderId.value)
+  }
+
+  @Test
+  fun importRunsTheCatalogSyncWhenTheBackupCatalogIsOlder() = runBlocking {
+    // La copia lleva `grinder_catalog_version` 1 y el catálogo de la app ya está en 2.
+    seedEverything(context, db, photosDir, settings)
+    settings.grinder.setCatalogVersion(1)
+    exportTo("backup.zip")
+    val withOwned = db.backupDao().readAll().grinders.filter { it.owned }.map { it.id }.toSet()
+    h.catalogJson = TestGrinderCatalog.catalog(2, listOf(TestGrinderCatalog.uno(), TestGrinderCatalog.dos()))
+
+    val manager = manager()
+    manager.apply(ready("backup.zip", manager)) {}
+
+    assertEquals(2, settings.grinder.catalogVersion)
+    val grinders = db.backupDao().readAll().grinders
+    val keys = grinders.mapNotNull { it.catalogKey }.toSet()
+    assertTrue(keys.toString(), TestGrinderCatalog.KEY_UNO in keys && TestGrinderCatalog.KEY_DOS in keys)
+    // `owned` de los molinos de la copia sigue intacto.
+    assertEquals(withOwned, grinders.filter { it.owned }.map { it.id }.toSet())
+  }
+
+  @Test
+  fun importClearsPendingUndoAndEmitsImportedOnce() = runBlocking {
+    val seeded = seedEverything(context, db, photosDir, settings)
+    exportTo("backup.zip")
+    h.brews.delete(seeded.brewIds[0])
+    assertNotNull(h.brews.pendingUndo.value)
+    val before = h.invalidations
+
+    val manager = manager()
+    val emissions = AtomicInteger()
+    val applyingValues = CopyOnWriteArrayList<Boolean>()
+    val jobs = listOf(
+      h.scope.launch(start = CoroutineStart.UNDISPATCHED) { manager.imported.collect { emissions.incrementAndGet() } },
+      h.scope.launch(start = CoroutineStart.UNDISPATCHED) { manager.applying.collect { applyingValues += it } },
+    )
+    val prepared = ready("backup.zip", manager)
+    assertEquals(0, emissions.get())
+
+    manager.apply(prepared) {}
+
+    val deadline = System.currentTimeMillis() + 5_000
+    while (emissions.get() == 0 && System.currentTimeMillis() < deadline) Thread.sleep(25)
+    Thread.sleep(200)
+    jobs.forEach { it.cancel() }
+    assertEquals(1, emissions.get())
+    assertEquals(before + 1, h.invalidations)
+    assertNull(h.brews.pendingUndo.value)
+    assertEquals(listOf(false, true, false), applyingValues.toList())
+  }
+
+  @Test
+  fun aMissingPhotoIsCountedAndTheCoffeeLosesOnlyThatPhoto() = runBlocking {
+    val seeded = seedEverything(context, db, photosDir, settings)
+    exportTo("whole.zip")
+    val lost = seeded.photoNames[0]
+    withoutEntries(File(root, "whole.zip"), File(root, "lost.zip")) { it == "photos/$lost" || it == "photos/${thumbNameOf(lost)}" }
+    val before = db.backupDao().readAll()
+
+    val manager = manager()
+    val result = manager.apply(ready("lost.zip", manager)) {}
+
+    val success = result as ImportResult.Success
+    assertEquals(1, success.missingPhotos)
+    assertEquals(2, success.counts.photos)
+    val after = db.backupDao().readAll()
+    val coffeeBefore = before.coffees.first { it.id == seeded.coffeeIds[0] }
+    val coffeeAfter = after.coffees.first { it.id == seeded.coffeeIds[0] }
+    assertEquals(lost, coffeeBefore.photo1)
+    assertNull(coffeeAfter.photo1)
+    assertEquals(coffeeBefore.copy(photo1 = null), coffeeAfter)
+    // El resto de las filas no cambia.
+    assertRowsEqual(before.copy(coffees = after.coffees), after)
+    assertEquals(seeded.photoNames.drop(1).flatMap { listOf(it, thumbNameOf(it)) }.toSet(), readFiles(photosDir).keys)
+  }
+
+  @Test
+  fun applyingTwiceTheSamePreparedImportFails() = runBlocking {
+    seedEverything(context, db, photosDir, settings)
+    exportTo("backup.zip")
+    val manager = manager()
+    val prepared = ready("backup.zip", manager)
+    assertTrue(manager.apply(prepared) {} is ImportResult.Success)
+    val rows = db.backupDao().readAll()
+    val photos = readFiles(photosDir)
+    val snapshot = settings.snapshot()
+
+    assertEquals(ImportResult.Failed(BackupError.IO), manager.apply(prepared) {})
+
+    assertRowsEqual(rows, db.backupDao().readAll())
+    assertFilesEqual(photos, readFiles(photosDir))
+    assertEquals(snapshot, settings.snapshot())
+    // Una copia descartada tampoco se puede aplicar.
+    val another = ready("backup.zip", manager)
+    manager.discard(another)
+    assertEquals(ImportResult.Failed(BackupError.IO), manager.apply(another) {})
   }
 
   /** Un `OutputStream` que falla al pasar de [failAfter] bytes, como un proveedor sin espacio o sin conexión. */

@@ -110,5 +110,10 @@ class GrindSelection(
     choice.value = Choice(latest.value.reference, grinderId)
   }
 
+  /** Olvida la elección de "Moler con": tras importar una copia, el molino elegido puede ser otro o no existir. */
+  fun clearChoice() {
+    choice.value = null
+  }
+
   override fun current(): GrindSetting? = state.value.snapshot(texts)
 }

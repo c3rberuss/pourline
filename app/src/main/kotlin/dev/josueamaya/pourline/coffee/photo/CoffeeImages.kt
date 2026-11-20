@@ -25,6 +25,9 @@ class CoffeeImages(
     override fun sizeOf(key: String, value: ImageBitmap): Int = value.width * value.height * 4
   }
 
+  /** Olvida todo lo decodificado: tras importar una copia, los nombres de foto pueden ser de otros archivos. */
+  fun clear() = cache.evictAll()
+
   /** La miniatura de 256 px de la foto [name]; `null` si no se pudo leer. */
   suspend fun thumbnail(name: String): ImageBitmap? = load("thumb:$name") { decode(store.thumbFile(name), THUMB_SIDE) }
 
