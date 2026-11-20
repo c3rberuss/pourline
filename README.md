@@ -120,6 +120,17 @@ keyPassword=…
 
 En CI se usan las variables de entorno `POURLINE_KEYSTORE_FILE`, `POURLINE_KEYSTORE_PASSWORD`, `POURLINE_KEY_ALIAS` y `POURLINE_KEY_PASSWORD`, que tienen prioridad sobre el archivo. Sin credenciales, `assembleRelease` genera `app-release-unsigned.apk`, que no se puede instalar.
 
+#### Publicar una versión
+
+Al subir un tag `vX.Y.Z`, el workflow `.github/workflows/release.yml` compila el APK firmado y lo publica en GitHub Releases como `pourline-X.Y.Z.apk`. La versión sale del tag: `versionName = X.Y.Z` y `versionCode = X·1000000 + Y·1000 + Z`.
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Necesita estos secretos en el repositorio: `POURLINE_KEYSTORE_BASE64` (el keystore en base64), `POURLINE_KEYSTORE_PASSWORD`, `POURLINE_KEY_ALIAS` y `POURLINE_KEY_PASSWORD`.
+
 ### Tests
 
 ```bash

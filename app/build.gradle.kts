@@ -36,8 +36,9 @@ android {
     applicationId = "dev.josueamaya.pourline"
     minSdk = 26
     targetSdk = 37
-    versionCode = 1
-    versionName = "1.0"
+    // El workflow de release las pasa desde el tag (vX.Y.Z); en local se usan estos valores.
+    versionCode = providers.gradleProperty("pourline.versionCode").orNull?.toInt() ?: 1
+    versionName = providers.gradleProperty("pourline.versionName").orNull ?: "1.0"
     testInstrumentationRunner = "dev.josueamaya.pourline.PourlineTestRunner"
   }
 
