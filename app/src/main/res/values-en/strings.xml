@@ -970,8 +970,8 @@
     <string name="four_six_pace_value">%1$s g/s · %2$s g in %3$d s</string>
     <string name="four_six_pace_error">The pour speed goes from 2 to 15 g/s, with one decimal at most.</string>
     <string name="four_six_pace_hint">A slower pour lasts longer and the wait gets shorter: each pour still starts on time.</string>
-    <string name="four_six_split_taste">40% taste</string>
-    <string name="four_six_split_strength">60% strength</string>
+    <string name="four_six_split_taste" formatted="false">40% taste</string>
+    <string name="four_six_split_strength" formatted="false">60% strength</string>
     <string name="four_six_pours">Pours</string>
     <string name="four_six_time">Time</string>
     <string name="four_six_pour_detail">%1$s–%2$s · up to %3$s g</string>

@@ -1,11 +1,14 @@
 package dev.josueamaya.pourline.share
 
+import androidx.compose.ui.graphics.toArgb
 import dev.josueamaya.pourline.coffee.CoffeeEntity
 import dev.josueamaya.pourline.coffee.CoffeeProcess
 import dev.josueamaya.pourline.coffee.RoastLevel
 import dev.josueamaya.pourline.protocol.WeightUnit
 import dev.josueamaya.pourline.recipe.Recipe
 import dev.josueamaya.pourline.recipe.share.alternatingStages
+import dev.josueamaya.pourline.ui.theme.AntPalette
+import dev.josueamaya.pourline.ui.theme.AntSeedColors
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -125,5 +128,15 @@ class ShareModelsTest {
     val coffee = ShareRequest.Coffee(CoffeeEntity(id = 1, name = "Guji", createdAtEpochMs = 1_000).toShareData(daysSinceRoast = null), photo = null)
     assertFalse(coffee.fitsContent)
     assertEquals(SHARE_SIZE, coffee.size)
+  }
+
+  @Test
+  fun `the qr colors are tones of the primary palette`() {
+    val tones = AntPalette.generate(AntSeedColors().primary.toArgb())
+    val white = 0xFFFFFFFF.toInt()
+    assertEquals(tones[7], SHARE_QR_DARK.toArgb())
+    assertEquals(tones[5], SHARE_QR_EYE_RING.toArgb())
+    assertEquals(9.0, Math.round(AntPalette.contrast(SHARE_QR_DARK.toArgb(), white) * 10) / 10.0, 0.0)
+    assertEquals(4.1, Math.round(AntPalette.contrast(SHARE_QR_EYE_RING.toArgb(), white) * 10) / 10.0, 0.0)
   }
 }

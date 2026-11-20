@@ -13,9 +13,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -68,8 +72,8 @@ private val EvenCenterHorizontally = Alignment.Horizontal { size, space, _ -> ((
 
 /**
  * La tarjeta de una receta (SPEC-009 §3.3, enmienda 1): el nombre y los datos (dosis, agua, ratio y tiempo total con un
- * reloj, SPEC-010) a todo el ancho, una fila de alto fijo por paso y, al final, una franja con el QR de módulos de 6 px
- * y su texto. Sin notas ni instrucciones. Mide 1080 px de ancho y al menos 1350 de alto: crece con el contenido (ver
+ * reloj, SPEC-010) a todo el ancho, una fila de alto fijo por paso y, al final, una franja con el QR de la marca (módulos de
+ * 6 px, ojos redondeados) y su texto. Sin notas ni instrucciones. Mide 1080 px de ancho y al menos 1350 de alto: crece con el contenido (ver
  * [ShareFrame]). Sin [RecipeShareData.qr] no hay franja.
  */
 @Composable
@@ -184,8 +188,12 @@ private fun StepRow(stage: RecipeStage, index: Int, unit: WeightUnit, typeWidth:
 }
 
 /**
- * El QR dibujado en negro sobre blanco, sea cual sea el tema. Cada módulo mide [SHARE_QR_MODULE] (6 px enteros a la
- * densidad de la captura) y la caja, con la zona de silencio, `matrix.cells × 6` px: sin antialias entre módulos (D9, D30).
+ * El QR dibujado con la marca (enmienda 2) sobre blanco, sea cual sea el tema. Cada módulo mide [SHARE_QR_MODULE] (6 px
+ * enteros a la densidad de la captura) y la caja, con la zona de silencio, `matrix.cells × 6` px: sin antialias entre
+ * módulos (D9, D30). Los módulos de datos van en [SHARE_QR_DARK]. Los 147 módulos de los tres ojos no se pintan como
+ * módulos, porque sus esquinas cuadradas asomarían bajo las piezas redondeadas: cada ojo se dibuja aparte, con un
+ * anillo en [SHARE_QR_EYE_RING] (rellenado con `EvenOdd`, sin pintar el hueco encima) y un centro de 3 × 3 módulos en
+ * [SHARE_QR_DARK], con los radios de [qrEyeRadii]. Solo las curvas llevan antialias (D50).
  */
 @Composable
 fun QrCodeBox(matrix: QrMatrix, modifier: Modifier = Modifier) {
@@ -197,9 +205,24 @@ fun QrCodeBox(matrix: QrMatrix, modifier: Modifier = Modifier) {
     val module = Size(modulePx.toFloat(), modulePx.toFloat())
     for (y in 0 until matrix.modules) {
       for (x in 0 until matrix.modules) {
-        if (!matrix[x, y]) continue
-        drawRect(Color.Black, Offset(((x + QR_QUIET_ZONE) * modulePx).toFloat(), ((y + QR_QUIET_ZONE) * modulePx).toFloat()), module)
+        if (!matrix[x, y] || matrix.isEye(x, y)) continue
+        drawRect(SHARE_QR_DARK, Offset(((x + QR_QUIET_ZONE) * modulePx).toFloat(), ((y + QR_QUIET_ZONE) * modulePx).toFloat()), module)
       }
+    }
+    val radii = qrEyeRadii(modulePx)
+    val m = modulePx.toFloat()
+    for ((ex, ey) in matrix.eyes) {
+      val left = (ex + QR_QUIET_ZONE) * m
+      val top = (ey + QR_QUIET_ZONE) * m
+      val ring = Path().apply {
+        fillType = PathFillType.EvenOdd
+        addRoundRect(RoundRect(left, top, left + QR_EYE_SIZE * m, top + QR_EYE_SIZE * m, CornerRadius(radii.outer.toFloat())))
+        addRoundRect(
+          RoundRect(left + m, top + m, left + (QR_EYE_SIZE - 1) * m, top + (QR_EYE_SIZE - 1) * m, CornerRadius(radii.hole.toFloat())),
+        )
+      }
+      drawPath(ring, SHARE_QR_EYE_RING)
+      drawRoundRect(SHARE_QR_DARK, Offset(left + 2 * m, top + 2 * m), Size(3 * m, 3 * m), CornerRadius(radii.center.toFloat()))
     }
   }
 }
