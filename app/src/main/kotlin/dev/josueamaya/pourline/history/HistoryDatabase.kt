@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
+import dev.josueamaya.pourline.backup.BackupDao
 import dev.josueamaya.pourline.coffee.CoffeeConverters
 import dev.josueamaya.pourline.coffee.CoffeeDao
 import dev.josueamaya.pourline.coffee.CoffeeEntity
@@ -35,6 +36,8 @@ import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
  * `grindValue` y `grindLabel`) en lugar del texto `grind`.
  * Versión 6 (SPEC-007): la columna `scaleless` en `brews`, para las preparaciones hechas sin báscula.
  * Versión 7 (SPEC-006, enmienda 1): la tabla `grind_calibrations`, con los pares de calibración entre molinos.
+ *
+ * Las versiones 8 en adelante deben actualizar también los DTO de `backup` (SPEC-011 §3.8).
  */
 @Database(
   entities = [
@@ -50,7 +53,7 @@ import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
     GrinderAnchorEntity::class,
     GrindCalibrationEntity::class,
   ],
-  version = 7,
+  version = HistoryDatabase.VERSION,
   exportSchema = true,
 )
 @TypeConverters(HistoryConverters::class, CoffeeConverters::class, GrinderConverters::class)
@@ -65,7 +68,16 @@ abstract class HistoryDatabase : RoomDatabase() {
 
   abstract fun grindCalibrationDao(): GrindCalibrationDao
 
+  /** Lee y reemplaza todas las tablas para la copia de seguridad; no forma parte del esquema. */
+  abstract fun backupDao(): BackupDao
+
   companion object {
+    /**
+     * La versión del esquema. Una migración nueva (8 en adelante) obliga a revisar los DTO de `backup` y, si el cambio
+     * afecta al formato, a subir su `formatVersion` (SPEC-011 §3.8).
+     */
+    const val VERSION = 7
+
     const val FILE_NAME = "history.db"
 
     /** [fileName] solo cambia en los tests de rendimiento, que usan un archivo aparte del `history.db` real. */
