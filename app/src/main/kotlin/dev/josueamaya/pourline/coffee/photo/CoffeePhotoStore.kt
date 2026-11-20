@@ -114,5 +114,5 @@ class CoffeePhotoStore(private val dir: File, private val cacheDir: File) : Phot
     return File(camera, "capture-${System.nanoTime()}.jpg")
   }
 
-  private fun thumbName(name: String) = name.removeSuffix(".jpg") + "_thumb.jpg"
+  private fun thumbName(name: String) = thumbNameOf(name)
 }
