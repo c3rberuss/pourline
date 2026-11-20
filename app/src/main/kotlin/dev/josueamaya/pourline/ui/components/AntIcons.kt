@@ -129,12 +129,14 @@ object AntIcons {
       "M8.6 10.5L15.4 6.5", "M8.6 13.5L15.4 17.5",
     )
   }
-  /** Una bandeja con una flecha hacia abajo: importar. */
-  val Import: ImageVector by lazy {
+  /** Esquinas de visor con un código QR dentro: importar una receta escaneando su QR. */
+  val ScanQr: ImageVector by lazy {
     strokeIcon(
-      "Import",
-      "M4 14V19A1 1 0 0 0 5 20H19A1 1 0 0 0 20 19V14",
-      "M12 4V15", "M8 11.5L12 15.5L16 11.5",
+      "ScanQr",
+      "M3 7V5A2 2 0 0 1 5 3H7", "M17 3H19A2 2 0 0 1 21 5V7",
+      "M21 17V19A2 2 0 0 1 19 21H17", "M7 21H5A2 2 0 0 1 3 19V17",
+      "M7 7H11V11H7Z", "M13 7H17V11H13Z", "M7 13H11V17H7Z",
+      "M13 13V13.01", "M17 13V17H13",
     )
   }
   val Search: ImageVector by lazy {

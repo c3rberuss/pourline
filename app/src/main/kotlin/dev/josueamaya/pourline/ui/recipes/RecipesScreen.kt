@@ -146,7 +146,7 @@ private fun ImportAction(importer: RecipeImportEntryViewModel) {
   var menu by remember { mutableStateOf(false) }
   Box {
     AntIconButton(
-      AntIcons.Import,
+      AntIcons.ScanQr,
       contentDescription = stringResource(R.string.recipe_import_action),
       onClick = { menu = true },
       modifier = Modifier.testTag("recipes_import"),
