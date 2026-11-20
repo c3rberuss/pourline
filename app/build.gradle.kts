@@ -1,3 +1,6 @@
+import java.io.StringReader
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
@@ -5,6 +8,26 @@ plugins {
   alias(libs.plugins.ksp)
   alias(libs.plugins.androidx.room)
 }
+
+/**
+ * Credenciales de la firma de release. Cada valor sale de su variable de entorno (CI) o, si no está,
+ * de `keystore.properties` en la raíz del proyecto (local, fuera de git). Sin las cuatro, el release
+ * se genera sin firmar.
+ */
+val keystoreProperties = Properties().apply {
+  providers.fileContents(rootProject.layout.projectDirectory.file("keystore.properties"))
+    .asText.orNull?.let { load(StringReader(it)) }
+}
+
+fun signingValue(property: String, env: String): String? =
+  (providers.environmentVariable(env).orNull ?: keystoreProperties.getProperty(property))?.takeIf { it.isNotBlank() }
+
+val releaseStoreFile = signingValue("storeFile", "POURLINE_KEYSTORE_FILE")
+val releaseStorePassword = signingValue("storePassword", "POURLINE_KEYSTORE_PASSWORD")
+val releaseKeyAlias = signingValue("keyAlias", "POURLINE_KEY_ALIAS")
+val releaseKeyPassword = signingValue("keyPassword", "POURLINE_KEY_PASSWORD")
+val hasReleaseSigning =
+  listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { it != null }
 
 android {
   namespace = "dev.josueamaya.pourline"
@@ -18,13 +41,23 @@ android {
     testInstrumentationRunner = "dev.josueamaya.pourline.PourlineTestRunner"
   }
 
+  signingConfigs {
+    if (hasReleaseSigning) {
+      create("release") {
+        storeFile = rootProject.file(releaseStoreFile!!)
+        storePassword = releaseStorePassword
+        keyAlias = releaseKeyAlias
+        keyPassword = releaseKeyPassword
+      }
+    }
+  }
+
   buildTypes {
     release {
       // R8: reduce, optimiza y ofusca el código y quita los recursos que no se usan.
       isMinifyEnabled = true
       isShrinkResources = true
-      // Signed with the debug key so it installs over the debug build and keeps the user data.
-      signingConfig = signingConfigs.getByName("debug")
+      signingConfig = if (hasReleaseSigning) signingConfigs.getByName("release") else null
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
   }
