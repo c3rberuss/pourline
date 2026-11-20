@@ -969,8 +969,8 @@
     <string name="four_six_pace_value">%1$s g/s · %2$s g en %3$d s</string>
     <string name="four_six_pace_error">El ritmo va de 2 a 15 g/s, con un decimal como mucho.</string>
     <string name="four_six_pace_hint">Un vertido más lento dura más y la espera se acorta: cada vertido sigue empezando a su hora.</string>
-    <string name="four_six_split_taste">40 % sabor</string>
-    <string name="four_six_split_strength">60 % intensidad</string>
+    <string name="four_six_split_taste" formatted="false">40 % sabor</string>
+    <string name="four_six_split_strength" formatted="false">60 % intensidad</string>
     <string name="four_six_pours">Vertidos</string>
     <string name="four_six_time">Tiempo</string>
     <string name="four_six_pour_detail">%1$s–%2$s · hasta %3$s g</string>
