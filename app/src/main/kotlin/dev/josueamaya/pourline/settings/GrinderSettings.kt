@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.settings
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,11 +23,9 @@ interface CatalogVersionStore {
 }
 
 /** Molino predeterminado y versión del catálogo, en el mismo archivo `"settings"` que [BrewSettings]. */
-class GrinderSettings(
-  context: Context,
-  prefsName: String = BrewSettings.PREFS_NAME,
-) : DefaultGrinderStore, CatalogVersionStore {
-  private val prefs = context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+class GrinderSettings internal constructor(private val prefs: SharedPreferences) : DefaultGrinderStore, CatalogVersionStore, BackupableSettings {
+  constructor(context: Context, prefsName: String = BrewSettings.PREFS_NAME) :
+    this(context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE))
 
   private val _defaultGrinderId = MutableStateFlow(if (prefs.contains(KEY_DEFAULT_GRINDER)) prefs.getLong(KEY_DEFAULT_GRINDER, 0) else null)
   override val defaultGrinderId: StateFlow<Long?> = _defaultGrinderId.asStateFlow()
@@ -40,6 +39,19 @@ class GrinderSettings(
 
   override fun setCatalogVersion(version: Int) {
     prefs.edit { putInt(KEY_CATALOG_VERSION, version) }
+  }
+
+  override fun exportInto(snapshot: SettingsSnapshot): SettingsSnapshot = snapshot.copy(
+    defaultGrinderId = prefs.storedLong(KEY_DEFAULT_GRINDER),
+    grinderCatalogVersion = prefs.storedInt(KEY_CATALOG_VERSION),
+  )
+
+  override fun restoreFrom(snapshot: SettingsSnapshot) {
+    prefs.edit(commit = true) {
+      putOrRemove(KEY_DEFAULT_GRINDER, snapshot.defaultGrinderId)
+      putOrRemove(KEY_CATALOG_VERSION, snapshot.grinderCatalogVersion)
+    }
+    _defaultGrinderId.value = if (prefs.contains(KEY_DEFAULT_GRINDER)) prefs.getLong(KEY_DEFAULT_GRINDER, 0) else null
   }
 
   companion object {

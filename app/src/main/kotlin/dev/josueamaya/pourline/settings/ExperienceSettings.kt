@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.settings
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,11 +18,9 @@ interface ModeStore {
  * El modo Básico/Experto y si ya se mostró la elección del primer arranque, en el mismo archivo `"settings"`
  * que [BrewSettings]. Una sola instancia por proceso (ver `PourlineApp`). Un valor desconocido se lee como `BASIC`.
  */
-class ExperienceSettings(
-  context: Context,
-  prefsName: String = BrewSettings.PREFS_NAME,
-) : ModeStore {
-  private val prefs = context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+class ExperienceSettings internal constructor(private val prefs: SharedPreferences) : ModeStore, BackupableSettings {
+  constructor(context: Context, prefsName: String = BrewSettings.PREFS_NAME) :
+    this(context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE))
 
   private val _mode = MutableStateFlow(readMode())
   override val mode: StateFlow<ExperienceMode> = _mode.asStateFlow()
@@ -44,6 +43,18 @@ class ExperienceSettings(
     }
     _mode.value = mode
     _onboardingDone.value = true
+  }
+
+  override fun exportInto(snapshot: SettingsSnapshot): SettingsSnapshot =
+    snapshot.copy(experienceMode = prefs.storedString(KEY_MODE), onboardingDone = prefs.storedBoolean(KEY_ONBOARDING_DONE))
+
+  override fun restoreFrom(snapshot: SettingsSnapshot) {
+    prefs.edit(commit = true) {
+      putOrRemove(KEY_MODE, snapshot.experienceMode)
+      putOrRemove(KEY_ONBOARDING_DONE, snapshot.onboardingDone)
+    }
+    _mode.value = readMode()
+    _onboardingDone.value = prefs.getBoolean(KEY_ONBOARDING_DONE, false)
   }
 
   private fun readMode(): ExperienceMode =

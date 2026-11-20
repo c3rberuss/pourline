@@ -28,7 +28,7 @@ interface ScaleModeStore {
  * instancia por proceso (ver `PourlineApp`). La simulada nunca se guarda. Mientras el usuario no elige el modo, se usa
  * báscula si hay una recordada.
  */
-class ConnectionSettings internal constructor(private val prefs: SharedPreferences) : ScaleMemory, ScaleModeStore {
+class ConnectionSettings internal constructor(private val prefs: SharedPreferences) : ScaleMemory, ScaleModeStore, BackupableSettings {
   constructor(context: Context, prefsName: String = BrewSettings.PREFS_NAME) :
     this(context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE))
 
@@ -43,9 +43,7 @@ class ConnectionSettings internal constructor(private val prefs: SharedPreferenc
     _lastScale.value = scale
   }
 
-  private val _useScale = MutableStateFlow(
-    if (prefs.contains(KEY_USE_SCALE)) prefs.getBoolean(KEY_USE_SCALE, true) else _lastScale.value != null,
-  )
+  private val _useScale = MutableStateFlow(readUseScale())
   override val useScale: StateFlow<Boolean> = _useScale.asStateFlow()
 
   private val _scaleModeChosen = MutableStateFlow(prefs.contains(KEY_USE_SCALE))
@@ -56,6 +54,27 @@ class ConnectionSettings internal constructor(private val prefs: SharedPreferenc
     _useScale.value = enabled
     _scaleModeChosen.value = true
   }
+
+  override fun exportInto(snapshot: SettingsSnapshot): SettingsSnapshot = snapshot.copy(
+    useScale = prefs.storedBoolean(KEY_USE_SCALE),
+    lastScaleAddress = prefs.storedString(KEY_ADDRESS),
+    lastScaleName = prefs.storedString(KEY_NAME),
+  )
+
+  override fun restoreFrom(snapshot: SettingsSnapshot) {
+    prefs.edit(commit = true) {
+      putOrRemove(KEY_USE_SCALE, snapshot.useScale)
+      putOrRemove(KEY_ADDRESS, snapshot.lastScaleAddress)
+      putOrRemove(KEY_NAME, snapshot.lastScaleName)
+    }
+    _lastScale.value = read()
+    _useScale.value = readUseScale()
+    _scaleModeChosen.value = prefs.contains(KEY_USE_SCALE)
+  }
+
+  /** Sin elección, se usa báscula si hay una recordada. */
+  private fun readUseScale(): Boolean =
+    if (prefs.contains(KEY_USE_SCALE)) prefs.getBoolean(KEY_USE_SCALE, true) else _lastScale.value != null
 
   private fun read(): RememberedScale? {
     val address = prefs.getString(KEY_ADDRESS, null) ?: return null

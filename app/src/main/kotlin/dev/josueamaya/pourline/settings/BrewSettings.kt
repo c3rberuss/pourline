@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.settings
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,11 +48,10 @@ interface FreeBrewDefaults {
  * Hay una sola instancia por proceso (ver `PourlineApp`), para que el ViewModel de la pantalla
  * Scale y la pantalla de ajustes observen el mismo flujo.
  */
-class BrewSettings(
-  context: Context,
-  prefsName: String = PREFS_NAME,
-) : CoffeeStore, FreeBrewDefaults {
-  private val prefs = context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+class BrewSettings internal constructor(private val prefs: SharedPreferences) : CoffeeStore, FreeBrewDefaults, BackupableSettings {
+  constructor(context: Context, prefsName: String = PREFS_NAME) :
+    this(context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE))
+
   private val _autoFinishSeconds = MutableStateFlow(readAutoFinish())
 
   /** Segundos sin verter tras los que la preparación se da por terminada. */
@@ -100,6 +100,29 @@ class BrewSettings(
     require(ratio in FreeBrewDefaults.MIN_RATIO..FreeBrewDefaults.MAX_RATIO) { "Ratio fuera de rango: $ratio" }
     prefs.edit { putFloat(KEY_DEFAULT_RATIO, ratio.toFloat()) }
     _defaultRatio.value = ratio
+  }
+
+  override fun exportInto(snapshot: SettingsSnapshot): SettingsSnapshot = snapshot.copy(
+    autoFinishSeconds = prefs.storedInt(KEY_AUTO_FINISH),
+    countdownSeconds = prefs.storedInt(KEY_COUNTDOWN),
+    lastCoffeeId = prefs.storedLong(KEY_LAST_COFFEE),
+    defaultDoseG = prefs.storedFloat(KEY_DEFAULT_DOSE),
+    defaultRatio = prefs.storedFloat(KEY_DEFAULT_RATIO),
+  )
+
+  override fun restoreFrom(snapshot: SettingsSnapshot) {
+    prefs.edit(commit = true) {
+      putOrRemove(KEY_AUTO_FINISH, snapshot.autoFinishSeconds)
+      putOrRemove(KEY_COUNTDOWN, snapshot.countdownSeconds)
+      putOrRemove(KEY_LAST_COFFEE, snapshot.lastCoffeeId)
+      putOrRemove(KEY_DEFAULT_DOSE, snapshot.defaultDoseG)
+      putOrRemove(KEY_DEFAULT_RATIO, snapshot.defaultRatio)
+    }
+    _autoFinishSeconds.value = readAutoFinish()
+    _countdownSeconds.value = readCountdown()
+    _lastCoffeeId.value = readLastCoffee()
+    _defaultDoseG.value = readFloat(KEY_DEFAULT_DOSE, FreeBrewDefaults.MIN_DOSE_G, FreeBrewDefaults.MAX_DOSE_G, FreeBrewDefaults.DEFAULT_DOSE_G)
+    _defaultRatio.value = readFloat(KEY_DEFAULT_RATIO, FreeBrewDefaults.MIN_RATIO, FreeBrewDefaults.MAX_RATIO, FreeBrewDefaults.DEFAULT_RATIO)
   }
 
   /** Un decimal guardado como `Float` se lee redondeado a un decimal (15,3 no debe salir como 15,300000190734863). */

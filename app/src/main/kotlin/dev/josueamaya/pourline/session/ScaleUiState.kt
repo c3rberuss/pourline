@@ -119,6 +119,14 @@ data class ScaleUiState(
   /** Hay una sesión abierta: desde "Empezar" hasta "Listo", la X antes de `Active` o "Descartar". */
   val hasSession: Boolean get() = plan != null
 
+  /**
+   * "Importar datos" no se puede usar (SPEC-011 §4): hay una sesión abierta o la última preparación aún se guarda
+   * después de "Listo". `BrewService` solo corre con una sesión abierta (`BrewKeepAlive.needsKeepAlive` exige
+   * [hasSession]), así que la sesión ya lo cubre. Una preparación guardada tras importar se vincularía por id a un café o
+   * un molino distinto.
+   */
+  val blocksDataImport: Boolean get() = hasSession || savedBrew == SavedBrew.Saving
+
   /** Ratio agua:café (p. ej. 15.0 → 1:15). */
   val ratio: Double? get() = dose?.takeIf { it > 0 && weight > 0 }?.let { weight / it }
 
