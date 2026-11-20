@@ -41,3 +41,6 @@ fun exifRotationDegrees(orientation: Int): Int = when (orientation) {
   5, 8 -> 270
   else -> 0
 }
+
+/** El nombre de la miniatura de la foto [name]: `<uuid>.jpg` pasa a `<uuid>_thumb.jpg`. */
+fun thumbNameOf(name: String): String = name.removeSuffix(".jpg") + "_thumb.jpg"

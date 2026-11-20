@@ -45,4 +45,10 @@ class PhotoSizingTest {
     assertEquals(180, exifRotationDegrees(4))
     assertEquals(0, exifRotationDegrees(0))
   }
+
+  @Test
+  fun `the thumbnail name keeps the uuid and adds the suffix`() {
+    assertEquals("0b5f2c1e-8a3d-4f6e-9c7a-1d2e3f4a5b6c_thumb.jpg", thumbNameOf("0b5f2c1e-8a3d-4f6e-9c7a-1d2e3f4a5b6c.jpg"))
+    assertEquals("a_thumb.jpg", thumbNameOf("a.jpg"))
+  }
 }

@@ -13,6 +13,9 @@ import java.io.IOException
 import java.io.InputStream
 import java.util.UUID
 
+/** El directorio de las fotos dentro de `filesDir`; la copia de seguridad lo sustituye entero al importar (SPEC-011 §3.5). */
+const val COFFEE_PHOTOS_DIR = "coffee_photos"
+
 /** La foto no se pudo leer, reducir o guardar. */
 class PhotoImportException(message: String, cause: Throwable? = null) : IOException(message, cause)
 
@@ -46,10 +49,7 @@ class CoffeePhotoStore(private val dir: File, private val cacheDir: File) : Phot
       val name = "${UUID.randomUUID()}.jpg"
       try {
         write(upright, file(name), 85)
-        val crop = centerSquare(upright.width, upright.height)
-        val square = Bitmap.createBitmap(upright, crop.left, crop.top, crop.side, crop.side)
-        val thumb = square.scale(THUMB_SIDE, THUMB_SIDE)
-        write(thumb, thumbFile(name), 80)
+        writeThumbnail(upright, thumbFile(name))
       } catch (e: IOException) {
         delete(listOf(name))
         throw PhotoImportException("No se pudo guardar la foto", e)
@@ -78,6 +78,43 @@ class CoffeePhotoStore(private val dir: File, private val cacheDir: File) : Phot
     }
     return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
   }
+
+  /** La miniatura de 256 × 256 recortada al centro de [source], como JPEG 80. */
+  private fun writeThumbnail(source: Bitmap, target: File) {
+    val crop = centerSquare(source.width, source.height)
+    val square = Bitmap.createBitmap(source, crop.left, crop.top, crop.side, crop.side)
+    write(square.scale(THUMB_SIDE, THUMB_SIDE), target, 80)
+  }
+
+  /**
+   * Genera en [thumb] la miniatura de [photo] (que ya está derecha: la rotación EXIF se aplicó al importarla). La usa la
+   * importación de una copia de seguridad cuando falta la miniatura. `false` si no se pudo decodificar o guardar.
+   */
+  fun regenerateThumbnail(photo: File, thumb: File): Boolean =
+    try {
+      val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+      BitmapFactory.decodeFile(photo.path, bounds)
+      if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+        false
+      } else {
+        // Se decodifica sin bajar de THUMB_SIDE en el lado corto, que es el del recorte cuadrado.
+        val short = minOf(bounds.outWidth, bounds.outHeight)
+        val options = BitmapFactory.Options().apply { inSampleSize = inSampleSize(short, short, THUMB_SIDE) }
+        val decoded = BitmapFactory.decodeFile(photo.path, options)
+        if (decoded == null) {
+          false
+        } else {
+          writeThumbnail(decoded, thumb)
+          true
+        }
+      }
+    } catch (e: IOException) {
+      false
+    } catch (e: RuntimeException) {
+      false
+    } catch (e: OutOfMemoryError) {
+      false
+    }
 
   private fun write(bitmap: Bitmap, target: File, quality: Int) {
     target.outputStream().use { if (!bitmap.compress(Bitmap.CompressFormat.JPEG, quality, it)) throw IOException("compress") }
@@ -114,5 +151,5 @@ class CoffeePhotoStore(private val dir: File, private val cacheDir: File) : Phot
     return File(camera, "capture-${System.nanoTime()}.jpg")
   }
 
-  private fun thumbName(name: String) = name.removeSuffix(".jpg") + "_thumb.jpg"
+  private fun thumbName(name: String) = thumbNameOf(name)
 }

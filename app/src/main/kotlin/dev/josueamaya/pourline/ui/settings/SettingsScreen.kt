@@ -65,7 +65,7 @@ import kotlinx.coroutines.launch
  * [onRestoreRecipes] devuelve las recetas predefinidas a fábrica, tras confirmar; [onOpenGrinders] abre Molinos;
  * [onReplayTour] borra los recorridos vistos y vuelve a Preparar; [onScaleOff] se llama al pasar a "Sin báscula". Con
  * [onBack] `null` (es una
- * pestaña) no hay flecha de volver.
+ * pestaña) no hay flecha de volver. Con [backup] `null` no hay tarjeta de copia de seguridad.
  */
 @Composable
 fun SettingsScreen(
@@ -81,6 +81,7 @@ fun SettingsScreen(
   onReplayTour: () -> Unit,
   onBack: (() -> Unit)?,
   onScaleOff: () -> Unit = {},
+  backup: BackupViewModel? = null,
 ) {
   val useScale by scaleMode.useScale.collectAsStateWithLifecycle()
   val autoFinish by settings.autoFinishSeconds.collectAsStateWithLifecycle()
@@ -198,6 +199,7 @@ fun SettingsScreen(
         )
       }
       ReplayTourRow(onReplayTour)
+      backup?.let { BackupCard(it, snackbar) }
       if (experience.shows(ExpertFeature.RESTORE_BUILT_INS)) {
         AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.settings_recipes_title)) {
           AntButton(

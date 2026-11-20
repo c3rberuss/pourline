@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.settings
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,11 +25,9 @@ interface ReferenceStore {
  * Referencia activa y avisos de etapa, en el mismo archivo `"settings"` que [BrewSettings]. Hay una sola
  * instancia por proceso (ver `PourlineApp`).
  */
-class TargetSettings(
-  context: Context,
-  prefsName: String = BrewSettings.PREFS_NAME,
-) : ReferenceStore {
-  private val prefs = context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+class TargetSettings internal constructor(private val prefs: SharedPreferences) : ReferenceStore, BackupableSettings {
+  constructor(context: Context, prefsName: String = BrewSettings.PREFS_NAME) :
+    this(context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE))
 
   private val _reference = MutableStateFlow(readReference())
   override val reference: StateFlow<ReferenceKey?> = _reference.asStateFlow()
@@ -71,6 +70,25 @@ class TargetSettings(
   fun setStageSound(enabled: Boolean) {
     prefs.edit { putBoolean(KEY_STAGE_SOUND, enabled) }
     _stageSound.value = enabled
+  }
+
+  override fun exportInto(snapshot: SettingsSnapshot): SettingsSnapshot = snapshot.copy(
+    targetRefType = prefs.storedString(KEY_REF_TYPE),
+    targetRefId = prefs.storedLong(KEY_REF_ID),
+    stageVibration = prefs.storedBoolean(KEY_STAGE_VIBRATION),
+    stageSound = prefs.storedBoolean(KEY_STAGE_SOUND),
+  )
+
+  override fun restoreFrom(snapshot: SettingsSnapshot) {
+    prefs.edit(commit = true) {
+      putOrRemove(KEY_REF_TYPE, snapshot.targetRefType)
+      putOrRemove(KEY_REF_ID, snapshot.targetRefId)
+      putOrRemove(KEY_STAGE_VIBRATION, snapshot.stageVibration)
+      putOrRemove(KEY_STAGE_SOUND, snapshot.stageSound)
+    }
+    _reference.value = readReference()
+    _stageVibration.value = prefs.getBoolean(KEY_STAGE_VIBRATION, true)
+    _stageSound.value = prefs.getBoolean(KEY_STAGE_SOUND, true)
   }
 
   private fun readReference(): ReferenceKey? {

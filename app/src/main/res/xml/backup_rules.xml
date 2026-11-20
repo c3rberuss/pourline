@@ -1,13 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Copia automática de Android (SPEC-011 §3.6), API 26 a 30: no distingue entre la nube y el cambio de teléfono, así que
+   lleva la base y los ajustes, sin las fotos (`coffee_photos/` es COFFEE_PHOTOS_DIR; pueden superar la cuota de 25 MB).
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <include domain="database" path="history.db" />
+    <include domain="database" path="history.db-wal" />
+    <include domain="database" path="history.db-shm" />
+    <include domain="sharedpref" path="settings.xml" />
 </full-backup-content>

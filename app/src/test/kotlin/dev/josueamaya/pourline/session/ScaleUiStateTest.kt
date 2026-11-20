@@ -1,10 +1,16 @@
 package dev.josueamaya.pourline.session
 
+import dev.josueamaya.pourline.brew.BrewPhase
+import dev.josueamaya.pourline.brew.BrewState
+import dev.josueamaya.pourline.brew.BrewSummary
+import dev.josueamaya.pourline.brew.FinishReason
 import dev.josueamaya.pourline.protocol.ScaleMessage
 import dev.josueamaya.pourline.protocol.TimerStatus
 import dev.josueamaya.pourline.protocol.WeightUnit
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ScaleUiStateTest {
@@ -45,5 +51,35 @@ class ScaleUiStateTest {
     assertEquals(WeightUnit.OUNCES, ounces.sessionUnit)
     assertEquals(WeightUnit.GRAMS, ounces.copy(scaleless = true).sessionUnit)
     assertEquals(WeightUnit.GRAMS, ScaleUiState().sessionUnit)
+  }
+
+  @Test
+  fun `data import is blocked during a session and while the last brew is saving`() {
+    val plan = BrewPlan(doseG = 15.0, ratio = 16.0)
+    val finished = BrewState(
+      phase = BrewPhase.Finished(
+        summary = BrewSummary(
+          totalTimeMs = 1_000, totalWaterG = 100.0, avgFlowGps = 1.0, maxFlowGps = 2.0, stabilityScore = null, stabilityLevel = null,
+          levelShare = emptyMap(), pours = emptyList(), finalRatio = null, reason = FinishReason.MANUAL, interrupted = false,
+        ),
+        rearmed = false,
+        pourIgnored = false,
+      ),
+      samples = emptyList(),
+      currentStability = null,
+      currentLevel = null,
+    )
+
+    // Sin sesión: se puede importar.
+    assertFalse(ScaleUiState().blocksDataImport)
+    // Con sesión abierta (guiada, sin báscula o en cuenta atrás): no.
+    assertTrue(ScaleUiState(plan = plan).blocksDataImport)
+    assertTrue(ScaleUiState(plan = plan, scaleless = true).blocksDataImport)
+    assertTrue(ScaleUiState(plan = plan, countdownS = 3).blocksDataImport)
+    assertTrue(ScaleUiState(plan = plan, brew = finished).blocksDataImport)
+    // Tras "Listo" la sesión se cierra, pero el guardado puede seguir.
+    assertTrue(ScaleUiState(savedBrew = SavedBrew.Saving).blocksDataImport)
+    assertFalse(ScaleUiState(savedBrew = SavedBrew.Saved(7)).blocksDataImport)
+    assertFalse(ScaleUiState(savedBrew = SavedBrew.Failed).blocksDataImport)
   }
 }

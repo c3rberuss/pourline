@@ -14,7 +14,8 @@ import dev.josueamaya.pourline.ui.theme.AntTheme
 
 /**
  * `Modal.confirm` de Ant Design: diálogo con título, texto y los botones [cancelText] y [confirmText].
- * Con [danger] el botón de confirmar usa el color de error. Cerrar fuera del diálogo equivale a cancelar.
+ * Con [danger] el botón de confirmar usa el color de error. Cerrar fuera del diálogo equivale a cancelar. [testTag] es
+ * la etiqueta del diálogo, para los tests de una pantalla con más de uno.
  */
 @Composable
 fun AntModal(
@@ -26,10 +27,11 @@ fun AntModal(
   onDismiss: () -> Unit,
   modifier: Modifier = Modifier,
   danger: Boolean = false,
+  testTag: String = "ant_modal",
 ) {
   ReportModalPresence()
   Dialog(onDismissRequest = onDismiss) {
-    AntCard(modifier.testTag("ant_modal"), title = title) {
+    AntCard(modifier.testTag(testTag), title = title) {
       Text(text, color = AntTheme.colors.textSecondary, style = AntTheme.typography.text)
       Row(
         Modifier.fillMaxWidth(),

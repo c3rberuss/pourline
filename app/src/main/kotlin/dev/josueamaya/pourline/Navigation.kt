@@ -83,6 +83,7 @@ import dev.josueamaya.pourline.ui.recipes.importNoticeStatus
 import dev.josueamaya.pourline.ui.recipes.importNoticeText
 import dev.josueamaya.pourline.ui.scale.TargetPickerViewModel
 import dev.josueamaya.pourline.ui.session.SessionScreen
+import dev.josueamaya.pourline.ui.settings.BackupViewModel
 import dev.josueamaya.pourline.ui.settings.SettingsScreen
 import dev.josueamaya.pourline.ui.tools.FourSixScreen
 import dev.josueamaya.pourline.ui.tools.FourSixViewModel
@@ -137,11 +138,22 @@ private fun TabsNavigation(deps: AppDependencies) {
   val hasSession by remember { deps.scaleSession.ui.map { it.hasSession }.distinctUntilChanged() }
     .collectAsStateWithLifecycle(remember { deps.scaleSession.ui.value.hasSession })
   val pendingImport by deps.recipeImports.pending.collectAsStateWithLifecycle()
-  LaunchedEffect(pendingImport, hasSession) {
+  // Mientras se reemplazan los datos tampoco se abre: la vista previa leería una base a medio cambiar (SPEC-011 §3.5).
+  val applying by deps.backup.applying.collectAsStateWithLifecycle()
+  LaunchedEffect(pendingImport, hasSession, applying) {
     val uri = pendingImport ?: return@LaunchedEffect
-    if (!hasSession && deps.recipeImports.consume(uri)) {
+    if (!hasSession && !applying && deps.recipeImports.consume(uri)) {
       tab = Tab.RECIPES
       stacks.getValue(Tab.RECIPES).openImport(uri)
+    }
+  }
+  // Tras importar una copia, las pestañas distintas de Preparar vuelven a su raíz: lo que tenían abierto (un café, un editor)
+  // apuntaba a datos que ya no son los mismos. La de Preparar es `[Prepare, Settings]` y se queda donde está (D22).
+  LaunchedEffect(deps.backup) {
+    deps.backup.imported.collect {
+      Tab.entries.filter { it != Tab.PREPARE }.forEach { stacks.getValue(it).popToRoot() }
+      // Una copia puede traer "Sin báscula": la conexión no debe quedar abierta sin que se sepa, como al cambiar el modo.
+      if (!deps.scaleMode.useScale.value && !deps.scaleSession.isArmed) deps.scaleSession.disconnect()
     }
   }
   // Los mensajes de las importaciones (añadida, aplazada, errores) salen en un host propio, sobre cualquier pantalla (D21).
@@ -309,6 +321,13 @@ private fun tabEntryProvider(
         selectTab(Tab.PREPARE)
       },
       onBack = ::back,
+      backup = viewModel {
+        BackupViewModel(
+          deps.backup,
+          sessionBusy = deps.scaleSession.ui.map { it.blocksDataImport }.distinctUntilChanged(),
+          isSessionBusy = { deps.scaleSession.ui.value.blocksDataImport },
+        )
+      },
     )
   }
   tabEntry<Grinders>(tab, stack, activeTab) {

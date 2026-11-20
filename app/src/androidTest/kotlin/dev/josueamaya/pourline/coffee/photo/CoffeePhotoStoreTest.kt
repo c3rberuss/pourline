@@ -73,6 +73,23 @@ class CoffeePhotoStoreTest {
   }
 
   @Test
+  fun regenerateThumbnailWritesA256SquareJpeg() {
+    val wide = jpeg(1600, 900)
+    val thumb = File(root, "regenerated_thumb.jpg")
+    assertTrue(store.regenerateThumbnail(wide, thumb))
+    assertEquals(256 to 256, size(thumb))
+    val tall = jpeg(300, 1200)
+    assertTrue(store.regenerateThumbnail(tall, thumb))
+    assertEquals(256 to 256, size(thumb))
+    // Algo que no es una imagen, o que no existe, no genera nada.
+    val junk = File(root, "junk.jpg").apply { writeBytes(ByteArray(64) { it.toByte() }) }
+    val noThumb = File(root, "none_thumb.jpg")
+    assertFalse(store.regenerateThumbnail(junk, noThumb))
+    assertFalse(store.regenerateThumbnail(File(root, "missing.jpg"), noThumb))
+    assertFalse(noThumb.exists())
+  }
+
+  @Test
   fun deleteRemovesThePhotoAndItsThumbnail() = runTest {
     val name = store.import { FileInputStream(jpeg(800, 600)) }
     assertTrue(store.file(name).exists() && store.thumbFile(name).exists())
