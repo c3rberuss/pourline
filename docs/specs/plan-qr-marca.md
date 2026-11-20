@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-compartir-receta.md`](spec-compartir-receta.md) (SPEC-009), **Enmienda 2** (§3.3, §5, §6 y §7) |
-| Estado | Aprobado (2026-11-20), P1-P3 con la propuesta del plan, salvo la regla de la medición (decisión del usuario del 2026-11-20, ver "Decisión tras F0"). Commits por fase autorizados. En implementación |
+| Estado | Aprobado (2026-11-20), P1-P3 con la propuesta del plan, salvo la regla de la medición (decisión del usuario del 2026-11-20, ver "Decisión tras F0"). Commits por fase autorizados. Implementado (F0 a F3, 2026-11-20); pendiente la prueba manual del usuario en el Xiaomi |
 | Fecha | 2026-11-20 |
 | Rama | `feat/share-recipe-qr-style`, desde `develop` (`55359f8`), con el spec commiteado (`7464c1d`) |
 | Módulos | `:app` (`:protocol` no cambia) |
@@ -125,7 +125,7 @@ Orden: F0 → F1 → F2 → F3. F2 depende de F1 (colores y geometría). F3 depe
 | F0 | Línea base y referencia en negro con las semillas nuevas | S | Hecha |
 | F1 | Colores y geometría de los ojos, con sus tests JVM | S | Hecha |
 | F2 | La marca en `QrCodeBox`, medición con la salida del §6 y tests de la tarjeta | L | Hecha |
-| F3 | Verificación: suites afectadas, comprobaciones, E2E por adb, capturas y cierre | M | Pendiente |
+| F3 | Verificación: suites afectadas, comprobaciones, E2E por adb, capturas y cierre | M | Hecha (falta la prueba manual en el Xiaomi) |
 
 Cada fase deja `:app` compilando y sus tests en verde. Se compila y se prueba solo `:app`, nunca con `./gradlew build`
 ni con builds limpios.
@@ -385,7 +385,38 @@ Commit sugerido: `docs(specs): record the SPEC-009 amendment 2 verification`.
 
 #### Resultado de F3
 
-Pendiente.
+Hecha (2026-11-20), salvo la prueba manual del usuario en el Xiaomi.
+
+- **Suites (§7.1):** JVM, 111 tests, 0 fallos. `emulator-5560`, las seis clases, 69 tests, 0 fallos, 1 omitido
+  (`cardSweep`). Lint: 0 errores y 20 avisos (los mismos que en la línea base; los 2 errores se corrigieron en un
+  commit aparte, `formatted="false"`). Los totales suben en 4 (`QrCodeTest`), 1 (`ShareModelsTest`) y 1
+  (`ShareCardsLayoutTest`) respecto a la línea base.
+- **Comprobaciones (§7.2):** sin `import android` en `recipe/share` ni en `QrCode.kt`; sin `Color.Black` en `share/`;
+  `MAX_URI_LENGTH = 600`; `git diff 55359f8` vacío en `recipe/`, `grinder/`, `ui/`, el manifiesto, `app/build.gradle.kts`
+  y `gradle/`, y en `BrewShareCard`, `CoffeeShareCard`, `CompareShareCard`, `ShareFrame` y `ShareCapture`. Desviación: el
+  diff de `app/src/main/res` no está vacío, por los dos `formatted="false"` de `four_six_split_*` (decisión del
+  usuario; el texto mostrado no cambia).
+- **E2E por adb (§7.4), `emulator-5560`, tras `pm clear`:** Onboarding (Básico, sin báscula, Femobook A2), importación
+  de los dos URIs de D44 (4:6 con la molienda "Femobook A2 · 0 · 34"; peor caso) y Guardar. Compartir "V60 clásica", la
+  4:6 y la de peor caso, sin diálogos: 1080 × 1350, 1080 × 1656 y 1080 × 2226, los mismos tamaños que la enmienda 1.
+  El PNG compartido es idéntico (mismo SHA-256) con el teléfono en tema claro y en oscuro. Los PNG a tamaño completo y
+  reducidos a 540 px con JPEG 70 (4:6 y peor caso) se importan por "Desde una imagen" y abren la vista previa. Sin
+  entradas en `logcat -b crash`. Se vio a ojo la tarjeta 4:6: ojos redondeados con el anillo en azul primario, datos y
+  centros en azul oscuro sobre blanco, QR centrado bajo los pasos.
+- **Capturas (§7.6):** `~/Downloads/pourline-recipe-share/qr-style/{es,en}/` con `recipe-short.png`,
+  `recipe-four-six.png` y `recipe-worst-case.png` (6 archivos, claro).
+- **Spec:** actualizado el §3.3 (radios 13, 8 y 5 px; los módulos de los ojos no se pintan como módulos), el §5 y la
+  nota de la enmienda 1 del §6 (12 niveles, no 8), el resultado de la medición y el hallazgo del negro a 450 en el §6, y
+  la cabecera (Enmienda 2 implementada).
+
+**Prueba manual del usuario en el Xiaomi (§7.5), nada instalado por el agente:**
+
+- APK de esta rama con la misma firma que el que tiene instalado. Un APK de debug sobre el release firmado con su clave
+  no se instala encima: obliga a desinstalar y borra los datos. Antes, exportar la copia de seguridad de SPEC-011 (R8).
+- Compartir la receta 4:6 por WhatsApp y reimportarla desde la imagen recibida, por la galería ("Desde una imagen") y
+  por "Escanear QR" con la imagen en otra pantalla: las dos abren la vista previa sin aviso de recorte.
+- A ojo: ojos redondeados y QR en los azules de la marca, también con el teléfono en tema oscuro. Opcional: la cámara
+  del sistema o Lens, anotando si ofrece abrir el enlace.
 
 ### 3.1 Cadenas nuevas
 

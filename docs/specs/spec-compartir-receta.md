@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Implementado y fusionado a `develop` (2026-11-18, `bbc96aa`). Plan: [`plan-compartir-receta.md`](plan-compartir-receta.md). **Enmienda 1** (QR grande): Aprobado (2026-11-18). Plan aprobado: [`plan-qr-grande.md`](plan-qr-grande.md) (P1-P3 con la propuesta del plan). En implementación. **Enmienda 2** (QR con la marca): Aprobado (2026-11-20), pendiente de plan |
+| Estado | Implementado y fusionado a `develop` (2026-11-18, `bbc96aa`). Plan: [`plan-compartir-receta.md`](plan-compartir-receta.md). **Enmienda 1** (QR grande): Aprobado (2026-11-18). Plan aprobado: [`plan-qr-grande.md`](plan-qr-grande.md) (P1-P3 con la propuesta del plan). En implementación. **Enmienda 2** (QR con la marca): Implementada (2026-11-20) en `feat/share-recipe-qr-style`, pendiente de fusionar en `develop` y de la prueba manual en el Xiaomi. Plan: [`plan-qr-marca.md`](plan-qr-marca.md) |
 | Fecha | 2026-11-17. Enmienda 1: 2026-11-18. Enmienda 2: 2026-11-20 |
 | Rama | `feat/share-recipe`, desde `develop` (`e64330a`). Enmienda 1: `feat/share-recipe-large-qr`, desde `develop` (`bbc96aa`). Enmienda 2: `feat/share-recipe-qr-style`, desde `develop` (`55359f8`) |
 | Enmienda 1 | El QR deja de tener una caja fija de 432 px: cada módulo mide 6 px exactos y la caja crece con la versión del QR, lo que sube `MAX_URI_LENGTH` de 331 a 600 (el plan partía de 700 y la medición sobre la tarjeta real lo bajó). El QR pasa a una franja propia al final de la tarjeta y el alto de la tarjeta se ajusta al contenido. Si aun así no cabe, las instrucciones se recortan de una en una desde el último paso, no todas de golpe. Cambia §3.1, §3.2, §3.3, §3.4, §3.6, §4, §5, §6 y §7. Motivo: la receta 4:6 generada por la app (10 pasos, con notas e instrucciones) ocupa 450 caracteres y perdía notas e instrucciones al compartirse |
@@ -267,9 +267,12 @@
         derecha y abajo a la izquierda): no se dibujan módulo a módulo, sino como dos piezas
         redondeadas encima de la matriz. El anillo (7 × 7 con el hueco de 5 × 5) va en `#1677FF`
         (contraste 4,1:1) y el centro (3 × 3) en `#003EB3`. Radios de referencia, los de la maqueta
-        aprobada: 2,1 módulos en el borde exterior del anillo, 1,3 en el hueco y 0,9 en el centro. El
-        plan los fija en píxeles enteros. Solo las esquinas curvas llevan antialias; los bordes rectos
-        caen en píxeles enteros, como el resto de módulos.
+        aprobada: 2,1 módulos en el borde exterior del anillo, 1,3 en el hueco y 0,9 en el centro. Con
+        módulos de 6 px, el plan los fija en **13 px** (borde exterior), **8 px** (hueco) y **5 px** (centro),
+        el entero más cercano. Solo las esquinas curvas llevan antialias; los bordes rectos caen en píxeles
+        enteros, como el resto de módulos.
+      - Los 147 módulos de los tres ojos (3 × 49) no se pintan como módulos: solo se dibujan las piezas
+        redondeadas, porque las esquinas cuadradas de los módulos asomarían bajo ellas.
       - El separador blanco de cada ojo y la zona de silencio no cambian.
       - Si la medición de §6 no llega a 20/20, el anillo pasa a `#003EB3` (todo el ojo en azul
         oscuro) y se mide de nuevo.
@@ -478,7 +481,7 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
 - [ ] **Enmienda 2:** en el PNG generado, los módulos de datos son `#003EB3`, el anillo de cada ojo
       `#1677FF` (o `#003EB3` si se aplicó la salida de §6) y su centro `#003EB3`, y el fondo blanco.
       Cada módulo de datos sigue midiendo 6 × 6 px y la caja `(módulos + 8) × 6` px. Lo comprueba un
-      test instrumentado leyendo los píxeles con el mismo margen de 8 niveles por canal que hoy, ahora
+      test instrumentado leyendo los píxeles con el mismo margen que hoy (12 niveles por canal, no 8: ver §6), ahora
       contra el color esperado de cada zona en lugar de contra negro. Las esquinas curvas de los ojos
       quedan fuera de la comprobación píxel a píxel.
 - [ ] **Enmienda 2:** `RecipeQrLegibilityTest#cardSweep` sobre la tarjeta real da 20/20 con
@@ -572,7 +575,8 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
       1350 px.
     - La caja del QR se coloca en píxeles pares (hasta 1 px a la izquierda del centro) y la captura de
       Compose mezcla un 1 % en el primer píxel de cada módulo, por lo que los tests comprueban "negro" y
-      "blanco" con 8 niveles de margen.
+      "blanco" con un margen de niveles por canal (8 entonces; 12 desde SPEC-010, `ea1890b`, por una costura de un
+      píxel de la captura: corregido en la enmienda 2).
   - **Enmienda 2, riesgo:** los lectores binarizan la imagen, y el azul de los datos (9,0:1) y el de
     los anillos (4,1:1) quedan oscuros, pero la reducción al 50 % con JPEG 70 mezcla el color con el
     blanco y puede aclarar más el anillo que el negro. Por eso se vuelve a medir con
@@ -580,9 +584,39 @@ Importar:   Escáner / Galería / ACTION_SEND image / ACTION_VIEW pourline://
     - **Salida decidida por el usuario:** si alguna de las tres lecturas baja de 20/20, el anillo pasa
       de `#1677FF` a `#003EB3` y se repite la medición. `MAX_URI_LENGTH` no baja por esta enmienda.
     - Si tampoco así llega a 20/20, la decisión vuelve al usuario.
-  - **Enmienda 2, pendiente:** anotar aquí el resultado de la medición (lecturas por longitud) y si se
-    aplicó la salida.
+  - **Enmienda 2, regla de la medición (decisión del usuario, 2026-11-20):** el QR negro de hoy ya falla a 450
+    caracteres en la lectura 50 % + JPEG 70, así que la regla "toda la pasada gruesa acierta" no la cumple ni el negro.
+    Se sustituye por "no peor que el negro": 600 caracteres con 20 muestras da 20/20 en las tres lecturas, y en la
+    pasada gruesa (300 a 550, 10 muestras) y en 450 con 20 muestras, en cada longitud y lectura, la marca acierta al
+    menos lo mismo que la referencia en negro con las mismas semillas. Si no, el anillo pasaría a `#003EB3`.
+  - **Hallazgo preexistente, fuera de esta enmienda:** el QR negro falla a 450 caracteres en la lectura tras reducir
+    al 50 % y JPEG 70: 9/10 con 10 muestras (semillas 30000) y 18/20 con dos lotes de 20 (semillas 30000 y 40000). La
+    importación, que es la ruta real, acierta siempre. La enmienda 1 midió 450 con otras semillas y no vio fallos.
+  - **Enmienda 2, resultado (2026-11-20, `emulator-5560`, lector de Play Services, tarjeta real, receta de peor caso,
+    semillas `30_000 + i`; el segundo lote de 450 usa `40_000 + i`).** Cada celda es "tal cual / 50 % + JPEG 70 /
+    importación a 2048 px". **No se aplicó la salida:** el anillo queda en `#1677FF`.
 
+    | Longitud | Muestras | Negro (referencia) | Marca |
+    |---|---|---|---|
+    | 600 (v19) | 20 | 20/20, 20/20, 20/20 | 20/20, 20/20, 20/20 |
+    | 300 (v13) | 10 | 10/10, 10/10, 10/10 | 10/10, 10/10, 10/10 |
+    | 350 (v14) | 10 | 10/10, 10/10, 10/10 | 10/10, 10/10, 10/10 |
+    | 400 (v15) | 10 | 10/10, 10/10, 10/10 | 10/10, 10/10, 10/10 |
+    | 450 (v16) | 10 | 10/10, 9/10, 10/10 | 10/10, 10/10, 10/10 |
+    | 500 (v17) | 10 | 10/10, 10/10, 10/10 | 10/10, 10/10, 10/10 |
+    | 550 (v18) | 10 | 10/10, 10/10, 10/10 | 10/10, 10/10, 10/10 |
+    | 450 (v16), semillas 30000 | 20 | 20/20, 18/20, 20/20 | 20/20, 20/20, 20/20 |
+    | 450 (v16), semillas 40000 | 20 | 20/20, 18/20, 20/20 | 20/20, 20/20, 20/20 |
+
+    - `maxUriLengthIsLegibleOnTheCard` (600) y `theWorstCaseCardIsReadableAsIsAndAfterHalvingAndJpeg70` pasan.
+    - La marca iguala o supera al negro en todos los puntos. `MAX_URI_LENGTH` sigue en 600.
+    - Las seis clases de tests (tarjeta, compartir, importar y legibilidad) pasan en `emulator-5560`; el margen de
+      los tests de píxeles es 12 niveles por canal (corregido en §5 y en la nota de la enmienda 1).
+    - E2E por adb en `emulator-5560`: la tarjeta compartida mide 1080 × 1350 (corta), 1080 × 1656 (4:6) y
+      1080 × 2226 (peor caso con URI de 576), iguales a los de la enmienda 1; el PNG es idéntico con el teléfono en
+      tema claro y oscuro (mismo SHA-256); el PNG a tamaño completo y el reducido a 540 px con JPEG 70 se reimportan
+      desde la galería y abren la vista previa (las dos recetas, ya guardadas, se reconocen).
+    - Pendiente: la prueba manual en el Xiaomi (WhatsApp, galería y escáner) y la cámara del sistema o Lens.
 ## 7. Alternativas descartadas
 
 - **Archivo `.pourline` adjunto:** algunas apps de mensajería no ofrecen abrir archivos con tipos
