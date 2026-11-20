@@ -8,6 +8,11 @@ build/
 .cxx
 local.properties
 
+# Firma de release (credenciales y keystores, nunca en git)
+keystore.properties
+*.jks
+*.keystore
+
 # APK original de referencia (no versionar)
 *.apk
 .kotlin/

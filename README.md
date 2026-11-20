@@ -107,7 +107,18 @@ cd pourline
 ./gradlew :app:assembleRelease
 ```
 
-> El build de release se firma con la clave de debug, para instalarlo encima de la versión de debug sin perder los datos.
+#### Firma de release
+
+El release se firma con tu propio keystore. Crea `keystore.properties` en la raíz del proyecto (está en `.gitignore`):
+
+```properties
+storeFile=/ruta/absoluta/a/pourline-release.jks
+storePassword=…
+keyAlias=…
+keyPassword=…
+```
+
+En CI se usan las variables de entorno `POURLINE_KEYSTORE_FILE`, `POURLINE_KEYSTORE_PASSWORD`, `POURLINE_KEY_ALIAS` y `POURLINE_KEY_PASSWORD`, que tienen prioridad sobre el archivo. Sin credenciales, `assembleRelease` genera `app-release-unsigned.apk`, que no se puede instalar.
 
 ### Tests
 
