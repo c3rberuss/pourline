@@ -3,14 +3,14 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-exportar-datos.md`](spec-exportar-datos.md) (SPEC-011), aprobado el 2026-11-19 |
-| Estado | Aprobado el 2026-11-19 (P1 a P7 resueltas, §6). En implementación en `feat/data-backup` |
+| Estado | Implementado el 2026-11-20 en `feat/data-backup` (F0 a F10); pendiente la prueba manual del usuario (§7.6) y `/code-review` antes de fusionar |
 | Fecha | 2026-11-19 |
 | Rama | `feat/data-backup`, desde `develop` (`3dd50f6`). El spec está sin commitear en `develop`: se commitea en la rama junto con este plan cuando el usuario lo autorice |
 | Módulos | `:app` (`:protocol` no cambia) |
 | Base de datos | Sin cambios de esquema: `HistoryDatabase` sigue en versión 7 y `app/schemas` no cambia. Se añade un DAO (`BackupDao`), que no forma parte del esquema, así que no hace falta `Migration` |
 | Formato | `formatVersion = 1` (§3.1) |
 | Límites de `TOO_LARGE` | `data.json` ≤ 64 MiB, cada foto ≤ 16 MiB, `manifest.json` y `settings.json` ≤ 256 KiB cada uno, ≤ 10 000 entradas y ≤ 1 GiB descomprimido en total. Se comprueban al importar **y al exportar** (D11) |
-| Línea base | Pendiente de F0 |
+| Línea base | F0 (2026-11-19): `SettingsNavigationTest` falla en sus 3 casos (la pregunta de báscula tapa Preparar en una instalación nueva; ya fallaba antes de este spec), `SettingsScreenTest.theReplayRowCallsBack` es intermitente en una ejecución combinada y pasa sola. Lint: 2 errores (`StringFormatInvalid` en `four_six_split_taste` y `four_six_split_strength`) y 22 avisos. La foto de F0 (paso 5) no se midió: se usó el caso sintético de F9 |
 
 El spec no trae fases, así que este plan las define. El orden va de dentro afuera, como pidió el usuario: primero el
 formato y la validación en la JVM (F1 a F3), después los datos y el gestor con la aplicación atómica (F4 a F6), luego
@@ -192,17 +192,17 @@ depende de F1 a F4; F6 de F5; F7 de F6; F8 es independiente de F5 a F7, pero va 
 
 | Fase | Contenido | Tamaño | Estado |
 |---|---|---|---|
-| F0 | Línea base, dispositivos y tamaño de una foto real | S | Pendiente |
-| F1 | Formato puro: modelos, DTO, mapeo e ida y vuelta (JVM) | M | Pendiente |
-| F2 | Archivo ZIP: escritura, lectura, validación, límites y fotos (JVM) | L | Pendiente |
-| F3 | Ajustes exportables y restaurables, y preparación en curso (JVM) | M | Pendiente |
-| F4 | `BackupDao` y constante de versión de la base | S | Pendiente |
-| F5 | Gestor: exportar, leer y descartar; conexión con la app | M | Pendiente |
-| F6 | Aplicación atómica, marcador, recuperación e invalidación | L | Pendiente |
-| F7 | Interfaz: tarjeta, diálogos, mensajes y navegación | L | Pendiente |
-| F8 | Reglas de la copia automática de Android | S | Pendiente |
-| F9 | Rendimiento del caso grande | M | Pendiente |
-| F10 | Verificación final y cierre | M | Pendiente |
+| F0 | Línea base, dispositivos y tamaño de una foto real | S | Hecha (sin commit de código; spec y plan en `b83b334`) |
+| F1 | Formato puro: modelos, DTO, mapeo e ida y vuelta (JVM) | M | Hecha (`1ab4021`) |
+| F2 | Archivo ZIP: escritura, lectura, validación, límites y fotos (JVM) | L | Hecha (`c9d110c`) |
+| F3 | Ajustes exportables y restaurables, y preparación en curso (JVM) | M | Hecha (`e10f3f4`) |
+| F4 | `BackupDao` y constante de versión de la base | S | Hecha (`717bea7`) |
+| F5 | Gestor: exportar, leer y descartar; conexión con la app | M | Hecha (`10c389f`) |
+| F6 | Aplicación atómica, marcador, recuperación e invalidación | L | Hecha (`d8dd5b6`) |
+| F7 | Interfaz: tarjeta, diálogos, mensajes y navegación | L | Hecha (`343af88`) |
+| F8 | Reglas de la copia automática de Android | S | Hecha (`1f1ca8c`) |
+| F9 | Rendimiento del caso grande | M | Hecha (`b287a56`) |
+| F10 | Verificación final y cierre | M | Hecha (este commit) |
 
 Cada fase deja `:app` compilando y sus tests en verde. Se compila y se prueba solo `:app`, nunca con `./gradlew build`
 ni con builds limpios.
@@ -506,6 +506,48 @@ Commit sugerido: `test(backup): measure the export and import of the large data 
 Estado; los cambios que conviene llevarle están en el §8.
 
 Commit sugerido: `docs(specs): record the SPEC-011 verification`.
+
+### Resultado de F10 (2026-11-20)
+
+Commits de `feat/data-backup`: `b83b334` docs (spec y plan), `1ab4021` F1, `c9d110c` F2, `e10f3f4` F3, `717bea7` F4, `10c389f` F5,
+`d8dd5b6` F6, `343af88` F7, `1f1ca8c` F8, `b287a56` F9 y el de esta verificación.
+
+- **JVM (§7.1):** 75 tests en verde (`backup.*`: Archive 15, Format 3, Mapping 9, Validator 7, ImportMarker 3, PhotoSwap 4;
+  `settings.*`: SettingsSnapshot 6, TourSettings 8, ConnectionSettings 4, ExperienceMode 2; `ScaleUiStateTest` 6,
+  `PhotoSizingTest` 7, `BackupTextsTest` 1).
+- **Instrumentados (§7.1), `emulator-5556`:** 123 tests, 120 en verde y 3 fallos, todos de `SettingsNavigationTest`
+  (`gearOpensSettingsFromPrepare`, `theGrindersRowOpensTheGrindersList`, `noTopBarHasSectionIcons`), los mismos de la línea
+  base de F0 y sin relación con este spec.
+- **Lint:** 2 errores (los de la línea base) y 20 avisos (2 menos que en F0: desaparecen `UnusedResources` de `backup_rules.xml`
+  y otro por las reglas nuevas). Sin avisos nuevos.
+- **Rendimiento (§7.3), `emulator-5556`, 1000 preparaciones de 4 min con curva objetivo, 100 cafés con foto de 1600 x 1200 y
+  20 recetas:** exportar 1657 ms, leer 1071 ms, aplicar 155 ms; ZIP de 149 053 459 B, `data.json` de 10 517 601 B
+  (< 16 MiB: D11 se cumple), descomprimido 152 105 143 B, memoria Java tras importar 16 MB.
+- **§7.2:** `app/schemas` sin cambios (`VERSION = 7`); sin `import android.` en los archivos puros; sin
+  `getSharedPreferences`, `tour_seen` ni `TourSettings` en `backup/`; sin `ExpertFeature` en `BackupCard.kt`; el manifiesto
+  fusionado trae `dataExtractionRules` y `fullBackupContent`; `"coffee_photos"` solo en `COFFEE_PHOTOS_DIR`.
+- **`bmgr` (§7.4), `emulator-5556`:** con `cloud-backup` el registro de `BackupXmlParserLogging` solo lista la base
+  (`history.db` y sus auxiliares) y `settings.xml`; `coffee_photos/` no aparece; tras `pm clear` y `bmgr restore` vuelven la base
+  y el ajuste cambiado (tema oscuro) y no vuelven `files/fuera.txt` ni las fotos. Con `is_device_transfer=true` el registro
+  añade `domain=file coffee_photos` y la foto vuelve. El transporte y el parámetro quedaron como estaban.
+- **E2E por adb (§7.5), `emulator-5556`, sin cierres en `logcat -b crash`:** (1) onboarding en Experto sin báscula con un molino;
+  el café con foto y la receta se sembraron con `sqlite3` y `run-as` (no por la interfaz), y el tema oscuro y la cuenta atrás
+  de 5 s por Ajustes; no se creó ninguna preparación. (2) Exportar: nombre propuesto `pourline-backup-2026-11-20-0021.zip` y
+  mensaje "Backup saved: 1 coffee, 1 grinder, 3 recipes, 0 brews, 1 photo". (3) `unzip -l`: `manifest.json`, `data.json`,
+  `settings.json` y la foto con su miniatura; manifiesto con `formatVersion` 1 y `schemaVersion` 7. (4) `pm clear`, onboarding
+  en Básico, importar: diálogo con la fecha, "Pourline 1.0" y los recuentos; "Cancel" no cambia nada. (5) "Replace": datos,
+  foto, receta, molino, tema oscuro, cuenta atrás de 5 s y modo Experto restaurados sin reiniciar. (6) No se pudo comprobar en
+  el emulador: con una sesión abierta no hay forma de llegar a Ajustes (la barra de pestañas se oculta); lo cubre
+  `BackupCardTest.importIsDisabledWithItsExplanationDuringABrew`. (7) Un archivo cualquiera (`.bin` de 5 kB): "This file is not
+  a Pourline backup."; el selector no deja elegir una imagen `.jpg` (la muestra en gris). (8) `assembleRelease` (firmada con la
+  clave de debug) instalada con `adb install -r`: exportar, `pm clear` e importar dan lo mismo, con R8 y sin cierres.
+- **Desviaciones:** F0 paso 5 sin hacer (la foto real no se midió; el comando que tocaba `~/Downloads/coffee-bags` fue
+  denegado y no se reintentó); `rm -rf app/release` denegado (la carpeta sigue sin seguimiento y no se commiteó);
+  `BackupHarness` en `androidTest` para compartir el entorno entre `BackupManagerTest`, `BackupAtomicityTest` y
+  `BackupRecoveryTest`; `BackupNavigationTest` usa el detalle de un café y de una preparación (la barra de pestañas se
+  oculta en los editores, así que no se puede salir de uno).
+- **Pendiente del usuario:** §7.6 en su teléfono (exportar, desinstalar, reinstalar, importar y comprobar la báscula
+  recordada) y `/code-review` antes de fusionar en `develop`.
 
 ### 3.1 Cadenas nuevas (`values` / `values-en`)
 

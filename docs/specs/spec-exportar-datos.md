@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado; plan aprobado el 2026-11-19 ([plan-exportar-datos.md](plan-exportar-datos.md)). En implementación |
+| Estado | Implementado el 2026-11-20 en `feat/data-backup` (F0 a F10 del [plan](plan-exportar-datos.md)); pendiente la prueba manual del usuario en su teléfono y `/code-review` |
 | Fecha | 2026-11-19 |
-| Rama | Por crear (propuesta: `feat/data-backup`) |
+| Rama | `feat/data-backup` |
 | Deriva de | Uso real: al cambiar de móvil se pierden todos los datos de la app |
 | Módulos afectados | `:app`: nuevo paquete `backup`, `history` (`HistoryDatabase`), `settings`, `coffee/photo`, `grinder` (`GrinderCatalogSeeder`), `session` (`ScaleUiState`, `GrindSelection`), `ui/settings`, `Navigation.kt`, `res/xml`, `AndroidManifest.xml` |
 | Specs relacionados | [SPEC-002](spec-historial.md), [SPEC-003](spec-curva-objetivo.md), [SPEC-004](spec-catalogo-cafes.md), [SPEC-006](spec-molinos.md), [SPEC-009](spec-compartir-receta.md) |
