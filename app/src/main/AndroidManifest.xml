@@ -46,12 +46,15 @@
     <application
         android:name=".PourlineApp"
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:windowSoftInputMode="adjustResize"
-        android:theme="@style/Theme.Pourline">
+        android:theme="@style/Theme.Pourline"
+        tools:targetApi="31">
         <!-- Play Services instala el modelo de lectura de QR con la app (SPEC-009, D18). -->
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"

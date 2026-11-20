@@ -1,19 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Copia automática de Android (SPEC-011 §3.6), API 31+. Con <include> solo viaja lo que se nombra: las cachés, el
+   directorio de la importación (`backup_import/`) y los archivos de prueba quedan fuera.
+   La nube lleva la base y los ajustes. Las fotos (`coffee_photos/` es COFFEE_PHOTOS_DIR) solo viajan al cambiar de
+   teléfono: pueden superar la cuota de 25 MB de la nube y, si se supera, Android no copia nada. La exportación manual
+   siempre lleva las fotos.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <include domain="database" path="history.db" />
+        <include domain="database" path="history.db-wal" />
+        <include domain="database" path="history.db-shm" />
+        <include domain="sharedpref" path="settings.xml" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <include domain="database" path="history.db" />
+        <include domain="database" path="history.db-wal" />
+        <include domain="database" path="history.db-shm" />
+        <include domain="sharedpref" path="settings.xml" />
+        <include domain="file" path="coffee_photos/" />
     </device-transfer>
-    -->
 </data-extraction-rules>
