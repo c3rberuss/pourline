@@ -1,0 +1,129 @@
+# Publica el APK firmado en GitHub Releases al subir un tag vX.Y.Z (lo consume Obtainium).
+# Los tags vX.Y.Z-alpha.N, -beta.N y -rc.N se publican como pre-release.
+#
+# versionCode = X·1000000 + Y·10000 + Z·100 + etapa, con etapa alpha.N = N, beta.N = 30 + N,
+# rc.N = 60 + N y versión final = 99. Así cada pre-release queda por debajo de su versión final.
+# Límites: Y y Z < 100, N entre 1 y 29.
+#
+# Secretos del repositorio:
+#   POURLINE_KEYSTORE_BASE64    keystore de release codificado en base64
+#   POURLINE_KEYSTORE_PASSWORD  contraseña del keystore
+#   POURLINE_KEY_ALIAS          alias de la clave
+#   POURLINE_KEY_PASSWORD       contraseña de la clave
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Versión desde el tag
+        id: version
+        run: |
+          name="${GITHUB_REF_NAME#v}"
+          if [[ ! "$name" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-(alpha|beta|rc)\.([0-9]+))?$ ]]; then
+            echo "::error::Tag no válido: $GITHUB_REF_NAME"
+            exit 1
+          fi
+          major=$((10#${BASH_REMATCH[1]})) minor=$((10#${BASH_REMATCH[2]})) patch=$((10#${BASH_REMATCH[3]}))
+          stage_name="${BASH_REMATCH[5]}"
+          prerelease=false
+          stage=99
+          if [ -n "$stage_name" ]; then
+            n=$((10#${BASH_REMATCH[6]}))
+            if (( n < 1 || n > 29 )); then
+              echo "::error::El número de pre-release debe estar entre 1 y 29"
+              exit 1
+            fi
+            case "$stage_name" in
+              alpha) stage=$n ;;
+              beta) stage=$(( 30 + n )) ;;
+              rc) stage=$(( 60 + n )) ;;
+            esac
+            prerelease=true
+          fi
+          if (( minor > 99 || patch > 99 )); then
+            echo "::error::minor y patch deben ser menores que 100"
+            exit 1
+          fi
+          code=$(( major * 1000000 + minor * 10000 + patch * 100 + stage ))
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "versionName=$name versionCode=$code prerelease=$prerelease"
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Restaurar el keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.POURLINE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Falta el secreto POURLINE_KEYSTORE_BASE64"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          echo "POURLINE_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Compilar el APK de release
+        env:
+          POURLINE_KEYSTORE_PASSWORD: ${{ secrets.POURLINE_KEYSTORE_PASSWORD }}
+          POURLINE_KEY_ALIAS: ${{ secrets.POURLINE_KEY_ALIAS }}
+          POURLINE_KEY_PASSWORD: ${{ secrets.POURLINE_KEY_PASSWORD }}
+        run: >
+          ./gradlew :app:assembleRelease
+          -Ppourline.versionName=${{ steps.version.outputs.name }}
+          -Ppourline.versionCode=${{ steps.version.outputs.code }}
+
+      - name: Verificar la firma y preparar el APK
+        id: apk
+        run: |
+          apk="app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$apk" ]; then
+            echo "::error::No hay APK firmado; revisa los secretos de firma"
+            exit 1
+          fi
+          apksigner=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner
+          "$apksigner" verify --print-certs "$apk"
+          out="pourline-${{ steps.version.outputs.name }}.apk"
+          cp "$apk" "$out"
+          echo "path=$out" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        run: |
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.path }}" \
+            --title "Pourline ${{ steps.version.outputs.name }}" \
+            --generate-notes \
+            --verify-tag \
+            "${flags[@]}"
+
+      - name: Borrar el keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
