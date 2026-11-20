@@ -15,10 +15,8 @@ name: Release
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"
-      - "v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+"
-      - "v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"
-      - "v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
+      # Filtro amplio a propósito: el paso "Versión desde el tag" rechaza los que no siguen el esquema.
+      - "v*"
 
 permissions:
   contents: write
