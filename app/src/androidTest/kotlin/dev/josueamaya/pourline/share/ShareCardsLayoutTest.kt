@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -524,7 +525,7 @@ class ShareCardsLayoutTest {
   }
 
   @Test
-  fun theQrIsBlackOnWhite() {
+  fun theQrIsBrandBlueOnWhite() {
     val data = recipeData(recipe(4))
     capture(ShareRequest.Recipe(data))
 
@@ -538,10 +539,49 @@ class ShareCardsLayoutTest {
     for ((x, y) in listOf(2 to 2, side - 3 to 2, 2 to side - 3, side - 3 to side - 3)) {
       assertEquals("esquina ($x, $y)", Color.WHITE, bitmap.getPixel(left + x, top + y))
     }
-    // El primer módulo del patrón de posición (arriba a la izquierda) es negro.
-    val first = QR_QUIET_ZONE * 6
-    assertEquals(Color.BLACK, bitmap.getPixel(left + first + 3, top + first + 3))
+    val module = (QR_QUIET_ZONE) * 6
+    // El módulo de sincronismo (8, 6) es un módulo de datos oscuro: el azul 8 de la paleta.
+    val timing = bitmap.getPixel(left + module + 8 * 6 + 3, top + module + 6 * 6 + 3)
+    assertTrue("sincronismo: #${Integer.toHexString(timing)}", timing.isNear(SHARE_QR_DARK.toArgb()))
+    // El ojo de arriba a la izquierda: anillo en (21, 2) y centro en (21, 21), contados desde su esquina.
+    val ring = bitmap.getPixel(left + module + 21, top + module + 2)
+    val center = bitmap.getPixel(left + module + 21, top + module + 21)
+    assertTrue("anillo: #${Integer.toHexString(ring)}", ring.isNear(SHARE_QR_EYE_RING.toArgb()))
+    assertTrue("centro: #${Integer.toHexString(center)}", center.isNear(SHARE_QR_DARK.toArgb()))
     assertTrue(data.qr!!.cells * 6 == side)
+  }
+
+  @Test
+  fun theEyesAreRoundedWithTheBrandColors() {
+    val capturer = CardCapturer(rule).also { it.start() }
+    for (data in listOf(recipeData(recipe(4)), worstCaseData().second)) {
+      val bitmap = capturer.capture(ShareRequest.Recipe(data))
+      val box = node("share_recipe_qr")
+      val left = box.positionInRoot.x.toInt()
+      val top = box.positionInRoot.y.toInt()
+      val white = Color.WHITE
+      val ring = SHARE_QR_EYE_RING.toArgb()
+      val dark = SHARE_QR_DARK.toArgb()
+      // Sondas en píxeles desde la esquina de cada ojo, a más de 1 px de cualquier curva (D53).
+      val probes = listOf(
+        Triple(0 to 0, white, "esquina del anillo"), Triple(41 to 0, white, "esquina del anillo"),
+        Triple(0 to 41, white, "esquina del anillo"), Triple(41 to 41, white, "esquina del anillo"),
+        Triple(6 to 6, ring, "esquina del hueco"), Triple(35 to 35, ring, "esquina del hueco"),
+        Triple(12 to 12, white, "esquina del centro"),
+        Triple(21 to 2, ring, "anillo"), Triple(21 to 9, white, "hueco"), Triple(21 to 21, dark, "centro"),
+      )
+      for ((ex, ey) in data.qr!!.eyes) {
+        val originX = left + (ex + QR_QUIET_ZONE) * 6
+        val originY = top + (ey + QR_QUIET_ZONE) * 6
+        for ((point, expected, what) in probes) {
+          val actual = bitmap.getPixel(originX + point.first, originY + point.second)
+          assertTrue(
+            "ojo ($ex, $ey), $what $point: #${Integer.toHexString(actual)} debía ser #${Integer.toHexString(expected)}",
+            actual.isNear(expected),
+          )
+        }
+      }
+    }
   }
 
   @Test

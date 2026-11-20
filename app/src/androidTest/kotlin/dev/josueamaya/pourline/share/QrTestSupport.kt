@@ -10,6 +10,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.recipe.Recipe
@@ -19,6 +20,7 @@ import dev.josueamaya.pourline.recipe.share.RecipeShareCodec
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
 import java.util.Random
+import kotlin.math.abs
 
 /**
  * El modelo de lectura de Play Services se descarga bajo demanda: espera, hasta 240 s, a que [reader] lea un QR
@@ -136,44 +138,89 @@ internal const val WORST_CASE_GRIND_TEXT =
 
 /**
  * La captura de la capa de Compose no es exacta al bit en el borde de un rectángulo: el primer píxel de un módulo sale con un
- * 1 % de mezcla (`#020202` en lugar de `#000000`, `#FDFDFD` en lugar de `#FFFFFF`). Por eso "negro" y "blanco" admiten
- * 12 niveles de margen: con el reloj de los datos de SPEC-010 la captura deja además una costura de un píxel (la primera
- * columna de una fila de píxeles de los módulos, hasta `#0A0A0A` y `#F5F5F5`), que no afecta a la lectura. El texto de la
- * tarjeta (negro al 88 % sobre blanco, `#1E1E1E` como mínimo) queda fuera del margen.
+ * 1 % de mezcla (`#020202` en lugar de `#000000`, `#FDFDFD` en lugar de `#FFFFFF`). Con el reloj de los datos de SPEC-010 la
+ * captura deja además una costura de un píxel (la primera columna de una fila de píxeles de los módulos, hasta `#0A0A0A` y
+ * `#F5F5F5`), que no afecta a la lectura. Por eso cada color esperado admite 12 niveles de margen por canal. Con los azules de
+ * la marca (enmienda 2), mezclar hasta un 4 % de blanco mueve `#003EB3` y `#1677FF` unos 10 niveles por canal: queda dentro
+ * del margen. El texto de la tarjeta (negro al 88 % sobre blanco, `#1E1E1E` como mínimo) queda fuera.
  */
 private const val PIXEL_TOLERANCE = 12
 
-private fun Int.isDark(): Boolean = Color.red(this) <= PIXEL_TOLERANCE && Color.green(this) <= PIXEL_TOLERANCE && Color.blue(this) <= PIXEL_TOLERANCE
+private const val WHITE = 0xFFFFFFFF.toInt()
 
-private fun Int.isLight(): Boolean =
-  Color.red(this) >= 255 - PIXEL_TOLERANCE && Color.green(this) >= 255 - PIXEL_TOLERANCE && Color.blue(this) >= 255 - PIXEL_TOLERANCE
+/** Si este píxel está a [PIXEL_TOLERANCE] niveles o menos, por canal, del color [argb]. */
+internal fun Int.isNear(argb: Int): Boolean =
+  abs(Color.red(this) - Color.red(argb)) <= PIXEL_TOLERANCE &&
+    abs(Color.green(this) - Color.green(argb)) <= PIXEL_TOLERANCE &&
+    abs(Color.blue(this) - Color.blue(argb)) <= PIXEL_TOLERANCE
 
 /**
- * La esquina de la caja del QR en [bitmap]: el primer píxel negro recorriendo filas es la esquina del patrón de posición (el
- * texto nunca es tan oscuro); la caja empieza 4 módulos antes.
+ * La esquina de la caja del QR en [bitmap] (D52). Con el QR de la marca ya no hay píxeles negros, así que se busca el anillo
+ * de los ojos en dos pasos. (1) Recorriendo filas desde arriba, se saltan las que tienen el color del anillo en x = 0 (la
+ * barra de acento de `ShareFrame` ocupa todo el ancho y el QR nunca toca x = 0); la primera fila restante con un píxel de
+ * ese color es el borde superior del ojo de arriba a la izquierda. (2) En la fila de la mitad del ojo, donde su borde
+ * izquierdo es recto, el primer píxel de ese color es el borde izquierdo. La caja empieza 4 módulos antes en las dos
+ * direcciones. Sirve igual con el anillo en `#1677FF` que en `#003EB3`.
  */
 internal fun findQrBox(bitmap: Bitmap, modulePx: Int): Point {
-  val pixels = IntArray(bitmap.width * bitmap.height)
-  bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-  val index = pixels.indexOfFirst { it.isDark() }
-  check(index >= 0) { "no hay ningún píxel negro: no hay QR" }
-  return Point(index % bitmap.width - QR_QUIET_ZONE * modulePx, index / bitmap.width - QR_QUIET_ZONE * modulePx)
+  val ring = SHARE_QR_EYE_RING.toArgb()
+  val width = bitmap.width
+  val pixels = IntArray(width * bitmap.height)
+  bitmap.getPixels(pixels, 0, width, 0, 0, width, bitmap.height)
+  fun row(y: Int) = (0 until width).firstOrNull { pixels[y * width + it].isNear(ring) }
+  val y0 = (0 until bitmap.height).firstOrNull { y -> !pixels[y * width].isNear(ring) && row(y) != null }
+  check(y0 != null) { "no hay ningún píxel del color del anillo: no hay QR" }
+  val middle = y0 + QR_EYE_SIZE * modulePx / 2
+  val x0 = checkNotNull(row(middle)) { "no hay borde izquierdo del ojo en la fila $middle" }
+  return Point(x0 - QR_QUIET_ZONE * modulePx, y0 - QR_QUIET_ZONE * modulePx)
 }
 
-/** Cada bloque de [modulePx] × [modulePx] de las `cells × cells` celdas es todo negro o todo blanco según [matrix]. */
+/** Dónde cae un píxel de la caja del QR y el color que debe tener; `null` en las esquinas curvas de los ojos, que no se comprueban. */
+private fun expectedQrColor(matrix: QrMatrix, px: Int, py: Int, modulePx: Int): Pair<String, Int>? {
+  val mx = px / modulePx - QR_QUIET_ZONE
+  val my = py / modulePx - QR_QUIET_ZONE
+  if (mx !in 0 until matrix.modules || my !in 0 until matrix.modules) return "zona de silencio" to WHITE
+  val eye = matrix.eyes.firstOrNull { (ex, ey) -> mx in ex until ex + QR_EYE_SIZE && my in ey until ey + QR_EYE_SIZE }
+    ?: return if (matrix[mx, my]) "módulo oscuro" to SHARE_QR_DARK.toArgb() else "módulo claro" to WHITE
+  val lx = px - (eye.first + QR_QUIET_ZONE) * modulePx
+  val ly = py - (eye.second + QR_QUIET_ZONE) * modulePx
+  val radii = qrEyeRadii(modulePx)
+  val full = QR_EYE_SIZE * modulePx
+  // Cuadrados de las esquinas curvas: del anillo (outer), del hueco (hole) y del centro (center).
+  fun inCorner(x0: Int, y0: Int, size: Int, radius: Int): Boolean {
+    val cx = if (lx - x0 < size / 2) lx - x0 else size - 1 - (lx - x0)
+    val cy = if (ly - y0 < size / 2) ly - y0 else size - 1 - (ly - y0)
+    return lx in x0 until x0 + size && ly in y0 until y0 + size && cx < radius && cy < radius
+  }
+  val hole = (QR_EYE_SIZE - 2) * modulePx
+  val center = 3 * modulePx
+  return when {
+    inCorner(0, 0, full, radii.outer) -> null
+    inCorner(modulePx, modulePx, hole, radii.hole) -> null
+    inCorner(2 * modulePx, 2 * modulePx, center, radii.center) -> null
+    lx in 2 * modulePx until 5 * modulePx && ly in 2 * modulePx until 5 * modulePx -> "centro del ojo" to SHARE_QR_DARK.toArgb()
+    lx in modulePx until 6 * modulePx && ly in modulePx until 6 * modulePx -> "hueco del ojo" to WHITE
+    else -> "anillo del ojo" to SHARE_QR_EYE_RING.toArgb()
+  }
+}
+
+/**
+ * Cada píxel de las `cells × cells` celdas tiene el color de su zona según [matrix] (D51): blanco en la zona de silencio, los
+ * módulos claros y el hueco de los ojos; [SHARE_QR_DARK] en los módulos oscuros y el centro de los ojos; [SHARE_QR_EYE_RING]
+ * en el anillo. Se salta lo que cae en las esquinas curvas de las tres piezas de cada ojo.
+ */
 internal fun assertQrModules(bitmap: Bitmap, matrix: QrMatrix, left: Int, top: Int, modulePx: Int) {
   val side = matrix.cells * modulePx
   val pixels = IntArray(side * side)
   bitmap.getPixels(pixels, 0, side, left, top, side, side)
-  for (cy in 0 until matrix.cells) for (cx in 0 until matrix.cells) {
-    val dark = cx in QR_QUIET_ZONE until QR_QUIET_ZONE + matrix.modules &&
-      cy in QR_QUIET_ZONE until QR_QUIET_ZONE + matrix.modules &&
-      matrix[cx - QR_QUIET_ZONE, cy - QR_QUIET_ZONE]
-    for (dy in 0 until modulePx) for (dx in 0 until modulePx) {
-      val actual = pixels[(cy * modulePx + dy) * side + cx * modulePx + dx]
-      val ok = if (dark) actual.isDark() else actual.isLight()
-      assertTrue("celda ($cx, $cy), píxel ($dx, $dy): #${Integer.toHexString(actual)} debía ser ${if (dark) "negro" else "blanco"}", ok)
-    }
+  for (py in 0 until side) for (px in 0 until side) {
+    val (zone, expected) = expectedQrColor(matrix, px, py, modulePx) ?: continue
+    val actual = pixels[py * side + px]
+    assertTrue(
+      "celda (${px / modulePx}, ${py / modulePx}), píxel (${px % modulePx}, ${py % modulePx}), $zone: " +
+        "#${Integer.toHexString(actual)} debía ser #${Integer.toHexString(expected)}",
+      actual.isNear(expected),
+    )
   }
 }
 

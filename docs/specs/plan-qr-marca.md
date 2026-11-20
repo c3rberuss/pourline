@@ -11,7 +11,7 @@
 | Colores | Módulos de datos y centro de los ojos `#003EB3`; anillo de los ojos `#1677FF`, o `#003EB3` si F2 aplica la salida del §6 (D54) |
 | `MAX_URI_LENGTH` | 600, sin cambios: la enmienda no lo baja (§6) |
 | Línea base | F0 (2026-11-20): JVM 106 tests en 11 clases, 0 fallos; `emulator-5560`, seis clases 68 tests, 0 fallos, 1 omitido (`cardSweep`); lint 2 errores y 20 avisos previos, corregidos los 2 errores en un commit aparte: 0 errores y 20 avisos (ver "Resultado de F0") |
-| Resultado de la medición | Pendiente (F2). Regla: no peor que el negro de F0 (ver "Decisión tras F0") |
+| Resultado de la medición | F2: la marca iguala o supera al negro en todos los puntos; sin salida, anillo en `#1677FF` (ver "Resultado de F2") |
 
 La enmienda cambia solo cómo se pinta el QR de la tarjeta de receta. La matriz de zxing, la corrección M, los módulos de
 6 px, la zona de silencio, el fondo blanco, la posición de la caja (D31) y `MAX_URI_LENGTH` no cambian. El plan ordena
@@ -124,7 +124,7 @@ Orden: F0 → F1 → F2 → F3. F2 depende de F1 (colores y geometría). F3 depe
 |---|---|---|---|
 | F0 | Línea base y referencia en negro con las semillas nuevas | S | Hecha |
 | F1 | Colores y geometría de los ojos, con sus tests JVM | S | Hecha |
-| F2 | La marca en `QrCodeBox`, medición con la salida del §6 y tests de la tarjeta | L | Pendiente |
+| F2 | La marca en `QrCodeBox`, medición con la salida del §6 y tests de la tarjeta | L | Hecha |
 | F3 | Verificación: suites afectadas, comprobaciones, E2E por adb, capturas y cierre | M | Pendiente |
 
 Cada fase deja `:app` compilando y sus tests en verde. Se compila y se prueba solo `:app`, nunca con `./gradlew build`
@@ -345,10 +345,32 @@ Commit sugerido: `feat(share): draw the recipe QR in the brand colors with round
 
 #### Resultado de F2
 
-Pendiente. Tabla prevista, una fila por longitud:
+Hecha (2026-11-20). Con la regla "no peor que el negro" (ver "Decisión tras F0"), la marca vale con el anillo en
+`#1677FF`: no hizo falta aplicar la salida del §6.
 
-| Longitud | Muestras | Semillas | Negro (F0): tal cual / 50 % + JPEG 70 / importación | Marca | Salida (si se aplicó) |
+Medición en `emulator-5560` (lector de Play Services), sobre la tarjeta real, receta de peor caso, semillas `30_000 + i`
+(y `40_000 + i` en el segundo lote de 450). Cada celda es "tal cual / 50 % + JPEG 70 / importación a 2048 px".
+
+| Longitud | Muestras | Semillas | Negro (F0) | Marca (anillo `#1677FF`) | Salida |
 |---|---|---|---|---|---|
+| 600 (v19) | 20 | 30000 | 20/20, 20/20, 20/20 | 20/20, 20/20, 20/20 | no aplicada |
+| 300 (v13) | 10 | 30000 | 10/10, 10/10, 10/10 | 10/10, 10/10, 10/10 | no aplicada |
+| 350 (v14) | 10 | 30000 | 10/10, 10/10, 10/10 | 10/10, 10/10, 10/10 | no aplicada |
+| 400 (v15) | 10 | 30000 | 10/10, 10/10, 10/10 | 10/10, 10/10, 10/10 | no aplicada |
+| 450 (v16) | 10 | 30000 | 10/10, **9/10**, 10/10 | 10/10, 10/10, 10/10 | no aplicada |
+| 500 (v17) | 10 | 30000 | 10/10, 10/10, 10/10 | 10/10, 10/10, 10/10 | no aplicada |
+| 550 (v18) | 10 | 30000 | 10/10, 10/10, 10/10 | 10/10, 10/10, 10/10 | no aplicada |
+| 450 (v16) | 20 | 30000 | 20/20, **18/20**, 20/20 | 20/20, 20/20, 20/20 | no aplicada |
+| 450 (v16) | 20 | 40000 | 20/20, **18/20**, 20/20 | 20/20, 20/20, 20/20 | no aplicada |
+
+- La marca iguala o supera al negro en todas las longitudes y lecturas. `qrTop` y el alto de la tarjeta coinciden con los
+  del negro (1518 px y 2328 px a 600), así que `findQrBox` localiza bien la caja.
+- `maxUriLengthIsLegibleOnTheCard` (600): 20/20 en las tres lecturas. `theWorstCaseCardIsReadableAsIsAndAfterHalvingAndJpeg70`: verde.
+- Las seis clases en `emulator-5560`: 69 tests, 0 fallos, 1 omitido (`cardSweep`). Son los 68 de la línea base más
+  `theEyesAreRoundedWithTheBrandColors`; `theQrIsBlackOnWhite` pasa a `theQrIsBrandBlueOnWhite`.
+- Lint: 0 errores y 20 avisos (los mismos de la línea base, sin los 2 errores corregidos aparte).
+- Tests de la tarjeta: `assertQrModules` compara cada píxel con el color de su zona (margen de 12 por canal, esquinas
+  curvas fuera) y `findQrBox` busca el anillo en dos pasos (D51, D52). El margen es el de hoy, 12 (P3).
 
 ### F3. Verificación y cierre
 
