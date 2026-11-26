@@ -60,4 +60,35 @@ class RecipeCatalogFileTest {
     assertTrue(problems.toString(), problems.any { it.contains("four_six") })
     assertTrue(problems.toString(), problems.any { it.contains("v60_classic") })
   }
+
+  /** El catálogo del repo con [extra] recetas añadidas al final. */
+  private fun withRecipes(vararg extra: JsonObject): String {
+    val root = CatalogJson.parseToJsonElement(catalog()) as JsonObject
+    val recipes = (root["recipes"] as JsonArray).toList()
+    return JsonObject(root + ("recipes" to JsonArray(recipes + extra))).toString()
+  }
+
+  @Test
+  fun `an unknown or repeated roast makes the catalog check fail`() {
+    val unknown = recipeJson("tueste_desconocido", mapOf("roasts" to roastsJson("MEDIUM", "EXTRA_LIGHT")))
+    val repeated = recipeJson("tueste_repetido", mapOf("roasts" to roastsJson("DARK", "DARK")))
+    val problems = catalogProblems(withRecipes(unknown, repeated), grinders())
+    assertTrue(problems.toString(), problems.any { it.contains("tueste_desconocido") && it.contains("EXTRA_LIGHT") })
+    assertTrue(problems.toString(), problems.any { it.contains("tueste_repetido") && it.contains("repeats") })
+  }
+
+  @Test
+  fun `too few medium roast recipes or too many light only ones make the check fail`() {
+    val lightOnly = (1..7).map { recipeJson("solo_claro_$it", mapOf("roasts" to roastsJson("LIGHT"))) }
+    val problems = catalogProblems(withRecipes(*lightOnly.toTypedArray()), grinders())
+    assertTrue(problems.toString(), problems.any { it.contains("are only for a light roast, at most 6") })
+
+    val few = catalogJson(
+      recipeJson("four_six"),
+      recipeJson("v60_classic", mapOf("roasts" to roastsJson("LIGHT"))),
+      recipeJson("otra_clara", mapOf("roasts" to roastsJson("LIGHT"))),
+    )
+    val fewProblems = catalogProblems(few, grinders())
+    assertTrue(fewProblems.toString(), fewProblems.any { it.contains("recipes suit a medium roast") })
+  }
 }

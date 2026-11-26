@@ -43,7 +43,7 @@ fun recipeJson(id: String = "v60_test", overrides: Map<String, JsonElement> = em
     "waterTempC" to JsonPrimitive(93.0),
     "stages" to JsonArray(
       listOf(
-        stageJson(startS = 0, durationS = 10, waterG = 60.0, name = localized("Bloom", "Bloom")),
+        stageJson(startS = 0, durationS = 10, waterG = 60.0, name = localized("Preinfusión", "Bloom")),
         stageJson(type = "WAIT", startS = 10, durationS = 35, waterG = null),
         stageJson(startS = 45, durationS = 20, waterG = 150.0, instruction = localized("Vierte en espiral", "Pour in a spiral")),
       ),
