@@ -39,6 +39,7 @@ import dev.josueamaya.pourline.recipe.share.DecodeResult
 import dev.josueamaya.pourline.recipe.share.QrReadResult
 import dev.josueamaya.pourline.recipe.share.RecipeShareCodec
 import dev.josueamaya.pourline.recipe.share.isIdentical
+import dev.josueamaya.pourline.recipe.v60Classic
 import dev.josueamaya.pourline.settings.ExperienceMode
 import dev.josueamaya.pourline.settings.LocalExperienceMode
 import dev.josueamaya.pourline.share.MlKitQrImageReader
@@ -85,7 +86,7 @@ class RecipeShareTest {
   @Before
   fun setUp() {
     sharedDir.deleteRecursively()
-    db = HistoryDatabase.inMemory(context, texts)
+    db = HistoryDatabase.inMemory(context)
     recipes = RecipeRepository(db, texts)
     brews = BrewRepository(db)
     grinders = db.grinderRepository(context, defaults)
@@ -156,8 +157,6 @@ class RecipeShareTest {
     )
   }
 
-  private fun builtInId(key: String) = runBlocking { recipes.list().first().single { it.name == texts.builtInName(key) }.id }
-
   @Suppress("DEPRECATION")
   private fun sentStream(): Uri = sent.last().getParcelableExtra<Intent>(Intent.EXTRA_INTENT)!!.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)!!
 
@@ -198,8 +197,8 @@ class RecipeShareTest {
   }
 
   @Test
-  fun aBuiltInRecipeCanBeShared() {
-    show(builtInId("v60_classic"))
+  fun theFormerFactoryV60AsAnOwnRecipeCanBeShared() {
+    show(runBlocking { recipes.save(v60Classic(texts)) })
     rule.onNodeWithTag("recipe_edit_share").assertIsEnabled()
     tapShare()
     waitForChooser()

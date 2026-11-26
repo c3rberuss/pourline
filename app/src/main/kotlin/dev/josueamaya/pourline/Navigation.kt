@@ -310,7 +310,6 @@ private fun tabEntryProvider(
       scaleMode = deps.scaleMode,
       // Sin báscula no se ve la tarjeta: la conexión se cierra para que no quede abierta sin que se sepa.
       onScaleOff = { if (!deps.scaleSession.isArmed) deps.scaleSession.disconnect() },
-      onRestoreRecipes = { deps.recipeRepository.restoreBuiltIns() },
       onOpenGrinders = { stack.add(Grinders) },
       // Ajustes solo se abre desde Preparar: su pila es la de Preparar y su raíz, donde sale el recorrido general.
       onReplayTour = {

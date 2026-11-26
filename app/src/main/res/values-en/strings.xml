@@ -208,7 +208,6 @@
     <string name="recipe_empty">No recipes yet</string>
     <string name="recipe_deleted">Recipe deleted</string>
     <string name="recipe_undo">Undo</string>
-    <string name="recipe_builtin_tag">Built-in</string>
     <string name="recipe_active_tag">Active</string>
     <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s · %5$s</string>
     <plurals name="recipe_stage_count">
@@ -293,13 +292,6 @@
     <string name="settings_scale_with_hint">Connect your scale in Prepare and the session follows the weight live.</string>
     <string name="settings_stage_vibration">Vibrate when each step starts</string>
     <string name="settings_stage_sound">Beep when each step starts</string>
-    <string name="settings_recipes_title">Recipes</string>
-    <string name="settings_recipes_restore">Restore built-in recipes</string>
-    <string name="settings_recipes_restore_title">Restore the built-in recipes?</string>
-    <string name="settings_recipes_restore_text">The built-in recipes go back to their factory values and any you deleted are created again. Your own recipes don\'t change.</string>
-    <string name="settings_recipes_restore_confirm">Restore</string>
-    <string name="settings_recipes_restore_cancel">Cancel</string>
-    <string name="settings_recipes_restored">Built-in recipes restored</string>
 
     <!-- backup -->
     <string name="backup_title">Backup</string>
@@ -1102,8 +1094,6 @@
     <string name="tour_coffee_detail_share_body">Share a card of the coffee.</string>
 
     <!-- recipes -->
-    <string name="tour_recipes_builtin_title">Built-in</string>
-    <string name="tour_recipes_builtin_body">Use them as they are or duplicate them to adjust them.</string>
     <string name="tour_recipes_active_title">Active</string>
     <string name="tour_recipes_active_body">The recipe chosen in Brew.</string>
     <string name="tour_recipes_add_title">Create recipe</string>

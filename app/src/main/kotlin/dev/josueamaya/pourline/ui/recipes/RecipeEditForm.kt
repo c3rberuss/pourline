@@ -248,16 +248,6 @@ data class RecipeEditForm(
     return copy(start = formatStart((startMs + shiftMs).coerceAtLeast(0)))
   }
 
-  /**
-   * `true` si la receta sigue con los textos traducidos: venía así y ni el nombre ni los nombres, tipos e
-   * instrucciones de los pasos cambian respecto a [initial] (añadir o quitar un paso también los cambia).
-   */
-  fun keepsLocalizedNames(initial: RecipeEditForm, wasLocalized: Boolean): Boolean =
-    wasLocalized && name.trim() == initial.name.trim() &&
-      stages.map { it.name.trim() } == initial.stages.map { it.name.trim() } &&
-      stages.map { it.type } == initial.stages.map { it.type } &&
-      stages.map { it.instruction.trim() } == initial.stages.map { it.instruction.trim() }
-
   /** Errores por campo: de formato y de [RecipeValidator]. */
   fun errors(): RecipeFormErrors {
     val parsed = parse()
@@ -309,10 +299,10 @@ data class RecipeEditForm(
   val isValid: Boolean get() = !errors().any
 
   /** La receta, o `null` si algún campo no es válido. */
-  fun toRecipe(id: Long = 0, builtInKey: String? = null, localizedNames: Boolean = false): Recipe? {
+  fun toRecipe(id: Long = 0, catalogKey: String? = null): Recipe? {
     if (errors().any) return null
     val recipe = parse().recipe
-    return recipe.copy(id = id, builtInKey = builtInKey, localizedNames = localizedNames, stages = recipe.stages.withDerivedWater())
+    return recipe.copy(id = id, catalogKey = catalogKey, stages = recipe.stages.withDerivedWater())
   }
 
   /** Agua total y ratio en vivo; `null` si el último vertido o la dosis no se pueden leer. */

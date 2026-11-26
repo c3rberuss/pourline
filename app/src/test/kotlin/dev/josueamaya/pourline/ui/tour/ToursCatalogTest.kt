@@ -45,12 +45,12 @@ class ToursCatalogTest {
   fun `there are the seventeen tours of the spec in order`() {
     val expected = listOf(
       "prepare" to 14, "session_prep" to 6, "session_scaleless" to 4, "summary" to 4, "coffees" to 4, "coffee_edit" to 3,
-      "coffee_detail" to 4, "recipes" to 3, "recipe_edit" to 5, "history" to 4, "brew_detail" to 6, "compare" to 3,
+      "coffee_detail" to 4, "recipes" to 2, "recipe_edit" to 5, "history" to 4, "brew_detail" to 6, "compare" to 3,
       "tools" to 3, "ratio_calculator" to 2, "four_six" to 4, "converter" to 2, "settings" to 7,
     )
 
     assertEquals(expected, Tours.all.map { it.id to it.steps.size })
-    assertEquals(78, steps.size)
+    assertEquals(77, steps.size)
   }
 
   @Test

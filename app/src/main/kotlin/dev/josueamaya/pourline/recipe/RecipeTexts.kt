@@ -1,6 +1,10 @@
 package dev.josueamaya.pourline.recipe
 
-/** Textos que las recetas necesitan fuera de Compose. Lo implementa `ResourcesRecipeTexts`; en los tests, un falso. */
+/**
+ * Textos que las recetas necesitan fuera de Compose. Lo implementa `ResourcesRecipeTexts`; en los tests, un falso.
+ *
+ * Los `builtIn*` son los textos de las dos recetas de fábrica antiguas y solo los usan las migraciones 1 → 2 y 7 → 8.
+ */
 interface RecipeTexts {
   /** Nombre traducido de una predefinida (`"v60_classic"`, `"four_six"`). */
   fun builtInName(key: String): String

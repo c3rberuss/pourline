@@ -22,7 +22,7 @@ class RealCatalogSeedTest {
   @Before
   fun setUp() {
     context.deleteSharedPreferences(PREFS)
-    db = HistoryDatabase.inMemory(context, FakeRecipeTexts())
+    db = HistoryDatabase.inMemory(context)
     settings = GrinderSettings(context, PREFS)
     seeder = GrinderCatalogSeeder(db.grinderDao(), AssetCatalogSource(context), settings, settings)
   }

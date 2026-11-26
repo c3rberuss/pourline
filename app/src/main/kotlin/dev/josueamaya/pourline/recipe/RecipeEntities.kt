@@ -13,8 +13,8 @@ import dev.josueamaya.pourline.history.BrewMethod
 /**
  * Una receta. Las magnitudes van en gramos, milisegundos y °C.
  *
- * `name` guarda el texto en el idioma de la inserción como respaldo: con [localizedNames] y
- * [builtInKey], el repositorio devuelve el nombre traducido en el idioma actual.
+ * `builtInKey` y `localizedNames` ya no se usan (SPEC-012, versión 8): la migración los dejó en `NULL` y `0`. Las columnas
+ * siguen porque SQLite no las borra sin reconstruir la tabla.
  */
 @Entity(
   tableName = "recipes",
@@ -46,6 +46,11 @@ data class RecipeEntity(
   /** El ajuste en unidades base del molino. */
   val grindValue: Double? = null,
   val grindLabel: String? = null,
+  // SPEC-012: quién creó la receta, dónde se publicó y de qué receta del catálogo viene.
+  val author: String? = null,
+  val sourceUrl: String? = null,
+  /** La clave de catálogo de la que viene la receta (también la de las antiguas de fábrica); sin índice. */
+  val catalogKey: String? = null,
 )
 
 @Entity(

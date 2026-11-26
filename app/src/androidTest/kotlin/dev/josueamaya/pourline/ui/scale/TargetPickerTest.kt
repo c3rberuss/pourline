@@ -30,8 +30,8 @@ class TargetPickerTest {
   private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
   private val recipes = listOf(
-    RecipeListItem(1, "V60 clásica", BrewMethod.V60, null, 15.0, 250.0, 3, builtIn = true, totalDurationMs = 115_000),
-    RecipeListItem(2, "Mi receta", BrewMethod.CHEMEX, null, 30.0, 500.0, 4, builtIn = false, totalDurationMs = 210_000),
+    RecipeListItem(1, "V60 clásica", BrewMethod.V60, null, 15.0, 250.0, 3, totalDurationMs = 115_000),
+    RecipeListItem(2, "Mi receta", BrewMethod.CHEMEX, null, 30.0, 500.0, 4, totalDurationMs = 210_000),
   )
 
   private fun brew(id: Long, name: String, waterG: Double) = BrewListItem(

@@ -225,7 +225,7 @@ F7 para probar la descarga desde la interfaz).
 | F1 | Modelo, parser y conversión del catálogo (JVM) | M | Hecha |
 | F2 | Contenido del catálogo, copia en el APK, test del repo y workflow | L | Hecha |
 | F3 | Descarga, caché, repositorio y constante de la URL | M | Hecha |
-| F4 | Room 7 → 8, campos de receta y retirada de las recetas de fábrica | L | Pendiente |
+| F4 | Room 7 → 8, campos de receta y retirada de las recetas de fábrica | L | Hecha |
 | F5 | Molienda del catálogo, copia y referencia de catálogo en Preparar | M | Pendiente |
 | F6 | Copia de seguridad con formato 2 | S | Pendiente |
 | F7 | Pestaña Recetas: selector, Recomendadas y recorrido | L | Pendiente |
@@ -534,6 +534,24 @@ sin romper los tests que las usaban.
 
 Commit sugerido: `feat(recipes)!: migrate the built-in recipes to own recipes and stop seeding them`, con un pie
 `BREAKING CHANGE` que explica que la base pasa a la versión 8.
+
+**Resultado de F4 (2026-11-25).** `8.json` solo añade las cuatro columnas (`author`, `sourceUrl`, `catalogKey` y
+`referenceKey`). `TestRecipes.kt` ya existía (con `aeroPressWithActions` y `actionFirstRecipe`): se le añadieron
+`v60Classic(texts)` y `fourSix(texts)` en vez de crearlo. `Recipe`, `RecipeEntity` y el repositorio conservan `builtInKey` y
+`localizedNames` (D6), que ya no se escriben ni se leen. Mientras no llega F9, `RecipeEditViewModel.save` conserva el `author`
+y el `sourceUrl` de la receta guardada, para que editar una copia del catálogo no los pierda. En los tests, las fixtures JVM
+`v60Classic()` y `fourSixClassic()` son literales (D49); la `fourSix` instrumentada es la de `TestRecipes.kt`. Los casos de
+`ToursCatalogTest` pasan a `recipes = 2` y 77 pasos hasta que F7 devuelva el paso `recipes.catalog`. Los tests que
+comprueban "solo lo importado" (`RecipeIntentImportTest`, `RecipeImportNavigationTest`, `RecipesImportTest`) usan
+`seedRecipes = false`. JVM (lista del paso): 633 tests, 0 fallos. Instrumentados en `emulator-5556`: 470 tests de las 41 clases
+afectadas, todos en verde salvo los de abajo; `:app:lintDebug`: 0 errores y 20 avisos (los mismos de la línea base).
+Quedan fuera de esta comprobación, por el entorno y no por el cambio:
+
+- Los 16 casos que leen un QR con el modelo de Play services (`RecipeIntentImportTest`, `RecipeShareTest` y
+  `RecipesImportTest`; usan `awaitQrModel`, que exige un emulador con Play Store, `SG_API36_play`). En `SG_API34` esperan 240 s
+  y fallan; se excluyeron con `notClass`.
+- `SessionPerformanceTest` (2 casos, p95 de 81 y 112 ms contra un límite de 32 ms): mide el tiempo de fotograma en un emulador
+  por software y no estaba en la línea base de F0. No toca recetas más que para sembrar las dos de siempre.
 
 ### F5. Molienda del catálogo, copia y referencia de catálogo en Preparar
 

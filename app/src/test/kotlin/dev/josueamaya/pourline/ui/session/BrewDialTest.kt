@@ -3,9 +3,8 @@ package dev.josueamaya.pourline.ui.session
 import dev.josueamaya.pourline.brew.BrewSample
 import dev.josueamaya.pourline.brew.StabilityLevel
 import dev.josueamaya.pourline.brew.TargetCurve
-import dev.josueamaya.pourline.recipe.BuiltInRecipes
-import dev.josueamaya.pourline.recipe.FakeRecipeTexts
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.fourSixClassic
 import dev.josueamaya.pourline.recipe.recipeOf
 import dev.josueamaya.pourline.recipe.stage
 import dev.josueamaya.pourline.recipe.v60Classic
@@ -34,7 +33,7 @@ class BrewDialTest {
 
   @Test
   fun `the four six recipe has one boundary per pour but the last`() {
-    val recipe = BuiltInRecipes.recipe(BuiltInRecipes.FOUR_SIX, FakeRecipeTexts())
+    val recipe = fourSixClassic()
     val pours = recipe.stages.count { it.type == StageType.POUR }
     assertEquals(pours - 1, dialSegments(TargetCurve.fromRecipe(recipe)).size)
   }

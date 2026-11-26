@@ -1,10 +1,9 @@
 package dev.josueamaya.pourline.tools
 
-import dev.josueamaya.pourline.recipe.BuiltInRecipes
-import dev.josueamaya.pourline.recipe.FakeRecipeTexts
 import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.RecipeValidator
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.fourSixClassic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -48,14 +47,22 @@ class FourSixTest {
   }
 
   @Test
-  fun theClassicMatchesTheBuiltInRecipe() {
-    val builtIn = BuiltInRecipes.recipe(BuiltInRecipes.FOUR_SIX, FakeRecipeTexts())
+  fun theClassicMatchesTheFormerBuiltInRecipe() {
     val generated = FourSix.recipe(plan(), FakeFourSixTexts())
     val pours = { stages: List<RecipeStage> ->
       stages.filter { it.type == StageType.POUR }.map { Triple(it.startMs, it.targetWaterG, it.durationMs) }
     }
-    assertEquals(pours(builtIn.stages), pours(generated.stages))
-    assertEquals(builtIn.doseG, generated.doseG, 0.0)
+    // Los vertidos de la antigua receta de fábrica 4:6 (20 g, 300 g).
+    val former = listOf(
+      Triple(0L, 60.0, 10_000L),
+      Triple(45_000L, 120.0, 10_000L),
+      Triple(90_000L, 180.0, 10_000L),
+      Triple(135_000L, 240.0, 10_000L),
+      Triple(180_000L, 300.0, 10_000L),
+    )
+    assertEquals(former, pours(generated.stages))
+    assertEquals(20.0, generated.doseG, 0.0)
+    assertEquals(former, pours(fourSixClassic().stages))
   }
 
   @Test

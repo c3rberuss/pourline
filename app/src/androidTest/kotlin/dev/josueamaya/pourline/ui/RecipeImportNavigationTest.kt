@@ -39,7 +39,7 @@ class RecipeImportNavigationTest {
 
   @Before
   fun setUp() {
-    env = TestAppDependencies(context)
+    env = TestAppDependencies(context, seedRecipes = false)
   }
 
   @After

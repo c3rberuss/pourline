@@ -207,7 +207,6 @@
     <string name="recipe_empty">Aún no hay recetas</string>
     <string name="recipe_deleted">Receta borrada</string>
     <string name="recipe_undo">Deshacer</string>
-    <string name="recipe_builtin_tag">Predefinida</string>
     <string name="recipe_active_tag">Activa</string>
     <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s · %5$s</string>
     <plurals name="recipe_stage_count">
@@ -292,13 +291,6 @@
     <string name="settings_scale_with_hint">Conecta tu báscula en Preparar y la sesión sigue el peso en tiempo real.</string>
     <string name="settings_stage_vibration">Vibrar al empezar cada paso</string>
     <string name="settings_stage_sound">Sonido al empezar cada paso</string>
-    <string name="settings_recipes_title">Recetas</string>
-    <string name="settings_recipes_restore">Restaurar recetas predefinidas</string>
-    <string name="settings_recipes_restore_title">¿Restaurar las recetas predefinidas?</string>
-    <string name="settings_recipes_restore_text">Las recetas predefinidas vuelven a sus valores de fábrica y se crean de nuevo las que borraste. Tus recetas no cambian.</string>
-    <string name="settings_recipes_restore_confirm">Restaurar</string>
-    <string name="settings_recipes_restore_cancel">Cancelar</string>
-    <string name="settings_recipes_restored">Recetas predefinidas restauradas</string>
 
     <!-- backup -->
     <string name="backup_title">Copia de seguridad</string>
@@ -1101,8 +1093,6 @@
     <string name="tour_coffee_detail_share_body">Comparte una ficha del café.</string>
 
     <!-- recipes -->
-    <string name="tour_recipes_builtin_title">Predefinidas</string>
-    <string name="tour_recipes_builtin_body">Úsalas tal cual o duplícalas para ajustarlas.</string>
     <string name="tour_recipes_active_title">Activa</string>
     <string name="tour_recipes_active_body">La receta elegida en Preparar.</string>
     <string name="tour_recipes_add_title">Crear receta</string>

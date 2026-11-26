@@ -5,7 +5,6 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import androidx.sqlite.db.SupportSQLiteDatabase
 import dev.josueamaya.pourline.backup.BackupDao
 import dev.josueamaya.pourline.coffee.CoffeeConverters
 import dev.josueamaya.pourline.coffee.CoffeeDao
@@ -18,7 +17,6 @@ import dev.josueamaya.pourline.grinder.GrinderDao
 import dev.josueamaya.pourline.grinder.GrinderEntity
 import dev.josueamaya.pourline.grinder.GrinderMethodRangeEntity
 import dev.josueamaya.pourline.grinder.GrinderUnitEntity
-import dev.josueamaya.pourline.recipe.BuiltInRecipeSeeder
 import dev.josueamaya.pourline.recipe.RecipeDao
 import dev.josueamaya.pourline.recipe.RecipeEntity
 import dev.josueamaya.pourline.recipe.RecipeStageEntity
@@ -36,6 +34,8 @@ import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
  * `grindValue` y `grindLabel`) en lugar del texto `grind`.
  * Versión 6 (SPEC-007): la columna `scaleless` en `brews`, para las preparaciones hechas sin báscula.
  * Versión 7 (SPEC-006, enmienda 1): la tabla `grind_calibrations`, con los pares de calibración entre molinos.
+ * Versión 8 (SPEC-012): `author`, `sourceUrl` y `catalogKey` en `recipes` y `referenceKey` en `brews`; las recetas de fábrica
+ * pasan a ser recetas propias y una instalación nueva ya no las siembra.
  *
  * Las versiones 8 en adelante deben actualizar también los DTO de `backup` (SPEC-011 §3.8).
  */
@@ -73,10 +73,10 @@ abstract class HistoryDatabase : RoomDatabase() {
 
   companion object {
     /**
-     * La versión del esquema. Una migración nueva (8 en adelante) obliga a revisar los DTO de `backup` y, si el cambio
+     * La versión del esquema. Una migración nueva (9 en adelante) obliga a revisar los DTO de `backup` y, si el cambio
      * afecta al formato, a subir su `formatVersion` (SPEC-011 §3.8).
      */
-    const val VERSION = 7
+    const val VERSION = 8
 
     const val FILE_NAME = "history.db"
 
@@ -87,22 +87,11 @@ abstract class HistoryDatabase : RoomDatabase() {
       texts: RecipeTexts = ResourcesRecipeTexts(context),
     ): HistoryDatabase =
       Room.databaseBuilder(context.applicationContext, HistoryDatabase::class.java, fileName)
-        .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
-        .addCallback(seedOnCreate(texts))
+        .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, migration7To8(texts))
         .build()
 
-    /** Para los tests: no toca el `history.db` real. También siembra las predefinidas. */
-    fun inMemory(context: Context, texts: RecipeTexts = ResourcesRecipeTexts(context)): HistoryDatabase =
-      Room.inMemoryDatabaseBuilder(context.applicationContext, HistoryDatabase::class.java)
-        .addCallback(seedOnCreate(texts))
-        .build()
-
-    /** Una instalación nueva se crea en la última versión con las recetas predefinidas. */
-    private fun seedOnCreate(texts: RecipeTexts, clock: () -> Long = System::currentTimeMillis) =
-      object : Callback() {
-        override fun onCreate(db: SupportSQLiteDatabase) {
-          BuiltInRecipeSeeder.seed(db, texts, clock())
-        }
-      }
+    /** Para los tests: no toca el `history.db` real y empieza sin recetas. */
+    fun inMemory(context: Context): HistoryDatabase =
+      Room.inMemoryDatabaseBuilder(context.applicationContext, HistoryDatabase::class.java).build()
   }
 }

@@ -25,7 +25,6 @@ data class RecipeListItem(
   val totalWaterG: Double,
   /** Todos los pasos de la receta, de cualquier tipo (verter, remover, esperar y acción), no solo los vertidos. */
   val stageCount: Int,
-  val builtIn: Boolean,
   /** El fin del último paso, como [Recipe.totalDurationMs]. */
   val totalDurationMs: Long,
 )
@@ -33,8 +32,8 @@ data class RecipeListItem(
 /**
  * Recetas. Singleton en `PourlineApp`.
  *
- * Mientras `localizedNames` sea `true`, el nombre de la receta y los de sus etapas salen de [texts] en el
- * idioma actual y no de las columnas (que guardan el texto de la inserción como respaldo).
+ * Todas las recetas son del usuario: el nombre y los pasos salen tal cual de las columnas. Las antiguas de fábrica se
+ * convirtieron en recetas propias en la migración 7 → 8 (SPEC-012).
  */
 class RecipeRepository(
   db: HistoryDatabase,
@@ -52,7 +51,7 @@ class RecipeRepository(
   fun list(): Flow<List<RecipeListItem>> = dao.observeAll()
     .map { all ->
       val collator = Collator.getInstance(Locale.getDefault()).apply { strength = Collator.SECONDARY }
-      all.map { it to displayName(it) }
+      all.map { it to it.recipe.name }
         .sortedWith { (a, nameA), (b, nameB) ->
           collator.compare(nameA, nameB).takeIf { it != 0 } ?: a.recipe.id.compareTo(b.recipe.id)
         }
@@ -66,14 +65,16 @@ class RecipeRepository(
             doseG = recipe.doseG,
             totalWaterG = with.stages.filter { it.type == StageType.POUR }.maxByOrNull { it.position }?.targetWaterG ?: 0.0,
             stageCount = with.stages.size,
-            builtIn = recipe.builtInKey != null,
             totalDurationMs = with.stages.maxOfOrNull { it.startMs + it.durationMs } ?: 0L,
           )
         }
     }
     .flowOn(Dispatchers.Default)
 
-  /** Todas las recetas con los nombres mostrados, para comparar con una importada. */
+  /** Las claves de catálogo de las recetas guardadas: con ellas se marcan como "Guardada" las del catálogo. */
+  fun catalogKeys(): Flow<Set<String>> = dao.observeCatalogKeys().map { it.toSet() }
+
+  /** Todas las recetas, para comparar con una importada. */
   suspend fun all(): List<Recipe> = withContext(Dispatchers.IO) { dao.observeAll().first().map(::toRecipe) }
 
   /** Emite `null` si la receta desaparece. */
@@ -90,10 +91,10 @@ class RecipeRepository(
     dao.save(toEntity(recipe), toStageEntities(recipe))
   }
 
-  /** Copia "<nombre> (copia)" sin `builtInKey` ni nombres traducidos. `null` si la receta ya no existe. */
+  /** Copia "<nombre> (copia)", con el mismo autor, fuente y clave de catálogo. `null` si la receta ya no existe. */
   suspend fun duplicate(id: Long): Long? {
     val original = get(id) ?: return null
-    return save(original.copy(id = 0, name = texts.copyName(original.name), builtInKey = null, localizedNames = false))
+    return save(original.copy(id = 0, name = texts.copyName(original.name)))
   }
 
   /** Borra la receta y la deja en [pendingUndo]. */
@@ -116,43 +117,32 @@ class RecipeRepository(
     if (expected == null) _pendingUndo.value = null else _pendingUndo.compareAndSet(expected, null)
   }
 
-  /** Devuelve las predefinidas a fábrica (con `localizedNames = true`) y crea las borradas. No toca las del usuario. */
-  suspend fun restoreBuiltIns() {
-    withContext(Dispatchers.IO + NonCancellable) {
-      dao.restoreBuiltIns(BuiltInRecipes.all(texts).map { toEntity(it) to toStageEntities(it) })
-    }
-  }
-
-  private fun displayName(with: RecipeWithStages): String = with.recipe.let {
-    if (it.localizedNames && it.builtInKey != null) texts.builtInName(it.builtInKey) else it.name
-  }
-
   private fun toRecipe(with: RecipeWithStages): Recipe {
     val entity = with.recipe
-    val translated = entity.localizedNames && entity.builtInKey != null
-    val stageNames = if (translated) texts.builtInStageNames(entity.builtInKey!!) else emptyList()
-    val stageInstructions = if (translated) texts.builtInStageInstructions(entity.builtInKey!!) else emptyList()
     return Recipe(
       id = entity.id,
-      name = displayName(with),
+      name = entity.name,
       method = entity.method,
       methodOther = entity.methodOther,
       grind = entity.toGrindSetting(),
       waterTempC = entity.waterTempC,
       notes = entity.notes,
       doseG = entity.doseG,
-      stages = with.stages.sortedBy { it.position }.mapIndexed { i, stage ->
+      stages = with.stages.sortedBy { it.position }.map { stage ->
         RecipeStage(
-          name = if (translated) stageNames.getOrNull(i) ?: stage.name else stage.name,
+          name = stage.name,
           startMs = stage.startMs,
           targetWaterG = stage.targetWaterG,
           durationMs = stage.durationMs,
           type = stage.type,
-          instruction = if (translated) stageInstructions.getOrNull(i) ?: stage.instruction else stage.instruction,
+          instruction = stage.instruction,
         )
       },
       builtInKey = entity.builtInKey,
       localizedNames = entity.localizedNames,
+      author = entity.author,
+      sourceUrl = entity.sourceUrl,
+      catalogKey = entity.catalogKey,
     )
   }
 
@@ -170,6 +160,9 @@ class RecipeRepository(
     builtInKey = recipe.builtInKey,
     localizedNames = recipe.localizedNames,
     updatedAtEpochMs = clock(),
+    author = recipe.author.cleaned(),
+    sourceUrl = recipe.sourceUrl.cleaned(),
+    catalogKey = recipe.catalogKey.cleaned(),
   )
 
   private fun toStageEntities(recipe: Recipe) = recipe.stages.withDerivedWater().mapIndexed { i, stage ->

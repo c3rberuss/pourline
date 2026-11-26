@@ -46,12 +46,6 @@ class BackupDaoTest {
     root.deleteRecursively()
   }
 
-  /** Una copia de las filas del estado sembrado, sin las recetas predefinidas. */
-  private fun withoutBuiltIns(rows: BackupRows): BackupRows {
-    val ids = rows.recipes.filter { it.builtInKey != null }.map { it.id }.toSet()
-    return rows.copy(recipes = rows.recipes.filter { it.id !in ids }, recipeStages = rows.recipeStages.filter { it.recipeId !in ids })
-  }
-
   @Test
   fun readAllReturnsEveryRowOrderedByKey() = runBlocking {
     val seeded = seedEverything(context, db, File(root, "photos"), settings)
@@ -63,8 +57,8 @@ class BackupDaoTest {
     assertEquals(seeded.grinderIds.sorted(), rows.grinders.map { it.id })
     assertEquals(2, rows.grindCalibrations.size)
     assertTrue(rows.brewTargets.isNotEmpty())
-    // Las predefinidas de la base nueva, más las dos guardadas.
-    assertEquals(setOf("V60_CLASSIC", "FOUR_SIX"), rows.recipes.mapNotNull { it.builtInKey }.map { it.uppercase() }.toSet())
+    // Las dos recetas guardadas: una base nueva ya no trae recetas de fábrica.
+    assertEquals(2, rows.recipes.size)
     assertEquals(rows.recipes.map { it.id }.sorted(), rows.recipes.map { it.id })
     assertEquals(rows.recipeStages.sortedWith(compareBy({ it.recipeId }, { it.position })), rows.recipeStages)
     assertEquals(rows.grinderUnits.sortedWith(compareBy({ it.grinderId }, { it.position })), rows.grinderUnits)
@@ -79,9 +73,9 @@ class BackupDaoTest {
   @Test
   fun replaceAllLeavesExactlyTheGivenRowsWithTheirIds() = runBlocking {
     seedEverything(context, db, File(root, "photos"), settings)
-    val source = withoutBuiltIns(dao.readAll())
+    val source = dao.readAll()
 
-    // Otra base con otros datos y las predefinidas: tras reemplazar, solo queda lo de la copia.
+    // Otra base con otros datos: tras reemplazar, solo queda lo de la copia.
     val other = HistoryDatabase.inMemory(context)
     try {
       seedSomethingElse(other)
@@ -106,15 +100,15 @@ class BackupDaoTest {
   @Test
   fun replaceAllNotifiesTheObservers() = runBlocking {
     seedEverything(context, db, File(root, "photos"), settings)
-    val source = withoutBuiltIns(dao.readAll())
+    val source = dao.readAll()
     val other = HistoryDatabase.inMemory(context)
     try {
       val photos = CoffeePhotoStore(File(root, "other-photos"), File(root, "cache"))
       val recipes = RecipeRepository(other, ResourcesRecipeTexts(context))
       val coffees = CoffeeRepository(other, photos)
       val brews = BrewRepository(other)
-      // Antes: las predefinidas, sin cafés ni preparaciones.
-      assertEquals(2, withTimeout(5_000) { recipes.list().first() }.size)
+      // Antes: nada de nada.
+      assertEquals(0, withTimeout(5_000) { recipes.list().first() }.size)
       assertEquals(0, withTimeout(5_000) { coffees.pickable().first() }.size)
       assertEquals(0, withTimeout(5_000) { brews.count().first() })
 
@@ -132,7 +126,7 @@ class BackupDaoTest {
   fun aFailingInsertRollsEverythingBack() = runBlocking {
     seedEverything(context, db, File(root, "photos"), settings)
     val before = dao.readAll()
-    val source = withoutBuiltIns(before).let { rows ->
+    val source = before.let { rows ->
       rows.copy(coffees = rows.coffees.map { it.copy(name = "Otro ${it.name}") })
     }
     assertTrue(source.brewTargets.isNotEmpty())

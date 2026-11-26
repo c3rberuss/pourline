@@ -15,9 +15,11 @@ import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.history.HistoryDatabase
-import dev.josueamaya.pourline.recipe.BuiltInRecipes
+import dev.josueamaya.pourline.history.LegacyBuiltIns
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
+import dev.josueamaya.pourline.recipe.fourSix
+import dev.josueamaya.pourline.recipe.v60Classic
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -25,7 +27,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -41,10 +42,16 @@ class RecipesScreenTest {
   private var created = 0
   private var activeId by mutableStateOf<Long?>(null)
 
-  @Before
-  fun setUp() {
-    db = HistoryDatabase.inMemory(context, texts)
+  /** [seed] siembra la V60 y la 4:6 como recetas propias; sin ello es una instalación nueva, con la lista vacía. */
+  private fun show(seed: Boolean = true) {
+    db = HistoryDatabase.inMemory(context)
     repository = RecipeRepository(db, texts)
+    if (seed) {
+      runBlocking {
+        repository.save(v60Classic(texts))
+        repository.save(fourSix(texts))
+      }
+    }
     val viewModel = RecipesViewModel(repository)
     rule.setContent {
       PourlineTheme(darkTheme = false) {
@@ -63,12 +70,20 @@ class RecipesScreenTest {
   private fun ids() = runBlocking { repository.list().first().map { it.id } }
 
   @Test
-  fun theTwoBuiltInsShowTheirNamesSummaryAndTag() {
+  fun aFreshInstallShowsAnEmptyList() {
+    show(seed = false)
+    waitForRows(0)
+    rule.onNodeWithText(context.getString(R.string.recipe_empty)).assertIsDisplayed()
+  }
+
+  @Test
+  fun theTwoRecipesShowTheirNamesAndSummaryWithoutTags() {
+    show()
     waitForRows(2)
     rows().assertCountEquals(2)
-    rule.onAllNodesWithTag("recipe_builtin_tag", useUnmergedTree = true).assertCountEquals(2)
-    rule.onNodeWithText(texts.builtInName(BuiltInRecipes.V60_CLASSIC)).assertIsDisplayed()
-    rule.onNodeWithText(texts.builtInName(BuiltInRecipes.FOUR_SIX)).assertIsDisplayed()
+    rule.onAllNodesWithTag("recipe_active_tag", useUnmergedTree = true).assertCountEquals(0)
+    rule.onNodeWithText(texts.builtInName(LegacyBuiltIns.V60_CLASSIC)).assertIsDisplayed()
+    rule.onNodeWithText(texts.builtInName(LegacyBuiltIns.FOUR_SIX)).assertIsDisplayed()
     // "15 g · 250 g · 1:16,7 · 5 pasos · 1:55" con los números del idioma actual.
     val summary = context.getString(
       R.string.recipe_summary,
@@ -83,6 +98,7 @@ class RecipesScreenTest {
 
   @Test
   fun theRowsShowTheirTotalTime() {
+    show()
     waitForRows(2)
     // La 4:6 de fábrica: 9 pasos y 3:10 (el último vertido acaba en 3:10).
     val summary = context.getString(
@@ -100,6 +116,7 @@ class RecipesScreenTest {
 
   @Test
   fun theActiveRecipeIsTagged() {
+    show()
     waitForRows(2)
     rule.onAllNodesWithTag("recipe_active_tag", useUnmergedTree = true).assertCountEquals(0)
 
@@ -112,6 +129,7 @@ class RecipesScreenTest {
 
   @Test
   fun tappingARowOpensTheRecipe() {
+    show()
     waitForRows(2)
     val first = ids().first()
     rows()[0].performClick()
@@ -120,6 +138,7 @@ class RecipesScreenTest {
 
   @Test
   fun thePlusButtonCreatesARecipe() {
+    show()
     waitForRows(2)
     rule.onNodeWithTag("recipes_add").performClick()
     assertEquals(1, created)
@@ -127,6 +146,7 @@ class RecipesScreenTest {
 
   @Test
   fun withoutRecipesTheEmptyStateOffersToCreateOne() {
+    show()
     waitForRows(2)
     val all = ids()
     runBlocking { all.forEach { repository.delete(it) } }
@@ -138,6 +158,7 @@ class RecipesScreenTest {
 
   @Test
   fun deletingShowsAMessageAndUndoBringsTheSameRecipeBack() {
+    show()
     waitForRows(2)
     val id = ids().first()
     runBlocking { repository.delete(id) }

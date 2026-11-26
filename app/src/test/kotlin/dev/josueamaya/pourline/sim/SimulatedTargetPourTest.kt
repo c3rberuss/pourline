@@ -9,10 +9,9 @@ import dev.josueamaya.pourline.brew.FinishedBrew
 import dev.josueamaya.pourline.brew.TargetConfig
 import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.brew.brewFit
-import dev.josueamaya.pourline.recipe.BuiltInRecipes
-import dev.josueamaya.pourline.recipe.FakeRecipeTexts
 import dev.josueamaya.pourline.recipe.StageGaps
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.fourSixClassic
 import dev.josueamaya.pourline.recipe.recipeOf
 import dev.josueamaya.pourline.recipe.stage
 import dev.josueamaya.pourline.recipe.v60Classic
@@ -115,7 +114,7 @@ class SimulatedTargetPourTest {
 
   @Test
   fun `it follows the 4 to 6 method too`() {
-    val fourSix = TargetCurve.fromRecipe(BuiltInRecipes.recipe(BuiltInRecipes.FOUR_SIX, FakeRecipeTexts()))
+    val fourSix = TargetCurve.fromRecipe(fourSixClassic())
     val result = run(fourSix, FollowMode.FAITHFUL)
     assertTrue("water share ${result.waterShare}", abs(result.waterShare) <= 0.03)
     assertTrue("time diff ${result.timeDiffMs} ms", abs(result.timeDiffMs) <= 5_000)

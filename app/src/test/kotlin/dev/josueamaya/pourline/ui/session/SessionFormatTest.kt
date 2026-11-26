@@ -7,9 +7,9 @@ import dev.josueamaya.pourline.brew.TargetConfig
 import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.brew.TargetGuide
 import dev.josueamaya.pourline.brew.TargetStage
-import dev.josueamaya.pourline.recipe.BuiltInRecipes
-import dev.josueamaya.pourline.recipe.FakeRecipeTexts
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.fourSixClassic
+import dev.josueamaya.pourline.recipe.v60Classic
 import dev.josueamaya.pourline.ui.components.AntIcons
 import dev.josueamaya.pourline.ui.theme.antDarkColors
 import dev.josueamaya.pourline.ui.theme.antLightColors
@@ -139,7 +139,7 @@ class SessionFormatTest {
 
   // --- timedStepView ---
 
-  private fun v60() = TargetCurve.fromRecipe(BuiltInRecipes.recipe(BuiltInRecipes.V60_CLASSIC, FakeRecipeTexts()))
+  private fun v60() = TargetCurve.fromRecipe(v60Classic())
 
   private fun view(curve: TargetCurve, tMs: Long): TimedStepView? {
     val guide = TargetGuide.at(curve, BrewPhase.Active(pouring = false), tMs, null, TargetConfig())
@@ -191,8 +191,8 @@ class SessionFormatTest {
 
   @Test
   fun `the view agrees with TargetGuide every 100 ms`() {
-    for (key in BuiltInRecipes.keys) {
-      val curve = TargetCurve.fromRecipe(BuiltInRecipes.recipe(key, FakeRecipeTexts()))
+    for ((key, recipe) in mapOf("v60_classic" to v60Classic(), "four_six" to fourSixClassic())) {
+      val curve = TargetCurve.fromRecipe(recipe)
       var tMs = 0L
       while (tMs <= 330_000) {
         val guide = TargetGuide.at(curve, BrewPhase.Active(pouring = false), tMs, null, TargetConfig())

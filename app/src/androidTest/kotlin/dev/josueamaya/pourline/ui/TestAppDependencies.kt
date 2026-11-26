@@ -33,6 +33,8 @@ import dev.josueamaya.pourline.protocol.Frame
 import dev.josueamaya.pourline.protocol.ScaleMessage
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
+import dev.josueamaya.pourline.recipe.fourSix
+import dev.josueamaya.pourline.recipe.v60Classic
 import dev.josueamaya.pourline.recipe.catalog.CatalogCache
 import dev.josueamaya.pourline.recipe.catalog.CatalogFetcher
 import dev.josueamaya.pourline.recipe.catalog.FakeCatalogFetcher
@@ -178,6 +180,8 @@ class TestAppDependencies(
   catalogJson: String = TestRecipeCatalog.json(),
   /** La descarga del catálogo; por defecto falla siempre y cuenta las llamadas. */
   val catalogFetcher: CatalogFetcher = FakeCatalogFetcher(),
+  /** Siembra la V60 clásica y el método 4:6 como recetas propias; las pruebas de una instalación nueva pasan `false`. */
+  seedRecipes: Boolean = true,
 ) {
   init {
     context.deleteSharedPreferences(PREFS)
@@ -191,7 +195,7 @@ class TestAppDependencies(
   private val catalogDir = File(context.cacheDir, "test_catalog").also { it.deleteRecursively() }
   private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-  val db: HistoryDatabase = HistoryDatabase.inMemory(context, texts)
+  val db: HistoryDatabase = HistoryDatabase.inMemory(context)
   val brewSettings = BrewSettings(context, PREFS)
   val targetSettings = TargetSettings(context, PREFS)
   val themeSettings = ThemeSettings(context, PREFS)
@@ -202,7 +206,14 @@ class TestAppDependencies(
   val brews = BrewRepository(db)
   val photoStore = CoffeePhotoStore(photosDir, context.cacheDir)
   val coffees = CoffeeRepository(db, photoStore)
-  val recipes = RecipeRepository(db, texts)
+  val recipes = RecipeRepository(db, texts).also { repository ->
+    if (seedRecipes) {
+      runBlocking {
+        repository.save(v60Classic(texts))
+        repository.save(fourSix(texts))
+      }
+    }
+  }
   val recipeImports = PendingRecipeImport()
 
   /** El catálogo de recetas recomendadas con su caché en `cacheDir/test_catalog` y los molinos de prueba. */

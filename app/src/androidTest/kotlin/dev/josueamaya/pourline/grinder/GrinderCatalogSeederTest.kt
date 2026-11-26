@@ -32,7 +32,7 @@ class GrinderCatalogSeederTest {
   @Before
   fun setUp() {
     context.deleteSharedPreferences(PREFS)
-    db = HistoryDatabase.inMemory(context, FakeRecipeTexts())
+    db = HistoryDatabase.inMemory(context)
     settings = GrinderSettings(context, PREFS)
     seeder = GrinderCatalogSeeder(dao, { json }, settings, settings, clock = { 9_000L })
   }

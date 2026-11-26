@@ -1,9 +1,8 @@
 package dev.josueamaya.pourline.recipe.share
 
 import dev.josueamaya.pourline.grinder.Grinder
-import dev.josueamaya.pourline.recipe.BuiltInRecipes
-import dev.josueamaya.pourline.recipe.FakeRecipeTexts
 import dev.josueamaya.pourline.recipe.Recipe
+import dev.josueamaya.pourline.recipe.fourSixClassic
 import dev.josueamaya.pourline.recipe.v60Classic
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -19,7 +18,7 @@ class RecipeSharePayloadStabilityTest {
 
   private val fixtures = listOf(
     Fixture("v60Classic", v60Classic()),
-    Fixture("fourSixBuiltIn", BuiltInRecipes.recipe(BuiltInRecipes.FOUR_SIX, FakeRecipeTexts())),
+    Fixture("fourSixBuiltIn", fourSixClassic()),
     Fixture("everyField1000", everyField(1_000)),
     Fixture("everyField100", everyField(100)),
     Fixture("everyField1", everyField(1)),

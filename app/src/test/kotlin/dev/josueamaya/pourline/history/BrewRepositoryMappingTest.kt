@@ -10,8 +10,7 @@ import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.brew.TimedSession
 import dev.josueamaya.pourline.protocol.ScaleModel
 import dev.josueamaya.pourline.protocol.WeightUnit
-import dev.josueamaya.pourline.recipe.BuiltInRecipes
-import dev.josueamaya.pourline.recipe.FakeRecipeTexts
+import dev.josueamaya.pourline.recipe.v60Classic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -31,7 +30,7 @@ class BrewRepositoryMappingTest {
   }
 
   private fun v60Target(): UsedTarget {
-    val curve = TargetCurve.fromRecipe(BuiltInRecipes.recipe(BuiltInRecipes.V60_CLASSIC, FakeRecipeTexts()))
+    val curve = TargetCurve.fromRecipe(v60Classic())
     // Sin muestras, `brewFit` da `score = null`, el agua final y el fin del objetivo.
     return UsedTarget(ReferenceType.RECIPE, 7, "V60 clásica", curve, BrewFit(null, curve.finalWaterG, curve.endMs))
   }

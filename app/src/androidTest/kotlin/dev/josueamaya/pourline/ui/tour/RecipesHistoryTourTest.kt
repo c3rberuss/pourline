@@ -93,14 +93,12 @@ class RecipesHistoryTourTest {
   // --- Recetas ---
 
   @Test
-  fun theRecipesTourShowsBuiltInAndAdd() {
+  fun theRecipesTourShowsOnlyAddWithoutAnActiveRecipe() {
     env.skipOnboarding(showTours = listOf(Tours.recipes))
     show()
     openTab("tab_recipes", "recipe_row")
 
-    rule.waitForTour("1/2", env.tourSettings.seen.value)
-    titleIs(R.string.tour_recipes_builtin_title)
-    goTo("2/2")
+    rule.waitForTour("1/1", env.tourSettings.seen.value)
     titleIs(R.string.tour_recipes_add_title)
   }
 
@@ -111,8 +109,7 @@ class RecipesHistoryTourTest {
     driver.selectRecipe()
     openTab("tab_recipes", "recipe_row")
 
-    rule.waitForTour("1/3", env.tourSettings.seen.value)
-    goTo("2/3")
+    rule.waitForTour("1/2", env.tourSettings.seen.value)
     titleIs(R.string.tour_recipes_active_title)
     assertOnScreen("recipe_active_tag")
   }

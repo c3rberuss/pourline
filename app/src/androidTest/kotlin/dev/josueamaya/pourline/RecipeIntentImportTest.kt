@@ -23,9 +23,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.protocol.WeightUnit
 import dev.josueamaya.pourline.recipe.Recipe
 import dev.josueamaya.pourline.recipe.RecipeStage
+import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
 import dev.josueamaya.pourline.recipe.StageType
 import dev.josueamaya.pourline.recipe.share.QrReadResult
 import dev.josueamaya.pourline.recipe.share.RecipeShareCodec
+import dev.josueamaya.pourline.recipe.v60Classic
 import dev.josueamaya.pourline.settings.ExperienceMode
 import dev.josueamaya.pourline.share.MlKitQrImageReader
 import dev.josueamaya.pourline.share.RecipeShareData
@@ -70,7 +72,7 @@ class RecipeIntentImportTest {
 
   @Before
   fun setUp() {
-    env = TestAppDependencies(context)
+    env = TestAppDependencies(context, seedRecipes = false)
     handler = RecipeIntentHandler(
       env.dependencies.recipeImports,
       env.dependencies.qrImageReader,
@@ -243,6 +245,8 @@ class RecipeIntentImportTest {
 
   @Test
   fun withASessionTheIntentDoesNotNavigateAndThePreviewOpensWhenItEnds() {
+    // La sesión necesita una receta que elegir: la V60 de siempre, como receta propia.
+    runBlocking { env.recipes.save(v60Classic(ResourcesRecipeTexts(context))) }
     show()
     val driver = SessionDriver(rule, env)
     driver.connect()

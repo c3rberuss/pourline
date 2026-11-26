@@ -33,7 +33,7 @@ class RecipeDaoTest {
 
   @Before
   fun setUp() {
-    db = HistoryDatabase.inMemory(InstrumentationRegistry.getInstrumentation().targetContext, texts)
+    db = HistoryDatabase.inMemory(InstrumentationRegistry.getInstrumentation().targetContext)
     repository = RecipeRepository(db, texts) { now }
   }
 
@@ -53,17 +53,27 @@ class RecipeDaoTest {
     ),
   )
 
-  private suspend fun builtIn(key: String) = repository.list().first().single { it.name == texts.builtInName(key) }
+  /** Guarda la antigua V60 clásica de fábrica como receta propia y devuelve su fila de la lista. */
+  private suspend fun seededV60(): RecipeListItem {
+    val id = repository.save(v60Classic(texts))
+    return repository.list().first().single { it.id == id }
+  }
 
   @Test
-  fun aNewDatabaseHasTheTwoBuiltInRecipes() = runTest {
-    val list = repository.list().first()
-    assertEquals(2, list.size)
-    assertTrue(list.all { it.builtIn })
-    val v60 = repository.get(builtIn(BuiltInRecipes.V60_CLASSIC).id)!!
+  fun aNewDatabaseHasNoRecipes() = runTest {
+    assertTrue(repository.list().first().isEmpty())
+    assertTrue(repository.catalogKeys().first().isEmpty())
+  }
+
+  @Test
+  fun theFormerFactoryV60RoundTripsAsAnOwnRecipe() = runTest {
+    val recipe = v60Classic(texts)
+    val id = repository.save(recipe)
+    val v60 = repository.get(id)!!
+    assertEquals(recipe.copy(id = id), v60)
     assertEquals("V60 clásica", v60.name)
-    assertEquals(BuiltInRecipes.V60_CLASSIC, v60.builtInKey)
-    assertTrue(v60.localizedNames)
+    assertNull(v60.builtInKey)
+    assertFalse(v60.localizedNames)
     assertEquals(15.0, v60.doseG, 0.0)
     assertEquals(listOf("Bloom", null, "2.º vertido", null, "3.er vertido"), v60.stages.map { it.name })
     assertEquals(
@@ -71,11 +81,39 @@ class RecipeDaoTest {
       v60.stages.map { it.type },
     )
     assertEquals(listOf("i1", "i2", "i3", "i4", "i5"), v60.stages.map { it.instruction })
-    assertEquals(BuiltInRecipes.recipe(BuiltInRecipes.V60_CLASSIC, texts).stages, v60.stages)
-    val fourSix = repository.get(builtIn(BuiltInRecipes.FOUR_SIX).id)!!
+    val fourSixId = repository.save(fourSix(texts))
+    val fourSix = repository.get(fourSixId)!!
     assertEquals(20.0, fourSix.doseG, 0.0)
     assertEquals(9, fourSix.stages.size)
     assertEquals(300.0, fourSix.totalWaterG, 0.0)
+  }
+
+  @Test
+  fun authorSourceAndCatalogKeyRoundTrip() = runTest {
+    val id = repository.save(mine().copy(author = " Ana ", sourceUrl = "https://example.com/r", catalogKey = "nemo_v60"))
+    val read = repository.get(id)!!
+    assertEquals("Ana", read.author)
+    assertEquals("https://example.com/r", read.sourceUrl)
+    assertEquals("nemo_v60", read.catalogKey)
+    val plain = repository.get(repository.save(mine()))!!
+    assertNull(plain.author)
+    assertNull(plain.sourceUrl)
+    assertNull(plain.catalogKey)
+    val blank = repository.get(repository.save(mine().copy(author = "  ", sourceUrl = "", catalogKey = " ")))!!
+    assertNull(blank.author)
+    assertNull(blank.sourceUrl)
+    assertNull(blank.catalogKey)
+  }
+
+  @Test
+  fun catalogKeysListsEachSavedCatalogKeyOnce() = runTest {
+    repository.save(mine("Sin clave"))
+    val first = repository.save(mine("A").copy(catalogKey = "nemo_v60"))
+    repository.save(mine("B").copy(catalogKey = "nemo_v60"))
+    repository.save(mine("C").copy(catalogKey = "hoffmann_v60"))
+    assertEquals(setOf("nemo_v60", "hoffmann_v60"), repository.catalogKeys().first())
+    repository.delete(first)
+    assertEquals(setOf("nemo_v60", "hoffmann_v60"), repository.catalogKeys().first())
   }
 
   @Test
@@ -123,7 +161,6 @@ class RecipeDaoTest {
     assertEquals(160.0, item.totalWaterG, 0.0)
     assertEquals(2, item.stageCount)
     assertEquals(65_000, item.totalDurationMs)
-    assertFalse(item.builtIn)
     assertEquals(16.0, item.doseG, 0.0)
   }
 
@@ -167,8 +204,8 @@ class RecipeDaoTest {
   }
 
   @Test
-  fun duplicateCopiesWithANewNameAndNoBuiltInKey() = runTest {
-    val original = builtIn(BuiltInRecipes.V60_CLASSIC)
+  fun duplicateCopiesWithANewName() = runTest {
+    val original = seededV60()
     val copyId = repository.duplicate(original.id)!!
     assertNotEquals(original.id, copyId)
     val copy = repository.get(copyId)!!
@@ -177,9 +214,18 @@ class RecipeDaoTest {
     assertFalse(copy.localizedNames)
     assertEquals(repository.get(original.id)!!.stages, copy.stages)
     assertEquals(repository.get(original.id)!!.doseG, copy.doseG, 0.0)
-    // La original sigue igual.
-    assertEquals(BuiltInRecipes.V60_CLASSIC, repository.get(original.id)!!.builtInKey)
+    assertEquals("V60 clásica", repository.get(original.id)!!.name)
     assertNull(repository.duplicate(9_999))
+  }
+
+  @Test
+  fun duplicateKeepsAuthorSourceAndCatalogKey() = runTest {
+    val id = repository.save(mine().copy(author = "Ana", sourceUrl = "https://example.com/r", catalogKey = "nemo_v60"))
+    val copy = repository.get(repository.duplicate(id)!!)!!
+    assertEquals("Ana", copy.author)
+    assertEquals("https://example.com/r", copy.sourceUrl)
+    assertEquals("nemo_v60", copy.catalogKey)
+    assertEquals(setOf("nemo_v60"), repository.catalogKeys().first())
   }
 
   @Test
@@ -250,81 +296,22 @@ class RecipeDaoTest {
   }
 
   @Test
-  fun deletingABuiltInAllowsTheSameKeyAgainOnRestore() = runTest {
-    val v60 = builtIn(BuiltInRecipes.V60_CLASSIC)
+  fun deletingARecipeAndUndoingItBringsItBack() = runTest {
+    val v60 = seededV60()
     repository.delete(v60.id)
-    assertEquals(1, repository.list().first().size)
+    assertTrue(repository.list().first().isEmpty())
     repository.restore(repository.pendingUndo.value!!)
-    assertEquals(2, repository.list().first().size)
+    assertEquals(listOf(v60.id), repository.list().first().map { it.id })
   }
 
   @Test
-  fun restoreBuiltInsResetsEditedOnesRecreatesDeletedOnesAndKeepsTheUsers() = runTest {
-    val v60 = builtIn(BuiltInRecipes.V60_CLASSIC)
-    val fourSix = builtIn(BuiltInRecipes.FOUR_SIX)
-    val userId = repository.save(mine("Mi receta"))
-    // Edita la V60 (la renombra) y borra la 4:6.
-    val edited = repository.get(v60.id)!!.copy(
-      name = "Mi V60",
-      doseG = 18.0,
-      notes = "Notas",
-      localizedNames = false,
-      stages = listOf(RecipeStage("Solo", 0, 300.0, 60_000)),
-    )
-    repository.save(edited)
-    repository.delete(fourSix.id)
-    repository.clearPendingUndo()
-
-    repository.restoreBuiltIns()
-
-    val list = repository.list().first()
-    assertEquals(3, list.size)
-    val restored = repository.get(v60.id)!! // conserva el id
-    assertEquals("V60 clásica", restored.name)
-    assertEquals(15.0, restored.doseG, 0.0)
-    assertNull(restored.notes)
-    assertTrue(restored.localizedNames)
-    assertEquals(BuiltInRecipes.recipe(BuiltInRecipes.V60_CLASSIC, texts).stages, restored.stages)
-    assertEquals(2, restored.stages.count { it.type == StageType.WAIT })
-    val recreated = repository.get(builtIn(BuiltInRecipes.FOUR_SIX).id)!!
-    assertEquals(9, recreated.stages.size)
-    assertEquals(4, recreated.stages.count { it.type == StageType.WAIT })
-    assertTrue(recreated.localizedNames)
-    assertEquals(mine("Mi receta").copy(id = userId), repository.get(userId))
-  }
-
-  @Test
-  fun aDuplicateOfABuiltInSurvivesRestoreBuiltIns() = runTest {
-    val copyId = repository.duplicate(builtIn(BuiltInRecipes.V60_CLASSIC).id)!!
-    repository.restoreBuiltIns()
-    assertEquals(3, repository.list().first().size)
-    assertEquals("V60 clásica (copia)", repository.get(copyId)!!.name)
-  }
-
-  @Test
-  fun translatedNamesFollowTheLanguageWhileLocalizedNamesIsTrue() = runTest {
-    val v60 = builtIn(BuiltInRecipes.V60_CLASSIC)
-    texts.language = "en"
-    val english = repository.get(v60.id)!!
-    assertEquals("Classic V60", english.name)
-    assertEquals(listOf("Bloom", null, "2nd pour", null, "3rd pour"), english.stages.map { it.name })
-    assertEquals(listOf("en-i1", "en-i2", "en-i3", "en-i4", "en-i5"), english.stages.map { it.instruction })
-    assertEquals("Classic V60", repository.observe(v60.id).first()!!.name)
-    // Una vez renombrada, ya no se traduce.
-    texts.language = "es"
-    repository.save(repository.get(v60.id)!!.copy(name = "Mi V60", localizedNames = false))
-    texts.language = "en"
-    assertEquals("Mi V60", repository.get(v60.id)!!.name)
-  }
-
-  @Test
-  fun theListIsOrderedByTheDisplayedNameAfterTranslating() = runTest {
+  fun theListIsOrderedByNameWithoutCaseOrAccents() = runTest {
     repository.save(mine("Brasil"))
-    texts.language = "es"
-    assertEquals(listOf("Brasil", "Método 4:6", "V60 clásica"), repository.list().first().map { it.name })
-    texts.language = "en"
-    // Sin distinguir mayúsculas, y con "4:6 method" antes que "Brasil" por los dígitos.
-    assertEquals(listOf("4:6 method", "Brasil", "Classic V60"), repository.list().first().map { it.name })
+    repository.save(v60Classic(texts))
+    repository.save(fourSix(texts))
+    repository.save(mine("áfrica"))
+    // Sin distinguir mayúsculas ni acentos, y con los dígitos antes que las letras.
+    assertEquals(listOf("áfrica", "Brasil", "Método 4:6", "V60 clásica"), repository.list().first().map { it.name })
   }
 
   @Test

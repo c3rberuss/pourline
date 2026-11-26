@@ -38,6 +38,7 @@ import dev.josueamaya.pourline.recipe.share.ImportError
 import dev.josueamaya.pourline.recipe.share.ImportNotice
 import dev.josueamaya.pourline.recipe.share.PendingRecipeImport
 import dev.josueamaya.pourline.recipe.share.RecipeShareCodec
+import dev.josueamaya.pourline.recipe.v60Classic
 import dev.josueamaya.pourline.settings.GrinderSettings
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
 import kotlinx.coroutines.flow.first
@@ -74,7 +75,7 @@ class RecipeImportScreenTest {
   @Before
   fun setUp() {
     context.deleteSharedPreferences(PREFS)
-    db = HistoryDatabase.inMemory(context, texts)
+    db = HistoryDatabase.inMemory(context)
     settings = GrinderSettings(context, PREFS)
     recipes = RecipeRepository(db, texts)
     grinders = GrinderRepository(db, settings, grindTexts)
@@ -260,15 +261,15 @@ class RecipeImportScreenTest {
 
   @Test
   fun anIdenticalRecipeWarnsAndStillSavesWithASuffix() {
-    val builtIn = runBlocking { recipes.all() }.first { it.builtInKey == "v60_classic" }
-    show(uriOf(builtIn))
+    val existing = runBlocking { recipes.get(recipes.save(v60Classic(texts)))!! }
+    show(uriOf(existing))
 
     rule.onNodeWithTag("recipe_import_identical").assertIsDisplayed()
     save()
 
     val names = saved().map { it.name }
-    assertEquals(listOf(texts.builtInName("v60_classic") + " (2)"), names)
-    assertEquals(null, saved().single().builtInKey)
+    assertEquals(listOf(existing.name, existing.name + " (2)"), names.sorted())
+    assertTrue(saved().all { it.builtInKey == null && it.catalogKey == null })
   }
 
   @Test

@@ -70,8 +70,6 @@ fun RecipesScreen(
 
   val listState = rememberLazyListState()
   // La lista perezosa solo compone lo que se ve: estos pasos se declaran para que el recorrido los busque desplazando.
-  val firstBuiltIn = items?.firstOrNull { it.builtIn }?.id
-  TourLazyAnchor("recipe_builtin_tag", listState, present = firstBuiltIn != null)
   TourLazyAnchor("recipe_active_tag", listState, present = activeRecipeId != null && items?.any { it.id == activeRecipeId } == true)
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
@@ -126,7 +124,6 @@ fun RecipesScreen(
               item,
               onClick = { onOpenRecipe(item.id) },
               active = active,
-              builtInAnchor = item.id == firstBuiltIn,
               activeAnchor = active,
             )
           }

@@ -62,9 +62,6 @@ enum class ExpertFeature {
   /** Vista previa de la curva en el editor de recetas. */
   RECIPE_CURVE_PREVIEW,
 
-  /** "Restaurar recetas predefinidas" en Ajustes. */
-  RESTORE_BUILT_INS,
-
   /** La regla de molienda de la tarjeta de Preparar y del paso 2 (SPEC-006). */
   GRIND_RULER,
 }

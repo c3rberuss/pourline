@@ -2,10 +2,8 @@ package dev.josueamaya.pourline.history
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import dev.josueamaya.pourline.recipe.BuiltInRecipeSeeder
 import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.RecipeTexts
-import dev.josueamaya.pourline.recipe.SeedSchema
 import dev.josueamaya.pourline.recipe.StageGaps
 
 /**
@@ -42,7 +40,7 @@ fun migration1To2(texts: RecipeTexts, clock: () -> Long = System::currentTimeMil
           "ON UPDATE NO ACTION ON DELETE CASCADE )",
       )
 
-      BuiltInRecipeSeeder.seed(db, texts, clock(), SeedSchema.V2)
+      LegacyBuiltIns.seedV2(db, texts, clock())
     }
   }
 
@@ -264,5 +262,60 @@ val MIGRATION_6_7: Migration = object : Migration(6, 7) {
       "CREATE UNIQUE INDEX IF NOT EXISTS `index_grind_calibrations_grinderAId_grinderBId_valueB` " +
         "ON `grind_calibrations` (`grinderAId`, `grinderBId`, `valueB`)",
     )
+  }
+}
+
+/**
+ * Migración 7 → 8 (SPEC-012, D17): `author`, `sourceUrl` y `catalogKey` en `recipes` y `referenceKey` en `brews`, todas
+ * `TEXT` sin `DEFAULT`. Después las recetas de fábrica pasan a ser recetas propias: las que siguen traducidas
+ * (`localizedNames = 1`) guardan los textos del idioma actual de [texts], con la regla de `RecipeRepository.toRecipe` de
+ * antes (el texto guardado si no hay traducción); todas quedan con `builtInKey = NULL`, `localizedNames = 0` y la clave
+ * antigua en `catalogKey`, que es la de las recetas del catálogo con ese origen. `id` y `updatedAtEpochMs` no cambian, así
+ * que las preparaciones que las usaron como referencia siguen enlazadas.
+ */
+fun migration7To8(texts: RecipeTexts): Migration = object : Migration(7, 8) {
+  override fun migrate(db: SupportSQLiteDatabase) {
+    db.execSQL("ALTER TABLE `recipes` ADD COLUMN `author` TEXT")
+    db.execSQL("ALTER TABLE `recipes` ADD COLUMN `sourceUrl` TEXT")
+    db.execSQL("ALTER TABLE `recipes` ADD COLUMN `catalogKey` TEXT")
+    db.execSQL("ALTER TABLE `brews` ADD COLUMN `referenceKey` TEXT")
+
+    class BuiltIn(val id: Long, val key: String, val translated: Boolean)
+
+    val builtIns = db.query("SELECT `id`, `builtInKey`, `localizedNames` FROM `recipes` WHERE `builtInKey` IS NOT NULL").use { cursor ->
+      buildList {
+        while (cursor.moveToNext()) add(BuiltIn(cursor.getLong(0), cursor.getString(1), cursor.getInt(2) != 0))
+      }
+    }
+    for (recipe in builtIns) {
+      // Una clave desconocida no debería existir; no se traduce porque `ResourcesRecipeTexts` fallaría con ella.
+      if (recipe.translated && recipe.key in LegacyBuiltIns.KEYS) translate(db, texts, recipe.id, recipe.key)
+      db.execSQL(
+        "UPDATE `recipes` SET `catalogKey` = `builtInKey`, `builtInKey` = NULL, `localizedNames` = 0 WHERE `id` = ?",
+        arrayOf<Any>(recipe.id),
+      )
+    }
+  }
+
+  private fun translate(db: SupportSQLiteDatabase, texts: RecipeTexts, id: Long, key: String) {
+    db.execSQL("UPDATE `recipes` SET `name` = ? WHERE `id` = ?", arrayOf<Any>(texts.builtInName(key), id))
+    val names = texts.builtInStageNames(key)
+    val instructions = texts.builtInStageInstructions(key)
+    val stages = db.query(
+      "SELECT `position`, `name`, `instruction` FROM `recipe_stages` WHERE `recipeId` = ? ORDER BY `position`",
+      arrayOf<Any>(id),
+    ).use { cursor ->
+      buildList {
+        while (cursor.moveToNext()) {
+          add(Triple(cursor.getInt(0), cursor.getString(1), cursor.getString(2)))
+        }
+      }
+    }
+    stages.forEachIndexed { index, (position, name, instruction) ->
+      db.execSQL(
+        "UPDATE `recipe_stages` SET `name` = ?, `instruction` = ? WHERE `recipeId` = ? AND `position` = ?",
+        arrayOf<Any?>(names.getOrNull(index) ?: name, instructions.getOrNull(index) ?: instruction, id, position),
+      )
+    }
   }
 }

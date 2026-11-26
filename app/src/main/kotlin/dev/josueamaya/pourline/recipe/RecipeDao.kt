@@ -22,8 +22,9 @@ abstract class RecipeDao {
   @Query("SELECT * FROM recipes WHERE id = :id")
   abstract suspend fun get(id: Long): RecipeWithStages?
 
-  @Query("SELECT * FROM recipes WHERE builtInKey = :key")
-  abstract suspend fun byBuiltInKey(key: String): RecipeEntity?
+  /** Las claves de catálogo de las recetas guardadas, sin repetir (SPEC-012). */
+  @Query("SELECT DISTINCT catalogKey FROM recipes WHERE catalogKey IS NOT NULL")
+  abstract fun observeCatalogKeys(): Flow<List<String>>
 
   @Insert
   protected abstract suspend fun insertRecipeRow(recipe: RecipeEntity): Long
@@ -82,17 +83,5 @@ abstract class RecipeDao {
   open suspend fun restore(deleted: DeletedRecipe) {
     insertRecipeRow(deleted.recipe.withLiveGrinder())
     insertStageRows(deleted.stages)
-  }
-
-  /**
-   * Devuelve a fábrica las predefinidas que existen (conservan su id) y crea las que faltan. No toca el
-   * resto de recetas. Cada elemento es la receta de fábrica con `id = 0` y sus etapas.
-   */
-  @Transaction
-  open suspend fun restoreBuiltIns(factory: List<Pair<RecipeEntity, List<RecipeStageEntity>>>) {
-    for ((recipe, stages) in factory) {
-      val existing = recipe.builtInKey?.let { byBuiltInKey(it) }
-      save(recipe.copy(id = existing?.id ?: 0), stages)
-    }
   }
 }
