@@ -1,12 +1,12 @@
 # Catálogo de recetas recomendadas
 
 `recipes.json` es el catálogo que Pourline muestra en **Recetas > Recomendadas**. Es la única fuente: la app lo
-descarga de la rama `main` y, además, el build lo copia al APK (`assets/catalog/recipes.json`) como copia inicial.
+descarga de la rama `develop` y, además, el build lo copia al APK (`assets/catalog/recipes.json`) como copia inicial.
 Nunca se mantiene una segunda copia a mano.
 
 La app descarga el archivo solo al abrir "Recomendadas" (como mucho una vez al día, o al deslizar hacia abajo para
 actualizar). Entre la copia descargada y la del APK usa la de `revision` mayor. `raw.githubusercontent.com` cachea unos
-minutos: un cambio en `main` puede tardar ese tiempo en llegar a la app.
+minutos: un cambio en `develop` puede tardar ese tiempo en llegar a la app.
 
 ## Formato (`schemaVersion` 1)
 

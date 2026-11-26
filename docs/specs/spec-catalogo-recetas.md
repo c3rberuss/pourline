@@ -21,7 +21,7 @@
   - Un **catálogo de recetas recomendadas** (hasta 35, §3.10) de baristas reconocidos y campeonatos
     (World Brewers Cup, World AeroPress Championship, etc.), con autor, contexto y enlace a la fuente.
   - Se administra desde el propio repo: un único archivo `catalog/recipes.json` que la app descarga
-    de la rama `main` y que, además, va empaquetado en el APK como copia inicial.
+    de la rama `develop` (cambio del 2026-11-26: antes `main`) y que, además, va empaquetado en el APK como copia inicial.
   - Textos en español e inglés.
   - Desde el catálogo se puede **preparar directamente** o **guardar una copia** en "Mis recetas"
     para editarla.
@@ -74,7 +74,7 @@
 - **Ubicación en el repo:** `catalog/recipes.json`, en la raíz. Es la única fuente: la copia del APK
   se genera desde este archivo en el build (el plan decide cómo: `sourceSets` o tarea de copia a
   `assets/catalog/recipes.json`), nunca se mantiene a mano una segunda copia.
-- **URL remota:** `https://raw.githubusercontent.com/c3rberuss/pourline/main/catalog/recipes.json`,
+- **URL remota:** `https://raw.githubusercontent.com/c3rberuss/pourline/develop/catalog/recipes.json` (cambio del 2026-11-26: rama `develop`, antes `main`),
   como constante de build (`BuildConfig` o equivalente), no como cadena suelta en el código.
 - **Codificación:** UTF-8, JSON.
 - **Estructura (`schemaVersion = 1`):**
@@ -190,8 +190,8 @@
   - Nunca en segundo plano ni con la vista cerrada. Dos peticiones simultáneas se unen en una.
 - **Escritura atómica:** la descarga se valida entera antes de sustituir la caché (archivo temporal y
   renombrado). Un catálogo inválido nunca reemplaza a uno válido.
-- **Tiempo de publicación:** `raw.githubusercontent.com` cachea unos minutos; un cambio en `main`
-  puede tardar ese tiempo en llegar. No se intenta evitar.
+- **Tiempo de publicación:** `raw.githubusercontent.com` cachea unos minutos; un cambio en `develop`
+  (cambio del 2026-11-26: antes `main`) puede tardar ese tiempo en llegar. No se intenta evitar.
 
 ### 3.4 Modelo y conversión a `Recipe`
 
@@ -334,7 +334,7 @@
   quitando del manifiesto fusionado los componentes de `com.google.android.datatransport`); F0 del
   plan lo investiga y lo verifica (§5).
 - **README:** sección de privacidad o nota que explique el uso de la red y cómo se administra el
-  catálogo (`catalog/recipes.json` en `main`).
+  catálogo (`catalog/recipes.json` en `develop`, cambio del 2026-11-26).
 - **Test del catálogo del repo:** test JVM que lee `catalog/recipes.json` de la raíz y comprueba:
   esquema, `revision` y `schemaVersion` presentes, claves únicas, ambos idiomas en todos los textos
   localizados, cada receta válida en ambos idiomas (§3.1) y `catalogKey` de molino existente.
@@ -571,7 +571,7 @@ esta sección.
 - [ ] `catalog/recipes.json` existe en la raíz con el contenido de §3.10 y pasa su test; el APK
       contiene la misma copia generada en el build.
 - [ ] El workflow de catálogo se ejecuta en un `push` que toca `catalog/**` y falla con una receta
-      inválida (comprobado con un caso de prueba del parser, no rompiendo `main`).
+      inválida (comprobado con un caso de prueba del parser, no rompiendo `develop`).
 - [ ] Tests JVM del parser: `schemaVersion` mayor, método y tipo de paso desconocidos, falta un idioma,
       receta que no pasa `RecipeValidator`, claves duplicadas, campos desconocidos ignorados.
 - [ ] Tests JVM de la conversión a `Recipe`: tiempos, agua derivada, idioma, `author`, `sourceUrl`,
@@ -600,14 +600,14 @@ esta sección.
       el móvil (sin root, release firmada instalada con `adb install -r`), no hay componentes ni
       trabajos de `datatransport` y el UID no transmite bytes al usar el OCR sin abrir "Recomendadas".
 - [ ] Verificación manual en el móvil: primer arranque en modo avión muestra la copia del APK;
-      deslizar hacia abajo descarga; un cambio publicado en `main` aparece tras actualizar.
+      deslizar hacia abajo descarga; un cambio publicado en `develop` (subiendo `revision`) aparece tras actualizar (cambio del 2026-11-26: antes `main`).
 - [ ] Textos en español e inglés; detekt/lint sin avisos nuevos; solo se ejecutan los tests del spec.
 - [ ] **Enmienda 1:** el catálogo publicado cumple la proporción de §3.10 (al menos 2/3 aptas para
       tueste medio, como máximo 6 solo para claro) y cada receta nueva o variante tiene fuente en el
       anexo.
 - [ ] **Enmienda 1:** el test del repo falla con un valor desconocido en `roasts`, con un término
       prohibido o con un tiempo `m:ss` en una instrucción (comprobado con casos del parser o del test,
-      no rompiendo `main`), y pasa con el catálogo publicado.
+      no rompiendo `develop`), y pasa con el catálogo publicado.
 - [ ] **Enmienda 1:** tests JVM del filtro por tueste: "Medio" incluye las recetas sin `roasts`; se
       combina con método y búsqueda; "Quitar filtros" lo restablece a "Todos".
 - [ ] **Enmienda 1:** tests instrumentados: filtro "Tueste" en Recomendadas y en el `TargetPicker`,
@@ -635,6 +635,6 @@ esta sección.
   a sincronizarlas.
 - **"Preparar" guarda antes una copia:** llena "Mis recetas" de recetas que solo se prueban una vez.
 - **Autor y fuente al final de las notas:** se pierde el dato estructurado.
-- **Rama dedicada para el catálogo:** `main` ya es la rama publicada y evita mantener otra.
+- **Rama dedicada para el catálogo:** `develop` es la rama de integración donde se publican las recetas (cambio del 2026-11-26: antes `main`) y evita mantener otra.
 - **Borrar las recetas de fábrica existentes:** rompe la expectativa de quien ya las usa; se convierten
   en propias.

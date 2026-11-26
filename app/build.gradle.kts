@@ -28,11 +28,11 @@ val releaseKeyAlias = signingValue("keyAlias", "POURLINE_KEY_ALIAS")
 val releaseKeyPassword = signingValue("keyPassword", "POURLINE_KEY_PASSWORD")
 
 /**
- * La URL del catálogo de recetas (SPEC-012). Por defecto es el archivo de `main`; `-Ppourline.catalogUrl=<url>` la cambia
+ * La URL del catálogo de recetas (SPEC-012). Por defecto es el archivo de `develop`; `-Ppourline.catalogUrl=<url>` la cambia
  * solo en builds locales, por ejemplo para probar la descarga con una rama antes de fusionarla (el workflow de release no la pasa).
  */
 val catalogUrl = providers.gradleProperty("pourline.catalogUrl")
-  .getOrElse("https://raw.githubusercontent.com/c3rberuss/pourline/main/catalog/recipes.json")
+  .getOrElse("https://raw.githubusercontent.com/c3rberuss/pourline/develop/catalog/recipes.json")
 require(catalogUrl.startsWith("https://")) { "pourline.catalogUrl debe empezar por https://" }
 
 val hasReleaseSigning =
