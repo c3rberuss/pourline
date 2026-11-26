@@ -52,6 +52,9 @@ fun recipeJson(id: String = "v60_test", overrides: Map<String, JsonElement> = em
   return JsonObject(base + overrides)
 }
 
+/** Un campo `roasts` con los nombres de [values], tal cual (sin validar). */
+fun roastsJson(vararg values: String): JsonArray = JsonArray(values.map { JsonPrimitive(it) })
+
 fun JsonObject.without(vararg names: String): JsonObject = JsonObject(filterKeys { it !in names })
 
 fun JsonObject.with(vararg changes: Pair<String, JsonElement>): JsonObject = JsonObject(this + changes.toMap())

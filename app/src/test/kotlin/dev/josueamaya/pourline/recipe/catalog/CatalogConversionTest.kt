@@ -108,4 +108,11 @@ class CatalogConversionTest {
     assertEquals(65_000L, recipe.totalDurationMs)
     assertTrue(recipe.stages.isNotEmpty())
   }
+
+  @Test
+  fun `roasts do not reach the recipe`() {
+    val without = entry().inLanguage(CatalogLanguage.ES).toRecipe()
+    val with = entry("roasts" to roastsJson("LIGHT", "MEDIUM")).inLanguage(CatalogLanguage.ES).toRecipe()
+    assertEquals(without, with)
+  }
 }

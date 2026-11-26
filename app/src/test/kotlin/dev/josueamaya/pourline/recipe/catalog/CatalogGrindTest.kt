@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline.recipe.catalog
 
+import dev.josueamaya.pourline.coffee.RoastLevel
 import dev.josueamaya.pourline.grinder.FakeGrindTexts
 import dev.josueamaya.pourline.grinder.GrindResolution
 import dev.josueamaya.pourline.grinder.GrindSetting
@@ -20,6 +21,7 @@ internal fun catalogRecipe(
   grinderRef: CatalogGrinderRef? = CatalogGrinderRef("acme_uno", 27.0),
   author: String? = "Nemo",
   sourceUrl: String? = "https://example.com/nemo",
+  roasts: Set<RoastLevel> = emptySet(),
 ) = CatalogRecipe(
   key = key,
   name = name,
@@ -34,6 +36,7 @@ internal fun catalogRecipe(
   notes = null,
   sourceUrl = sourceUrl,
   stages = listOf(RecipeStage(null, 0, 40.0, 10_000), RecipeStage(null, 45_000, 250.0, 30_000)),
+  roasts = roasts,
 )
 
 /** El molino del autor en el catálogo de molinos y los del usuario, como en `SharedGrindResolutionTest`. */

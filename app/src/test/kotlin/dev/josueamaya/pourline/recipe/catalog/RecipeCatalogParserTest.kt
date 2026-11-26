@@ -1,6 +1,8 @@
 package dev.josueamaya.pourline.recipe.catalog
 
+import dev.josueamaya.pourline.coffee.RoastLevel
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -199,5 +201,52 @@ class RecipeCatalogParserTest {
     assertEquals(listOf("sin_pasos", "bad"), result.discarded.map { it.key })
     assertTrue(result.discarded.all { it.reason.isNotBlank() })
     assertNotNull(result.discarded.first { it.key == "sin_pasos" }.reason)
+  }
+
+  private fun roastsOf(vararg overrides: Pair<String, kotlinx.serialization.json.JsonElement>): CatalogRecipeEntry =
+    parsed(catalogJson(recipeJson("v60_test", overrides.toMap()))).entries.single()
+
+  @Test
+  fun `roasts are read as roast levels`() {
+    val entry = roastsOf("roasts" to roastsJson("MEDIUM", "DARK"))
+    assertEquals(setOf(RoastLevel.MEDIUM, RoastLevel.DARK), entry.es.roasts)
+    assertEquals(setOf(RoastLevel.MEDIUM, RoastLevel.DARK), entry.en.roasts)
+  }
+
+  @Test
+  fun `missing or empty roasts mean any roast`() {
+    assertTrue(roastsOf().es.roasts.isEmpty())
+    assertTrue(roastsOf("roasts" to roastsJson()).es.roasts.isEmpty())
+    assertTrue(roastsOf("roasts" to roastsJson()).en.roasts.isEmpty())
+  }
+
+  @Test
+  fun `unknown roast values are ignored and none left means any roast`() {
+    val some = parsed(catalogJson(recipeJson("v60_test", mapOf("roasts" to roastsJson("MEDIUM", "ULTRA")))))
+    assertEquals(setOf(RoastLevel.MEDIUM), some.entries.single().es.roasts)
+    val none = parsed(catalogJson(recipeJson("v60_test", mapOf("roasts" to roastsJson("ULTRA")))))
+    assertEquals(emptySet<RoastLevel>(), none.entries.single().es.roasts)
+    assertTrue(none.discarded.isEmpty())
+  }
+
+  @Test
+  fun `a malformed roasts field is ignored without discarding the recipe`() {
+    val malformed = listOf(
+      JsonPrimitive("MEDIUM"),
+      JsonArray(listOf(JsonPrimitive(1), JsonNull)),
+      buildJsonObject { put("a", 1) },
+      JsonNull,
+    )
+    malformed.forEach { value ->
+      val result = parsed(catalogJson(recipeJson("v60_test", mapOf("roasts" to value))))
+      assertTrue(value.toString(), result.discarded.isEmpty())
+      assertEquals(value.toString(), emptySet<RoastLevel>(), result.entries.single().es.roasts)
+    }
+  }
+
+  @Test
+  fun `repeated roasts are read once`() {
+    val entry = roastsOf("roasts" to roastsJson("DARK", "LIGHT", "DARK"))
+    assertEquals(listOf(RoastLevel.LIGHT, RoastLevel.DARK), entry.es.roasts.toList())
   }
 }

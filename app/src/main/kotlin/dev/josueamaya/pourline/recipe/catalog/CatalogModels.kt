@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline.recipe.catalog
 
+import dev.josueamaya.pourline.coffee.RoastLevel
 import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.recipe.RecipeStage
 
@@ -38,6 +39,8 @@ data class CatalogRecipe(
   val notes: String?,
   val sourceUrl: String?,
   val stages: List<RecipeStage>,
+  /** Los tuestes para los que sirve la receta, igual en los dos idiomas. Vacío: sirve para cualquier tueste. */
+  val roasts: Set<RoastLevel> = emptySet(),
 )
 
 /** Una receta válida en los dos idiomas; el idioma se elige al usarla (D5, D16). */

@@ -26,7 +26,7 @@ class TargetPickerViewModel(
   catalogRepository: RecipeCatalogRepository,
   language: CatalogLanguageSource,
 ) : ViewModel() {
-  val catalog = CatalogBrowser(catalogRepository, recipeRepository, language, viewModelScope)
+  val catalog = CatalogBrowser(catalogRepository, recipeRepository.catalogKeys(), language, viewModelScope)
 
   val recipes: StateFlow<List<RecipeListItem>> =
     recipeRepository.list().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())

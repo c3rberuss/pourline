@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline.recipe.catalog
 
+import dev.josueamaya.pourline.coffee.RoastLevel
 import dev.josueamaya.pourline.coffee.fold
 import dev.josueamaya.pourline.history.BrewMethod
 
@@ -15,6 +16,8 @@ data class CatalogListItem(
   val ratio: Double,
   val totalDurationMs: Long,
   val stageCount: Int,
+  /** Los tuestes para los que sirve; vacío, cualquiera. */
+  val roasts: Set<RoastLevel> = emptySet(),
   /** El nombre y el autor sin mayúsculas ni acentos, para buscar con [catalogSearchKey]. */
   val searchKey: String,
 )
@@ -33,6 +36,7 @@ fun CatalogRecipe.toListItem(): CatalogListItem {
     ratio = if (doseG > 0) water / doseG else 0.0,
     totalDurationMs = recipe.totalDurationMs,
     stageCount = recipe.stages.size,
+    roasts = roasts,
     searchKey = catalogSearchKey(name) + SEPARATOR + catalogSearchKey(author.orEmpty()),
   )
 }
@@ -48,12 +52,35 @@ fun catalogSearchKey(text: String): String = buildString {
   fold(text).forEach { char -> append(SpecialLetters[char] ?: char) }
 }
 
-/** Las recetas cuyo nombre o autor contiene [query] (sin mayúsculas ni acentos) y, con [method], de ese método. */
-fun filterCatalog(items: List<CatalogListItem>, query: String, method: BrewMethod?): List<CatalogListItem> {
+/** Sirve para [roast]: sin tueste elegido, sin `roasts` (cualquiera) o con ese tueste entre los suyos (D52). */
+fun CatalogListItem.suitsRoast(roast: RoastLevel?): Boolean = roast == null || roasts.isEmpty() || roast in roasts
+
+/**
+ * Las recetas cuyo nombre o autor contiene [query] (sin mayúsculas ni acentos) y, con [method], de ese método y, con
+ * [roast], aptas para ese tueste.
+ */
+fun filterCatalog(
+  items: List<CatalogListItem>,
+  query: String,
+  method: BrewMethod?,
+  roast: RoastLevel? = null,
+): List<CatalogListItem> {
   val wanted = catalogSearchKey(query).trim()
   return items.filter { item ->
-    (method == null || item.method == method) && (wanted.isEmpty() || item.searchKey.contains(wanted))
+    (method == null || item.method == method) &&
+      item.suitsRoast(roast) &&
+      (wanted.isEmpty() || item.searchKey.contains(wanted))
   }
+}
+
+/** Los tres filtros de la lista de recomendadas; [CatalogFilters] sin tocar es "Todos" en todo (D52). */
+data class CatalogFilters(
+  val query: String = "",
+  val method: BrewMethod? = null,
+  val roast: RoastLevel? = null,
+) {
+  /** Algún filtro quita recetas. */
+  val active: Boolean get() = query.isNotBlank() || method != null || roast != null
 }
 
 /** Los métodos que hay en [items], en el orden de [BrewMethod]. */

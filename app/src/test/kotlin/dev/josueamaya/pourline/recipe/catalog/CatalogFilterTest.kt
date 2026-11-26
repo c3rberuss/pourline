@@ -1,5 +1,6 @@
 package dev.josueamaya.pourline.recipe.catalog
 
+import dev.josueamaya.pourline.coffee.RoastLevel
 import dev.josueamaya.pourline.history.BrewMethod
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -77,5 +78,54 @@ class CatalogFilterTest {
     assertEquals(250.0 / 15.0, result.ratio, 1e-9)
     assertEquals(75_000L, result.totalDurationMs)
     assertEquals(2, result.stageCount)
+  }
+
+  private fun roastItem(key: String, vararg roasts: RoastLevel, method: BrewMethod = BrewMethod.V60, name: String = key) =
+    catalogRecipe(key = key, name = name, author = null, roasts = roasts.toSet()).copy(method = method).toListItem()
+
+  private val light = roastItem("light", RoastLevel.LIGHT)
+  private val medium = roastItem("medium", RoastLevel.MEDIUM, method = BrewMethod.AEROPRESS)
+  private val dark = roastItem("dark", RoastLevel.DARK)
+  private val lightMedium = roastItem("light_medium", RoastLevel.LIGHT, RoastLevel.MEDIUM)
+  private val any = roastItem("any")
+  private val byRoast = listOf(light, medium, dark, lightMedium, any)
+
+  @Test
+  fun `a list item carries its roasts`() {
+    assertEquals(setOf(RoastLevel.LIGHT, RoastLevel.MEDIUM), lightMedium.roasts)
+    assertEquals(emptySet<RoastLevel>(), any.roasts)
+  }
+
+  @Test
+  fun `medium shows medium recipes and those for any roast`() {
+    assertEquals(listOf("medium", "light_medium", "any"), keys(filterCatalog(byRoast, "", null, RoastLevel.MEDIUM)))
+  }
+
+  @Test
+  fun `light and dark also include the recipes for any roast`() {
+    assertEquals(listOf("light", "light_medium", "any"), keys(filterCatalog(byRoast, "", null, RoastLevel.LIGHT)))
+    assertEquals(listOf("dark", "any"), keys(filterCatalog(byRoast, "", null, RoastLevel.DARK)))
+    assertEquals(byRoast.map { it.key }, keys(filterCatalog(byRoast, "", null, null)))
+  }
+
+  @Test
+  fun `the roast filter combines with method and search`() {
+    assertEquals(listOf("medium"), keys(filterCatalog(byRoast, "", BrewMethod.AEROPRESS, RoastLevel.MEDIUM)))
+    assertEquals(emptyList<String>(), keys(filterCatalog(byRoast, "", BrewMethod.AEROPRESS, RoastLevel.DARK)))
+    assertEquals(listOf("light_medium"), keys(filterCatalog(byRoast, "light_m", null, RoastLevel.MEDIUM)))
+    assertEquals(emptyList<String>(), keys(filterCatalog(byRoast, "dark", null, RoastLevel.LIGHT)))
+  }
+
+  @Test
+  fun `cleared filters are all at every filter`() {
+    val cleared = CatalogFilters()
+    assertEquals("", cleared.query)
+    assertEquals(null, cleared.method)
+    assertEquals(null, cleared.roast)
+    assertEquals(false, cleared.active)
+    assertEquals(true, cleared.copy(query = "v60").active)
+    assertEquals(true, cleared.copy(method = BrewMethod.V60).active)
+    assertEquals(true, cleared.copy(roast = RoastLevel.DARK).active)
+    assertEquals(false, cleared.copy(query = "  ").active)
   }
 }

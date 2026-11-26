@@ -29,7 +29,7 @@ class RecipesViewModel(
   private val _segment = MutableStateFlow(RecipesSegment.MINE)
   val segment: StateFlow<RecipesSegment> = _segment
 
-  val catalog = CatalogBrowser(catalogRepository, repository, language, viewModelScope)
+  val catalog = CatalogBrowser(catalogRepository, repository.catalogKeys(), language, viewModelScope)
 
   fun selectSegment(value: RecipesSegment) {
     _segment.value = value

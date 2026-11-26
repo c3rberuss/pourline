@@ -2,6 +2,7 @@ package dev.josueamaya.pourline.recipe.catalog
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 
 /** Los campos desconocidos se ignoran: permite añadir campos opcionales sin subir `schemaVersion` (§3.1). */
 internal val CatalogJson = Json {
@@ -45,5 +46,10 @@ internal data class RecipeCatalogRecipeDto(
   val grind: RecipeCatalogGrindDto? = null,
   val notes: RecipeCatalogLocalizedDto? = null,
   val sourceUrl: String? = null,
+  /**
+   * Los tuestes para los que sirve la receta: una lista de nombres de `RoastLevel`. Va como [JsonElement] y se lee con
+   * [roastsOf]: un valor mal formado no puede descartar la receta entera (SPEC-012 §3.1, Enmienda 1).
+   */
+  val roasts: JsonElement? = null,
   val stages: List<RecipeCatalogStageDto>,
 )
