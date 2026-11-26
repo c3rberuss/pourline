@@ -18,6 +18,12 @@ sealed interface RecipeError {
   /** Inicio de la última etapa a las 10:00 o después. */
   data object LastStartTooLate : RecipeError
 
+  /** Autor de más de [RecipeValidator.MAX_AUTHOR] caracteres. */
+  data object AuthorTooLong : RecipeError
+
+  /** Fuente no vacía que no es una URL `http(s)://` válida (ver [RecipeValidator.isValidSourceUrl]). */
+  data object SourceUrlInvalid : RecipeError
+
   sealed interface StageError : RecipeError {
     val index: Int
   }
@@ -52,11 +58,15 @@ object RecipeValidator {
   const val MAX_INSTRUCTION = 200
   const val MAX_LAST_START_MS = 600_000L
   const val MAX_TEMP_C = 100.0
+  const val MAX_AUTHOR = 100
+  const val MAX_SOURCE_URL = 500
 
   fun validate(recipe: Recipe): List<RecipeError> {
     val errors = ArrayList<RecipeError>()
     if (recipe.name.isBlank()) errors += RecipeError.NameRequired
     if (!recipe.doseG.inRange(MIN_DOSE_G, MAX_DOSE_G) || !recipe.doseG.hasOneDecimalAtMost()) errors += RecipeError.DoseInvalid
+    if ((recipe.author?.trim()?.length ?: 0) > MAX_AUTHOR) errors += RecipeError.AuthorTooLong
+    recipe.sourceUrl?.takeIf { it.isNotBlank() }?.let { if (!isValidSourceUrl(it)) errors += RecipeError.SourceUrlInvalid }
     recipe.waterTempC?.let { temp ->
       if (!temp.inRange(0.0, MAX_TEMP_C) || !temp.hasOneDecimalAtMost()) errors += RecipeError.TempInvalid
     }
@@ -84,6 +94,22 @@ object RecipeValidator {
       if (recipe.stages.last().startMs >= MAX_LAST_START_MS) errors += RecipeError.LastStartTooLate
     }
     return errors
+  }
+
+  /**
+   * Una fuente válida: recortada mide como mucho [MAX_SOURCE_URL], no tiene espacios, su esquema es `http` o `https`
+   * (sin distinguir mayúsculas) y tiene host.
+   */
+  fun isValidSourceUrl(url: String): Boolean {
+    val text = url.trim()
+    if (text.isEmpty() || text.length > MAX_SOURCE_URL || text.any { it.isWhitespace() }) return false
+    val uri = try {
+      java.net.URI(text)
+    } catch (_: java.net.URISyntaxException) {
+      return false
+    }
+    val scheme = uri.scheme?.lowercase()
+    return (scheme == "http" || scheme == "https") && !uri.host.isNullOrEmpty()
   }
 
   private fun Double.inRange(min: Double, max: Double) = isFinite() && this in min..max

@@ -10,7 +10,7 @@
 | Base de datos | `HistoryDatabase` 7 → 8 con `migration7To8(texts)` y su test; nuevo `app/schemas/dev.josueamaya.pourline.history.HistoryDatabase/8.json` |
 | Copia de seguridad | `FORMAT_VERSION` 1 → 2 (D25). Las copias con formato 1 se siguen importando |
 | Catálogo | `schemaVersion = 1`, `revision = 1`. 35 recetas si se completan las 3 reservas; si alguna no se puede completar con fuente fiable, se queda fuera (§3.10 del spec) |
-| Línea base | Se rellena en F0: tests de partida, avisos de lint y resultado de la investigación de la telemetría de ML Kit |
+| Línea base (F0, 2026-11-25) | JVM del paso 2: 245 tests, 0 fallos. Instrumentados del paso 3 en `emulator-5556` (AVD `SG_API34`, Android 14, con `adb root`): 197 tests, 0 fallos (ni `SettingsNavigationTest` ni casos intermitentes de `SettingsScreenTest` fallaron). `:app:lintDebug`: 0 errores y 20 avisos (`GradleDependency` 8, `NewerVersionAvailable` 6, `ExifInterface` 2, `AndroidGradlePluginVersion` 2, `PluralsCandidate` 1, `ObsoleteSdkInt` 1). Telemetría de ML Kit: ver "Resultado de F0" |
 
 El spec no trae fases, así que este plan las define. El orden va de dentro afuera: primero el formato del catálogo y su
 contenido en la JVM (F1 y F2), después la descarga y la caché (F3), los datos de Room y la retirada de las recetas de
@@ -221,7 +221,7 @@ F7 para probar la descarga desde la interfaz).
 
 | Fase | Contenido | Tamaño | Estado |
 |---|---|---|---|
-| F0 | Línea base, dispositivos y telemetría de ML Kit | M | Pendiente |
+| F0 | Línea base, dispositivos y telemetría de ML Kit | M | Hecha (sin commit de código) |
 | F1 | Modelo, parser y conversión del catálogo (JVM) | M | Pendiente |
 | F2 | Contenido del catálogo, copia en el APK, test del repo y workflow | L | Pendiente |
 | F3 | Descarga, caché, repositorio y constante de la URL | M | Pendiente |
@@ -302,6 +302,24 @@ pregunta abierta 2 del spec). No deja cambios de código.
 
 **Salida:** la línea base y el resultado de los pasos 5 a 7 en la cabecera ("Línea base") y, si el mecanismo cambia,
 en D43. Sin commit de código.
+
+**Resultado de F0 (2026-11-25).** `emulator-5556` no estaba arrancado; el agente lo lanzó en segundo plano
+(`emulator -avd SG_API34 -port 5556 -no-snapshot-save -no-audio`, imagen `google_apis` arm64, Android 14) y `adb root`
+funcionó. La imagen no trae el módulo `LOG` de `iptables` ("unknown option --log-prefix"), así que la cadena
+`pourline_out` no registra: el criterio "otro" son los contadores de las reglas finales (`tcp --syn`, `udp` y el resto), que
+se comprueban con `-L -v -n -x`, más `/proc/net/tcp*` filtrado por UID. La cadena cubre los UID 10220 (app) y 10221
+(APK de test).
+
+- **Control positivo** (`INTERNET` sin `tools:node="remove"`, nada más): el OCR (`MlKitLabelOcrTest`, 3 tests) guarda
+  eventos `FIREBASE_ML_SDK` en `TransportRuntime.SQLiteEventStore` para el destino `cct`, programa `JobInfoSchedulerService`
+  (trabajo de datatransport en `dumpsys jobscheduler`) y el UID de la app abre una conexión TCP a `172.217.118.4:443`
+  (Google), contada en el contador "otro". Es decir, con el permiso de vuelta ML Kit envía telemetría.
+- **Mecanismo D43** (además, `tools:node="remove"` en `TransportBackendDiscovery`, `JobInfoSchedulerService` y
+  `AlarmManagerSchedulerBroadcastReceiver`; `pm clear` antes): el OCR pasa (3 tests), `logcat` dice `Transport backend
+  'cct' is not registered`, `dumpsys jobscheduler` no tiene trabajos del UID, los contadores de `iptables` e `ip6tables`
+  quedan a 0 y no hay conexiones TCP del UID. Los manifiestos fusionados de debug y release no contienen
+  `datatransport`. **D43 queda confirmado tal cual; no hace falta el plan B** (`exclude` de `transport-backend-cct`).
+- Los cambios locales se deshicieron (`git checkout`); el diff del manifiesto se conserva para F10.
 
 ### F1. Modelo, parser y conversión del catálogo
 

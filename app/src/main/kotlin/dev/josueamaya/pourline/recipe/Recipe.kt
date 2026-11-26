@@ -23,6 +23,12 @@ data class Recipe(
   val builtInKey: String? = null,
   /** `true`: los nombres se muestran traducidos (solo predefinidas sin renombrar). */
   val localizedNames: Boolean = false,
+  /** Autor o barista de la receta, sin traducir (SPEC-012). */
+  val author: String? = null,
+  /** Enlace `http(s)://` a la fuente original (SPEC-012). */
+  val sourceUrl: String? = null,
+  /** Clave de la receta del catálogo de la que salió la copia, o `null` (SPEC-012). */
+  val catalogKey: String? = null,
 ) {
   /** El agua acumulada del último paso `POUR`. */
   val totalWaterG: Double get() = stages.lastOrNull { it.type == StageType.POUR }?.targetWaterG ?: 0.0
