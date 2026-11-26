@@ -34,6 +34,18 @@ class GrindCardStateTest {
   }
 
   @Test
+  fun `the preferred grinder comes after the source and before the default`() {
+    val preferred = GrindSource(BrewMethod.V60, GrindSetting(null, null, "Media"), preferredGrinderId = 3)
+    assertEquals(tres, state(preferred, defaultId = 2).chosen)
+    // Si el molino de origen es propio, manda el de origen.
+    val withSource = GrindSource(BrewMethod.V60, GrindSetting(dos.id, 28.0, null), preferredGrinderId = 3)
+    assertEquals(dos, state(withSource, dos, defaultId = 1).chosen)
+    // Un preferido que ya no es mío cae al predeterminado.
+    val gone = GrindSource(BrewMethod.V60, GrindSetting(null, null, "Media"), preferredGrinderId = 99)
+    assertEquals(dos, state(gone, defaultId = 2).chosen)
+  }
+
+  @Test
   fun `then the default and then the first of mine`() {
     // El molino de la receta no es mío: manda el predeterminado.
     val foreign = tres.copy(id = 99)
@@ -109,6 +121,22 @@ class GrindCardStateTest {
     val s = state(orphan)
     assertEquals(GrindOutcome.Orphan, s.outcome)
     assertNull(s.converter)
+  }
+
+  @Test
+  fun `a text-only grind gets the suggestion of the method instead of Orphan`() {
+    val textOnly = GrindSource(BrewMethod.V60, GrindSetting(null, null, "Media-fina"))
+    val s = state(textOnly, chosenId = 1)
+    assertEquals(GrindOutcome.Value(20.0, exact = true, reasons = emptySet(), suggested = true), s.outcome)
+    assertNull(s.converter)
+  }
+
+  @Test
+  fun `a deleted grinder with a setting is still an Orphan`() {
+    val orphan = GrindSource(BrewMethod.V60, GrindSetting(null, 30.0, "Chestnut S3 · 30 clics"), preferredGrinderId = 1)
+    assertEquals(GrindOutcome.Orphan, state(orphan).outcome)
+    val removedWithLabelOnly = GrindSource(BrewMethod.V60, GrindSetting(77, null, "Chestnut S3"))
+    assertEquals(GrindOutcome.Orphan, state(removedWithLabelOnly).outcome)
   }
 
   @Test

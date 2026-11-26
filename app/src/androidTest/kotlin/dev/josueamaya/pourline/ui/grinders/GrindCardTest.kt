@@ -209,6 +209,27 @@ class GrindCardTest {
   }
 
   @Test
+  fun aTextOnlyGrindShowsTheSuggestionWithoutTheDeletedTag() {
+    runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val id = recipe(GrindSetting(null, null, "Media-fina"))
+    show(id)
+    ui.waitFor("grind_card_value")
+    assertFalse(ui.exists("grind_card_orphan"))
+    assertTrue(rule.onAllNodesWithText(context.getString(R.string.grinder_tag_deleted)).fetchSemanticsNodes().isEmpty())
+    assertTrue(rule.onAllNodesWithText(context.getString(R.string.grind_card_suggested)).fetchSemanticsNodes().isNotEmpty())
+    assertTrue(rule.onAllNodesWithText("Media-fina", substring = true).fetchSemanticsNodes().isNotEmpty())
+  }
+
+  @Test
+  fun aDeletedGrinderWithASettingKeepsTheDeletedTag() {
+    runBlocking { env.db.addGrinder(TestGrinders.uno) }
+    val id = recipe(GrindSetting(null, 30.0, "Chestnut S3 · 30 clics"))
+    show(id)
+    ui.waitFor("grind_card_orphan")
+    assertTrue(rule.onAllNodesWithText(context.getString(R.string.grinder_tag_deleted)).fetchSemanticsNodes().isNotEmpty())
+  }
+
+  @Test
   fun aPredefinedGrinderShowsItsSource() {
     env.seedGrinders()
     val uno = runBlocking { env.grinders.catalog().first().single { it.model == "Uno" }.id }

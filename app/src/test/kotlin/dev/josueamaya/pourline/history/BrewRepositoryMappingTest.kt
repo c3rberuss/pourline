@@ -80,6 +80,19 @@ class BrewRepositoryMappingTest {
   }
 
   @Test
+  fun `a catalog target is stored with its key and name and without an id`() {
+    val curve = TargetCurve.fromRecipe(v60Classic())
+    val target = UsedTarget(ReferenceType.CATALOG, null, "V60 de catálogo", curve, BrewFit(null, curve.finalWaterG, curve.endMs), key = "v60_basica")
+
+    val entity = brewEntity(scalelessFinished(PlannedAmounts(15.0, 250.0)), scalelessContext(target), preview)
+
+    assertEquals(ReferenceType.CATALOG, entity.referenceType)
+    assertNull(entity.referenceId)
+    assertEquals("v60_basica", entity.referenceKey)
+    assertEquals("V60 de catálogo", entity.referenceName)
+  }
+
+  @Test
   fun `a scaleless brew without a recipe has no reference columns`() {
     val entity = brewEntity(scalelessFinished(PlannedAmounts(15.0, 240.0)), scalelessContext(), preview)
 

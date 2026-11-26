@@ -204,6 +204,54 @@ class ScaleSessionManagerTargetTest {
     assertNull(prefill.name)
   }
 
+  // --- Recetas del catálogo (SPEC-012) ---
+
+  private fun selectCatalog(key: String = "v60_basica", recipe: dev.josueamaya.pourline.recipe.Recipe = v60Classic(), preferred: Long? = null) {
+    targets.putCatalog(key, CatalogTarget(recipe, preferred))
+    references.setReference(ReferenceKey.Catalog(key))
+  }
+
+  @Test
+  fun `a catalog reference resolves like a recipe with the catalog type`() {
+    val recipe = v60Classic().copy(grind = GrindSetting(null, null, "Media"))
+    selectCatalog(recipe = recipe, preferred = 4)
+
+    val target = ui.target!!
+    assertEquals(ReferenceType.CATALOG, target.type)
+    assertEquals(ReferenceKey.Catalog("v60_basica"), target.key)
+    assertEquals(recipe.name, target.name)
+    assertEquals(1.0, target.factor, 0.0)
+    assertEquals(recipe.totalWaterG, target.curve.finalWaterG, 1e-9)
+    assertEquals(recipe.grind, target.sourceGrind)
+    assertEquals(4L, target.preferredGrinderId)
+    assertEquals(0, ui.guide!!.stage!!.index)
+  }
+
+  @Test
+  fun `a catalog key that disappears is removed and reports TargetRemoved`() {
+    selectCatalog()
+    assertNotNull(ui.target)
+
+    targets.putCatalog("v60_basica", null)
+
+    assertNull(references.sets.last())
+    assertNull(ui.target)
+    assertEquals(listOf<ScaleError>(ScaleError.TargetRemoved), errors)
+  }
+
+  @Test
+  fun `a brew with a catalog reference is saved with its key and no id`() {
+    selectCatalog()
+    activePour()
+    viewModel.finishBrew()
+
+    val used = saver.calls.single().context.target!!
+    assertEquals(ReferenceType.CATALOG, used.type)
+    assertNull(used.id)
+    assertEquals("v60_basica", used.key)
+    assertEquals(v60Classic().name, used.name)
+  }
+
   // --- Referencias que desaparecen ---
 
   @Test

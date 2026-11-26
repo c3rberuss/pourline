@@ -131,7 +131,9 @@ fun GrindCard(
   }
 }
 
-/** "Receta: Chestnut S3 · 30 clics", la copia con "molino eliminado" o "La receta no indica molienda". */
+/**
+ * "Receta: Chestnut S3 · 30 clics", la copia con "molino eliminado", el texto solo, o "La receta no indica molienda".
+ */
 @Composable
 private fun SourceLine(state: GrindCardState) {
   val source = state.source ?: return
@@ -151,7 +153,7 @@ private fun SourceLine(state: GrindCardState) {
       )
       else -> {
         AntText(setting.label.orEmpty(), type = AntTextType.Secondary)
-        AntTag(stringResource(R.string.grinder_tag_deleted), color = AntTagColor.Warning)
+        if (!setting.isTextOnly) AntTag(stringResource(R.string.grinder_tag_deleted), color = AntTagColor.Warning)
       }
     }
   }

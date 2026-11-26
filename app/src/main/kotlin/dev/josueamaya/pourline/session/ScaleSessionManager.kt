@@ -253,6 +253,7 @@ class ScaleSessionManager(
             null -> flowOf(Resolution.None)
             is ReferenceKey.Recipe -> targets.recipe(key.id).map { recipe -> resolveRecipe(key, recipe) }
             is ReferenceKey.Brew -> targets.brew(key.id).map { record -> resolveBrew(key, record) }
+            is ReferenceKey.Catalog -> targets.catalog(key.key).map { target -> resolveCatalog(key, target) }
           }
         }
         .distinctUntilChanged()
@@ -480,6 +481,7 @@ class ScaleSessionManager(
       scaledDoseG = doseG.takeIf { factor != 1.0 },
       prefill = base.prefill,
       sourceGrind = base.sourceGrind,
+      preferredGrinderId = base.preferredGrinderId,
     )
     memoBase = base
     memoDoseG = doseG
@@ -526,7 +528,14 @@ class ScaleSessionManager(
     // El objetivo congelado de esta sesión, no el que `ui.target` ya sigue desde `Finished`.
     val frozen = sessionTarget?.takeIf { frozenFor == brew.t0MonoMs }
     val used = frozen?.let {
-      UsedTarget(it.type, it.key.id, it.name, it.curve, brewFit(brew.samples, brew.summary.totalTimeMs, it.curve, targetConfig))
+      UsedTarget(
+        type = it.type,
+        id = it.key.refId,
+        name = it.name,
+        curve = it.curve,
+        fit = brewFit(brew.samples, brew.summary.totalTimeMs, it.curve, targetConfig),
+        key = it.key.refKey,
+      )
     }
     val usedCoffee = sessionCoffee?.takeIf { coffeeFrozenFor == brew.t0MonoMs }
     val usedGrind = sessionGrind?.takeIf { grindFrozenFor == brew.t0MonoMs }
@@ -979,6 +988,8 @@ class ScaleSessionManager(
     val prefill: BrewDetails,
     /** El molino y el ajuste de la referencia (D24); no se copian a la preparación. */
     val sourceGrind: GrindSetting? = null,
+    /** El molino que Preparar preselecciona al moler (SPEC-012). */
+    val preferredGrinderId: Long? = null,
   )
 
   private sealed interface Resolution {
@@ -1002,6 +1013,29 @@ class ScaleSessionManager(
     )
     return Resolution.Resolved(
       TargetBase(key, ReferenceType.RECIPE, recipe.name, TargetCurve.fromRecipe(recipe), recipe.doseG, prefill, recipe.grind),
+    )
+  }
+
+  /** Como una receta, con el tipo [ReferenceType.CATALOG]: la clave que desaparece del catálogo es un origen borrado. */
+  private fun resolveCatalog(key: ReferenceKey.Catalog, target: CatalogTarget?): Resolution {
+    if (target == null) return Resolution.Removed
+    val recipe = target.recipe
+    val prefill = BrewDetails(
+      method = recipe.method,
+      methodOther = recipe.methodOther,
+      waterTempC = recipe.waterTempC,
+    )
+    return Resolution.Resolved(
+      TargetBase(
+        key = key,
+        type = ReferenceType.CATALOG,
+        name = recipe.name,
+        curve = TargetCurve.fromRecipe(recipe),
+        nominalDoseG = recipe.doseG,
+        prefill = prefill,
+        sourceGrind = recipe.grind,
+        preferredGrinderId = target.preferredGrinderId,
+      ),
     )
   }
 
@@ -1036,8 +1070,14 @@ class ScaleSessionManager(
   }
 }
 
-private val ReferenceKey.id: Long
+/** El id de la receta o de la preparación de referencia; `null` con una receta del catálogo. */
+private val ReferenceKey.refId: Long?
   get() = when (this) {
     is ReferenceKey.Recipe -> id
     is ReferenceKey.Brew -> id
+    is ReferenceKey.Catalog -> null
   }
+
+/** La clave de la receta del catálogo de referencia; `null` con las demás. */
+private val ReferenceKey.refKey: String?
+  get() = (this as? ReferenceKey.Catalog)?.key

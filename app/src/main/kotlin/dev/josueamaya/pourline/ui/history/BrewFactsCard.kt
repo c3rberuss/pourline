@@ -33,7 +33,7 @@ fun BrewFactsCard(record: BrewRecord, coffee: CoffeeEntity?, onOpenCoffee: (Long
   val entity = record.entity
   val unit = entity.unit
   val coffeeName = coffee?.name ?: entity.coffee
-  val recipe = entity.referenceName?.takeIf { entity.referenceType == ReferenceType.RECIPE }
+  val recipe = entity.referenceName?.takeIf { entity.referenceType == ReferenceType.RECIPE || entity.referenceType == ReferenceType.CATALOG }
   val grams = { value: Double -> "${formatNumber(fromGrams(value, unit), unit)} ${unit.symbol}" }
   AntCard(modifier.fillMaxWidth().testTag("brew_detail_facts"), title = stringResource(R.string.brew_facts_title)) {
     FactRow(stringResource(R.string.brew_facts_date), formatBrewDateTime(entity.startedAtEpochMs), "date")

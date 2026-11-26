@@ -83,7 +83,7 @@ class GrindSelection(
   private val choice = MutableStateFlow<Choice?>(null)
 
   val state: StateFlow<GrindCardState> = targets
-    .map { target -> Source(target?.key, target?.let { GrindSource(it.prefill.method, it.sourceGrind) }) }
+    .map { target -> Source(target?.key, target?.let { GrindSource(it.prefill.method, it.sourceGrind, it.preferredGrinderId) }) }
     .distinctUntilChanged()
     .flatMapLatest { src ->
       latest.value = src

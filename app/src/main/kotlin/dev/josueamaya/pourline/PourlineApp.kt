@@ -24,6 +24,7 @@ import dev.josueamaya.pourline.history.HistoryDatabase
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
 import dev.josueamaya.pourline.recipe.catalog.CatalogCache
+import dev.josueamaya.pourline.recipe.catalog.CatalogTargetSource
 import dev.josueamaya.pourline.recipe.catalog.HttpCatalogFetcher
 import dev.josueamaya.pourline.recipe.catalog.RecipeCatalogRepository
 import dev.josueamaya.pourline.recipe.catalog.ResourcesCatalogLanguage
@@ -175,7 +176,11 @@ class PourlineApp : Application() {
       saver = brewRepository,
       applicationScope = applicationScope,
       references = targetSettings,
-      targets = RepositoryTargetReferences(recipeRepository, brewRepository),
+      targets = RepositoryTargetReferences(
+        recipeRepository,
+        brewRepository,
+        CatalogTargetSource(recipeCatalog, grinderRepository, catalogLanguage, grindTexts),
+      ),
       notifier = AndroidStageNotifier(this, targetSettings),
       coffeeStore = brewSettings,
       coffees = RepositoryScaleCoffees(coffeeRepository),

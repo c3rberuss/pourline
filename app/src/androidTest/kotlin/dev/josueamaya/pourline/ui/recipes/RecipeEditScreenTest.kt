@@ -695,6 +695,19 @@ class RecipeEditScreenTest {
   }
 
   @Test
+  fun aRecipeWithATextOnlyGrindIsShownWithoutTheDeletedTag() {
+    grinderUno()
+    val id = runBlocking {
+      recipes.save(
+        Recipe(name = "Solo texto", method = BrewMethod.V60, grind = GrindSetting(null, null, "Media-fina"), doseG = 15.0, stages = listOf(RecipeStage("Bloom", 0, 40.0, 10_000))),
+      )
+    }
+    show(id = id)
+    rule.onNodeWithTag("recipe_edit_grind_orphan", useUnmergedTree = true).performScrollTo().assertTextContains("Media-fina", substring = true)
+    assertFalse(rule.onAllNodesWithTag("recipe_edit_grind_orphan_deleted", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
+  }
+
+  @Test
   fun noGrinderClearsTheGrindOfTheRecipe() {
     val unoId = grinderUno()
     val id = runBlocking {

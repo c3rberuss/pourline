@@ -37,6 +37,7 @@ import dev.josueamaya.pourline.recipe.fourSix
 import dev.josueamaya.pourline.recipe.v60Classic
 import dev.josueamaya.pourline.recipe.catalog.CatalogCache
 import dev.josueamaya.pourline.recipe.catalog.CatalogFetcher
+import dev.josueamaya.pourline.recipe.catalog.CatalogTargetSource
 import dev.josueamaya.pourline.recipe.catalog.FakeCatalogFetcher
 import dev.josueamaya.pourline.recipe.catalog.RecipeCatalogRepository
 import dev.josueamaya.pourline.recipe.catalog.ResourcesCatalogLanguage
@@ -246,7 +247,7 @@ class TestAppDependencies(
     saver = brews,
     applicationScope = appScope,
     references = targetSettings,
-    targets = RepositoryTargetReferences(recipes, brews),
+    targets = RepositoryTargetReferences(recipes, brews, CatalogTargetSource(recipeCatalog, grinders, catalogLanguage, grindTexts)),
     notifier = notifier,
     coffeeStore = brewSettings,
     coffees = RepositoryScaleCoffees(coffees),

@@ -16,18 +16,22 @@ data class BrewFilter(val coffeeId: Long? = null, val method: BrewMethod? = null
 data class ProgressPoint(val brewId: Long, val startedAtEpochMs: Long, val score: Int)
 
 /** Tipo de la referencia (objetivo) con la que se hizo una preparación. */
-enum class ReferenceType { RECIPE, BREW }
+enum class ReferenceType { RECIPE, BREW, CATALOG }
 
-/** La referencia con la que se hizo una preparación, tal como se guarda. */
+/**
+ * La referencia con la que se hizo una preparación, tal como se guarda. Con [ReferenceType.CATALOG] no hay [id] y la
+ * referencia es la clave de la receta ([key]); con las demás, [key] es `null`.
+ */
 data class UsedTarget(
   val type: ReferenceType,
-  val id: Long,
+  val id: Long?,
   /** Nombre mostrado al empezar; no se traduce después. */
   val name: String,
   /** La curva escalada y congelada al empezar. */
   val curve: TargetCurve,
   /** Calculado una sola vez en el ViewModel y guardado sin recalcular. */
   val fit: BrewFit,
+  val key: String? = null,
 )
 
 /** El café del catálogo con el que se hace una preparación: el id y el nombre que tenía al elegirlo. */
