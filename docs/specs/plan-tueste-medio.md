@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-catalogo-recetas.md`](spec-catalogo-recetas.md) (SPEC-012), **Enmienda 1** (§3.1, §3.8, §3.9, §3.10, §5 y §7), y la sección "Enmienda 1 (2026-11-26): tueste medio" del [anexo](anexo-catalogo-recetas.md), que manda sobre el resto del anexo. El spec manda sobre los dos |
-| Estado | Implementado (F0 a F6, 2026-11-26) y verificado en `emulator-5556`; falta la prueba manual del usuario (§7.5) y fusionar. Aprobado con un commit por fase y push de `feat/recipe-catalog`. P1 y P3 aceptadas; P2 rechazada (§6). Resultados y desviaciones en §8. El spec y el anexo recogen P1, D50, el modelo con `roasts` y el reparto de `peets_pour_over` |
+| Estado | Implementado (F0 a F6, 2026-11-26) y verificado en `emulator-5556`. Probado por el usuario en su teléfono y fusionado a `develop` el 2026-11-26 |
 | Fecha | 2026-11-26 |
 | Rama | `feat/recipe-catalog`, con el SPEC-012 implementado (F0 a F11 del plan anterior, hasta `712e9f1`) y la enmienda commiteada (`97060db`). Sin fusionar |
 | Módulos | `:app` (`:protocol` no cambia). En la raíz: `catalog/recipes.json` y `catalog/README.md`. `.github/workflows/catalog.yml` no cambia |

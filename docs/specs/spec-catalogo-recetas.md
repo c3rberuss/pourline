@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado el 2026-11-25 (ajustado el mismo día con las respuestas del [plan](plan-catalogo-recetas.md)); implementado en `feat/recipe-catalog` (F0 a F11), pendiente de la prueba manual y de la fusión. **Enmienda 1** (tueste medio e instrucciones): aprobada el 2026-11-26; plan [plan-tueste-medio.md](plan-tueste-medio.md) aprobado el mismo día, en implementación |
+| Estado | Aprobado el 2026-11-25; implementado en `feat/recipe-catalog` (F0 a F11 del [plan](plan-catalogo-recetas.md)) y **enmienda 1** (tueste medio e instrucciones, [plan](plan-tueste-medio.md)) implementada el 2026-11-26. Probado por el usuario en su teléfono y fusionado a `develop` el 2026-11-26; pendiente `/code-review` |
 | Fecha | 2026-11-25. Enmienda 1: 2026-11-26 |
 | Rama | `feat/recipe-catalog` |
 | Deriva de | Uso real: la app no trae recetas de referencia para los distintos métodos |

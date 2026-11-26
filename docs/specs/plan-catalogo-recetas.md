@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-catalogo-recetas.md`](spec-catalogo-recetas.md) (SPEC-012), aprobado el 2026-11-25, y su anexo [`anexo-catalogo-recetas.md`](anexo-catalogo-recetas.md) (prevalece su sección "Decisiones del spec que prevalecen") |
-| Estado | Implementado (F0 a F11) en `feat/recipe-catalog` el 2026-11-25 y 2026-11-26; pendientes la prueba manual en el teléfono (§7.6) y la fusión. Aprobado el 2026-11-25, con commits por fase autorizados. P1 a P4 respondidas el mismo día (§6) |
+| Estado | Implementado (F0 a F11) en `feat/recipe-catalog` el 2026-11-25 y 2026-11-26. Probado por el usuario en su teléfono y fusionado a `develop` el 2026-11-26 |
 | Fecha | 2026-11-25 |
 | Rama | `feat/recipe-catalog` (el spec y el anexo están en `a22c92f`). El plan se commitea en la rama cuando el usuario lo autorice |
 | Módulos | `:app` (`:protocol` no cambia). En la raíz del repo: `catalog/` (nuevo), `.github/workflows/catalog.yml` (nuevo) y `README.md` |
