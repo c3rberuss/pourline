@@ -231,7 +231,7 @@ F7 para probar la descarga desde la interfaz).
 | F7 | Pestaña Recetas: selector, Recomendadas y recorrido | L | Hecha |
 | F8 | Detalle, "Preparar" y "Guardar en mis recetas" | L | Hecha |
 | F9 | Selector de Preparar y editor (autor y fuente) | M | Hecha |
-| F10 | Red: manifiesto, telemetría y README | M | Pendiente |
+| F10 | Red: manifiesto, telemetría y README | M | Hecha |
 | F11 | Verificación final y cierre | M | Pendiente |
 
 Rutas abreviadas: `main/` es `app/src/main/kotlin/dev/josueamaya/pourline/`, `test/` es
@@ -801,6 +801,19 @@ tests, 0 fallos. Instrumentados en `emulator-5556` (`TargetPickerTest`, `Prepare
 - `./gradlew :app:lintDebug`.
 
 Commit sugerido: `feat(app): allow network access only for the recipe catalog`.
+
+**Resultado de F10 (2026-11-25).** Hecha como en el plan (D43, mecanismo confirmado en F0, sin plan B). `AndroidManifest.xml`:
+`INTERNET` sin `tools:node="remove"` y con comentario nuevo, y `tools:node="remove"` en los tres componentes de datatransport
+(el comentario del manifiesto no nombra "datatransport", para que el `grep -c` de los manifiestos fusionados dé 0).
+`README.md` raíz: viñeta "Recetas recomendadas" y sección "Privacidad y red" (D45); `catalog/README.md` ya estaba completo desde
+F2. `ManifestPermissionsTest`: `theAppRequestsInternetButNotCamera` y `noDataTransportComponentIsDeclared`. Verificación:
+`:app:processDebugManifest` y `:app:processReleaseManifest`: `grep -c datatransport` = 0 en los dos manifiestos fusionados e
+`INTERNET` presente. Instrumentados `ManifestPermissionsTest` (5) y `MlKitLabelOcrTest` (3): 0 fallos. En `emulator-5556` con la
+debug real (UID 10254, cadena `pourline_out` en `iptables` e `ip6tables` como en F0): tras el OCR (`am instrument`, 3 tests OK) y
+un minuto, "otro" a 0 en IPv4 e IPv6, sin trabajos de datatransport en `dumpsys jobscheduler` y `logcat` con "Transport backend
+'cct' is not registered". Después, Recetas → Recomendadas y deslizar para actualizar: el contador de `185.199.108.0/22`
+sube a 18 paquetes (2347 bytes) y "otro" sigue a 0; la app muestra "Usando las recetas incluidas en la app" porque el catálogo
+aún no está en `main`. Cadena limpiada y `pm clear` hecho. `:app:lintDebug`: 0 errores y 20 avisos.
 
 ### F11. Verificación final y cierre
 

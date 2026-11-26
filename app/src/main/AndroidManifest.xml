@@ -38,10 +38,12 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!--
-      ML Kit (OCR de etiquetas) añade INTERNET para su telemetría. El modelo va incluido en el APK y la app
-      no usa la red: fotos y datos no salen del teléfono. ACCESS_NETWORK_STATE no da acceso a datos y se deja.
+      La app solo abre la red para descargar el catálogo de recetas recomendadas (SPEC-012): un archivo JSON de
+      raw.githubusercontent.com al abrir "Recomendadas". Fotos, cafés, recetas propias y preparaciones no salen del
+      teléfono. ML Kit (OCR de etiquetas) usaría este permiso para su telemetría: se desactiva quitando abajo los tres
+      componentes que la envían (SPEC-012 D43). ACCESS_NETWORK_STATE no da acceso a datos y se deja.
     -->
-    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".PourlineApp"
@@ -55,6 +57,17 @@
         android:windowSoftInputMode="adjustResize"
         android:theme="@style/Theme.Pourline"
         tools:targetApi="31">
+        <!-- Telemetría de ML Kit (datatransport): sin estos tres componentes no hay backend ni trabajo de envío. -->
+        <service
+            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+            tools:node="remove" />
+        <service
+            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+            tools:node="remove" />
+        <receiver
+            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+            tools:node="remove" />
+
         <!-- Play Services instala el modelo de lectura de QR con la app (SPEC-009, D18). -->
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"

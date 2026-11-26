@@ -38,6 +38,7 @@ App Android para preparar café de filtro con las básculas TIMEMORE Black Mirro
 
 ### Preparar
 - **Recetas paso a paso** con cuatro tipos de paso: Verter, Remover, Esperar y Acción. Cada tipo tiene su color, y el cambio de paso se avisa con sonido y vibración.
+- **Recetas recomendadas**: recetas de baristas y campeonatos en Recetas > Recomendadas. Se preparan tal cual, sin guardarlas, o se guarda una copia para ajustarla. El catálogo vive en [`catalog/recipes.json`](catalog/README.md) y se actualiza sin publicar una versión nueva.
 - **Cuenta atrás de inicio** y tiempo total de la receta a la vista.
 - **Gráfica de vertido en tiempo real**: peso, flujo y regularidad del chorro, comparados con la curva objetivo de la receta.
 - **Con o sin báscula**: sin báscula, la app te guía con el temporizador de cada paso.
@@ -56,6 +57,13 @@ App Android para preparar café de filtro con las básculas TIMEMORE Black Mirro
 - Modos **Básico** y **Experto** según cuánto detalle quieras ver.
 - **Recorrido guiado** la primera vez que abres la app.
 - Disponible en **español** e **inglés**.
+
+## Privacidad y red
+
+- La app solo se conecta a internet para descargar [`catalog/recipes.json`](catalog/recipes.json) de `raw.githubusercontent.com`: al abrir **Recomendadas**, como mucho una vez al día, o al deslizar para actualizar. Funciona sin conexión con la copia incluida en el APK.
+- Sin cuentas, sin publicidad y sin telemetría. La de ML Kit, que usa el OCR de las etiquetas, está desactivada en el manifiesto.
+- Tus recetas, cafés, fotos y preparaciones no salen del teléfono, salvo en la copia de seguridad o la receta que tú exportes o compartas.
+- El escáner de QR lo da Google Play services, que es otra app con sus propias reglas.
 
 ## Básculas compatibles
 
