@@ -51,7 +51,8 @@ private val ListMaxHeight = 360.dp
  * (cabecera, pestañas, filtros, aviso y botones). Así en pantallas bajas o con letra grande los botones no se salen y la lista
  * se desplaza en el hueco que queda.
  */
-private fun ColumnScope.listHeight(): Modifier = Modifier.weight(1f, fill = false).heightIn(max = ListMaxHeight)
+private fun Modifier.listHeight(scope: ColumnScope): Modifier =
+  with(scope) { weight(1f, fill = false).heightIn(max = ListMaxHeight) }
 
 /**
  * Selector de objetivo, sobre un `AntDrawer` inferior: pestañas "Recetas | Recomendadas | Historial" (esta última solo con
@@ -101,7 +102,7 @@ fun TargetPicker(
       PickerTab.RECIPES -> if (recipes.isEmpty()) {
         EmptyText(stringResource(R.string.target_picker_empty_recipes))
       } else {
-        LazyColumn(listHeight(), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+        LazyColumn(Modifier.listHeight(this), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
           items(recipes, key = { it.id }) { item ->
             RecipeRow(item, onClick = { onSelect(ReferenceKey.Recipe(item.id)) }, active = active == ReferenceKey.Recipe(item.id))
           }
@@ -119,7 +120,7 @@ fun TargetPicker(
       PickerTab.HISTORY -> if (brews.isEmpty()) {
         EmptyText(stringResource(R.string.target_picker_empty_history))
       } else {
-        LazyColumn(listHeight(), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+        LazyColumn(Modifier.listHeight(this), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
           items(brews, key = { it.id }) { item ->
             HistoryRow(item, onClick = { onSelect(ReferenceKey.Brew(item.id)) }, enabled = item.totalWaterG > 0)
           }
@@ -173,7 +174,7 @@ private fun ColumnScope.CatalogPickerContent(
     }
   } else {
     LazyColumn(
-      listHeight().testTag("target_picker_catalog_list"),
+      Modifier.listHeight(this).testTag("target_picker_catalog_list"),
       verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs),
     ) {
       items(catalog.items, key = { it.key }) { item ->
