@@ -222,6 +222,14 @@
     <string name="catalog_last_update">Última actualización: %1$s</string>
     <string name="tour_recipes_catalog_title">Recomendadas</string>
     <string name="tour_recipes_catalog_body">Recetas de baristas y campeonatos. Prepáralas tal cual o guarda una copia para ajustarla.</string>
+    <string name="catalog_detail_prepare">Preparar</string>
+    <string name="catalog_detail_save">Guardar en mis recetas</string>
+    <string name="catalog_detail_saved">Receta guardada en Mis recetas</string>
+    <string name="catalog_detail_already_saved">Ya tienes una copia</string>
+    <string name="catalog_detail_source">Ver fuente</string>
+    <string name="catalog_detail_author" tools:ignore="Typos">Autor: %1$s</string>
+    <string name="catalog_detail_missing">Esta receta ya no está en las recomendadas</string>
+    <string name="catalog_no_browser">No hay ninguna app para abrir el enlace</string>
     <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s · %5$s</string>
     <plurals name="recipe_stage_count">
         <item quantity="one">%1$d paso</item>

@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -77,6 +78,9 @@ import dev.josueamaya.pourline.ui.recipes.RecipeEditViewModel
 import dev.josueamaya.pourline.ui.recipes.RecipeImportEntryViewModel
 import dev.josueamaya.pourline.ui.recipes.RecipeImportScreen
 import dev.josueamaya.pourline.ui.recipes.RecipeImportViewModel
+import dev.josueamaya.pourline.ui.recipes.catalog.CatalogRecipeDetailScreen
+import dev.josueamaya.pourline.ui.recipes.catalog.CatalogRecipeDetailViewModel
+import dev.josueamaya.pourline.ui.recipes.openSourceUrl
 import dev.josueamaya.pourline.ui.recipes.RecipesScreen
 import dev.josueamaya.pourline.ui.recipes.RecipesViewModel
 import dev.josueamaya.pourline.ui.recipes.importNoticeStatus
@@ -387,9 +391,23 @@ private fun tabEntryProvider(
       onCreateRecipe = { stack.add(RecipeEdit()) },
       activeRecipeId = activeRecipeId,
       activeCatalogKey = activeCatalogKey,
-      // El detalle de una recomendada llega en F8.
-      onOpenCatalogRecipe = {},
+      onOpenCatalogRecipe = { key -> stack.add(CatalogRecipeDetail(key)) },
       importer = importer,
+    )
+  }
+  tabEntry<CatalogRecipeDetail>(tab, stack, activeTab) { key ->
+    val context = LocalContext.current
+    CatalogRecipeDetailScreen(
+      viewModel {
+        CatalogRecipeDetailViewModel(key.key, deps.recipeCatalog, deps.recipeRepository, deps.grinderRepository, deps.grindTexts, deps.catalogLanguage)
+      },
+      onBack = ::back,
+      // D37: "Preparar" elige la receta sin guardarla y cambia de pestaña; con una sesión activa solo cambia de pestaña.
+      onPrepare = { catalogKey ->
+        deps.scaleSession.selectTarget(ReferenceKey.Catalog(catalogKey))
+        selectTab(Tab.PREPARE)
+      },
+      openUrl = { url -> openSourceUrl(context, url) },
     )
   }
   tabEntry<RecipeEdit>(tab, stack, activeTab) { key ->

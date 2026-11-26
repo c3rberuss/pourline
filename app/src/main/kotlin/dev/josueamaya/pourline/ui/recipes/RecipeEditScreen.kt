@@ -53,10 +53,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.josueamaya.pourline.R
-import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.grinder.ConverterArgs
 import dev.josueamaya.pourline.history.BrewMethod
-import dev.josueamaya.pourline.protocol.WeightUnit
 import dev.josueamaya.pourline.recipe.Adjustment
 import dev.josueamaya.pourline.recipe.RecipeValidator
 import dev.josueamaya.pourline.recipe.StageType
@@ -89,7 +87,6 @@ import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.grinders.GrindSettingField
 import dev.josueamaya.pourline.ui.history.label
-import dev.josueamaya.pourline.ui.scale.BrewChart
 import dev.josueamaya.pourline.ui.session.formatClock
 import dev.josueamaya.pourline.ui.session.stepTypeIcon
 import dev.josueamaya.pourline.ui.session.stepTypeLabel
@@ -614,17 +611,7 @@ private fun Totals(form: RecipeEditForm) {
 @Composable
 private fun Preview(form: RecipeEditForm) {
   val recipe = remember(form) { form.toRecipe() } ?: return
-  val curve = remember(recipe) { TargetCurve.fromRecipe(recipe) }
-  val unit = WeightUnit.GRAMS
-  BrewChart(
-    samples = emptyList(),
-    unit = unit,
-    waterUnitLabel = unit.symbol,
-    flowUnitLabel = stringResource(R.string.scale_flow_value, unit.symbol),
-    description = stringResource(R.string.recipe_edit_preview),
-    modifier = Modifier.tourAnchor("recipe_edit_preview").testTag("recipe_edit_preview"),
-    target = curve,
-  )
+  RecipeCurvePreview(recipe, testTag = "recipe_edit_preview", modifier = Modifier.tourAnchor("recipe_edit_preview"))
 }
 
 @Composable

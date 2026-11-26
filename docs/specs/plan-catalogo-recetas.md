@@ -229,7 +229,7 @@ F7 para probar la descarga desde la interfaz).
 | F5 | Molienda del catálogo, copia y referencia de catálogo en Preparar | M | Hecha |
 | F6 | Copia de seguridad con formato 2 | S | Hecha |
 | F7 | Pestaña Recetas: selector, Recomendadas y recorrido | L | Hecha |
-| F8 | Detalle, "Preparar" y "Guardar en mis recetas" | L | Pendiente |
+| F8 | Detalle, "Preparar" y "Guardar en mis recetas" | L | Hecha |
 | F9 | Selector de Preparar y editor (autor y fuente) | M | Pendiente |
 | F10 | Red: manifiesto, telemetría y README | M | Pendiente |
 | F11 | Verificación final y cierre | M | Pendiente |
@@ -717,6 +717,19 @@ mis recetas" con su molienda (§3.6 a §3.8).
 `ui.recipes.RecipesCatalogScreenTest`.
 
 Commit sugerido: `feat(recipes): show a recommended recipe and brew or save it`.
+
+**Resultado de F8 (2026-11-25).** Hecha como en el plan, con estas precisiones. Las piezas compartidas (D42) reciben un
+`tagPrefix` (`"recipe_import"` o `"catalog_detail"`) para que cada pantalla conserve sus etiquetas de prueba. Se añadió la
+cadena `catalog_detail_author` ("Autor: %1$s") con `tools:ignore="Typos"`, que el plan no listaba en §3.1; la fila "Autor" se
+muestra bajo el resumen. `onOpenCatalogRecipe` ya abre el detalle y `onPrepare` hace `selectTarget(ReferenceKey.Catalog(key))`
+y `selectTab(PREPARE)` (D37). Los tests de interfaz usan `seedRecipes = false` para que "Mis recetas" empiece vacía. Se añadió
+el caso `savingFromTheDetailMarksTheRowAsSavedInTheList` (guardar, volver, etiqueta "Guardada") y
+`aRecipeWithoutSourceHasNoViewSourceButton`, `prepareReportsTheKeyWithoutSavingAnything` y
+`aConvertibleGrindShowsThePickerAndSavingAsTextKeepsTheText`. Instrumentados en `emulator-5556`
+(`CatalogRecipeDetailScreenTest` 13, `CatalogPrepareFlowTest` 6, `RecipeImportScreenTest`, `RecipeEditScreenTest`,
+`RecipesCatalogScreenTest`, `RecipesScreenTest`; 91 en la tanda previa a los dos últimos casos): 0 fallos. JVM
+(`recipe.*`, `ui.tour.*`, `ExperienceModeTest`): 256 tests, 0 fallos. `:app:lintDebug`: 0 errores y 20 avisos (se cambió
+`Uri.parse` por `toUri` para no añadir `UseKtx`).
 
 ### F9. Selector de Preparar y editor (autor y fuente)
 
