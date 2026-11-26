@@ -1836,13 +1836,13 @@ Fuente: 50 g "(50 grams, or twice the weight of the coffee grounds) in a spiral 
 | 29 | `five_senses_clever` | Otro: Clever | Five Senses Coffee | LIGHT, MEDIUM | media (reserva ya completada en el JSON) | se queda |
 | 30 | `ozone_clever` | Otro: Clever | Ozone Coffee | cualquiera | alta | nueva |
 | 31 | `hoffmann_iced_immersion` | Otro: Clever o Hario Switch | James Hoffmann | cualquiera | media | se queda |
-| 32 | `peets_pour_over` | Otro: Gotero cónico | Peet's Coffee | cualquiera | media | nueva |
+| 32 | `peets_pour_over` | V60 (decisión del usuario; las notas dicen que vale para cualquier gotero cónico; en la lista final del spec, §3.10, va en la posición 7) | Peet's Coffee | cualquiera | media | nueva |
 | 33 | `peng_wbrc_2025` | Otro: Solo Dripper | George Jinyang Peng | LIGHT | alta | se queda |
 | 34 | `fukahori_wbrc_2018` | Otro: GINA | Emi Fukahori | LIGHT | alta | se queda |
 
 **Recuento:** 34 recetas. **Aptas para medio: 28** (21 cualquiera + 7 con `MEDIUM` en la lista) = 82 %. **Solo claro: 6** (`wang_wbrc_2017`, `merikanto_wac_2021`, `van_bunnik_wac_2019`, `nemo_pop_wac_2025`, `peng_wbrc_2025`, `fukahori_wbrc_2018`).
 
-**Reparto por método:** V60 7 · AeroPress 5 (2 aptas para medio) · prensa francesa 4 · Kalita Wave 3 · Origami 3 · Chemex 3 · moka 1 · Otro 8 (Clever 3, Hario Switch 1, Clever o Switch 1, gotero cónico 1, Solo Dripper 1, GINA 1). Prensa francesa, Chemex, Kalita, Clever y AeroPress tienen al menos dos recetas aptas para medio.
+**Reparto por método:** V60 8 (con `peets_pour_over`) · AeroPress 5 (2 aptas para medio) · prensa francesa 4 · Kalita Wave 3 · Origami 3 · Chemex 3 · moka 1 · Otro 7 (Clever 3, Hario Switch 1, Clever o Switch 1, Solo Dripper 1, GINA 1). Prensa francesa, Chemex, Kalita, Clever y AeroPress tienen al menos dos recetas aptas para medio.
 
 **Confianza de las 14 nuevas:** alta 7 (`ozone_kalita`, `counter_culture_french_press`, `peets_french_press`, `counter_culture_aeropress`, `stumptown_aeropress`, `ozone_clever`, `origami_the_coffeeshop`), media 7. Ninguna baja.
 

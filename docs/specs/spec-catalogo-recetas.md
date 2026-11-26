@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado el 2026-11-25 (ajustado el mismo día con las respuestas del [plan](plan-catalogo-recetas.md)); implementado en `feat/recipe-catalog` (F0 a F11), pendiente de la prueba manual y de la fusión. **Enmienda 1** (tueste medio e instrucciones): aprobada el 2026-11-26, pendiente de plan |
+| Estado | Aprobado el 2026-11-25 (ajustado el mismo día con las respuestas del [plan](plan-catalogo-recetas.md)); implementado en `feat/recipe-catalog` (F0 a F11), pendiente de la prueba manual y de la fusión. **Enmienda 1** (tueste medio e instrucciones): aprobada el 2026-11-26; plan [plan-tueste-medio.md](plan-tueste-medio.md) aprobado el mismo día, en implementación |
 | Fecha | 2026-11-25. Enmienda 1: 2026-11-26 |
 | Rama | `feat/recipe-catalog` |
 | Deriva de | Uso real: la app no trae recetas de referencia para los distintos métodos |
@@ -149,8 +149,10 @@
   - `sourceUrl`, si está, empieza por `https://`.
   - `key` es única en el archivo.
   - **Enmienda 1:** un valor desconocido en `roasts` se ignora al leer (si no queda ninguno, la
-    receta cuenta como "cualquier tueste"); el test del repo lo rechaza, así que en el archivo
-    publicado no ocurre. `roasts` es opcional, así que no sube `schemaVersion`: las versiones
+    receta cuenta como "cualquier tueste"). Un `roasts` que no es una lista de textos (un texto
+    suelto, un número, un objeto) también se ignora entero, y la receta cuenta como "cualquier
+    tueste": nunca se descarta por este campo. El test del repo rechaza los dos casos, así que en
+    el archivo publicado no ocurren. `roasts` es opcional, así que no sube `schemaVersion`: las versiones
     anteriores de la app lo ignoran.
 - **Versionado:**
   - Un cambio que una versión anterior de la app no puede representar sube `schemaVersion`. Por
@@ -195,7 +197,9 @@
 
 - **`CatalogRecipe`** (dominio, ya en el idioma elegido): `key`, `name`, `author?`, `context?`,
   `method`, `methodOther?`, `doseG`, `waterTempC?`, `grindText?`, `grinderRef?` (`catalogKey`,
-  `value`), `notes?`, `sourceUrl?`, `stages: List<RecipeStage>`.
+  `value`), `notes?`, `sourceUrl?`, `stages: List<RecipeStage>`. **Enmienda 1:** también
+  `roasts: Set<RoastLevel>` (vacío = cualquier tueste), igual en los dos idiomas. Sirve para filtrar y
+  mostrar el tueste (§3.8) y no pasa a `Recipe` (§7).
 - **A `Recipe`:**
 
   | Catálogo | `Recipe` |
@@ -341,6 +345,10 @@
   - Ninguna instrucción, nombre de paso ni nota contiene términos de la lista prohibida (§3.10, sin
     distinguir mayúsculas ni acentos, en los dos idiomas donde aplique) ni tiempos con formato
     `m:ss` (por ejemplo "0:45", "3:30").
+  - Excepción de los ratios (Enmienda 1): un ratio entero va siempre tras la palabra "ratio"
+    ("ratio final con hielo 1:13", "the final ratio is 1:13") y no cuenta como tiempo; un ratio con
+    decimales ("1:16,7") nunca tiene la forma `m:ss`. Un "1:13" sin "ratio" delante sí cuenta como
+    tiempo.
 - **Workflow** nuevo en `.github/workflows/` que ejecuta solo ese test en cada `push` y
   `pull_request` que toque `catalog/**`.
 - **Mantenimiento:** el README (o un comentario junto al archivo, en el `README` de `catalog/`)
