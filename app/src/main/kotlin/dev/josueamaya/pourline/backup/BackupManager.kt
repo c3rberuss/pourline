@@ -167,7 +167,8 @@ class BackupManager internal constructor(
         if (size != null) progress.update((read.toFloat() / size).coerceAtMost(MAX_RUNNING_PROGRESS))
       }
     }
-    val rows = archive.data.toRows()
+    // Una copia con formato 1 trae las recetas de fábrica como filas de fábrica: aquí pasan a recetas propias (SPEC-012).
+    val rows = archive.data.toRows().let { if (archive.manifest.formatVersion == 1) it.withLegacyBuiltInsConverted() else it }
     validate(rows)?.let { throw BackupFailure(it) }
     val createdAt = try {
       OffsetDateTime.parse(archive.manifest.createdAt)

@@ -7,7 +7,16 @@ import dev.josueamaya.pourline.coffee.photo.CoffeePhotoStore
 import dev.josueamaya.pourline.coffee.photo.thumbNameOf
 import dev.josueamaya.pourline.grinder.GrinderCatalogSeeder
 import dev.josueamaya.pourline.grinder.TestGrinderCatalog
+import dev.josueamaya.pourline.history.BrewMethod
+import dev.josueamaya.pourline.history.BrewRepository
 import dev.josueamaya.pourline.history.HistoryDatabase
+import dev.josueamaya.pourline.history.ReferenceType
+import dev.josueamaya.pourline.history.TestBrews
+import dev.josueamaya.pourline.history.UsedTarget
+import dev.josueamaya.pourline.recipe.RecipeEntity
+import dev.josueamaya.pourline.recipe.RecipeStageEntity
+import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.aeroPressWithActions
 import dev.josueamaya.pourline.settings.ExperienceMode
 import dev.josueamaya.pourline.settings.ReferenceKey
 import dev.josueamaya.pourline.settings.SettingsSnapshot
@@ -78,8 +87,8 @@ class BackupManagerTest {
     val result = exportTo("backup.zip")
 
     val counts = (result as ExportResult.Success).counts
-    // Solo "Mis molinos" (2 de 3), las 4 recetas (2 predefinidas), las 3 preparaciones y las fotos principales.
-    assertEquals(BackupCounts(coffees = 3, grinders = 2, grindCalibrations = 2, recipes = 4, brews = 3, photos = 3), counts)
+    // Solo "Mis molinos" (2 de 3), las 2 recetas, las 3 preparaciones y las fotos principales.
+    assertEquals(BackupCounts(coffees = 3, grinders = 2, grindCalibrations = 2, recipes = 2, brews = 3, photos = 3), counts)
 
     val file = File(root, "backup.zip")
     val photoEntries = seeded.photoNames.flatMap { listOf(it, thumbNameOf(it)) }.sorted().map { "photos/$it" }
@@ -87,7 +96,7 @@ class BackupManagerTest {
 
     val manifest = BackupJson.parseToJsonElement(textOf(file, "manifest.json")).jsonObject
     assertEquals("pourline", manifest.getValue("app").toString().trim('"'))
-    assertEquals("1", manifest.getValue("formatVersion").toString())
+    assertEquals("2", manifest.getValue("formatVersion").toString())
     assertEquals(HistoryDatabase.VERSION.toString(), manifest.getValue("schemaVersion").toString())
     assertEquals("1.0-test", manifest.getValue("appVersionName").toString().trim('"'))
     assertEquals("7", manifest.getValue("appVersionCode").toString())
@@ -339,6 +348,68 @@ class BackupManagerTest {
     assertEquals(tourBefore, settings.tour.seen.value)
     assertFalse(workDir.exists())
     assertFalse(manager.applying.value)
+  }
+
+  @Test
+  fun exportsAndImportsTheCatalogFields() = runBlocking {
+    seedEverything(context, db, photosDir, settings)
+    val copyId = h.recipes.save(
+      aeroPressWithActions().copy(name = "V60 recomendada", author = "Ana", sourceUrl = "https://example.com/v60", catalogKey = "v60_basica"),
+    )
+    val catalogTarget = TestBrews.usedTarget().let { UsedTarget(ReferenceType.CATALOG, null, "V60 recomendada", it.curve, it.fit, "v60_basica") }
+    val brewId = BrewRepository(db).save(
+      TestBrews.finished(totalMs = 50_000, seed = 4),
+      TestBrews.context(startedAtEpochMs = 1_700_300_000_000, target = catalogTarget),
+    )
+    settings.target.setReference(ReferenceKey.Catalog("v60_basica"))
+    val rowsBefore = db.backupDao().readAll()
+    val settingsBefore = settings.snapshot()
+    assertEquals("v60_basica", settingsBefore.targetRefKey)
+    exportTo("catalog.zip")
+
+    val written = BackupJson.decodeFromString(DataDto.serializer(), textOf(File(root, "catalog.zip"), "data.json")).toRows()
+    assertEquals("v60_basica", written.recipes.single { it.id == copyId }.catalogKey)
+    assertEquals("v60_basica", written.brews.single { it.id == brewId }.referenceKey)
+
+    h.wipe()
+    h.scrambleSettings()
+    val manager = manager()
+    assertTrue(manager.apply(ready("catalog.zip", manager)) {} is ImportResult.Success)
+
+    assertRowsEqual(rowsBefore, db.backupDao().readAll())
+    val copy = db.backupDao().readAll().recipes.single { it.id == copyId }
+    assertEquals(Triple("Ana", "https://example.com/v60", "v60_basica"), Triple(copy.author, copy.sourceUrl, copy.catalogKey))
+    assertEquals(settingsBefore.copy(onboardingDone = true), settings.snapshot())
+    assertEquals(ReferenceKey.Catalog("v60_basica"), settings.target.reference.value)
+  }
+
+  @Test
+  fun importsAFormat1BackupWithBuiltInsAsOwnRecipes() = runBlocking {
+    val builtIn = RecipeEntity(id = 1, name = "V60 clásica", method = BrewMethod.V60, doseG = 15.0, builtInKey = "V60_CLASSIC", localizedNames = true, updatedAtEpochMs = 1_700_000_000_000)
+    val own = RecipeEntity(id = 2, name = "Mía", doseG = 18.0, updatedAtEpochMs = 1_700_000_100_000)
+    val rows = BackupRows(
+      recipes = listOf(builtIn, own),
+      recipeStages = listOf(RecipeStageEntity(1, 0, "Bloom", 0, 45.0, 30_000, StageType.POUR, null), RecipeStageEntity(2, 0, null, 0, 250.0, 60_000, StageType.POUR, null)),
+    )
+    ByteArrayOutputStream().also { out ->
+      BackupWriter().write(
+        out,
+        ManifestDto(APP_ID, 1, 7, "1.0", 1, "2026-11-19T18:45:12-06:00", CountsDto(0, 0, 0, 2, 0, 0)),
+        rows.toDto(),
+        SettingsSnapshot().toDto(),
+        emptyList(),
+      ) {}
+      File(root, "format1.zip").writeBytes(out.toByteArray())
+    }
+
+    val manager = manager()
+    assertTrue(manager.apply(ready("format1.zip", manager)) {} is ImportResult.Success)
+
+    val recipes = db.backupDao().readAll().recipes.sortedBy { it.id }
+    assertEquals(listOf("V60 clásica", "Mía"), recipes.map { it.name })
+    assertEquals(listOf<String?>(null, null), recipes.map { it.builtInKey })
+    assertEquals(listOf<String?>("V60_CLASSIC", null), recipes.map { it.catalogKey })
+    assertEquals(listOf(false, false), recipes.map { it.localizedNames })
   }
 
   @Test

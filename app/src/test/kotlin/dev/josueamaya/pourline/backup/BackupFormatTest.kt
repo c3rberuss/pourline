@@ -46,6 +46,6 @@ class BackupFormatTest {
       (json["counts"] as JsonObject).keys,
     )
     assertEquals("pourline", (json["app"] as kotlinx.serialization.json.JsonPrimitive).content)
-    assertTrue(FORMAT_VERSION >= 1)
+    assertEquals(2, FORMAT_VERSION)
   }
 }

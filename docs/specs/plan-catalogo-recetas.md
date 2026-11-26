@@ -227,7 +227,7 @@ F7 para probar la descarga desde la interfaz).
 | F3 | Descarga, caché, repositorio y constante de la URL | M | Hecha |
 | F4 | Room 7 → 8, campos de receta y retirada de las recetas de fábrica | L | Hecha |
 | F5 | Molienda del catálogo, copia y referencia de catálogo en Preparar | M | Hecha |
-| F6 | Copia de seguridad con formato 2 | S | Pendiente |
+| F6 | Copia de seguridad con formato 2 | S | Hecha |
 | F7 | Pestaña Recetas: selector, Recomendadas y recorrido | L | Pendiente |
 | F8 | Detalle, "Preparar" y "Guardar en mis recetas" | L | Pendiente |
 | F9 | Selector de Preparar y editor (autor y fuente) | M | Pendiente |
@@ -630,6 +630,13 @@ usa ahora `storedLong` y `storedString`, así que un tipo sin id o sin clave se 
 Instrumentados: `backup.BackupManagerTest`, `backup.BackupDaoTest`.
 
 Commit sugerido: `feat(backup): carry the catalog fields in backup format 2`.
+
+**Resultado de F6 (2026-11-25).** Hecha como en el plan. En `BackupFixtures.fullRows()` la receta 2 lleva `author`, `sourceUrl`
+y `catalogKey`, la preparación 2 pasa a ser `CATALOG` con `referenceKey`, y `fullSettings()` lleva `targetRefKey`
+(`settings.json` pasa de 17 a 18 claves en el fixture JVM; el export instrumentado sigue en 17 porque `seedEverything`
+referencia una receta). `BackupManagerTest` tenía dos aserciones obsoletas desde F4 (`recipes = 4` por las predefinidas) y la
+de `formatVersion`; se corrigieron. JVM (`backup.*` y `SettingsSnapshotTest`): 56 tests, 0 fallos. Instrumentados en
+`emulator-5556` (`BackupManagerTest` y `BackupDaoTest`): 28 tests, 0 fallos.
 
 ### F7. Pestaña Recetas: selector, Recomendadas y recorrido
 

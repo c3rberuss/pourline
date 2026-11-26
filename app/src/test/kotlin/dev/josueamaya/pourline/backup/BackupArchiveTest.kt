@@ -2,6 +2,10 @@ package dev.josueamaya.pourline.backup
 
 import dev.josueamaya.pourline.coffee.photo.thumbNameOf
 import dev.josueamaya.pourline.settings.SettingsSnapshot
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -177,13 +181,34 @@ class BackupArchiveTest {
 
   @Test
   fun `a newer format is rejected and an older or equal one is read`() {
-    val future = String(json(manifest(formatVersion = 2))).dropLast(1) + ",\"campoNuevo\":true}"
+    val future = String(json(manifest(formatVersion = FORMAT_VERSION + 1))).dropLast(1) + ",\"campoNuevo\":true}"
     assertEquals(BackupError.NEWER_FORMAT, failureOf(zipOf(*standard(manifest = future.toByteArray()))))
     assertEquals(BackupError.NEWER_FORMAT, failureOf(zipOf(*standard(manifest = """{"app":"pourline","formatVersion":99}""".toByteArray()))))
     assertEquals(1, read(zipOf(*standard(manifest = json(manifest(formatVersion = 1))))).manifest.formatVersion)
     assertEquals(BackupError.CORRUPT, failureOf(zipOf(*standard(manifest = json(manifest(formatVersion = 0))))))
     // Un manifiesto de esta versión con campos que faltan o sobran es CORRUPT, no NEWER_FORMAT.
     assertEquals(BackupError.CORRUPT, failureOf(zipOf(*standard(manifest = """{"app":"pourline","formatVersion":1}""".toByteArray()))))
+  }
+
+  @Test
+  fun `a format 1 backup without the new fields is read with nulls`() {
+    val newKeys = setOf("author", "sourceUrl", "catalogKey", "referenceKey")
+    fun dropNewKeys(element: JsonElement): JsonElement = when (element) {
+      is JsonObject -> JsonObject(element.filterKeys { it !in newKeys }.mapValues { dropNewKeys(it.value) })
+      is JsonArray -> JsonArray(element.map(::dropNewKeys))
+      else -> element
+    }
+    val data = BackupJson.parseToJsonElement(String(json(fullRows().toDto()))).let(::dropNewKeys).toString().toByteArray()
+    val settings = String(json(fullSettings().toDto())).let { text ->
+      BackupJson.parseToJsonElement(text).jsonObject.filterKeys { it != "target_ref_key" }.let(::JsonObject).toString()
+    }.toByteArray()
+    val archive = read(zipOf(*standard(manifest = json(manifest(formatVersion = 1)), data = data, settings = settings)))
+
+    val rows = archive.data.toRows()
+    assertEquals(listOf<String?>(null, null), rows.recipes.map { it.catalogKey })
+    assertEquals(listOf<String?>(null, null), rows.recipes.map { it.author })
+    assertEquals(listOf<String?>(null, null, null), rows.brews.map { it.referenceKey })
+    assertNull(archive.settings.toSnapshot().targetRefKey)
   }
 
   @Test

@@ -70,7 +70,8 @@ class BackupMappingTest {
     assertEquals(PHOTO_C, back.coffees[1].photo2)
     assertNull(back.brews[1].stabilityLevel)
     assertNull(back.brews[1].scaleModel)
-    assertNull(back.brews[1].referenceType)
+    assertEquals(ReferenceType.CATALOG, back.brews[1].referenceType)
+    assertNull(back.brews[2].referenceKey)
     assertEquals(1L to 2L, back.grindCalibrations[0].grinderAId to back.grindCalibrations[0].grinderBId)
     assertEquals(1_700_000_500_000L, back.coffees[0].lastUsedAtEpochMs)
   }
@@ -168,7 +169,7 @@ class BackupMappingTest {
     val snapshot = fullSettings()
     val text = BackupJson.encodeToString(SettingsDto.serializer(), snapshot.toDto())
     val json = BackupJson.parseToJsonElement(text).jsonObject
-    assertEquals(17, json.size)
+    assertEquals(18, json.size)
     assertEquals("15.3", json.getValue("default_dose_g").jsonPrimitive.content)
     assertEquals("true", json.getValue("onboarding_done").jsonPrimitive.content)
     assertFalse(json.containsKey("tour_seen"))
@@ -184,6 +185,26 @@ class BackupMappingTest {
     assertThrows(SerializationException::class.java) {
       BackupJson.decodeFromString(SettingsDto.serializer(), """{"auto_finish_seconds":"noventa"}""")
     }
+  }
+
+  @Test
+  fun `the catalog fields and the reference key round trip`() {
+    val back = decode(encode(fullRows())).toRows()
+    assertEquals("Ana", back.recipes[1].author)
+    assertEquals("https://example.com/r", back.recipes[1].sourceUrl)
+    assertEquals("v60_basica", back.recipes[1].catalogKey)
+    assertNull(back.recipes[0].author)
+    assertNull(back.recipes[0].catalogKey)
+    assertEquals(listOf<String?>(null, "v60_basica", null), back.brews.map { it.referenceKey })
+    assertEquals(listOf<Long?>(1, null, 99), back.brews.map { it.referenceId })
+  }
+
+  @Test
+  fun `the catalog reference key setting round trips`() {
+    val snapshot = fullSettings().copy(targetRefType = "CATALOG", targetRefId = null, targetRefKey = "v60_basica")
+    val text = BackupJson.encodeToString(SettingsDto.serializer(), snapshot.toDto())
+    assertEquals("v60_basica", BackupJson.parseToJsonElement(text).jsonObject.getValue("target_ref_key").jsonPrimitive.content)
+    assertEquals(snapshot, BackupJson.decodeFromString(SettingsDto.serializer(), text).toSnapshot())
   }
 
   @Test
