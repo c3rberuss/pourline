@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-catalogo-recetas.md`](spec-catalogo-recetas.md) (SPEC-012), **Enmienda 1** (§3.1, §3.8, §3.9, §3.10, §5 y §7), y la sección "Enmienda 1 (2026-11-26): tueste medio" del [anexo](anexo-catalogo-recetas.md), que manda sobre el resto del anexo. El spec manda sobre los dos |
-| Estado | Aprobado (2026-11-26), con un commit por fase y push de `feat/recipe-catalog` autorizados. P1 y P3 aceptadas; P2 rechazada (§6). El spec y el anexo recogen P1, D50, el modelo con `roasts` y el reparto de `peets_pour_over` |
+| Estado | Implementado (F0 a F6, 2026-11-26) y verificado en `emulator-5556`; falta la prueba manual del usuario (§7.5) y fusionar. Aprobado con un commit por fase y push de `feat/recipe-catalog`. P1 y P3 aceptadas; P2 rechazada (§6). Resultados y desviaciones en §8. El spec y el anexo recogen P1, D50, el modelo con `roasts` y el reparto de `peets_pour_over` |
 | Fecha | 2026-11-26 |
 | Rama | `feat/recipe-catalog`, con el SPEC-012 implementado (F0 a F11 del plan anterior, hasta `712e9f1`) y la enmienda commiteada (`97060db`). Sin fusionar |
 | Módulos | `:app` (`:protocol` no cambia). En la raíz: `catalog/recipes.json` y `catalog/README.md`. `.github/workflows/catalog.yml` no cambia |
@@ -178,13 +178,13 @@ F2 o F3); F5 de F4 (`CatalogRoastFilter`); F6 de todas.
 
 | Fase | Contenido | Tamaño | Estado |
 |---|---|---|---|
-| F0 | Línea base y APK con el catálogo actual | S | Pendiente |
-| F1 | `roasts` en la lectura, filtro puro y `CatalogBrowser` (JVM) | S | Pendiente |
-| F2 | Reglas del test del repo (tueste, proporción, redacción) | M | Pendiente |
-| F3 | Catálogo de 34 recetas, instrucciones reescritas y README | L | Pendiente |
-| F4 | Filtro "Tueste", etiquetas y detalle en Recetas | M | Pendiente |
-| F5 | Filtro "Tueste" en el `TargetPicker` | S | Pendiente |
-| F6 | Verificación final, APK del teléfono y cierre | M | Pendiente |
+| F0 | Línea base y APK con el catálogo actual | S | Hecha |
+| F1 | `roasts` en la lectura, filtro puro y `CatalogBrowser` (JVM) | S | Hecha |
+| F2 | Reglas del test del repo (tueste, proporción, redacción) | M | Hecha |
+| F3 | Catálogo de 34 recetas, instrucciones reescritas y README | L | Hecha |
+| F4 | Filtro "Tueste", etiquetas y detalle en Recetas | M | Hecha |
+| F5 | Filtro "Tueste" en el `TargetPicker` | S | Hecha |
+| F6 | Verificación final, APK del teléfono y cierre | M | Hecha |
 
 Rutas abreviadas: `main/` es `app/src/main/kotlin/dev/josueamaya/pourline/`, `test/` es
 `app/src/test/kotlin/dev/josueamaya/pourline/` y `androidTest/` es
@@ -626,7 +626,85 @@ La hace el usuario con la APK de D68 (`~/Downloads/pourline-1.0.0-alpha.4-tueste
 5. Las copias guardadas antes siguen en "Mis recetas"; si la referencia activa era una receta que sale, Preparar avisa.
 6. Si algo no convence, se corrige en el JSON con otra subida de `revision` (D61).
 
-## 8. Seguimiento fuera de este plan
+## 8. Resultados de la ejecución (2026-11-26)
+
+Commits de `feat/recipe-catalog` (todos empujados, sin force): F1 `e0b15e2`, F2 `129a265`, F3 `16aefc8`, URL a `develop`
+`2ba0f09`, F4 `8c90231`, F5 `c0f9b42`, ajuste del selector `c0362be` y `95c72db`. F0 no tiene commit (solo mide), y F6 es
+el commit de este apartado.
+
+### Resultado de F0
+
+Línea base de las clases afectadas: instrumentados, 83 tests en las clases del §7.1, sin fallos; `:app:lintDebug` con 0
+errores y 20 avisos; APK `pourline-rev1-debug.apk` (`revision` 1, URL de la rama) guardada en el directorio temporal
+de la sesión para D67.
+
+### Resultado de F2
+
+Con las reglas nuevas y el catálogo anterior (35 recetas), el test del repositorio listaba 284 problemas en 32 de las 35
+recetas: 208 tiempos `m:ss`, 41 "drawdown", 20 "bloom" en español, 8 "rao spin" y 7 "remolinea". F3 los dejó en cero
+(el script de D65 no encuentra diferencias en (a) a (f)).
+
+### Resultado de F6
+
+- **JVM** (`recipe.catalog.*`, `ui.recipes.catalog.*`, `session.ScaleSessionManagerTargetTest`, con `--rerun`): 13 clases,
+  139 tests, 0 fallos.
+- **Instrumentados** en `emulator-5556` (las 8 clases del §7.1): 110 tests, 0 fallos. No se ha ejecutado la batería
+  completa, por indicación del usuario.
+- **Lint:** 0 errores y 20 avisos, igual que F0 (un aviso nuevo, `ModifierFactoryExtensionFunction`, se corrigió).
+- **§7.2:** (1) `git diff 97060db --name-only` solo lista los archivos previstos más `app/build.gradle.kts`; (2) diff vacío
+  en `history`, `backup`, `session`, `settings`, `ui/tour`, manifiesto, `gradle`, `.github` y `app/schemas`; en
+  `app/build.gradle.kts` solo cambia la URL (desviación 1); (3) el único `import android.` es el de
+  `ResourcesCatalogLanguage.kt`; (4) las 15 claves que salen no aparecen en `app/src`, `catalog/`, `.github` ni `README.md`;
+  (5) `assets/catalog/recipes.json` de la debug y de la release es idéntico al de `catalog/` (`revision` 2,
+  `schemaVersion` 1, 34 recetas); (6) el script de D65, sin diferencias; (7) el workflow `Catalog` termina en `success`
+  en los push de F3 y de la URL.
+- **§7.4.A (actualización):** la APK de F0 apunta a la rama, que ya tiene la `revision` 2, así que al abrir
+  Recomendadas con red descarga las 34 recetas y la prueba no parte de la `revision` 1. Se repitió en modo avión: se
+  guardó `rao_v60`, se preparó `gagne_v60` sin báscula (5:09) y se dejó `hoffmann_aeropress` como referencia activa; después
+  `installDebug` encima. Resultado: "Mis recetas" conserva la copia de `rao_v60` con sus 9 pasos; Preparar queda sin objetivo;
+  el historial conserva la preparación de `gagne_v60` con "Receta: Jonathan Gagné's V60"; Recomendadas no marca ninguna
+  como "Guardada". El aviso `target_error_removed` es un snackbar y no quedó a la vista cuando se volcó la pantalla
+  (unos 4 s tras abrir), así que solo se comprobó que el objetivo se limpia. El paso 3 (deslizar para actualizar) ya no
+  hace falta: la descarga con la APK antigua ocurrió sola y leyó la `revision` 2 sin error (el lector antiguo ignora
+  `roasts`).
+- **§7.4.B (recorrido):** filtro y etiquetas correctos (`four_six` "Medio", `hoffmann_ultimate_v60` "Claro" y "Medio",
+  `v60_classic` sin etiqueta); "Medio" oculta `wang_wbrc_2017`; "Oscuro" oculta `four_six`; "Quitar filtros" restablece;
+  detalle de `four_six` (88 °C, "Tueste: Medio", notas con 93 y 83 °C, "Añade 60 g en círculos." en el primer vertido),
+  `peets_french_press` ("Tueste: Medio, oscuro") y `v60_classic` ("Tueste: cualquiera", primer paso "Preinfusión");
+  selector con "Claro" y `wang_wbrc_2017` elegida como objetivo; modo Experto con las tres pestañas y el filtro; inglés
+  ("Roast", "Roast: Medium, dark", "Bloom"); `coava_moka` sin báscula avanza por los pasos. Capturas en claro y oscuro,
+  `es` y `en`, en el directorio temporal de la sesión.
+- **§7.4.C (release):** firmada con la clave propia, 34 recetas, filtro "Oscuro" sin `four_six`, "Medio" más "wang" sin
+  resultados, etiquetas visibles (R9 descartado); `logcat -b crash` vacío en todo el recorrido.
+- **D68:** `~/Downloads/pourline-1.0.0-alpha.4-tueste-medio.apk` (`versionCode` 1000004, `versionName` 1.0.0-alpha.4).
+
+### Desviaciones
+
+1. **URL del catálogo (pedida por el usuario):** la app descarga de `develop`, no de `main` (`app/build.gradle.kts`, README
+   del catálogo, spec §1, §3.1, §3.3, §3.9, §5 y §7, y D68/§7.4.A). Mientras la rama no esté en `develop`, la app muestra
+   "Usando las recetas incluidas".
+2. **Textos aprobados por el usuario tras la pausa de F3:** la molienda de `hedrick_one_and_done` ("Ajusta la molienda
+   para que el tiempo total sea de 2 a 2 min 30 s") y el primer vertido de cada receta sin "(total X g)" (nota en la regla 3 del
+   spec y en D64.1).
+3. **Notas con rangos o variantes de fuente (D63):** `wang_wbrc_2017`, `stumptown_kalita`, `stumptown_origami`,
+   `origami_kopikalyan`, `hoffmann_french_press`, `van_bunnik_wac_2019`, `hedrick_v60_easy`, `hedrick_one_and_done` e
+   `hoffmann_iced_immersion`.
+4. **Altura de las listas del selector (aprobada por el usuario en R4):** en 360 x 640 dp el botón "Gestionar recetas" quedaba
+   fuera del cajón (ya antes de F5, por el `ListMaxHeight` fijo de 360 dp). Las listas usan ahora `weight(1f, fill = false)`
+   con ese tope: ocupan lo que sobra y se desplazan. Comprobado en tamaño normal, con letra 1.3 y en 360 x 640 dp.
+   Commits `c0362be` y `95c72db`.
+5. **Tests:** `RecipesCatalogScreenTest`, `CatalogPrepareFlowTest` y `TargetPickerTest` desplazan la lista con
+   `performScrollToNode` porque la fila del filtro de tueste y la nueva altura dejan filas fuera de pantalla (solo cambia cómo
+   se comprueba).
+
+### Limitaciones conocidas
+
+- Con letra 1.3 en inglés, el segmento "Medium" del filtro de tueste se recorta a "Medi…" (decisión del usuario: se
+  deja). En español, "Medio" cabe.
+- El aviso `target_error_removed` no se pudo capturar a la vista en §7.4.A (snackbar breve).
+- Pendiente fuera del plan: la prueba manual en el teléfono (§7.5) y `/code-review` antes de fusionar.
+
+## 9. Seguimiento fuera de este plan
 
 - La fusión con `main` publica la `revision` 2; hasta entonces la app usa la copia del APK (R7 del plan anterior).
 - La fila Estado del spec, si el usuario quiere actualizarla (P1, D50 y el modelo con `roasts` ya están en el spec, y el
