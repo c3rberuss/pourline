@@ -231,6 +231,11 @@
     <string name="catalog_detail_author">Author: %1$s</string>
     <string name="catalog_detail_missing">This recipe is no longer among the recommended ones</string>
     <string name="catalog_no_browser">No app can open the link</string>
+    <string name="recipe_edit_author">Author</string>
+    <string name="recipe_edit_source">Source</string>
+    <string name="recipe_edit_source_placeholder">https://…</string>
+    <string name="recipe_error_author">100 characters at most</string>
+    <string name="recipe_error_source">Enter a link that starts with http:// or https://</string>
     <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s · %5$s</string>
     <plurals name="recipe_stage_count">
         <item quantity="one">%1$d step</item>

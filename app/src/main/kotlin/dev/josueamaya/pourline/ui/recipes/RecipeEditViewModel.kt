@@ -176,9 +176,8 @@ class RecipeEditViewModel(
   fun save() {
     val current = _form.value
     if (_status.value != RecipeEditStatus.Ready) return
-    // El autor y la fuente aún no se editan (llegan en F9 con sus campos): se conservan los de la receta guardada.
-    val draft = current.toRecipe(id = id ?: 0, catalogKey = loaded?.catalogKey)
-      ?.copy(author = loaded?.author, sourceUrl = loaded?.sourceUrl) ?: return
+    // La copia de catálogo conserva su clave al editarse; el autor y la fuente salen del formulario (D20).
+    val draft = current.toRecipe(id = id ?: 0, catalogKey = loaded?.catalogKey) ?: return
     _status.value = RecipeEditStatus.Saving
     viewModelScope.launch {
       // La copia de texto del ajuste se regenera con el molino vivo (D17).

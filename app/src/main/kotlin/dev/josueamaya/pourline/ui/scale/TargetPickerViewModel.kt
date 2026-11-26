@@ -7,16 +7,27 @@ import dev.josueamaya.pourline.history.BrewListItem
 import dev.josueamaya.pourline.history.BrewRepository
 import dev.josueamaya.pourline.recipe.RecipeListItem
 import dev.josueamaya.pourline.recipe.RecipeRepository
+import dev.josueamaya.pourline.recipe.catalog.CatalogLanguageSource
+import dev.josueamaya.pourline.recipe.catalog.RecipeCatalogRepository
+import dev.josueamaya.pourline.ui.recipes.catalog.CatalogBrowser
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * Las dos listas del selector de objetivo. Vive en la entrada de Scale, pero sus flujos solo se recogen con
- * el selector abierto (`WhileSubscribed`), así que Scale no carga dos listas que casi nunca se muestran.
+ * Las listas del selector de objetivo: recetas, preparaciones y recomendadas (SPEC-012 D38). Vive en la entrada de Scale,
+ * pero sus flujos solo se recogen con el selector abierto (`WhileSubscribed`), así que Scale no carga listas que casi nunca
+ * se muestran.
  */
-class TargetPickerViewModel(recipeRepository: RecipeRepository, brewRepository: BrewRepository) : ViewModel() {
+class TargetPickerViewModel(
+  recipeRepository: RecipeRepository,
+  brewRepository: BrewRepository,
+  catalogRepository: RecipeCatalogRepository,
+  language: CatalogLanguageSource,
+) : ViewModel() {
+  val catalog = CatalogBrowser(catalogRepository, recipeRepository, language, viewModelScope)
+
   val recipes: StateFlow<List<RecipeListItem>> =
     recipeRepository.list().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
 

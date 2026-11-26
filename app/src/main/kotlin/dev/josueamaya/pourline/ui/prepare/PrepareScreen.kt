@@ -301,6 +301,7 @@ fun PrepareScreen(
   if (pickerOpen) {
     val recipes by pickerViewModel.recipes.collectAsStateWithLifecycle()
     val brews by pickerViewModel.brews.collectAsStateWithLifecycle()
+    val catalog by pickerViewModel.catalog.ui.collectAsStateWithLifecycle()
     TargetPicker(
       recipes = recipes,
       brews = brews,
@@ -318,6 +319,11 @@ fun PrepareScreen(
         onManageRecipes()
       },
       onClose = { pickerOpen = false },
+      catalog = catalog,
+      onCatalogQuery = pickerViewModel.catalog::setQuery,
+      onCatalogMethod = pickerViewModel.catalog::setMethod,
+      onCatalogClearFilters = pickerViewModel.catalog::clearFilters,
+      onCatalogShown = pickerViewModel.catalog::onShown,
       showBrews = LocalExperienceMode.current.shows(ExpertFeature.TARGET_FROM_BREW),
     )
   }

@@ -7,6 +7,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -25,6 +27,7 @@ import dev.josueamaya.pourline.grinder.TestGrinders
 import dev.josueamaya.pourline.grinder.addGrinder
 import dev.josueamaya.pourline.scale.ConnectionState
 import dev.josueamaya.pourline.session.ScaleTarget
+import dev.josueamaya.pourline.recipe.catalog.TestRecipeCatalog
 import dev.josueamaya.pourline.settings.ReferenceKey
 import dev.josueamaya.pourline.sim.SimulatedScaleConnection
 import dev.josueamaya.pourline.ui.ScriptedConnection
@@ -220,6 +223,25 @@ class PrepareScreenTest {
     waitFor("target_picker")
     rule.onNodeWithText(recipeName()).performClick()
     rule.waitUntil(5_000) { env.scaleSession.ui.value.target != null }
+  }
+
+  @Test
+  fun aCatalogRecipePickedInPrepareShowsItsName() {
+    show()
+    rule.onNodeWithTag("target_chip").performClick()
+    waitFor("target_picker")
+    rule.onNodeWithTag("target_picker_tab_catalog").performClick()
+    waitFor("catalog_row_${TestRecipeCatalog.KEY_V60}")
+    rule.onNodeWithTag("catalog_row_${TestRecipeCatalog.KEY_V60}").performClick()
+
+    rule.waitUntil(5_000) { env.scaleSession.ui.value.target != null }
+    val target = env.scaleSession.ui.value.target!!
+    assertEquals(ReferenceKey.Catalog(TestRecipeCatalog.KEY_V60), target.key)
+    // El selector se cierra y la fila de Preparar muestra el nombre de la recomendada.
+    rule.waitUntil(5_000) { !exists("target_picker") }
+    rule.onNode(hasText(target.name, substring = true) and hasAnyAncestor(hasTestTag("target_chip")), useUnmergedTree = true).assertExists()
+    // No se guardó ninguna receta propia.
+    assertTrue(runBlocking { env.recipes.all() }.none { it.catalogKey != null })
   }
 
   @Test

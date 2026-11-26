@@ -230,7 +230,7 @@ F7 para probar la descarga desde la interfaz).
 | F6 | Copia de seguridad con formato 2 | S | Hecha |
 | F7 | Pestaña Recetas: selector, Recomendadas y recorrido | L | Hecha |
 | F8 | Detalle, "Preparar" y "Guardar en mis recetas" | L | Hecha |
-| F9 | Selector de Preparar y editor (autor y fuente) | M | Pendiente |
+| F9 | Selector de Preparar y editor (autor y fuente) | M | Hecha |
 | F10 | Red: manifiesto, telemetría y README | M | Pendiente |
 | F11 | Verificación final y cierre | M | Pendiente |
 
@@ -760,6 +760,21 @@ Instrumentados: `ui.scale.TargetPickerTest`, `ui.prepare.PrepareScreenTest`, `ui
 `./gradlew :app:lintDebug`.
 
 Commit sugerido: `feat(recipes): pick recommended recipes in prepare and edit recipe author and source`.
+
+**Resultado de F9 (2026-11-25).** Hecha como en el plan, con estas precisiones. El segmentado del selector se muestra siempre
+(Recetas, Recomendadas y, con `showBrews`, Historial); si el modo pasa a Básico con Historial guardado como pestaña, se vuelve a
+Recetas. La pestaña "Recomendadas" reutiliza `CatalogSearchBar`, `CatalogMethodFilter`, `CatalogNoticeBar` y `CatalogRecipeRow`
+(sin "deslizar para actualizar"); sin resultados enseña `target_picker_catalog_empty` y, con filtros, `target_picker_catalog_clear_filters`.
+Cada pestaña lleva la etiqueta `target_picker_tab_<recipes|catalog|history>`. `TargetPickerViewModel` crea su propio
+`CatalogBrowser` con `viewModelScope`. En el editor, el autor y la fuente se editan y ya no se conservan los de la receta
+guardada (se quitó la copia provisional de F4/F5 en `RecipeEditViewModel.save`); "Ver fuente" (`recipe_edit_source_open`) aparece con
+una fuente válida y avisa con `catalog_no_browser` si no hay navegador. `recipe_edit_author` y `catalog_detail_author` llevan
+`tools:ignore="Typos"`. Tests nuevos: `TargetPickerTest` (cuatro casos nuevos y dos renombrados), `PrepareScreenTest`
+(`aCatalogRecipePickedInPrepareShowsItsName`), `RecipeEditFormTest` (cuatro casos) y `RecipeEditScreenTest`
+(`authorAndSourceAreSavedAndShownAgain`, `authorAndSourceOfANewRecipeAreOptionalAndSaved`, `anInvalidSourceShowsTheErrorAndBlocksSaving`,
+`anAuthorOverTheLimitShowsTheErrorAndBlocksSaving`, `viewSourceIsShownForAValidSource`). JVM (`ui.recipes.*`, `recipe.*`): 268
+tests, 0 fallos. Instrumentados en `emulator-5556` (`TargetPickerTest`, `PrepareScreenTest`, `RecipeEditScreenTest`: 84 tests;
+`GeneralTourTest` y `ScalelessJourneyTest`, que abren el selector: 14 tests): 0 fallos. `:app:lintDebug`: 0 errores y 20 avisos.
 
 ### F10. Red: manifiesto, telemetría y README
 

@@ -555,6 +555,69 @@ class RecipeEditScreenTest {
   }
 
   @Test
+  fun authorAndSourceAreSavedAndShownAgain() {
+    val id = runBlocking { recipes.save(v60Classic(texts).copy(name = "Con autor", author = "Nemo", sourceUrl = "https://example.com/nemo")) }
+    show(id = id)
+    // La receta guardada con autor y fuente los muestra rellenos.
+    rule.onNodeWithTag("recipe_edit_author").performScrollTo().assertTextContains("Nemo")
+    rule.onNodeWithTag("recipe_edit_source").performScrollTo().assertTextContains("https://example.com/nemo")
+
+    replace("recipe_edit_author", "Némo Pop")
+    replace("recipe_edit_source", "https://example.com/otra")
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitUntil(5_000) { backCount == 1 }
+    val recipe = runBlocking { recipes.get(id)!! }
+    assertEquals("Némo Pop", recipe.author)
+    assertEquals("https://example.com/otra", recipe.sourceUrl)
+  }
+
+  @Test
+  fun authorAndSourceOfANewRecipeAreOptionalAndSaved() {
+    val id = seededId(LegacyBuiltIns.V60_CLASSIC)
+    show(id = id)
+    type("recipe_edit_author", "  Ana  ")
+    type("recipe_edit_source", "https://example.com/ana")
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitUntil(5_000) { backCount == 1 }
+    val recipe = runBlocking { recipes.get(id)!! }
+    assertEquals("Ana", recipe.author)
+    assertEquals("https://example.com/ana", recipe.sourceUrl)
+  }
+
+  @Test
+  fun anInvalidSourceShowsTheErrorAndBlocksSaving() {
+    val id = seededId(LegacyBuiltIns.V60_CLASSIC)
+    show(id = id)
+    type("recipe_edit_source", "example.com")
+    rule.onNodeWithTag("recipe_edit_source_error", useUnmergedTree = true).performScrollTo().assertTextContains(context.getString(R.string.recipe_error_source))
+    assertFalse(exists("recipe_edit_source_open"))
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitForIdle()
+    assertEquals(0, backCount)
+    assertNull(runBlocking { recipes.get(id)!!.sourceUrl })
+  }
+
+  @Test
+  fun anAuthorOverTheLimitShowsTheErrorAndBlocksSaving() {
+    val id = seededId(LegacyBuiltIns.V60_CLASSIC)
+    show(id = id)
+    type("recipe_edit_author", "a".repeat(101))
+    rule.onNodeWithTag("recipe_edit_author_error", useUnmergedTree = true).performScrollTo().assertTextContains(context.getString(R.string.recipe_error_author))
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitForIdle()
+    assertEquals(0, backCount)
+  }
+
+  @Test
+  fun viewSourceIsShownForAValidSource() {
+    val id = seededId(LegacyBuiltIns.V60_CLASSIC)
+    show(id = id)
+    assertFalse(exists("recipe_edit_source_open"))
+    type("recipe_edit_source", "https://example.com/nemo")
+    rule.onNodeWithTag("recipe_edit_source_open").performScrollTo().assertExists()
+  }
+
+  @Test
   fun editingACatalogCopyKeepsItsCatalogKeyAuthorAndSource() {
     val id = runBlocking {
       recipes.save(

@@ -242,7 +242,7 @@ private fun tabEntryProvider(
     PrepareScreen(
       viewModel = viewModel,
       scanner = deps.scanner,
-      pickerViewModel = viewModel { TargetPickerViewModel(deps.recipeRepository, deps.brewRepository) },
+      pickerViewModel = viewModel { TargetPickerViewModel(deps.recipeRepository, deps.brewRepository, deps.recipeCatalog, deps.catalogLanguage) },
       coffeePickerViewModel = viewModel { CoffeePickerViewModel(deps.coffeeRepository) },
       onOpenSettings = { stack.add(Settings) },
       onStart = { stack.add(Session) },
