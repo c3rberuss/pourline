@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado el 2026-11-25 (ajustado el mismo día con las respuestas del [plan](plan-catalogo-recetas.md)); plan aprobado, pendiente de implementación |
+| Estado | Aprobado el 2026-11-25 (ajustado el mismo día con las respuestas del [plan](plan-catalogo-recetas.md)); implementado en `feat/recipe-catalog` (F0 a F11 del plan), pendiente de la prueba manual en el teléfono y de la fusión |
 | Fecha | 2026-11-25 |
 | Rama | `feat/recipe-catalog` |
 | Deriva de | Uso real: la app no trae recetas de referencia para los distintos métodos |

@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Spec | [`spec-catalogo-recetas.md`](spec-catalogo-recetas.md) (SPEC-012), aprobado el 2026-11-25, y su anexo [`anexo-catalogo-recetas.md`](anexo-catalogo-recetas.md) (prevalece su sección "Decisiones del spec que prevalecen") |
-| Estado | Aprobado el 2026-11-25, con commits por fase autorizados. P1 a P4 respondidas el mismo día (§6) |
+| Estado | Implementado (F0 a F11) en `feat/recipe-catalog` el 2026-11-25 y 2026-11-26; pendientes la prueba manual en el teléfono (§7.6) y la fusión. Aprobado el 2026-11-25, con commits por fase autorizados. P1 a P4 respondidas el mismo día (§6) |
 | Fecha | 2026-11-25 |
 | Rama | `feat/recipe-catalog` (el spec y el anexo están en `a22c92f`). El plan se commitea en la rama cuando el usuario lo autorice |
 | Módulos | `:app` (`:protocol` no cambia). En la raíz del repo: `catalog/` (nuevo), `.github/workflows/catalog.yml` (nuevo) y `README.md` |
@@ -232,7 +232,7 @@ F7 para probar la descarga desde la interfaz).
 | F8 | Detalle, "Preparar" y "Guardar en mis recetas" | L | Hecha |
 | F9 | Selector de Preparar y editor (autor y fuente) | M | Hecha |
 | F10 | Red: manifiesto, telemetría y README | M | Hecha |
-| F11 | Verificación final y cierre | M | Pendiente |
+| F11 | Verificación final y cierre | M | Hecha (falta la prueba en el teléfono) |
 
 Rutas abreviadas: `main/` es `app/src/main/kotlin/dev/josueamaya/pourline/`, `test/` es
 `app/src/test/kotlin/dev/josueamaya/pourline/` y `androidTest/` es
@@ -824,6 +824,50 @@ de solo lectura (§7.6, autorizadas en P3); los resultados se anotan en este pla
 base de F0 para separar fallos previos de fallos nuevos. Estado de la cabecera actualizado.
 
 Commit sugerido: `docs(specs): record the SPEC-012 verification`.
+
+**Resultado de F11 (2026-11-26).**
+
+- **7.1 JVM** (`recipe.catalog.*`, `RecipeValidatorTest`, `RecipeTest`, `RecipeFromBrewTest`, `recipe.share.*`, `backup.*`,
+  `SettingsSnapshotTest`, `ExperienceModeTest`, `session.*`, `GrindCardStateTest`, `SharedGrindResolutionTest`,
+  `BrewRepositoryMappingTest`, `SimulatedTargetPourTest`, `FourSixTest`, `ui.session.*`, `RecipeEditFormTest`,
+  `ToursCatalogTest`): 671 tests en 55 clases, 0 fallos.
+- **7.1 instrumentados** en `emulator-5556`: 519 tests de 44 clases (las 41 de F4 y las nuevas del plan), 517 en verde. Fallan
+  `SessionPerformanceTest` (2 casos, p95 de 184 y 108 ms contra 32 ms), los mismos dos que en F4: mide fotogramas en un emulador
+  por software y no toca el catálogo. No se ejecutaron `RecipeIntentImportTest`, `RecipeShareTest` y `RecipesImportTest` (16 casos
+  que leen un QR con el modelo de Play services: `awaitQrModel` exige `SG_API36_play` y en `SG_API34` espera 240 s por caso;
+  igual que en F4). Los casos de QR quedan para la prueba con dos móviles de SPEC-009.
+- **7.2:** (1) lo anterior; (2) `:app:lintDebug` 0 errores y 20 avisos, los de F0; (3) el `grep` de `BuiltInRecipes`,
+  `BuiltInRecipeSeeder`, `restoreBuiltIns`, `RESTORE_BUILT_INS` y `recipe_builtin_tag` en `app/src`: vacío; (4) `assets/catalog/recipes.json`
+  de la APK de debug y de la de release es idéntico a `catalog/recipes.json` (`cmp`); (5) el workflow "Catalog" corrió una vez, en el
+  push que añadió `catalog/`, y pasó (2m33s); los demás pushes de la rama no tocan `catalog/**` y no lo lanzaron; (6) manifiestos fusionados de
+  debug y release: `INTERNET` presente, `CAMERA` ausente y `grep -c datatransport` = 0. La release se firma con el almacén de claves
+  propio (`apksigner verify`, CN `Josué Amaya`).
+- **7.3 rendimiento** (`emulator-5556`, test instrumentado temporal sin commitear): `RecipeCatalogParser.parse` del catálogo empaquetado (35 recetas) tarda
+  128 ms la primera vez y 56 a 82 ms después; ya corre fuera del hilo principal (D15). La lista de recomendadas se desplazó sin saltos
+  con las 35 recetas.
+- **7.4 red y telemetría** (`emulator-5556`, root, cadena `pourline_out` como en F0): con la debug, tras el OCR (3 tests) y Recomendadas con
+  "deslizar para actualizar", "otro" a 0 en IPv4 e IPv6 y 18 paquetes a `185.199.108.0/22` (ver "Resultado de F10"). Con la **release**
+  (R10; la debug y la APK de test se desinstalaron del emulador, `adb install` de la release, UID 10256): sin conexión, contadores a 0;
+  con conexión, Recomendadas y deslizar sube el contador de GitHub a 17 paquetes (2307 bytes) y "otro" sigue a 0. El OCR con `am instrument`
+  no se puede repetir con la release (no es depurable); el manifiesto fusionado de release sin los tres componentes de datatransport y
+  `Transport backend 'cct' is not registered` en la debug cubren el mismo camino. Cadena limpiada y `pm clear`.
+- **7.5 E2E por adb** con la release (instalación nueva, modo avión, capturas en el directorio temporal de la sesión,
+  `scratchpad/f11/01` a `16`): "Mis recetas" vacía con "Ver recomendadas", que abre "Recomendadas" con las recetas del APK y "Usando las
+  recetas incluidas en la app"; la búsqueda "nemo" encuentra la AeroPress de Némo Pop, con V60 queda "No hay recetas con estos filtros" y "Quitar filtros"
+  restablece la lista; el detalle de `four_six` muestra todo (autor, contexto, molienda, notas, 11 pasos, "Ver fuente"), "Guardar en mis recetas" da
+  "Receta guardada en Mis recetas", la fila pasa a "Guardada", el detalle avisa "Ya tienes una copia" y guardar otra vez deja "… (2)" en "Mis recetas";
+  "Preparar" en "Classic V60" abre Preparar con "Objetivo: Classic V60", empezar sin báscula y terminar guarda la preparación, y su detalle muestra "Receta:
+  Classic V60". Sin el modo avión, deslizar descarga (contador de GitHub, arriba). Con una debug construida con
+  `-Ppourline.catalogUrl=https://raw.githubusercontent.com/c3rberuss/pourline/feat/recipe-catalog/catalog/recipes.json` (solo local; el archivo
+  responde 200 en la rama), la primera apertura de "Recomendadas" muestra "Última actualización: <fecha>". Ajustes no tiene "Restaurar recetas
+  predefinidas" y, tras "Repetir recorrido", el recorrido de Recetas empieza en "Recomendadas" (1/2).
+- **Hallazgo menor, sin cambiar:** el texto del paso "Recetas" del recorrido general sigue diciendo "Las predefinidas y las tuyas, paso a paso"
+  (`Built-in recipes and your own, step by step.` en inglés; clave `tour_prepare_tab_recipes_body`), cuando ya no hay recetas de fábrica. No estaba en el spec ni en §3.1; queda
+  para que el usuario decida el texto.
+- **7.6 teléfono (`22081212UG`):** no estaba conectado por adb (`adb devices -l` solo lista `emulator-5556`), así que no se instaló la release ni se hicieron
+  las comprobaciones de solo lectura. La release firmada está en `app/build/outputs/apk/release/app-release.apk` (construida con el código
+  de F10; si se cambia algo, hay que regenerarla) y se instala con `adb -s 22081212UG install -r`. Pendientes: los pasos 1 a 3 del usuario
+  y la telemetría (paso 4).
 
 ### 3.1 Cadenas nuevas (`values` / `values-en`)
 
