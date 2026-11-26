@@ -1876,3 +1876,57 @@ Fuente: 50 g "(50 grams, or twice the weight of the coffee grounds) in a spiral 
 8. **Temperaturas en °F:** propongo 93,3 y 96,1 °C (conversión exacta). Las de Stumptown siguen en 96 °C porque dicen "about 205°F". Si prefieres enteros: 93 y 96.
 9. **Counter Culture con tres recetas casi iguales** (V60 y Kalita con el mismo programa, Chemex con el mismo patrón). Si quieres más variedad de autores, `counter_culture_kalita` es la primera que quitaría.
 10. **Spec y anexo:** hay que actualizar §3.10 (total, tabla y reparto) y el anexo con las nuevas, y subir `revision` del JSON. Las claves que salen no se reutilizan (§3.1). Conviene comprobar qué pasa con las copias guardadas cuyo `catalogKey` desaparece del catálogo.
+
+## Ampliación 1 (2026-11-26): más V60, V60 NEO, Origami y AeroPress
+
+Trece recetas nuevas, distintas de las del catálogo, a petición del usuario. Todas aptas para tueste medio (el tope de
+6 solo para claro ya estaba cubierto). Fuentes leídas el 2026-11-26. Los inicios publicados son [fuente]; salvo que se
+diga otra cosa, las duraciones de cada vertido, giro, remover o acción son [inferidas] para que encajen esos inicios.
+
+**V60 NEO** (gotero de Hario de 2025): no hay receta numérica oficial de Hario (el manual, global.hario.com/neo y Hario
+Europe solo dan 10-12 g por 120 ml). Se modela con `method` `V60` y "V60 NEO" en el nombre y las notas, porque usa los
+filtros de la V60 y así aparece en ese filtro; un `BrewMethod` nuevo obligaría a subir `schemaVersion`.
+
+| Clave | Método | Autor | Dosis g | Agua g | °C | Total | `roasts` | Confianza | Fuente |
+|---|---|---|--:|--:|--:|--:|---|---|---|
+| `coffee_samurai_v60_neo` | V60 (NEO) | Coffee Samurai | 15 | 225 | 90 | 1:45 | LIGHT, MEDIUM | alta-media | https://coffeestone.net/neo3/ |
+| `the_word_v60_neo` | V60 (NEO) | THE WORD COFFEE ROASTERS | 15 | 225 | 90 | 2:20 | MEDIUM | media | https://thewordcoffee.com/en/pages/how-to-brew-v60-neo-dripper |
+| `three_fe_v60` | V60 | 3FE | 15 | 250 | 93 | 3:20 | — | alta | https://3fe.com/pages/v60-02-model-brew-guide |
+| `equator_v60` | V60 | Equator Coffees | 24 | 360 | 96,1 | 3:30 | — | alta-media | https://equatorcoffees.com/pages/v60-brew-guide |
+| `martha_grill_v60` | V60 | Martha Grill | 30 | 500 | 92 | 3:00 | — | media | https://www.hario.co.uk/blogs/hario-ambassadors/hario-v60-recipe-interview-with-hario-ambassador-martha-grill |
+| `origami_official_cone` | Origami | ORIGAMI | 15 | 250 | 91 | 3:00 | — | alta | https://origami-kai.com/en/blogs/special-feature/howtochoose_filter |
+| `origami_official_wave` | Origami | ORIGAMI | 15 | 240 | 91 | 2:30 | — | alta | https://origami-kai.com/blogs/special-feature/howtochoose_filter |
+| `the_barn_origami` | Origami | The Barn | 15 | 250 | 94 | 2:15 | — | alta | https://cdn.shopify.com/s/files/1/0831/4141/files/Origami_Drip_Brewer_Recipes.pdf |
+| `kurasu_origami` | Origami | Kurasu | 15 | 270 | 89 | 1:25 | — | alta | https://kurasu.kyoto/blogs/kurasu-journal/origami-dripper-brewing-recipe-how-we-do-it-at-kurasu |
+| `kaffeemacher_aeropress` | AeroPress | Kaffeemacher | 16 | 200 | 90 | 1:50 | LIGHT, MEDIUM | alta | https://kaffeemacher.de/en/blogs/kaffeewissen/aeropress-guide |
+| `coffee_bros_aeropress` | AeroPress | Coffee Bros | 16 | 230 | 92,5 | 1:30 | MEDIUM | alta | https://coffeebros.com/pages/aeropress-brew-guide |
+| `coava_aeropress` | AeroPress | Coava Coffee Roasters | 14 | 210 | 95 | 1:48 | — | alta | https://coavacoffee.com/brew-methods/aeropress |
+| `coffee_collective_aeropress` | AeroPress | Coffee Collective | 16 | 230 | 93 | 1:30 | — | alta | https://coffeecollective.dk/brew-guides/aeropress |
+
+Tueste: `—` es una guía genérica de tostador o fabricante sin indicación (cualquiera). Citas: Coffee Samurai
+"このレシピはどちらかというと浅煎り～中煎り用です"; THE WORD publica la variante "中煎り＝中細挽き、湯温90℃" (la receta base es
+para claro); Kaffeemacher "works reliably with light to medium roasts"; Coffee Bros "Medium Roasts: 194 - 203 degrees".
+
+Qué es inferido, por receta:
+
+- `coffee_samurai_v60_neo`: 34 g y 225 g son "約" (aproximados) en la fuente; el momento del giro.
+- `the_word_v60_neo`: la fuente no da dosis, solo el ratio 1:15-1:16 y el reparto 20 % + 80 %; se fijan 15 g y 225 g.
+  El segundo vertido a los 45 s (la fuente dice "45 秒間蒸らします") y el final hacia 2 min 15 s (fuente: 2-2,5 min).
+- `three_fe_v60`: los acumulados salen de "50g increments every 30 seconds"; el filtrado final hasta 3 min 20 s (fuente: 3-4 min).
+- `equator_v60`: "205°" sin unidad, se toma como °F (96,1 °C).
+- `martha_grill_v60`: el inicio del 2.º vertido (justo tras la preinfusión) y el remover (sin instrumento en la fuente).
+- `origami_official_cone` y `origami_official_wave`: el tiempo final ("落ち切り", sin número). El total de 240 g del
+  ondulado solo está en la versión japonesa ("240cc"), por eso su `sourceUrl` es esa.
+- `the_barn_origami`: la duración de la preinfusión y de los giros; el tiempo final. Los vertidos de 10 s son [fuente].
+- `kurasu_origami`: `waterTempC` 89 es el centro de 88-90 °C (en notas). La fuente tiene una errata ("pour the
+  remaining 270g"): quedan 100 g. Retirar el gotero a los 80 s es [fuente].
+- `kaffeemacher_aeropress`: los 60 s de reposo se cuentan tras colocar el émbolo; así el total pasa del "~1:30" de la ficha.
+- `coffee_bros_aeropress`: `waterTempC` 92,5 es el centro del rango de tueste medio (90-95 °C); los 15 s del primer
+  vertido de la fuente se reparten en 10 s de vertido y 5 s de giro; la duración de la presión.
+- `coava_aeropress`: `waterTempC` 95 es el centro de 202-205 °F; voltear a los 90 s y presionar unos 15 s son [fuente].
+- `coffee_collective_aeropress`: la duración del vertido y de colocar el émbolo; terminar hacia 1 min 30 s es [fuente].
+
+Descartadas en esta ampliación: Quality Life Coffee (V60 NEO; el tercer vertido va por señal visual), Verve V60 (sin
+temperatura), Kurasu V60 (inicios inferidos), Five Senses Origami (tueste ambiguo), Temple Coffee Origami (pulsos que no
+suman), Rogue Wave AeroPress (solo en un agregador), Lance Hedrick AeroPress (agua del bloom sin gramos), recetas NEO de
+Kurasu, Tetsu Kasuya y Ethan Junseong Park (solo para claro o con Switch).
