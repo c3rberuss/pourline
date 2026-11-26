@@ -224,7 +224,7 @@ F7 para probar la descarga desde la interfaz).
 | F0 | Línea base, dispositivos y telemetría de ML Kit | M | Hecha (sin commit de código) |
 | F1 | Modelo, parser y conversión del catálogo (JVM) | M | Hecha |
 | F2 | Contenido del catálogo, copia en el APK, test del repo y workflow | L | Hecha |
-| F3 | Descarga, caché, repositorio y constante de la URL | M | Pendiente |
+| F3 | Descarga, caché, repositorio y constante de la URL | M | Hecha |
 | F4 | Room 7 → 8, campos de receta y retirada de las recetas de fábrica | L | Pendiente |
 | F5 | Molienda del catálogo, copia y referencia de catálogo en Preparar | M | Pendiente |
 | F6 | Copia de seguridad con formato 2 | S | Pendiente |
@@ -438,7 +438,11 @@ Commit sugerido: `feat(catalog): add the recommended recipe catalog with its rep
   funciona con AGP 9.0.1 (R6 no se materializa; no hace falta la alternativa de `sourceSets`). `assembleDebug` deja
   `assets/catalog/recipes.json` idéntico a `catalog/recipes.json` (`cmp`) y no hay segunda copia en `app/src/main/assets`.
 - **Workflow:** `actionlint` no está instalado: revisión manual de la sintaxis. Resultado de su ejecución en GitHub:
-  ver "Push de la rama" más abajo.
+  el run de GitHub pasó (ver "Push de la rama").
+- **Push de la rama (2026-11-25):** `git push -u origin feat/recipe-catalog` tras el commit de F2. `gh run list --workflow
+  catalog.yml --branch feat/recipe-catalog` muestra el workflow `Catalog` ejecutado por el push y en `success` (2 min 33 s).
+  Lo que demuestra que falla con una receta inválida es `RecipeCatalogFileTest.an invalid recipe makes the catalog check
+  fail`. Que no se ejecuta en un push que no toca `catalog/**` se confirma con los pushes de las fases siguientes.
 
 ### F3. Descarga, caché, repositorio y constante de la URL
 
@@ -475,6 +479,12 @@ mostrarlo todavía.
 (humo: `TestAppDependencies` sigue construyendo la app).
 
 Commit sugerido: `feat(catalog): download, cache and pick the recipe catalog`.
+
+**Resultado de F3 (2026-11-25).** Se añadió `CatalogGrinders.kt` (`grinderCatalogByKey(source)`, el mapa por `catalogKey`
+que usan `PourlineApp` y `TestAppDependencies`; no estaba en el plan). Los tests de `RecipeCatalogRepositoryTest` usan
+`runCurrent` y no `advanceUntilIdle`: este no ejecuta el trabajo de `backgroundScope`. `HttpCatalogFetcherTest` admite
+también `Pragma` y `Cache-Control`, que la JVM añade con `useCaches = false`. 58 tests JVM de `recipe.catalog.*` en
+verde; `RecipesScreenTest` (7 tests) en `emulator-5556`, verde.
 
 ### F4. Room 7 → 8, campos de receta y retirada de las recetas de fábrica
 

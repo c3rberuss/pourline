@@ -1197,4 +1197,7 @@
     <string name="tour_settings_countdown_body">Segundos antes de que arranque el reloj.</string>
     <string name="tour_settings_replay_title">Ver recorrido</string>
     <string name="tour_settings_replay_body">Vuelve a ver todos los recorridos.</string>
+
+    <!-- Catálogo de recetas recomendadas (SPEC-012): idioma de sus textos (es en values, en en values-en) -->
+    <string name="catalog_language">es</string>
 </resources>

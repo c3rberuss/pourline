@@ -26,6 +26,15 @@ val releaseStoreFile = signingValue("storeFile", "POURLINE_KEYSTORE_FILE")
 val releaseStorePassword = signingValue("storePassword", "POURLINE_KEYSTORE_PASSWORD")
 val releaseKeyAlias = signingValue("keyAlias", "POURLINE_KEY_ALIAS")
 val releaseKeyPassword = signingValue("keyPassword", "POURLINE_KEY_PASSWORD")
+
+/**
+ * La URL del catálogo de recetas (SPEC-012). Por defecto es el archivo de `main`; `-Ppourline.catalogUrl=<url>` la cambia
+ * solo en builds locales, por ejemplo para probar la descarga con una rama antes de fusionarla (el workflow de release no la pasa).
+ */
+val catalogUrl = providers.gradleProperty("pourline.catalogUrl")
+  .getOrElse("https://raw.githubusercontent.com/c3rberuss/pourline/main/catalog/recipes.json")
+require(catalogUrl.startsWith("https://")) { "pourline.catalogUrl debe empezar por https://" }
+
 val hasReleaseSigning =
   listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { it != null }
 
@@ -65,6 +74,7 @@ android {
     versionCode = providers.gradleProperty("pourline.versionCode").orNull?.toInt() ?: 1
     versionName = providers.gradleProperty("pourline.versionName").orNull ?: "1.0"
     testInstrumentationRunner = "dev.josueamaya.pourline.PourlineTestRunner"
+    buildConfigField("String", "RECIPE_CATALOG_URL", "\"$catalogUrl\"")
   }
 
   signingConfigs {
@@ -94,7 +104,7 @@ android {
   buildFeatures {
     compose = true
     aidl = false
-    buildConfig = false
+    buildConfig = true
     shaders = false
   }
 

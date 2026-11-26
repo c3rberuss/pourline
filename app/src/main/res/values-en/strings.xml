@@ -1198,4 +1198,7 @@
     <string name="tour_settings_countdown_body">Seconds before the timer starts.</string>
     <string name="tour_settings_replay_title">Replay tour</string>
     <string name="tour_settings_replay_body">See all the tours again.</string>
+
+    <!-- Recommended recipe catalog (SPEC-012): language of its texts (es in values, en in values-en) -->
+    <string name="catalog_language">en</string>
 </resources>
