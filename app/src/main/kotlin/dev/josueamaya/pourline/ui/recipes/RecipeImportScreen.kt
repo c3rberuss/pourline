@@ -2,76 +2,36 @@ package dev.josueamaya.pourline.ui.recipes
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.josueamaya.pourline.R
-import dev.josueamaya.pourline.grinder.GrindFormat
-import dev.josueamaya.pourline.grinder.GrindPick
-import dev.josueamaya.pourline.grinder.GrindResolution
-import dev.josueamaya.pourline.grinder.GrindTexts
-import dev.josueamaya.pourline.grinder.Grinder
 import dev.josueamaya.pourline.grinder.ResourcesGrindTexts
 import dev.josueamaya.pourline.protocol.WeightUnit
-import dev.josueamaya.pourline.recipe.Recipe
-import dev.josueamaya.pourline.recipe.RecipeStage
-import dev.josueamaya.pourline.recipe.StageType
-import dev.josueamaya.pourline.share.recipeMethodText
-import dev.josueamaya.pourline.share.weightNumber
 import dev.josueamaya.pourline.ui.components.AntAlert
 import dev.josueamaya.pourline.ui.components.AntButton
 import dev.josueamaya.pourline.ui.components.AntButtonType
 import dev.josueamaya.pourline.ui.components.AntIconButton
 import dev.josueamaya.pourline.ui.components.AntIcons
-import dev.josueamaya.pourline.ui.components.AntSelect
-import dev.josueamaya.pourline.ui.components.AntSelectOption
 import dev.josueamaya.pourline.ui.components.AntSpin
 import dev.josueamaya.pourline.ui.components.AntStatus
 import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.components.AntTopBar
-import dev.josueamaya.pourline.ui.session.formatClock
-import dev.josueamaya.pourline.ui.session.stepTypeIcon
-import dev.josueamaya.pourline.ui.session.stepTypeLabel
 import dev.josueamaya.pourline.ui.theme.AntTheme
-import kotlin.math.roundToLong
-
-private val StepStartWidth = 44.dp
-private val StepIconSize = 16.dp
-private val StepTypeWidth = 64.dp
-private val StepDurationWidth = 40.dp
-private val StepWaterWidth = 56.dp
-
-/** Las columnas llevan texto: crecen con la escala de letra (en `dp` fijos "0:10" se cortaba a 1,3). */
-@Composable
-private fun scaledWidth(base: Dp): Dp = with(LocalDensity.current) { base.value.sp.toDp() }
 
 /**
  * La vista previa de una receta importada (SPEC-009 §3.6), de solo lectura: los avisos, los datos, la molienda, las
@@ -121,8 +81,8 @@ fun RecipeImportScreen(viewModel: RecipeImportViewModel, onDone: () -> Unit, uni
           modifier = Modifier.testTag("recipe_import_identical"),
         )
       }
-      RecipeSummary(ready.shared.recipe, unit)
-      GrindSection(ready, texts, onPick = viewModel::pick)
+      RecipeSummary(ready.shared.recipe, unit, "recipe_import")
+      GrindSection(ready.grind, ready.pick, viewModel::pick, texts, "recipe_import")
       ready.shared.recipe.notes?.let { notes ->
         Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
           AntText(stringResource(R.string.recipe_import_notes), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
@@ -131,7 +91,7 @@ fun RecipeImportScreen(viewModel: RecipeImportViewModel, onDone: () -> Unit, uni
       }
       AntText(stringResource(R.string.recipe_edit_stages), style = AntTheme.typography.heading5)
       Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
-        ready.shared.recipe.stages.forEachIndexed { index, stage -> StageRow(stage, index, unit) }
+        ready.shared.recipe.stages.forEachIndexed { index, stage -> StageRow(stage, index, unit, "recipe_import") }
       }
       AntButton(
         text = stringResource(R.string.recipe_import_save),
@@ -146,110 +106,6 @@ fun RecipeImportScreen(viewModel: RecipeImportViewModel, onDone: () -> Unit, uni
         onClick = onDone,
         modifier = Modifier.fillMaxWidth().testTag("recipe_import_cancel"),
       )
-    }
-  }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun RecipeSummary(recipe: Recipe, unit: WeightUnit) {
-  Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
-    AntText(recipe.name, Modifier.testTag("recipe_import_name"), style = AntTheme.typography.heading4)
-    recipeMethodText(recipe.method, recipe.methodOther)?.let {
-      AntText(it, Modifier.testTag("recipe_import_method"), type = AntTextType.Secondary)
-    }
-    val dose = stringResource(R.string.recipe_card_dose, weightNumber(recipe.doseG, unit), unit.symbol)
-    val water = stringResource(R.string.recipe_card_water, weightNumber(recipe.totalWaterG, unit), unit.symbol)
-    val ratio = stringResource(R.string.recipe_card_ratio, formatRatioNumber(recipe.ratio))
-    val temp = recipe.waterTempC?.let { stringResource(R.string.recipe_card_temp, formatGrams(it)) }
-    val time = formatClock(recipe.totalDurationMs)
-    val timeDescription = stringResource(R.string.recipe_total_time_description, time)
-    // Cada dato lleva su "·" detrás, salvo el último, para que el separador no quede solo al principio de una línea.
-    FlowRow(
-      Modifier.testTag("recipe_import_facts"),
-      horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs),
-      verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
-    ) {
-      AntText("$dose ·")
-      AntText("$water ·")
-      AntText("$ratio ·")
-      Row(horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs), verticalAlignment = Alignment.CenterVertically) {
-        Icon(AntIcons.Clock, contentDescription = null, modifier = Modifier.size(StepIconSize), tint = AntTheme.colors.textSecondary)
-        AntText(time, Modifier.testTag("recipe_import_duration").semantics { contentDescription = timeDescription })
-        if (temp != null) AntText("·")
-      }
-      temp?.let { AntText(it) }
-    }
-  }
-}
-
-/** `Linked` y `Text` son texto fijo; `Convertible` un selector con "Usar con…" por molino y "Guardar como texto". */
-@Composable
-private fun GrindSection(ready: RecipeImportUi.Ready, texts: GrindTexts, onPick: (GrindPick) -> Unit) {
-  val label = stringResource(R.string.recipe_import_grind)
-  when (val grind = ready.grind) {
-    GrindResolution.None -> Unit
-    is GrindResolution.Linked -> FixedGrind(label, linkedText(grind.grinder, grind.value, texts))
-    is GrindResolution.Text -> FixedGrind(label, grind.label)
-    is GrindResolution.Convertible -> {
-      val options = grind.options.map { option ->
-        val setting = (if (option.rounded) "≈ " else "") + GrindFormat.format(option.value, option.grinder, texts)
-        AntSelectOption<GrindPick>(
-          GrindPick.Use(option.grinder.id),
-          stringResource(R.string.recipe_import_grind_use, "${option.grinder.brand} ${option.grinder.model}", setting),
-        )
-      } + AntSelectOption<GrindPick>(GrindPick.AsText, stringResource(R.string.recipe_import_grind_as_text))
-      AntSelect(
-        options = options,
-        selected = ready.pick,
-        onSelect = onPick,
-        label = label,
-        modifier = Modifier.fillMaxWidth(),
-        testTag = "recipe_import_grind",
-      )
-    }
-  }
-}
-
-@Composable
-private fun FixedGrind(label: String, text: String) {
-  Column(verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
-    AntText(label, type = AntTextType.Secondary, style = AntTheme.typography.textSM)
-    AntText(text, Modifier.testTag("recipe_import_grind_text"))
-  }
-}
-
-private fun linkedText(grinder: Grinder, value: Double?, texts: GrindTexts): String {
-  val name = "${grinder.brand} ${grinder.model}"
-  return if (value == null) name else name + GrindFormat.SEPARATOR + GrindFormat.format(value, grinder, texts)
-}
-
-/** Inicio, tipo, nombre, duración y agua acumulada (solo en `POUR`), y debajo la instrucción si la hay. */
-@Composable
-private fun StageRow(stage: RecipeStage, index: Int, unit: WeightUnit) {
-  val startWidth = scaledWidth(StepStartWidth)
-  Column(Modifier.fillMaxWidth().testTag("recipe_import_step_$index"), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs)) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs), verticalAlignment = Alignment.CenterVertically) {
-      AntText(formatClock(stage.startMs), Modifier.width(startWidth), type = AntTextType.Secondary, maxLines = 1)
-      Icon(stepTypeIcon(stage.type), contentDescription = null, modifier = Modifier.size(StepIconSize), tint = AntTheme.colors.textSecondary)
-      AntText(stringResource(stepTypeLabel(stage.type)), Modifier.width(scaledWidth(StepTypeWidth)), maxLines = 1, overflow = TextOverflow.Ellipsis)
-      AntText(stage.name.orEmpty(), Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-      AntText(
-        stringResource(R.string.recipe_card_step_duration, (stage.durationMs / 1000.0).roundToLong().toInt()),
-        Modifier.width(scaledWidth(StepDurationWidth)),
-        type = AntTextType.Secondary,
-        textAlign = TextAlign.End,
-        maxLines = 1,
-      )
-      AntText(
-        if (stage.type == StageType.POUR) "${weightNumber(stage.targetWaterG, unit)} ${unit.symbol}" else "",
-        Modifier.width(scaledWidth(StepWaterWidth)),
-        textAlign = TextAlign.End,
-        maxLines = 1,
-      )
-    }
-    stage.instruction?.let {
-      AntText(it, Modifier.padding(start = startWidth + StepIconSize + AntTheme.spacing.xs * 2).testTag("recipe_import_step_instruction_$index"), type = AntTextType.Secondary, style = AntTheme.typography.textSM)
     }
   }
 }

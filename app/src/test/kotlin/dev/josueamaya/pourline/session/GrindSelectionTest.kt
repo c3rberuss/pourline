@@ -88,6 +88,14 @@ class GrindSelectionTest {
   }
 
   @Test
+  fun `the preferred grinder of the target is preselected`() = runTest(UnconfinedTestDispatcher()) {
+    defaults.setDefaultGrinderId(1)
+    val selection = selection()
+    target.value = active(1, GrindSetting(null, null, "Media")).copy(preferredGrinderId = 3)
+    assertEquals(tres, selection.state.value.chosen)
+  }
+
+  @Test
   fun `a default that is no longer in my grinders falls to the first`() = runTest(UnconfinedTestDispatcher()) {
     defaults.setDefaultGrinderId(3)
     val selection = selection()

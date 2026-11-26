@@ -384,6 +384,33 @@ class BrewDetailScreenTest {
     rule.onNodeWithTag("brew_detail_grind_deleted", useUnmergedTree = true).assertExists()
   }
 
+  @Test
+  fun aTextOnlyGrindIsShownWithoutTheDeletedTag() {
+    val id = seed(details = BrewDetails(method = BrewMethod.V60, grind = GrindSetting(null, null, "Media-fina")))
+    show(id)
+    rule.waitUntil(5_000) { rule.onAllNodesWithTag("brew_detail_grind", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+    rule.onNodeWithTag("brew_detail_grind", useUnmergedTree = true).performScrollTo().assertTextContains("Media-fina", substring = true)
+    assertEquals(0, rule.onAllNodesWithTag("brew_detail_grind_deleted", useUnmergedTree = true).fetchSemanticsNodes().size)
+  }
+
+  @Test
+  fun theRecipeNameIsShownInTheFactsForCatalogReferences() {
+    val curve = TestBrews.usedTarget().curve
+    val target = dev.josueamaya.pourline.history.UsedTarget(
+      dev.josueamaya.pourline.history.ReferenceType.CATALOG,
+      null,
+      "V60 recomendada",
+      curve,
+      dev.josueamaya.pourline.brew.BrewFit(null, curve.finalWaterG, curve.endMs),
+      "v60_basica",
+    )
+    val id = runBlocking { repository.save(TestBrews.finished(totalMs = 60_000), TestBrews.context(target = target)) }
+    mode.value = ExperienceMode.BASIC
+    show(id)
+    rule.waitUntil(5_000) { rule.onAllNodesWithTag("brew_detail_facts").fetchSemanticsNodes().isNotEmpty() }
+    rule.onNodeWithTag("brew_detail_facts_recipe", useUnmergedTree = true).performScrollTo().assertTextContains("V60 recomendada", substring = true)
+  }
+
   // --- Sin báscula (SPEC-007) ---
 
   private fun seedScaleless(withRecipe: Boolean = false, details: BrewDetails? = null): Long = runBlocking {

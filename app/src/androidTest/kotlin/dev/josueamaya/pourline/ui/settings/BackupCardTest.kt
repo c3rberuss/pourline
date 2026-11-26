@@ -92,7 +92,6 @@ class BackupCardTest {
             grinderRepository = grinders,
             grinderDefaults = grinderSettings,
             scaleMode = connection,
-            onRestoreRecipes = {},
             onOpenGrinders = {},
             onReplayTour = {},
             onBack = {},

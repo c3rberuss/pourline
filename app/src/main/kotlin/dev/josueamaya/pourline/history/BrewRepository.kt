@@ -247,6 +247,7 @@ internal fun brewEntity(finished: FinishedBrew, context: BrewContext, preview: B
     referenceType = target?.type,
     referenceId = target?.id,
     referenceName = target?.name,
+    referenceKey = target?.key,
     targetWaterG = target?.fit?.targetWaterG,
     targetEndMs = target?.fit?.targetEndMs,
     fitScore = target?.fit?.score,

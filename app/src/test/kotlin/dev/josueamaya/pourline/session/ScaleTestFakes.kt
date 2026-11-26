@@ -125,6 +125,11 @@ class FakeReferenceStore(initial: ReferenceKey? = null) : ReferenceStore {
 class FakeTargetReferences : TargetReferences {
   private val recipes = mutableMapOf<Long, MutableStateFlow<Recipe?>>()
   private val brews = mutableMapOf<Long, MutableStateFlow<BrewRecord?>>()
+  private val catalog = mutableMapOf<String, MutableStateFlow<CatalogTarget?>>()
+
+  fun putCatalog(key: String, target: CatalogTarget?) {
+    catalog.getOrPut(key) { MutableStateFlow(null) }.value = target
+  }
 
   fun putRecipe(id: Long, recipe: Recipe?) {
     recipes.getOrPut(id) { MutableStateFlow(null) }.value = recipe
@@ -137,6 +142,8 @@ class FakeTargetReferences : TargetReferences {
   override fun recipe(id: Long): Flow<Recipe?> = recipes.getOrPut(id) { MutableStateFlow(null) }
 
   override fun brew(id: Long): Flow<BrewRecord?> = brews.getOrPut(id) { MutableStateFlow(null) }
+
+  override fun catalog(key: String): Flow<CatalogTarget?> = catalog.getOrPut(key) { MutableStateFlow(null) }
 }
 
 /** Recuerda el último café; [sets] registra las llamadas a `setLastCoffeeId`. */

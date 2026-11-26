@@ -24,7 +24,7 @@ class GrindCalibrationDaoTest {
 
   @Before
   fun setUp() = runTest {
-    db = HistoryDatabase.inMemory(context, FakeRecipeTexts())
+    db = HistoryDatabase.inMemory(context)
     uno = db.addGrinder(TestGrinders.uno)
     dos = db.addGrinder(TestGrinders.dos)
     tres = db.addGrinder(TestGrinders.tres)

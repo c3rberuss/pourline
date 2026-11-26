@@ -20,6 +20,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object Recipes : NavKey
 
+/** El detalle de una receta recomendada del catálogo, por su clave (SPEC-012). */
+@Serializable data class CatalogRecipeDetail(val key: String) : NavKey
+
 /**
  * `id == null` crea una receta; `fromBrewId` la prellena desde una preparación y `fourSix`, desde el generador 4:6
  * (los dos son "Guardar como receta").

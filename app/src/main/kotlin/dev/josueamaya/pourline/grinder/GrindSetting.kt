@@ -8,6 +8,9 @@ package dev.josueamaya.pourline.grinder
 data class GrindSetting(val grinderId: Long?, val value: Double?, val label: String?) {
   /** Todas las partes vacías: equivale a no tener molienda. */
   val isEmpty: Boolean get() = grinderId == null && value == null && label.isNullOrBlank()
+
+  /** Solo texto: sin molino ni ajuste pero con [label]. No es un molino eliminado (que conserva su ajuste). */
+  val isTextOnly: Boolean get() = grinderId == null && value == null && !label.isNullOrBlank()
 }
 
 /** Lo que edita un formulario de receta o de preparación. */

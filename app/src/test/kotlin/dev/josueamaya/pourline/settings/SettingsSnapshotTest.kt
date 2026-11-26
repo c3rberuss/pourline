@@ -191,4 +191,55 @@ class SettingsSnapshotTest {
       assertEquals(settings::class.simpleName, before + 1, prefs.writes)
     }
   }
+
+  @Test
+  fun `a catalog reference is stored with its key and read back`() {
+    target.setReference(ReferenceKey.Catalog("nemo_v60"))
+    assertEquals("CATALOG", prefs.values["target_ref_type"])
+    assertEquals("nemo_v60", prefs.values["target_ref_key"])
+    assertFalse(prefs.values.containsKey("target_ref_id"))
+    assertEquals(ReferenceKey.Catalog("nemo_v60"), target.reference.value)
+    assertEquals(ReferenceKey.Catalog("nemo_v60"), TargetSettings(prefs).reference.value)
+  }
+
+  @Test
+  fun `switching from a catalog to a recipe reference removes the key`() {
+    target.setReference(ReferenceKey.Catalog("nemo_v60"))
+    target.setReference(ReferenceKey.Recipe(5))
+    assertFalse(prefs.values.containsKey("target_ref_key"))
+    assertEquals(5L, prefs.values["target_ref_id"])
+    assertEquals(ReferenceKey.Recipe(5), TargetSettings(prefs).reference.value)
+    target.setReference(ReferenceKey.Catalog("otra"))
+    assertFalse(prefs.values.containsKey("target_ref_id"))
+    target.setReference(null)
+    assertFalse(prefs.values.containsKey("target_ref_key"))
+    assertNull(TargetSettings(prefs).reference.value)
+  }
+
+  @Test
+  fun `a catalog type without key reads as no reference`() {
+    prefs.values["target_ref_type"] = "CATALOG"
+    assertNull(TargetSettings(prefs).reference.value)
+    prefs.values["target_ref_id"] = 3L
+    assertNull(TargetSettings(prefs).reference.value)
+    prefs.values["target_ref_key"] = "  "
+    assertNull(TargetSettings(prefs).reference.value)
+  }
+
+  @Test
+  fun `the catalog key is exported and restored`() {
+    target.setReference(ReferenceKey.Catalog("nemo_v60"))
+    val snapshot = export()
+    assertEquals("CATALOG", snapshot.targetRefType)
+    assertEquals("nemo_v60", snapshot.targetRefKey)
+    assertNull(snapshot.targetRefId)
+
+    val other = FakeSharedPreferences()
+    val restored = TargetSettings(other)
+    restored.restoreFrom(snapshot)
+    assertEquals(ReferenceKey.Catalog("nemo_v60"), restored.reference.value)
+    restored.restoreFrom(SettingsSnapshot())
+    assertNull(restored.reference.value)
+    assertFalse(other.values.containsKey("target_ref_key"))
+  }
 }

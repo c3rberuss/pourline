@@ -33,6 +33,16 @@ import dev.josueamaya.pourline.protocol.Frame
 import dev.josueamaya.pourline.protocol.ScaleMessage
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
+import dev.josueamaya.pourline.recipe.fourSix
+import dev.josueamaya.pourline.recipe.v60Classic
+import dev.josueamaya.pourline.recipe.catalog.CatalogCache
+import dev.josueamaya.pourline.recipe.catalog.CatalogFetcher
+import dev.josueamaya.pourline.recipe.catalog.CatalogTargetSource
+import dev.josueamaya.pourline.recipe.catalog.FakeCatalogFetcher
+import dev.josueamaya.pourline.recipe.catalog.RecipeCatalogRepository
+import dev.josueamaya.pourline.recipe.catalog.ResourcesCatalogLanguage
+import dev.josueamaya.pourline.recipe.catalog.TestRecipeCatalog
+import dev.josueamaya.pourline.recipe.catalog.grinderCatalogByKey
 import dev.josueamaya.pourline.recipe.share.PendingRecipeImport
 import dev.josueamaya.pourline.recipe.share.QrReadResult
 import dev.josueamaya.pourline.share.QrImageReader
@@ -167,6 +177,12 @@ class TestAppDependencies(
   useScale: Boolean? = true,
   /** La copia de seguridad; `null` usa un [BackupManager] real sobre la base y las fotos de prueba. */
   backup: BackupOperations? = null,
+  /** El archivo del catálogo de recetas "empaquetado en el APK" (SPEC-012). */
+  catalogJson: String = TestRecipeCatalog.json(),
+  /** La descarga del catálogo; por defecto falla siempre y cuenta las llamadas. */
+  val catalogFetcher: CatalogFetcher = FakeCatalogFetcher(),
+  /** Siembra la V60 clásica y el método 4:6 como recetas propias; las pruebas de una instalación nueva pasan `false`. */
+  seedRecipes: Boolean = true,
 ) {
   init {
     context.deleteSharedPreferences(PREFS)
@@ -177,9 +193,10 @@ class TestAppDependencies(
 
   /** El directorio de trabajo de la importación, en el mismo volumen que [photosDir] (el renombrado es atómico). */
   private val backupDir = File(context.cacheDir, "test_app_backup").also { it.deleteRecursively() }
+  private val catalogDir = File(context.cacheDir, "test_catalog").also { it.deleteRecursively() }
   private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-  val db: HistoryDatabase = HistoryDatabase.inMemory(context, texts)
+  val db: HistoryDatabase = HistoryDatabase.inMemory(context)
   val brewSettings = BrewSettings(context, PREFS)
   val targetSettings = TargetSettings(context, PREFS)
   val themeSettings = ThemeSettings(context, PREFS)
@@ -190,8 +207,25 @@ class TestAppDependencies(
   val brews = BrewRepository(db)
   val photoStore = CoffeePhotoStore(photosDir, context.cacheDir)
   val coffees = CoffeeRepository(db, photoStore)
-  val recipes = RecipeRepository(db, texts)
+  val recipes = RecipeRepository(db, texts).also { repository ->
+    if (seedRecipes) {
+      runBlocking {
+        repository.save(v60Classic(texts))
+        repository.save(fourSix(texts))
+      }
+    }
+  }
   val recipeImports = PendingRecipeImport()
+
+  /** El catálogo de recetas recomendadas con su caché en `cacheDir/test_catalog` y los molinos de prueba. */
+  val recipeCatalog = RecipeCatalogRepository(
+    bundled = { catalogJson },
+    cache = CatalogCache(catalogDir),
+    fetcher = catalogFetcher,
+    grinders = { grinderCatalogByKey { TestGrinderCatalog.JSON } },
+    scope = appScope,
+  )
+  val catalogLanguage = ResourcesCatalogLanguage(context)
 
   /** El lector de QR de las imágenes; un test lo cambia por el suyo. Por defecto no encuentra ninguna receta. */
   var qrImageReader: QrImageReader = QrImageReader { QrReadResult.NoRecipe }
@@ -213,7 +247,7 @@ class TestAppDependencies(
     saver = brews,
     applicationScope = appScope,
     references = targetSettings,
-    targets = RepositoryTargetReferences(recipes, brews),
+    targets = RepositoryTargetReferences(recipes, brews, CatalogTargetSource(recipeCatalog, grinders, catalogLanguage, grindTexts)),
     notifier = notifier,
     coffeeStore = brewSettings,
     coffees = RepositoryScaleCoffees(coffees),
@@ -266,6 +300,8 @@ class TestAppDependencies(
     coffeeRepository = coffees,
     recipeRepository = recipes,
     recipeTexts = texts,
+    recipeCatalog = recipeCatalog,
+    catalogLanguage = catalogLanguage,
     recipeImports = recipeImports,
     qrImageReader = { uri -> qrImageReader.read(uri) },
     grinderSettings = grinderSettings,
@@ -309,6 +345,7 @@ class TestAppDependencies(
     db.close()
     photosDir.deleteRecursively()
     backupDir.deleteRecursively()
+    catalogDir.deleteRecursively()
     context.deleteSharedPreferences(PREFS)
   }
 

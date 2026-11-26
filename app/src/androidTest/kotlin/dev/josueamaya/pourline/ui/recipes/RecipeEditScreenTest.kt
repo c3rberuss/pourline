@@ -43,14 +43,16 @@ import dev.josueamaya.pourline.grinder.addGrinder
 import dev.josueamaya.pourline.grinder.grinderRepository
 import dev.josueamaya.pourline.history.BrewRepository
 import dev.josueamaya.pourline.history.HistoryDatabase
+import dev.josueamaya.pourline.history.LegacyBuiltIns
 import dev.josueamaya.pourline.history.TestBrews
 import dev.josueamaya.pourline.history.BrewMethod
-import dev.josueamaya.pourline.recipe.BuiltInRecipes
 import dev.josueamaya.pourline.recipe.Recipe
 import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
 import dev.josueamaya.pourline.recipe.StageType
+import dev.josueamaya.pourline.recipe.fourSix
+import dev.josueamaya.pourline.recipe.v60Classic
 import dev.josueamaya.pourline.settings.ExperienceMode
 import dev.josueamaya.pourline.settings.LocalExperienceMode
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
@@ -60,6 +62,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -81,7 +84,7 @@ class RecipeEditScreenTest {
 
   @Before
   fun setUp() {
-    db = HistoryDatabase.inMemory(context, texts)
+    db = HistoryDatabase.inMemory(context)
     recipes = RecipeRepository(db, texts)
     brews = BrewRepository(db)
     grinders = db.grinderRepository(context, defaults)
@@ -103,7 +106,11 @@ class RecipeEditScreenTest {
     return viewModel
   }
 
-  private fun builtInId(key: String) = runBlocking { recipes.list().first().single { it.name == texts.builtInName(key) }.id }
+  /** Siembra la V60 clásica o la 4:6 antiguas como receta propia (si aún no están) y devuelve su id. */
+  private fun seededId(key: String): Long = runBlocking {
+    recipes.list().first().firstOrNull { it.name == texts.builtInName(key) }?.id
+      ?: recipes.save(if (key == LegacyBuiltIns.V60_CLASSIC) v60Classic(texts) else fourSix(texts))
+  }
 
   private fun type(tag: String, text: String) = rule.onNodeWithTag(tag).performScrollTo().performTextInput(text)
 
@@ -196,13 +203,13 @@ class RecipeEditScreenTest {
 
   @Test
   fun theCurvePreviewShowsOnlyInExpertMode() {
-    show(id = builtInId(BuiltInRecipes.V60_CLASSIC), mode = ExperienceMode.EXPERT)
+    show(id = seededId(LegacyBuiltIns.V60_CLASSIC), mode = ExperienceMode.EXPERT)
     rule.onNodeWithTag("recipe_edit_preview").performScrollTo().assertExists()
   }
 
   @Test
   fun inBasicModeThereIsNoCurvePreviewButTheStepsAreEditable() {
-    show(id = builtInId(BuiltInRecipes.V60_CLASSIC), mode = ExperienceMode.BASIC)
+    show(id = seededId(LegacyBuiltIns.V60_CLASSIC), mode = ExperienceMode.BASIC)
     assertFalse(exists("recipe_edit_preview"))
     assertTrue(exists("recipe_stage_4"))
     rule.onNodeWithTag("recipe_edit_totals").performScrollTo().assertExists()
@@ -234,7 +241,7 @@ class RecipeEditScreenTest {
     rule.onNodeWithTag("recipe_stage_instruction_counter_0").assertTextEquals("17/200")
     rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
     rule.waitUntil(5_000) { backCount == 1 }
-    val saved = runBlocking { recipes.get(recipes.list().first().single { !it.builtIn }.id)!! }
+    val saved = runBlocking { recipes.get(recipes.list().first().single().id)!! }
     assertEquals("Vierte en espiral", saved.stages.single().instruction)
   }
 
@@ -253,7 +260,7 @@ class RecipeEditScreenTest {
 
   @Test
   fun theClassicV60ShowsItsFiveStepsWithTwoWaits() {
-    show(id = builtInId(BuiltInRecipes.V60_CLASSIC))
+    show(id = seededId(LegacyBuiltIns.V60_CLASSIC))
     assertTrue(exists("recipe_stage_4"))
     assertFalse(exists("recipe_stage_5"))
     // Los dos pasos de espera no piden agua; los tres vertidos sí.
@@ -262,7 +269,7 @@ class RecipeEditScreenTest {
     rule.onNodeWithTag("recipe_stage_water_4").performScrollTo().assertTextEquals("250")
     // Cada paso trae su instrucción.
     rule.onNodeWithTag("recipe_stage_instruction_0").performScrollTo()
-    val instruction = texts.builtInStageInstructions(BuiltInRecipes.V60_CLASSIC).first()!!
+    val instruction = texts.builtInStageInstructions(LegacyBuiltIns.V60_CLASSIC).first()!!
     rule.onNodeWithTag("recipe_stage_instruction_0").assertTextEquals(instruction, includeEditableText = true)
   }
 
@@ -418,7 +425,7 @@ class RecipeEditScreenTest {
     type("recipe_stage_instruction_1", "Pon la tapa")
     rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsEnabled().performClick()
     rule.waitUntil(5_000) { backCount == 1 }
-    val saved = runBlocking { recipes.get(recipes.list().first().single { !it.builtIn }.id)!! }
+    val saved = runBlocking { recipes.get(recipes.list().first().single().id)!! }
     assertEquals(StageType.ACTION, saved.stages[1].type)
     assertEquals("Pon la tapa", saved.stages[1].instruction)
     assertEquals(50.0, saved.stages[1].targetWaterG, 0.0) // el agua del vertido anterior
@@ -441,7 +448,7 @@ class RecipeEditScreenTest {
     assertTrue(exists("recipe_stage_action_hint_1"))
     rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsEnabled().performClick()
     rule.waitUntil(5_000) { backCount == 1 }
-    val saved = runBlocking { recipes.get(recipes.list().first().single { !it.builtIn }.id)!! }
+    val saved = runBlocking { recipes.get(recipes.list().first().single().id)!! }
     assertEquals(StageType.ACTION, saved.stages[1].type)
     assertEquals(null, saved.stages[1].instruction)
   }
@@ -489,7 +496,7 @@ class RecipeEditScreenTest {
     type("recipe_edit_dose", "16,5")
     rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
     rule.waitUntil(5_000) { backCount == 1 }
-    val saved = runBlocking { recipes.list().first().single { !it.builtIn } }
+    val saved = runBlocking { recipes.list().first().single() }
     assertEquals("Mi receta", saved.name)
     assertEquals(16.5, saved.doseG, 0.0)
     assertEquals(50.0, saved.totalWaterG, 0.0)
@@ -519,25 +526,24 @@ class RecipeEditScreenTest {
   }
 
   @Test
-  fun editingOnlyQuantitiesKeepsTheTranslatedNamesAndRenamingDropsThem() {
-    val id = builtInId(BuiltInRecipes.V60_CLASSIC)
+  fun editingOnlyQuantitiesKeepsTheNameTheStagesAndHasNoBuiltInKey() {
+    val id = seededId(LegacyBuiltIns.V60_CLASSIC)
     show(id = id)
     replace("recipe_edit_dose", "16")
     rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
     rule.waitUntil(5_000) { backCount == 1 }
-    var recipe = runBlocking { recipes.get(id)!! }
+    val recipe = runBlocking { recipes.get(id)!! }
     assertEquals(16.0, recipe.doseG, 0.0)
-    assertTrue(recipe.localizedNames)
-    assertEquals(BuiltInRecipes.V60_CLASSIC, recipe.builtInKey)
-    assertEquals(texts.builtInName(BuiltInRecipes.V60_CLASSIC), recipe.name)
-
-    // Renombrar la receta pone `localizedNames` a false y guarda los textos mostrados.
-    rule.runOnIdle { }
+    assertFalse(recipe.localizedNames)
+    assertNull(recipe.builtInKey)
+    assertNull(recipe.catalogKey)
+    assertEquals(texts.builtInName(LegacyBuiltIns.V60_CLASSIC), recipe.name)
+    assertEquals(texts.builtInStageNames(LegacyBuiltIns.V60_CLASSIC), recipe.stages.map { it.name })
   }
 
   @Test
-  fun renamingABuiltInStoresTheDisplayedTextsAndStopsTranslating() {
-    val id = builtInId(BuiltInRecipes.FOUR_SIX)
+  fun renamingARecipeStoresTheNewNameAndKeepsTheStageNames() {
+    val id = seededId(LegacyBuiltIns.FOUR_SIX)
     show(id = id)
     replace("recipe_edit_name", "Mi 4:6")
     rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
@@ -545,14 +551,98 @@ class RecipeEditScreenTest {
     val recipe = runBlocking { recipes.get(id)!! }
     assertEquals("Mi 4:6", recipe.name)
     assertFalse(recipe.localizedNames)
-    assertEquals(BuiltInRecipes.FOUR_SIX, recipe.builtInKey)
-    // Las etapas conservan los nombres que se mostraban.
-    assertEquals(texts.builtInStageNames(BuiltInRecipes.FOUR_SIX), recipe.stages.map { it.name })
+    assertEquals(texts.builtInStageNames(LegacyBuiltIns.FOUR_SIX), recipe.stages.map { it.name })
+  }
+
+  @Test
+  fun authorAndSourceAreSavedAndShownAgain() {
+    val id = runBlocking { recipes.save(v60Classic(texts).copy(name = "Con autor", author = "Nemo", sourceUrl = "https://example.com/nemo")) }
+    show(id = id)
+    // La receta guardada con autor y fuente los muestra rellenos.
+    rule.onNodeWithTag("recipe_edit_author").performScrollTo().assertTextContains("Nemo")
+    rule.onNodeWithTag("recipe_edit_source").performScrollTo().assertTextContains("https://example.com/nemo")
+
+    replace("recipe_edit_author", "Némo Pop")
+    replace("recipe_edit_source", "https://example.com/otra")
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitUntil(5_000) { backCount == 1 }
+    val recipe = runBlocking { recipes.get(id)!! }
+    assertEquals("Némo Pop", recipe.author)
+    assertEquals("https://example.com/otra", recipe.sourceUrl)
+  }
+
+  @Test
+  fun authorAndSourceOfANewRecipeAreOptionalAndSaved() {
+    val id = seededId(LegacyBuiltIns.V60_CLASSIC)
+    show(id = id)
+    type("recipe_edit_author", "  Ana  ")
+    type("recipe_edit_source", "https://example.com/ana")
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitUntil(5_000) { backCount == 1 }
+    val recipe = runBlocking { recipes.get(id)!! }
+    assertEquals("Ana", recipe.author)
+    assertEquals("https://example.com/ana", recipe.sourceUrl)
+  }
+
+  @Test
+  fun anInvalidSourceShowsTheErrorAndBlocksSaving() {
+    val id = seededId(LegacyBuiltIns.V60_CLASSIC)
+    show(id = id)
+    type("recipe_edit_source", "example.com")
+    rule.onNodeWithTag("recipe_edit_source_error", useUnmergedTree = true).performScrollTo().assertTextContains(context.getString(R.string.recipe_error_source))
+    assertFalse(exists("recipe_edit_source_open"))
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitForIdle()
+    assertEquals(0, backCount)
+    assertNull(runBlocking { recipes.get(id)!!.sourceUrl })
+  }
+
+  @Test
+  fun anAuthorOverTheLimitShowsTheErrorAndBlocksSaving() {
+    val id = seededId(LegacyBuiltIns.V60_CLASSIC)
+    show(id = id)
+    type("recipe_edit_author", "a".repeat(101))
+    rule.onNodeWithTag("recipe_edit_author_error", useUnmergedTree = true).performScrollTo().assertTextContains(context.getString(R.string.recipe_error_author))
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitForIdle()
+    assertEquals(0, backCount)
+  }
+
+  @Test
+  fun viewSourceIsShownForAValidSource() {
+    val id = seededId(LegacyBuiltIns.V60_CLASSIC)
+    show(id = id)
+    assertFalse(exists("recipe_edit_source_open"))
+    type("recipe_edit_source", "https://example.com/nemo")
+    rule.onNodeWithTag("recipe_edit_source_open").performScrollTo().assertExists()
+  }
+
+  @Test
+  fun editingACatalogCopyKeepsItsCatalogKeyAuthorAndSource() {
+    val id = runBlocking {
+      recipes.save(
+        v60Classic(texts).copy(
+          name = "Copia del catálogo",
+          catalogKey = "nemo_v60",
+          author = "Nemo",
+          sourceUrl = "https://example.com/nemo",
+        ),
+      )
+    }
+    show(id = id)
+    replace("recipe_edit_dose", "16")
+    rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
+    rule.waitUntil(5_000) { backCount == 1 }
+    val recipe = runBlocking { recipes.get(id)!! }
+    assertEquals(16.0, recipe.doseG, 0.0)
+    assertEquals("nemo_v60", recipe.catalogKey)
+    assertEquals("Nemo", recipe.author)
+    assertEquals("https://example.com/nemo", recipe.sourceUrl)
   }
 
   @Test
   fun duplicateIsDisabledWithUnsavedChangesAndOpensTheCopyOtherwise() {
-    val id = builtInId(BuiltInRecipes.V60_CLASSIC)
+    val id = seededId(LegacyBuiltIns.V60_CLASSIC)
     show(id = id)
     rule.onNodeWithTag("recipe_edit_duplicate").performScrollTo().assertIsEnabled()
     replace("recipe_edit_dose", "17")
@@ -561,13 +651,13 @@ class RecipeEditScreenTest {
     rule.onNodeWithTag("recipe_edit_duplicate").performScrollTo().assertIsEnabled().performClick()
     rule.waitUntil(5_000) { duplicatedId != null }
     val copy = runBlocking { recipes.get(duplicatedId!!)!! }
-    assertEquals(context.getString(R.string.recipe_copy_name, texts.builtInName(BuiltInRecipes.V60_CLASSIC)), copy.name)
+    assertEquals(context.getString(R.string.recipe_copy_name, texts.builtInName(LegacyBuiltIns.V60_CLASSIC)), copy.name)
     assertEquals(null, copy.builtInKey)
   }
 
   @Test
   fun deletingGoesBackAndLeavesTheRecipeForUndo() {
-    val id = builtInId(BuiltInRecipes.V60_CLASSIC)
+    val id = seededId(LegacyBuiltIns.V60_CLASSIC)
     show(id = id)
     rule.onNodeWithTag("recipe_edit_delete").performScrollTo().performClick()
     rule.waitUntil(5_000) { backCount == 1 }
@@ -596,7 +686,7 @@ class RecipeEditScreenTest {
     type("recipe_edit_dose", "20")
     rule.onNodeWithTag("recipe_edit_save").performScrollTo().assertIsEnabled().performClick()
     rule.waitUntil(5_000) { backCount == 1 }
-    val saved = runBlocking { recipes.list().first().single { !it.builtIn } }
+    val saved = runBlocking { recipes.list().first().single() }
     assertEquals(5, saved.stageCount) // tres vertidos y dos esperas
     assertTrue(saved.name.endsWith(context.getString(R.string.recipe_from_brew_name, "").trim().ifEmpty { "(" }.take(1)).not())
   }
@@ -665,6 +755,19 @@ class RecipeEditScreenTest {
     rule.onNodeWithTag("recipe_edit_save").performScrollTo().performClick()
     rule.waitUntil(5_000) { backCount > 0 }
     assertEquals(null, runBlocking { recipes.get(id) }!!.grind?.value)
+  }
+
+  @Test
+  fun aRecipeWithATextOnlyGrindIsShownWithoutTheDeletedTag() {
+    grinderUno()
+    val id = runBlocking {
+      recipes.save(
+        Recipe(name = "Solo texto", method = BrewMethod.V60, grind = GrindSetting(null, null, "Media-fina"), doseG = 15.0, stages = listOf(RecipeStage("Bloom", 0, 40.0, 10_000))),
+      )
+    }
+    show(id = id)
+    rule.onNodeWithTag("recipe_edit_grind_orphan", useUnmergedTree = true).performScrollTo().assertTextContains("Media-fina", substring = true)
+    assertFalse(rule.onAllNodesWithTag("recipe_edit_grind_orphan_deleted", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
   }
 
   @Test

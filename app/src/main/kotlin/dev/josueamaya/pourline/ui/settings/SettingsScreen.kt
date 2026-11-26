@@ -15,11 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -33,37 +29,30 @@ import dev.josueamaya.pourline.grinder.GrinderRepository
 import dev.josueamaya.pourline.settings.BrewSettings
 import dev.josueamaya.pourline.settings.DefaultGrinderStore
 import dev.josueamaya.pourline.settings.ExperienceMode
-import dev.josueamaya.pourline.settings.ExpertFeature
 import dev.josueamaya.pourline.settings.ModeStore
 import dev.josueamaya.pourline.settings.ScaleModeStore
 import dev.josueamaya.pourline.settings.TargetSettings
 import dev.josueamaya.pourline.settings.ThemeMode
 import dev.josueamaya.pourline.settings.ThemeSettings
-import dev.josueamaya.pourline.ui.components.AntButton
 import dev.josueamaya.pourline.ui.components.AntCard
 import dev.josueamaya.pourline.ui.components.AntIconButton
 import dev.josueamaya.pourline.ui.components.AntIcons
 import dev.josueamaya.pourline.ui.components.AntListItem
 import dev.josueamaya.pourline.ui.components.AntMessageHost
-import dev.josueamaya.pourline.ui.components.AntModal
 import dev.josueamaya.pourline.ui.components.AntSegmented
 import dev.josueamaya.pourline.ui.components.AntSegmentedOption
-import dev.josueamaya.pourline.ui.components.AntStatus
 import dev.josueamaya.pourline.ui.components.AntSwitch
 import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.components.AntTopBar
-import dev.josueamaya.pourline.ui.components.showAntMessage
 import dev.josueamaya.pourline.ui.theme.AntTheme
 import dev.josueamaya.pourline.ui.tour.TourHost
 import dev.josueamaya.pourline.ui.tour.Tours
 import dev.josueamaya.pourline.ui.tour.tourAnchor
-import kotlinx.coroutines.launch
 
 /**
  * Recibe los ajustes por parámetro (sin `CompositionLocal`) para poder probarla aislada.
- * [onRestoreRecipes] devuelve las recetas predefinidas a fábrica, tras confirmar; [onOpenGrinders] abre Molinos;
- * [onReplayTour] borra los recorridos vistos y vuelve a Preparar; [onScaleOff] se llama al pasar a "Sin báscula". Con
+ * [onOpenGrinders] abre Molinos; [onReplayTour] borra los recorridos vistos y vuelve a Preparar; [onScaleOff] se llama al pasar a "Sin báscula". Con
  * [onBack] `null` (es una
  * pestaña) no hay flecha de volver. Con [backup] `null` no hay tarjeta de copia de seguridad.
  */
@@ -76,7 +65,6 @@ fun SettingsScreen(
   grinderRepository: GrinderRepository,
   grinderDefaults: DefaultGrinderStore,
   scaleMode: ScaleModeStore,
-  onRestoreRecipes: suspend () -> Unit,
   onOpenGrinders: () -> Unit,
   onReplayTour: () -> Unit,
   onBack: (() -> Unit)?,
@@ -91,9 +79,6 @@ fun SettingsScreen(
   val vibration by targetSettings.stageVibration.collectAsStateWithLifecycle()
   val sound by targetSettings.stageSound.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
-  val scope = rememberCoroutineScope()
-  var confirmRestore by rememberSaveable { mutableStateOf(false) }
-  val restoredText = stringResource(R.string.settings_recipes_restored)
 
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
@@ -200,36 +185,10 @@ fun SettingsScreen(
       }
       ReplayTourRow(onReplayTour)
       backup?.let { BackupCard(it, snackbar) }
-      if (experience.shows(ExpertFeature.RESTORE_BUILT_INS)) {
-        AntCard(Modifier.fillMaxWidth(), title = stringResource(R.string.settings_recipes_title)) {
-          AntButton(
-            text = stringResource(R.string.settings_recipes_restore),
-            onClick = { confirmRestore = true },
-            modifier = Modifier.fillMaxWidth().testTag("settings_recipes_restore"),
-          )
-        }
-      }
     }
   }
 
   TourHost(Tours.settings)
-
-  if (confirmRestore) {
-    AntModal(
-      title = stringResource(R.string.settings_recipes_restore_title),
-      text = stringResource(R.string.settings_recipes_restore_text),
-      confirmText = stringResource(R.string.settings_recipes_restore_confirm),
-      cancelText = stringResource(R.string.settings_recipes_restore_cancel),
-      onConfirm = {
-        confirmRestore = false
-        scope.launch {
-          onRestoreRecipes()
-          snackbar.showAntMessage(restoredText, AntStatus.Success)
-        }
-      },
-      onDismiss = { confirmRestore = false },
-    )
-  }
 }
 
 private val ThemeMode.labelRes: Int

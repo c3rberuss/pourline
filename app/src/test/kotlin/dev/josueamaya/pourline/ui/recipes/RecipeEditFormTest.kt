@@ -65,7 +65,7 @@ class RecipeEditFormTest {
     val recipe = v60Classic()
     val form = RecipeEditForm.from(recipe)
     assertTrue(form.isValid)
-    val back = form.toRecipe(id = 7, builtInKey = recipe.builtInKey, localizedNames = true)!!
+    val back = form.toRecipe(id = 7)!!
     assertEquals(recipe.copy(id = 7), back)
   }
 
@@ -299,24 +299,55 @@ class RecipeEditFormTest {
   }
 
   @Test
-  fun `localized names are kept only if the name and the stage names do not change`() {
-    val initial = filled()
-    assertTrue(initial.keepsLocalizedNames(initial, wasLocalized = true))
-    // Solo cantidades.
-    val quantities = initial.copy(dose = "16", grind = GrindChoice.Live(1, 20.0)).updateStage(0, initial.stages[0].copy(water = "45", start = "0:02"))
-    assertTrue(quantities.keepsLocalizedNames(initial, wasLocalized = true))
-    // El nombre de la receta.
-    assertFalse(initial.copy(name = "Mi V60").keepsLocalizedNames(initial, wasLocalized = true))
-    // El nombre de una etapa.
-    assertFalse(initial.updateStage(1, initial.stages[1].copy(name = "Segundo")).keepsLocalizedNames(initial, wasLocalized = true))
-    // Una etapa de más o de menos.
-    assertFalse(initial.addStage().keepsLocalizedNames(initial, wasLocalized = true))
-    assertFalse(initial.removeStage(2).keepsLocalizedNames(initial, wasLocalized = true))
-    // El tipo y la instrucción de un paso.
-    assertFalse(initial.updateStage(0, initial.stages[0].copy(type = StageType.SWIRL)).keepsLocalizedNames(initial, wasLocalized = true))
-    assertFalse(initial.updateStage(0, initial.stages[0].copy(instruction = "Otra")).keepsLocalizedNames(initial, wasLocalized = true))
-    // Si ya no lo era, no vuelve a serlo.
-    assertFalse(initial.keepsLocalizedNames(initial, wasLocalized = false))
+  fun `author and source are optional`() {
+    val recipe = filled().toRecipe()!!
+    assertNull(recipe.author)
+    assertNull(recipe.sourceUrl)
+    assertEquals("", RecipeEditForm().author)
+    assertEquals("", RecipeEditForm().sourceUrl)
+    // Solo espacios cuenta como vacío.
+    val blank = filled().copy(author = "  ", sourceUrl = "   ").toRecipe()!!
+    assertNull(blank.author)
+    assertNull(blank.sourceUrl)
+  }
+
+  @Test
+  fun `an author over the limit is an error`() {
+    assertNull(filled().copy(author = "a".repeat(100)).errors().author)
+    val tooLong = filled().copy(author = "a".repeat(101))
+    assertEquals(FieldError.AUTHOR_TOO_LONG, tooLong.errors().author)
+    assertTrue(tooLong.errors().any)
+    assertNull(tooLong.toRecipe())
+  }
+
+  @Test
+  fun `an invalid source is an error and http or https are valid`() {
+    for (valid in listOf("http://example.com/a", "https://example.com/a", "HTTPS://Example.com", "  https://example.com  ")) {
+      assertNull(valid, filled().copy(sourceUrl = valid).errors().sourceUrl)
+    }
+    for (invalid in listOf("example.com", "ftp://example.com", "javascript:alert(1)", "https://", "https://a b.com", "https://example.com/" + "a".repeat(500))) {
+      assertEquals(invalid, FieldError.SOURCE_URL_INVALID, filled().copy(sourceUrl = invalid).errors().sourceUrl)
+    }
+    assertNull(filled().copy(sourceUrl = "ftp://example.com").toRecipe())
+  }
+
+  @Test
+  fun `author and source round trip through the form`() {
+    val recipe = v60Classic().copy(author = "Némo Pop", sourceUrl = "https://example.com/nemo")
+    val form = RecipeEditForm.from(recipe)
+    assertEquals("Némo Pop", form.author)
+    assertEquals("https://example.com/nemo", form.sourceUrl)
+    val back = form.toRecipe()!!
+    assertEquals("Némo Pop", back.author)
+    assertEquals("https://example.com/nemo", back.sourceUrl)
+  }
+
+  @Test
+  fun `the catalog key is kept when saving`() {
+    val form = filled()
+    assertEquals("nemo_v60", form.toRecipe(id = 7, catalogKey = "nemo_v60")!!.catalogKey)
+    assertNull(form.toRecipe(id = 7)!!.catalogKey)
+    assertNull(form.toRecipe()!!.builtInKey)
   }
 
   @Test

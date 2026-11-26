@@ -2,6 +2,7 @@ package dev.josueamaya.pourline.recipe
 
 import dev.josueamaya.pourline.history.BrewMethod
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -186,5 +187,31 @@ class RecipeValidatorTest {
       listOf(RecipeError.StartOverlaps(1)),
       errors(recipeOf(stage(0, 40.0, 10), stage(5, 40.0, 5, type = StageType.ACTION))),
     )
+  }
+
+  @Test
+  fun `an author longer than the limit is rejected`() {
+    assertTrue(errors(valid().copy(author = "a".repeat(RecipeValidator.MAX_AUTHOR))).isEmpty())
+    assertEquals(listOf(RecipeError.AuthorTooLong), errors(valid().copy(author = "a".repeat(RecipeValidator.MAX_AUTHOR + 1))))
+    assertTrue(errors(valid().copy(author = "  ${"a".repeat(RecipeValidator.MAX_AUTHOR)}  ")).isEmpty())
+  }
+
+  @Test
+  fun `a source url must be http or https with a host and no spaces`() {
+    listOf("http://a.b", "HTTPS://a.b/c", "https://a.b/c?d=e#f", " https://a.b ").forEach {
+      assertTrue(it, RecipeValidator.isValidSourceUrl(it))
+      assertTrue(it, errors(valid().copy(sourceUrl = it)).isEmpty())
+    }
+    listOf("ftp://a.b", "https://", "https://a b", "a.b", "https:a.b", "x".repeat(10), "https://a.b/" + "x".repeat(500)).forEach {
+      assertFalse(it, RecipeValidator.isValidSourceUrl(it))
+      assertEquals(it, listOf(RecipeError.SourceUrlInvalid), errors(valid().copy(sourceUrl = it)))
+    }
+  }
+
+  @Test
+  fun `blank author and source are not errors`() {
+    assertTrue(errors(valid().copy(author = "", sourceUrl = "")).isEmpty())
+    assertTrue(errors(valid().copy(author = "   ", sourceUrl = "   ")).isEmpty())
+    assertTrue(errors(valid().copy(author = null, sourceUrl = null)).isEmpty())
   }
 }

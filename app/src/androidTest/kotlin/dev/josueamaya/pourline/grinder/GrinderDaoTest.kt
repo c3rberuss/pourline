@@ -31,7 +31,7 @@ class GrinderDaoTest {
 
   @Before
   fun setUp() {
-    db = HistoryDatabase.inMemory(context, texts)
+    db = HistoryDatabase.inMemory(context)
     recipes = RecipeRepository(db, texts)
     brews = BrewRepository(db)
   }

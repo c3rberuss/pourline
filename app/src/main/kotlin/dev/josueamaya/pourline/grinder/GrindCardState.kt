@@ -2,8 +2,12 @@ package dev.josueamaya.pourline.grinder
 
 import dev.josueamaya.pourline.history.BrewMethod
 
-/** La referencia de la tarjeta de molienda (D24): el método y el ajuste de la receta o de la preparación elegida. */
-data class GrindSource(val method: BrewMethod?, val setting: GrindSetting?)
+/**
+ * La referencia de la tarjeta de molienda (D24): el método y el ajuste de la receta o de la preparación elegida.
+ * [preferredGrinderId] es el molino que conviene preseleccionar (SPEC-012): el de una receta del catálogo que el usuario
+ * tiene o el primero al que se puede convertir. Las demás referencias lo dejan en `null`.
+ */
+data class GrindSource(val method: BrewMethod?, val setting: GrindSetting?, val preferredGrinderId: Long? = null)
 
 /** Qué se ofrece cuando no hay equivalencia (D25). */
 enum class GrindFix {
@@ -83,10 +87,13 @@ data class GrindCardState(
   }
 }
 
-/** El molino preseleccionado de "Moler con" (§3.7): el elegido, el de la receta, el predeterminado o el primero. */
+/**
+ * El molino preseleccionado de "Moler con" (§3.7): el elegido, el de la receta si es propio, el preferido de la
+ * referencia, el predeterminado o el primero.
+ */
 private fun preselected(source: GrindSource?, owned: List<Grinder>, chosenId: Long?, defaultId: Long?): Grinder? {
   fun byId(id: Long?) = id?.let { wanted -> owned.firstOrNull { it.id == wanted } }
-  return byId(chosenId) ?: byId(source?.setting?.grinderId) ?: byId(defaultId) ?: owned.firstOrNull()
+  return byId(chosenId) ?: byId(source?.setting?.grinderId) ?: byId(source?.preferredGrinderId) ?: byId(defaultId) ?: owned.firstOrNull()
 }
 
 /**
@@ -109,7 +116,8 @@ fun grindCardState(
   val outcome = when {
     chosen == null -> if (source == null) GrindOutcome.NoReference else GrindOutcome.NoGrinder
     source == null -> GrindOutcome.NoReference
-    setting != null && live == null -> GrindOutcome.Orphan
+    // Una molienda solo de texto (una receta del catálogo o importada como texto) no es un molino eliminado.
+    setting != null && live == null && !setting.isTextOnly -> GrindOutcome.Orphan
     live != null && setting?.value != null -> convertOutcome(setting.value, live, chosen, calibrations)
     else -> suggestion(source.method, chosen)
   }

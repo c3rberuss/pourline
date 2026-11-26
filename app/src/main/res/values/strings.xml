@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Pourline</string>
 
     <!-- Escaneo -->
@@ -207,8 +207,37 @@
     <string name="recipe_empty">Aún no hay recetas</string>
     <string name="recipe_deleted">Receta borrada</string>
     <string name="recipe_undo">Deshacer</string>
-    <string name="recipe_builtin_tag">Predefinida</string>
     <string name="recipe_active_tag">Activa</string>
+    <string name="recipes_segment_mine">Mis recetas</string>
+    <string name="recipes_segment_catalog">Recomendadas</string>
+    <string name="recipes_empty_see_catalog">Ver recomendadas</string>
+    <string name="catalog_search_placeholder" tools:ignore="Typos">Buscar por nombre o autor</string>
+    <string name="catalog_filter_all">Todos</string>
+    <string name="catalog_roast_filter">Tueste</string>
+    <string name="catalog_detail_roasts">Tueste: %1$s</string>
+    <string name="catalog_detail_roasts_any">Tueste: cualquiera</string>
+    <string name="catalog_saved_tag">Guardada</string>
+    <string name="catalog_no_results">No hay recetas con estos filtros</string>
+    <string name="catalog_clear_filters">Quitar filtros</string>
+    <string name="catalog_update_failed">No se pudo actualizar · Última actualización: %1$s</string>
+    <string name="catalog_using_bundled">Usando las recetas incluidas en la app</string>
+    <string name="catalog_newer_schema">Actualiza la app para ver las recetas nuevas</string>
+    <string name="catalog_last_update">Última actualización: %1$s</string>
+    <string name="tour_recipes_catalog_title">Recomendadas</string>
+    <string name="tour_recipes_catalog_body">Recetas de baristas y campeonatos. Prepáralas tal cual o guarda una copia para ajustarla.</string>
+    <string name="catalog_detail_prepare">Preparar</string>
+    <string name="catalog_detail_save">Guardar en mis recetas</string>
+    <string name="catalog_detail_saved">Receta guardada en Mis recetas</string>
+    <string name="catalog_detail_already_saved">Ya tienes una copia</string>
+    <string name="catalog_detail_source">Ver fuente</string>
+    <string name="catalog_detail_author" tools:ignore="Typos">Autor: %1$s</string>
+    <string name="catalog_detail_missing">Esta receta ya no está en las recomendadas</string>
+    <string name="catalog_no_browser">No hay ninguna app para abrir el enlace</string>
+    <string name="recipe_edit_author" tools:ignore="Typos">Autor</string>
+    <string name="recipe_edit_source">Fuente</string>
+    <string name="recipe_edit_source_placeholder">https://…</string>
+    <string name="recipe_error_author">Máximo 100 caracteres</string>
+    <string name="recipe_error_source">Escribe un enlace que empiece por http:// o https://</string>
     <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s · %5$s</string>
     <plurals name="recipe_stage_count">
         <item quantity="one">%1$d paso</item>
@@ -292,13 +321,6 @@
     <string name="settings_scale_with_hint">Conecta tu báscula en Preparar y la sesión sigue el peso en tiempo real.</string>
     <string name="settings_stage_vibration">Vibrar al empezar cada paso</string>
     <string name="settings_stage_sound">Sonido al empezar cada paso</string>
-    <string name="settings_recipes_title">Recetas</string>
-    <string name="settings_recipes_restore">Restaurar recetas predefinidas</string>
-    <string name="settings_recipes_restore_title">¿Restaurar las recetas predefinidas?</string>
-    <string name="settings_recipes_restore_text">Las recetas predefinidas vuelven a sus valores de fábrica y se crean de nuevo las que borraste. Tus recetas no cambian.</string>
-    <string name="settings_recipes_restore_confirm">Restaurar</string>
-    <string name="settings_recipes_restore_cancel">Cancelar</string>
-    <string name="settings_recipes_restored">Recetas predefinidas restauradas</string>
 
     <!-- backup -->
     <string name="backup_title">Copia de seguridad</string>
@@ -1101,8 +1123,6 @@
     <string name="tour_coffee_detail_share_body">Comparte una ficha del café.</string>
 
     <!-- recipes -->
-    <string name="tour_recipes_builtin_title">Predefinidas</string>
-    <string name="tour_recipes_builtin_body">Úsalas tal cual o duplícalas para ajustarlas.</string>
     <string name="tour_recipes_active_title">Activa</string>
     <string name="tour_recipes_active_body">La receta elegida en Preparar.</string>
     <string name="tour_recipes_add_title">Crear receta</string>
@@ -1197,4 +1217,7 @@
     <string name="tour_settings_countdown_body">Segundos antes de que arranque el reloj.</string>
     <string name="tour_settings_replay_title">Ver recorrido</string>
     <string name="tour_settings_replay_body">Vuelve a ver todos los recorridos.</string>
+
+    <!-- Catálogo de recetas recomendadas (SPEC-012): idioma de sus textos (es en values, en en values-en) -->
+    <string name="catalog_language">es</string>
 </resources>

@@ -23,6 +23,12 @@ enum class FieldError {
   DOSE_INVALID,
   TEMP_INVALID,
 
+  /** Más de [RecipeValidator.MAX_AUTHOR] caracteres. */
+  AUTHOR_TOO_LONG,
+
+  /** No es un enlace `http(s)://` válido. */
+  SOURCE_URL_INVALID,
+
   /** No es `m:ss` ni segundos enteros. */
   START_INVALID,
   START_OVERLAPS,
@@ -54,10 +60,13 @@ data class RecipeFormErrors(
   val name: FieldError? = null,
   val dose: FieldError? = null,
   val temp: FieldError? = null,
+  val author: FieldError? = null,
+  val sourceUrl: FieldError? = null,
   val stages: List<StageFieldErrors> = emptyList(),
   val general: FieldError? = null,
 ) {
-  val any: Boolean get() = name != null || dose != null || temp != null || general != null || stages.any { it.any }
+  val any: Boolean
+    get() = name != null || dose != null || temp != null || author != null || sourceUrl != null || general != null || stages.any { it.any }
 }
 
 /**
@@ -114,6 +123,9 @@ data class RecipeEditForm(
   val grind: GrindChoice = GrindChoice.None,
   val waterTemp: String = "",
   val notes: String = "",
+  /** Opcionales (SPEC-012): el autor o barista y el enlace a la fuente original. */
+  val author: String = "",
+  val sourceUrl: String = "",
   val dose: String = "",
   val stages: List<StageForm> = listOf(StageForm(start = "0:00", water = "50", duration = "10")),
 ) {
@@ -248,16 +260,6 @@ data class RecipeEditForm(
     return copy(start = formatStart((startMs + shiftMs).coerceAtLeast(0)))
   }
 
-  /**
-   * `true` si la receta sigue con los textos traducidos: venía así y ni el nombre ni los nombres, tipos e
-   * instrucciones de los pasos cambian respecto a [initial] (añadir o quitar un paso también los cambia).
-   */
-  fun keepsLocalizedNames(initial: RecipeEditForm, wasLocalized: Boolean): Boolean =
-    wasLocalized && name.trim() == initial.name.trim() &&
-      stages.map { it.name.trim() } == initial.stages.map { it.name.trim() } &&
-      stages.map { it.type } == initial.stages.map { it.type } &&
-      stages.map { it.instruction.trim() } == initial.stages.map { it.instruction.trim() }
-
   /** Errores por campo: de formato y de [RecipeValidator]. */
   fun errors(): RecipeFormErrors {
     val parsed = parse()
@@ -297,6 +299,8 @@ data class RecipeEditForm(
       name = FieldError.NAME_REQUIRED.takeIf { has(RecipeError.NameRequired) },
       dose = FieldError.DOSE_INVALID.takeIf { parsed.dose == null || has(RecipeError.DoseInvalid) },
       temp = FieldError.TEMP_INVALID.takeIf { tempResult == TempResult.Invalid || has(RecipeError.TempInvalid) },
+      author = FieldError.AUTHOR_TOO_LONG.takeIf { has(RecipeError.AuthorTooLong) },
+      sourceUrl = FieldError.SOURCE_URL_INVALID.takeIf { has(RecipeError.SourceUrlInvalid) },
       stages = stageErrors,
       general = when {
         has(RecipeError.StageCountInvalid) -> FieldError.STAGE_COUNT
@@ -309,10 +313,10 @@ data class RecipeEditForm(
   val isValid: Boolean get() = !errors().any
 
   /** La receta, o `null` si algún campo no es válido. */
-  fun toRecipe(id: Long = 0, builtInKey: String? = null, localizedNames: Boolean = false): Recipe? {
+  fun toRecipe(id: Long = 0, catalogKey: String? = null): Recipe? {
     if (errors().any) return null
     val recipe = parse().recipe
-    return recipe.copy(id = id, builtInKey = builtInKey, localizedNames = localizedNames, stages = recipe.stages.withDerivedWater())
+    return recipe.copy(id = id, catalogKey = catalogKey, stages = recipe.stages.withDerivedWater())
   }
 
   /** Agua total y ratio en vivo; `null` si el último vertido o la dosis no se pueden leer. */
@@ -359,6 +363,8 @@ data class RecipeEditForm(
       grind = grind.toSettingUnlabeled(),
       waterTempC = (tempResult as? TempResult.Valid)?.celsius,
       notes = notes.cleaned(),
+      author = author.cleaned(),
+      sourceUrl = sourceUrl.cleaned(),
       doseG = dose ?: 0.0,
       stages = stages.mapIndexed { i, s ->
         val p = parsedStages[i]
@@ -376,6 +382,8 @@ data class RecipeEditForm(
       grind = recipe.grind.toChoice(),
       waterTemp = recipe.waterTempC?.let(::formatNumber).orEmpty(),
       notes = recipe.notes.orEmpty(),
+      author = recipe.author.orEmpty(),
+      sourceUrl = recipe.sourceUrl.orEmpty(),
       dose = formatNumber(recipe.doseG),
       stages = recipe.stages.map {
         StageForm(

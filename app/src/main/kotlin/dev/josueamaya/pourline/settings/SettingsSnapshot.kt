@@ -21,6 +21,7 @@ data class SettingsSnapshot(
   val defaultRatio: Float? = null,
   val targetRefType: String? = null,
   val targetRefId: Long? = null,
+  val targetRefKey: String? = null,
   val stageVibration: Boolean? = null,
   val stageSound: Boolean? = null,
   val defaultGrinderId: Long? = null,

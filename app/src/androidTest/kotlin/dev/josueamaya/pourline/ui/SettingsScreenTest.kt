@@ -14,9 +14,6 @@ import dev.josueamaya.pourline.grinder.GrinderRepository
 import dev.josueamaya.pourline.grinder.ResourcesGrindTexts
 import dev.josueamaya.pourline.grinder.TestGrinders
 import dev.josueamaya.pourline.history.HistoryDatabase
-import dev.josueamaya.pourline.recipe.BuiltInRecipes
-import dev.josueamaya.pourline.recipe.RecipeRepository
-import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
 import dev.josueamaya.pourline.settings.BrewSettings
 import dev.josueamaya.pourline.settings.ConnectionSettings
 import dev.josueamaya.pourline.settings.ExperienceMode
@@ -50,8 +47,6 @@ class SettingsScreenTest {
   private val previousVibration = targetSettings.stageVibration.value
   private val previousSound = targetSettings.stageSound.value
   private lateinit var db: HistoryDatabase
-  private lateinit var recipes: RecipeRepository
-  private var restoreCalls = 0
   private var grindersOpened = 0
   private var replayCalls = 0
   private var scaleOffCalls = 0
@@ -69,7 +64,6 @@ class SettingsScreenTest {
     scaleMode = ConnectionSettings(context, TEST_PREFS).also { it.setUseScale(true) }
     theme.setMode(ThemeMode.SYSTEM)
     db = HistoryDatabase.inMemory(context)
-    recipes = RecipeRepository(db, ResourcesRecipeTexts(context))
     grinderSettings = GrinderSettings(context, TEST_PREFS)
     grinders = GrinderRepository(db, grinderSettings, ResourcesGrindTexts(context))
     rule.setContent {
@@ -84,10 +78,6 @@ class SettingsScreenTest {
           scaleMode = scaleMode,
           onScaleOff = { scaleOffCalls++ },
           onOpenGrinders = { grindersOpened++ },
-          onRestoreRecipes = {
-            restoreCalls++
-            recipes.restoreBuiltIns()
-          },
           onReplayTour = { replayCalls++ },
           onBack = {},
         )
@@ -176,14 +166,14 @@ class SettingsScreenTest {
   }
 
   @Test
-  fun theRestoreButtonOnlyShowsInExpertMode() {
-    rule.onNodeWithTag("settings_recipes_restore").performScrollTo().assertExists()
+  fun theRecipesCardIsGoneInBothModes() {
+    rule.onAllNodesWithTag("settings_recipes_restore").assertCountEquals(0)
 
     rule.onNodeWithText(context.getString(R.string.mode_basic)).performScrollTo().performClick()
     rule.onAllNodesWithTag("settings_recipes_restore").assertCountEquals(0)
 
     rule.onNodeWithText(context.getString(R.string.mode_expert)).performScrollTo().performClick()
-    rule.onNodeWithTag("settings_recipes_restore").performScrollTo().assertExists()
+    rule.onAllNodesWithTag("settings_recipes_restore").assertCountEquals(0)
   }
 
   @Test
@@ -200,37 +190,6 @@ class SettingsScreenTest {
     rule.onNodeWithTag("settings_stage_sound").performClick()
     assertTrue(targetSettings.stageSound.value)
     assertTrue(prefs().getBoolean(TargetSettings.KEY_STAGE_SOUND, false))
-  }
-
-  @Test
-  fun cancellingTheRestoreDoesNothing() {
-    rule.onNodeWithTag("settings_recipes_restore").performScrollTo().performClick()
-    rule.onNodeWithTag("ant_modal").assertExists()
-    rule.onNodeWithTag("ant_modal_cancel").performClick()
-    rule.onAllNodesWithText(context.getString(R.string.settings_recipes_restored)).assertCountEquals(0)
-    assertEquals(0, restoreCalls)
-  }
-
-  @Test
-  fun restoringBringsAnEditedBuiltInBackToFactoryValuesAndConfirms() {
-    val texts = ResourcesRecipeTexts(context)
-    val id = runBlocking {
-      val v60 = recipes.list().first().single { it.name == texts.builtInName(BuiltInRecipes.V60_CLASSIC) }
-      val edited = recipes.get(v60.id)!!.copy(name = "Mi V60", doseG = 18.0, localizedNames = false)
-      recipes.save(edited)
-      v60.id
-    }
-    assertEquals("Mi V60", runBlocking { recipes.get(id)!!.name })
-
-    rule.onNodeWithTag("settings_recipes_restore").performScrollTo().performClick()
-    rule.onNodeWithTag("ant_modal_confirm").performClick()
-
-    rule.waitUntil(5_000) { rule.onAllNodesWithText(context.getString(R.string.settings_recipes_restored)).fetchSemanticsNodes().isNotEmpty() }
-    assertEquals(1, restoreCalls)
-    val restored = runBlocking { recipes.get(id)!! }
-    assertEquals(texts.builtInName(BuiltInRecipes.V60_CLASSIC), restored.name)
-    assertEquals(15.0, restored.doseG, 0.0)
-    assertTrue(restored.localizedNames)
   }
 
   private companion object {

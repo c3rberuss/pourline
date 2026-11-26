@@ -5,7 +5,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.grinder.GrindCalibrationEntity
-import dev.josueamaya.pourline.recipe.BuiltInRecipes
 import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.recipe.FakeRecipeTexts
 import dev.josueamaya.pourline.recipe.Recipe
@@ -18,13 +17,14 @@ import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.room.testing.MigrationTestHelper
 
-/** Migraciones 1 → 2, 2 → 3, 3 → 4, 4 → 5, 5 → 6 y 6 → 7 sobre bases creadas con los esquemas exportados. */
+/** Migraciones 1 → 2, 2 → 3, 3 → 4, 4 → 5, 5 → 6, 6 → 7 y 7 → 8 sobre bases creadas con los esquemas exportados. */
 @RunWith(AndroidJUnit4::class)
 class HistoryMigrationTest {
   private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -113,13 +113,13 @@ class HistoryMigrationTest {
       assertEquals(2, c.count)
       c.moveToFirst()
       assertEquals("V60 clásica", c.getString(1))
-      assertEquals(BuiltInRecipes.V60_CLASSIC, c.getString(2))
+      assertEquals(LegacyBuiltIns.V60_CLASSIC, c.getString(2))
       assertEquals(1, c.getInt(3))
       assertEquals(15.0, c.getDouble(4), 0.0)
       assertEquals("V60", c.getString(5))
       val v60Id = c.getLong(0)
       c.moveToNext()
-      assertEquals(BuiltInRecipes.FOUR_SIX, c.getString(2))
+      assertEquals(LegacyBuiltIns.FOUR_SIX, c.getString(2))
       assertEquals(20.0, c.getDouble(4), 0.0)
       val fourSixId = c.getLong(0)
       assertEquals(3, stageCount(db, v60Id))
@@ -129,7 +129,7 @@ class HistoryMigrationTest {
 
     // Y la base se abre con Room y se lee por los DAO.
     val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
-      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, migration7To8(texts))
       .build()
     try {
       runBlocking {
@@ -164,18 +164,15 @@ class HistoryMigrationTest {
   }
 
   @Test
-  fun aFreshInstallIsCreatedAtVersion7WithTheBuiltIns() = runBlocking {
+  fun aFreshInstallIsCreatedAtVersion8WithoutRecipes() = runBlocking {
     val context = instrumentation.targetContext
     context.deleteDatabase(NAME)
     val fresh = HistoryDatabase.create(context, NAME, texts)
     try {
-      assertEquals(2, fresh.recipeDao().observeAll().first().size)
-      assertEquals(7, fresh.openHelper.readableDatabase.version)
+      assertEquals(0, fresh.recipeDao().observeAll().first().size)
+      assertEquals(8, fresh.openHelper.readableDatabase.version)
       assertEquals(0, fresh.openHelper.readableDatabase.query("SELECT COUNT(*) FROM grinders").use { it.moveToFirst(); it.getInt(0) })
-      val steps = fresh.openHelper.readableDatabase.query(
-        "SELECT builtInKey, COUNT(*) FROM recipe_stages JOIN recipes ON recipes.id = recipeId GROUP BY builtInKey",
-      ).use { c -> buildMap { while (c.moveToNext()) put(c.getString(0), c.getInt(1)) } }
-      assertEquals(mapOf(BuiltInRecipes.V60_CLASSIC to 5, BuiltInRecipes.FOUR_SIX to 9), steps)
+      assertEquals(0, fresh.openHelper.readableDatabase.query("SELECT COUNT(*) FROM recipe_stages").use { it.moveToFirst(); it.getInt(0) })
       assertFalse(fresh.brewDao().list(null, null).first().isNotEmpty())
     } finally {
       fresh.close()
@@ -217,7 +214,7 @@ class HistoryMigrationTest {
     db.execSQL(
       "INSERT INTO coffees (id, name, varieties, archived, createdAtEpochMs) VALUES (1, 'Etiopía Guji', '', 0, 1000)",
     )
-    insertV4Recipe(db, 1, builtInKey = BuiltInRecipes.V60_CLASSIC)
+    insertV4Recipe(db, 1, builtInKey = LegacyBuiltIns.V60_CLASSIC)
     insertV4Recipe(db, 2)
     insertV4Brew(db, 1, coffeeId = 1)
     insertV4Brew(db, 2, coffeeId = null)
@@ -325,7 +322,7 @@ class HistoryMigrationTest {
   fun migrates4To5ThenRoomReadsEverything() = runBlocking {
     helper.createDatabase(NAME, 4).use { seedV4(it) }
     val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
-      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, migration7To8(texts))
       .build()
     try {
       val recipes = RecipeRepository(room, texts)
@@ -399,7 +396,7 @@ class HistoryMigrationTest {
 
     // En la base migrada la clave foránea funciona: vincular un café y borrarlo deja `coffeeId = null` y el nombre.
     val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
-      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, migration7To8(texts))
       .build()
     try {
       runBlocking {
@@ -512,7 +509,7 @@ class HistoryMigrationTest {
 
     // Leídas con Room, la curva de cada receta es idéntica punto a punto a la calculada con las filas v3.
     val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
-      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, migration7To8(texts))
       .build()
     try {
       runBlocking {
@@ -536,7 +533,7 @@ class HistoryMigrationTest {
     helper.runMigrationsAndValidate(NAME, 4, true, migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4).use { db ->
       db.query("SELECT builtInKey, COUNT(*) FROM recipe_stages JOIN recipes ON recipes.id = recipeId GROUP BY builtInKey").use { c ->
         val steps = buildMap { while (c.moveToNext()) put(c.getString(0), c.getInt(1)) }
-        assertEquals(mapOf(BuiltInRecipes.V60_CLASSIC to 5, BuiltInRecipes.FOUR_SIX to 9), steps)
+        assertEquals(mapOf(LegacyBuiltIns.V60_CLASSIC to 5, LegacyBuiltIns.FOUR_SIX to 9), steps)
       }
     }
   }
@@ -666,7 +663,7 @@ class HistoryMigrationTest {
   fun migrates5To6ThenRoomReadsEverything() = runBlocking {
     helper.createDatabase(NAME, 5).use { seedV5(it) }
     val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
-      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, migration7To8(texts))
       .build()
     try {
       val repository = BrewRepository(room)
@@ -768,7 +765,7 @@ class HistoryMigrationTest {
   fun migrates6To7ThenRoomReadsEverything() = runBlocking {
     helper.createDatabase(NAME, 6).use { seedV6(it) }
     val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
-      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+      .addMigrations(migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, migration7To8(texts))
       .build()
     try {
       val brews = BrewRepository(room).list(BrewFilter()).first()
@@ -780,6 +777,177 @@ class HistoryMigrationTest {
       // Y se puede guardar un par.
       val id = room.grindCalibrationDao().insert(GrindCalibrationEntity(grinderAId = 1, valueA = 20.0, grinderBId = 2, valueB = 30.0, updatedAtEpochMs = 5))
       assertEquals(listOf(id), room.grindCalibrationDao().observeOf(2).first().map { it.id })
+    } finally {
+      room.close()
+    }
+  }
+
+  // --- 7 → 8 (SPEC-012) ---
+
+  /** Un paso de receta v7 con textos de "otro idioma" para comprobar que la migración los sustituye. */
+  private fun insertV7Stages(db: SupportSQLiteDatabase, recipeId: Long, count: Int, name: String?, instruction: String?) {
+    repeat(count) { position ->
+      db.execSQL(
+        "INSERT INTO recipe_stages (recipeId, position, name, startMs, targetWaterG, durationMs, type, instruction) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        arrayOf<Any?>(
+          recipeId, position, if (position % 2 == 0) name else null, position * 10_000L, 40.0, 10_000L,
+          if (position % 2 == 0) "POUR" else "WAIT", instruction,
+        ),
+      )
+    }
+  }
+
+  private fun insertV7BuiltIn(db: SupportSQLiteDatabase, id: Long, key: String, localized: Boolean, name: String, stages: Int, stageName: String?, instruction: String?) {
+    db.execSQL(
+      "INSERT INTO recipes (id, name, method, doseG, builtInKey, localizedNames, updatedAtEpochMs) " +
+        "VALUES (?, ?, 'V60', 15.0, ?, ?, ?)",
+      arrayOf<Any?>(id, name, key, if (localized) 1 else 0, 5_000L + id),
+    )
+    insertV7Stages(db, id, stages, stageName, instruction)
+  }
+
+  private fun recipeRows(db: SupportSQLiteDatabase) = dumpOf(
+    db,
+    "SELECT id, name, builtInKey, localizedNames, catalogKey, author, sourceUrl, updatedAtEpochMs FROM recipes ORDER BY id",
+  )
+
+  private fun stageRows(db: SupportSQLiteDatabase, id: Long) = dumpOf(
+    db,
+    "SELECT position, name, instruction FROM recipe_stages WHERE recipeId = $id ORDER BY position",
+  )
+
+  @Test
+  fun migrates7To8AddsTheNewColumnsAsNull() {
+    helper.createDatabase(NAME, 7).use { seedV6(it) }
+    val before = helper.runMigrationsAndValidate(NAME, 7, false).use { db ->
+      dumpOf(db, "SELECT id, name, doseG, grinderId, grindValue, grindLabel, updatedAtEpochMs FROM recipes ORDER BY id") to
+        dumpOf(db, v5Dump)
+    }
+
+    val db = helper.runMigrationsAndValidate(NAME, 8, true, migration7To8(texts))
+
+    assertTrue(columns(db, "recipes").containsAll(listOf("author", "sourceUrl", "catalogKey")))
+    assertTrue("referenceKey" in columns(db, "brews"))
+    assertEquals(
+      before.first,
+      dumpOf(db, "SELECT id, name, doseG, grinderId, grindValue, grindLabel, updatedAtEpochMs FROM recipes ORDER BY id"),
+    )
+    assertEquals(before.second, dumpOf(db, v5Dump))
+    assertEquals(listOf(listOf<String?>("1", null, null, null)), dumpOf(db, "SELECT id, author, sourceUrl, catalogKey FROM recipes"))
+    assertEquals(listOf<String?>(null, null), dumpOf(db, "SELECT referenceKey FROM brews ORDER BY id").map { it.single() })
+    assertEquals(0, db.query("PRAGMA foreign_key_check").use { it.count })
+    db.close()
+  }
+
+  @Test
+  fun migrates7To8TurnsTheBuiltInsIntoOwnRecipesWithTranslatedTexts() {
+    helper.createDatabase(NAME, 7).use { db ->
+      insertV7BuiltIn(db, 1, LegacyBuiltIns.V60_CLASSIC, true, "Classic V60 (other language)", 5, "old name", "old instruction")
+      insertV7BuiltIn(db, 2, LegacyBuiltIns.FOUR_SIX, true, "4:6 (other language)", 9, "old name", "old instruction")
+    }
+
+    val db = helper.runMigrationsAndValidate(NAME, 8, true, migration7To8(texts))
+
+    // Mismo id y misma hora de edición; sin clave de fábrica y con la antigua como clave de catálogo.
+    assertEquals(
+      listOf(
+        listOf<String?>("1", "V60 clásica", null, "0", LegacyBuiltIns.V60_CLASSIC, null, null, "5001"),
+        listOf<String?>("2", "Método 4:6", null, "0", LegacyBuiltIns.FOUR_SIX, null, null, "5002"),
+      ),
+      recipeRows(db),
+    )
+    // Los textos del idioma actual; donde no hay traducción (las esperas) queda el texto guardado, como hacía el repositorio.
+    assertEquals(
+      listOf(
+        listOf<String?>("0", "Bloom", "i1"),
+        listOf<String?>("1", null, "i2"),
+        listOf<String?>("2", "2.º vertido", "i3"),
+        listOf<String?>("3", null, "i4"),
+        listOf<String?>("4", "3.er vertido", "i5"),
+      ),
+      stageRows(db, 1),
+    )
+    assertEquals(texts.builtInStageNames(LegacyBuiltIns.FOUR_SIX), stageRows(db, 2).map { it[1] })
+    assertEquals((1..9).map { "i$it" }, stageRows(db, 2).map { it[2] })
+    db.close()
+  }
+
+  @Test
+  fun migrates7To8KeepsTheTextsOfAnEditedBuiltIn() {
+    helper.createDatabase(NAME, 7).use { db ->
+      insertV7BuiltIn(db, 1, LegacyBuiltIns.V60_CLASSIC, false, "Mi V60", 3, "Mío", "Mi instrucción")
+    }
+
+    val db = helper.runMigrationsAndValidate(NAME, 8, true, migration7To8(texts))
+
+    assertEquals(
+      listOf(listOf<String?>("1", "Mi V60", null, "0", LegacyBuiltIns.V60_CLASSIC, null, null, "5001")),
+      recipeRows(db),
+    )
+    assertEquals(
+      listOf(
+        listOf<String?>("0", "Mío", "Mi instrucción"),
+        listOf<String?>("1", null, "Mi instrucción"),
+        listOf<String?>("2", "Mío", "Mi instrucción"),
+      ),
+      stageRows(db, 1),
+    )
+    db.close()
+  }
+
+  @Test
+  fun migrates7To8CleansAnUnknownBuiltInKeyWithoutTranslating() {
+    helper.createDatabase(NAME, 7).use { db ->
+      insertV7BuiltIn(db, 1, "unknown_key", true, "Rara", 1, "Una", "Dos")
+    }
+
+    val db = helper.runMigrationsAndValidate(NAME, 8, true, migration7To8(texts))
+
+    assertEquals(listOf(listOf<String?>("1", "Rara", null, "0", "unknown_key", null, null, "5001")), recipeRows(db))
+    assertEquals(listOf(listOf<String?>("0", "Una", "Dos")), stageRows(db, 1))
+    db.close()
+  }
+
+  @Test
+  fun migrates7To8KeepsTheBrewsLinkedToTheFormerBuiltIns() {
+    helper.createDatabase(NAME, 7).use { db ->
+      seedV6(db)
+      db.execSQL("DELETE FROM recipes WHERE id = 1")
+      insertV7BuiltIn(db, 1, LegacyBuiltIns.V60_CLASSIC, true, "V60", 5, null, null)
+    }
+    val before = helper.runMigrationsAndValidate(NAME, 7, false).use { db ->
+      dumpOf(db, "SELECT id, referenceType, referenceId, referenceName FROM brews ORDER BY id")
+    }
+    assertEquals(listOf<String?>("RECIPE", "1", "Receta 1"), before.first().drop(1))
+
+    val db = helper.runMigrationsAndValidate(NAME, 8, true, migration7To8(texts))
+
+    assertEquals(before, dumpOf(db, "SELECT id, referenceType, referenceId, referenceName FROM brews ORDER BY id"))
+    assertEquals(listOf<String?>(null, null), dumpOf(db, "SELECT referenceKey FROM brews ORDER BY id").map { it.single() })
+    db.close()
+  }
+
+  @Test
+  fun migrates1To8ThenRoomReadsEverything() = runBlocking {
+    helper.createDatabase(NAME, 1).use { db -> insertV1Brew(db, 1, "Etiopía", "Etiopía Guji", 1_700_000_000_000) }
+    val room = Room.databaseBuilder(instrumentation.targetContext, HistoryDatabase::class.java, NAME)
+      .addMigrations(
+        migration1To2(texts), MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, migration7To8(texts),
+      )
+      .build()
+    try {
+      assertEquals(8, room.openHelper.readableDatabase.version)
+      val brews = BrewRepository(room).list(BrewFilter()).first()
+      assertEquals(listOf(1L), brews.map { it.id })
+      assertNull(room.brewDao().brew(1)!!.referenceKey)
+      val recipes = RecipeRepository(room, texts)
+      val all = recipes.all().sortedBy { it.id }
+      assertEquals(listOf(texts.builtInName(LegacyBuiltIns.V60_CLASSIC), texts.builtInName(LegacyBuiltIns.FOUR_SIX)), all.map { it.name })
+      assertEquals(listOf(LegacyBuiltIns.V60_CLASSIC, LegacyBuiltIns.FOUR_SIX), all.map { it.catalogKey })
+      assertTrue(all.all { it.builtInKey == null && !it.localizedNames })
+      assertEquals(listOf(5, 9), all.map { it.stages.size })
+      assertEquals(setOf(LegacyBuiltIns.V60_CLASSIC, LegacyBuiltIns.FOUR_SIX), recipes.catalogKeys().first())
     } finally {
       room.close()
     }

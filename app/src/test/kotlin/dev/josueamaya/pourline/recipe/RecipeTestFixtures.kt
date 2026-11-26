@@ -5,18 +5,18 @@ import dev.josueamaya.pourline.history.BrewMethod
 /** Textos falsos y deterministas: no necesitan `Resources`. */
 class FakeRecipeTexts(private val language: String = "es") : RecipeTexts {
   override fun builtInName(key: String): String = when (key) {
-    BuiltInRecipes.V60_CLASSIC -> if (language == "en") "Classic V60" else "V60 clásica"
+    "v60_classic" -> if (language == "en") "Classic V60" else "V60 clásica"
     else -> if (language == "en") "4:6 method" else "Método 4:6"
   }
 
   override fun builtInStageNames(key: String): List<String?> = when (key) {
-    BuiltInRecipes.V60_CLASSIC ->
+    "v60_classic" ->
       if (language == "en") listOf("Bloom", null, "2nd pour", null, "3rd pour") else listOf("Bloom", null, "2.º vertido", null, "3.er vertido")
     else -> listOf("1", null, "2", null, "3", null, "4", null, "5")
   }
 
   override fun builtInStageInstructions(key: String): List<String?> = when (key) {
-    BuiltInRecipes.V60_CLASSIC -> listOf("i1", "i2", "i3", "i4", "i5")
+    "v60_classic" -> listOf("i1", "i2", "i3", "i4", "i5")
     else -> (1..9).map { "i$it" }
   }
 
@@ -25,8 +25,37 @@ class FakeRecipeTexts(private val language: String = "es") : RecipeTexts {
   override fun fromBrewName(base: String) = "$base (receta)"
 }
 
-/** La V60 clásica de fábrica, con los nombres españoles falsos. */
-fun v60Classic(): Recipe = BuiltInRecipes.recipe(BuiltInRecipes.V60_CLASSIC, FakeRecipeTexts())
+/** La antigua V60 clásica de fábrica (15 g, 5 pasos), con los nombres españoles falsos, como receta propia. */
+fun v60Classic(): Recipe = Recipe(
+  name = "V60 clásica",
+  method = BrewMethod.V60,
+  doseG = 15.0,
+  stages = listOf(
+    stage(0, 40.0, 10, "Bloom", instruction = "i1"),
+    stage(10, 40.0, 35, type = StageType.WAIT, instruction = "i2"),
+    stage(45, 150.0, 20, "2.º vertido", instruction = "i3"),
+    stage(65, 150.0, 25, type = StageType.WAIT, instruction = "i4"),
+    stage(90, 250.0, 25, "3.er vertido", instruction = "i5"),
+  ),
+)
+
+/** El antiguo método 4:6 de fábrica (20 g, 9 pasos), con los nombres españoles falsos, como receta propia. */
+fun fourSixClassic(): Recipe = Recipe(
+  name = "Método 4:6",
+  method = BrewMethod.V60,
+  doseG = 20.0,
+  stages = listOf(
+    stage(0, 60.0, 10, "1", instruction = "i1"),
+    stage(10, 60.0, 35, type = StageType.WAIT, instruction = "i2"),
+    stage(45, 120.0, 10, "2", instruction = "i3"),
+    stage(55, 120.0, 35, type = StageType.WAIT, instruction = "i4"),
+    stage(90, 180.0, 10, "3", instruction = "i5"),
+    stage(100, 180.0, 35, type = StageType.WAIT, instruction = "i6"),
+    stage(135, 240.0, 10, "4", instruction = "i7"),
+    stage(145, 240.0, 35, type = StageType.WAIT, instruction = "i8"),
+    stage(180, 300.0, 10, "5", instruction = "i9"),
+  ),
+)
 
 fun stage(
   startS: Int,

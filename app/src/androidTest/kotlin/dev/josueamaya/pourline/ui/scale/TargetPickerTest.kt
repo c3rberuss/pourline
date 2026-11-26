@@ -2,7 +2,11 @@ package dev.josueamaya.pourline.ui.scale
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -10,12 +14,25 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.R
+import dev.josueamaya.pourline.coffee.RoastLevel
 import dev.josueamaya.pourline.history.BrewListItem
 import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.recipe.RecipeListItem
+import dev.josueamaya.pourline.recipe.catalog.CatalogListItem
+import dev.josueamaya.pourline.recipe.catalog.catalogMethods
+import dev.josueamaya.pourline.recipe.catalog.catalogSearchKey
+import dev.josueamaya.pourline.recipe.catalog.filterCatalog
 import dev.josueamaya.pourline.settings.ReferenceKey
+import dev.josueamaya.pourline.ui.recipes.catalog.CatalogListUi
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -30,8 +47,8 @@ class TargetPickerTest {
   private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
   private val recipes = listOf(
-    RecipeListItem(1, "V60 clásica", BrewMethod.V60, null, 15.0, 250.0, 3, builtIn = true, totalDurationMs = 115_000),
-    RecipeListItem(2, "Mi receta", BrewMethod.CHEMEX, null, 30.0, 500.0, 4, builtIn = false, totalDurationMs = 210_000),
+    RecipeListItem(1, "V60 clásica", BrewMethod.V60, null, 15.0, 250.0, 3, totalDurationMs = 115_000),
+    RecipeListItem(2, "Mi receta", BrewMethod.CHEMEX, null, 30.0, 500.0, 4, totalDurationMs = 210_000),
   )
 
   private fun brew(id: Long, name: String, waterG: Double) = BrewListItem(
@@ -53,17 +70,55 @@ class TargetPickerTest {
 
   private val brews = listOf(brew(10, "Mañana", 250.0), brew(11, "Vacía", 0.0))
 
+  private fun catalogItem(key: String, name: String, author: String?, method: BrewMethod, roasts: Set<RoastLevel> = emptySet()) = CatalogListItem(
+    key = key,
+    name = name,
+    author = author,
+    method = method,
+    methodOther = null,
+    doseG = 15.0,
+    totalWaterG = 250.0,
+    ratio = 250.0 / 15.0,
+    totalDurationMs = 115_000,
+    stageCount = 3,
+    roasts = roasts,
+    searchKey = catalogSearchKey(name) + "\u0000" + catalogSearchKey(author.orEmpty()),
+  )
+
+  private val catalogItems = listOf(
+    catalogItem("nemo_v60", "V60 de Némo", "Némo Pop", BrewMethod.V60, setOf(RoastLevel.MEDIUM, RoastLevel.DARK)),
+    catalogItem("test_aeropress", "AeroPress de prueba", "Tester Uno", BrewMethod.AEROPRESS, setOf(RoastLevel.LIGHT)),
+    catalogItem("test_clever", "Clever de prueba", null, BrewMethod.V60),
+  )
+
   private val selected = mutableListOf<ReferenceKey>()
   private var cleared = 0
   private var managed = 0
   private var closed = 0
+  private var catalogShown = 0
 
   private fun show(
     recipes: List<RecipeListItem> = this.recipes,
     brews: List<BrewListItem> = this.brews,
     active: ReferenceKey? = null,
     showBrews: Boolean = true,
+    savedKeys: Set<String> = emptySet(),
+    loaded: Boolean = true,
   ) = rule.setContent {
+    // El selector es sin estado: la búsqueda y el filtro se guardan aquí, como hace el `CatalogBrowser`.
+    var query by remember { mutableStateOf("") }
+    var method by remember { mutableStateOf<BrewMethod?>(null) }
+    var roast by remember { mutableStateOf<RoastLevel?>(null) }
+    val catalog = CatalogListUi(
+      items = filterCatalog(catalogItems, query, method, roast),
+      total = catalogItems.size,
+      methods = catalogMethods(catalogItems),
+      query = query,
+      method = method,
+      roast = roast,
+      savedKeys = savedKeys,
+      loaded = loaded,
+    )
     PourlineTheme(darkTheme = false) {
       TargetPicker(
         recipes = recipes,
@@ -73,17 +128,36 @@ class TargetPickerTest {
         onClear = { cleared++ },
         onManageRecipes = { managed++ },
         onClose = { closed++ },
+        catalog = catalog,
+        onCatalogQuery = { query = it },
+        onCatalogMethod = { method = it },
+        onCatalogRoast = { roast = it },
+        onCatalogClearFilters = {
+          query = ""
+          method = null
+          roast = null
+        },
+        onCatalogShown = { catalogShown++ },
         showBrews = showBrews,
       )
     }
   }
 
+  private fun openCatalogTab() {
+    rule.onNodeWithTag("target_picker_tab_catalog").performClick()
+    rule.onNodeWithTag("target_picker_catalog_list").assertIsDisplayed()
+  }
+
   private fun tab(label: Int) = rule.onNodeWithText(context.getString(label))
 
   @Test
-  fun withoutBrewsThereAreOnlyRecipesAndNoTabs() {
+  fun theRecommendedTabIsShownInBasicWithRecipes() {
     show(showBrews = false)
-    rule.onAllNodesWithTag("target_picker_tabs").assertCountEquals(0)
+    // Sin preparaciones como objetivo quedan dos opciones: Recetas y Recomendadas.
+    rule.onNodeWithTag("target_picker_tabs").assertIsDisplayed()
+    rule.onNodeWithTag("target_picker_tab_recipes").assertIsDisplayed()
+    rule.onNodeWithTag("target_picker_tab_catalog").assertIsDisplayed()
+    rule.onAllNodesWithTag("target_picker_tab_history").assertCountEquals(0)
     rule.onNodeWithText("V60 clásica").assertIsDisplayed()
     rule.onNodeWithText("Mi receta").assertIsDisplayed()
     rule.onAllNodesWithText("Mañana").assertCountEquals(0)
@@ -92,12 +166,56 @@ class TargetPickerTest {
   }
 
   @Test
-  fun opensOnRecipesAndShowsBothTabs() {
+  fun theRecommendedTabIsShownInExpertWithRecipesAndHistory() {
     show()
     tab(R.string.target_picker_recipes).assertIsDisplayed()
+    rule.onNodeWithTag("target_picker_tab_catalog").assertIsDisplayed()
     tab(R.string.target_picker_history).assertIsDisplayed()
     rule.onAllNodesWithTag("recipe_row").assertCountEquals(2)
     rule.onAllNodesWithTag("history_row").assertCountEquals(0)
+  }
+
+  @Test
+  fun pickingARecommendedRecipeSelectsACatalogReference() {
+    show()
+    assertEquals(0, catalogShown)
+    openCatalogTab()
+    rule.waitUntil(5_000) { catalogShown == 1 }
+    rule.onAllNodesWithTag("recipe_row").assertCountEquals(0)
+    rule.onNodeWithTag("catalog_row_test_aeropress").performClick()
+    assertEquals(listOf<ReferenceKey>(ReferenceKey.Catalog("test_aeropress")), selected)
+  }
+
+  @Test
+  fun theRecommendedTabSearchesAndFilters() {
+    show(savedKeys = setOf("nemo_v60"))
+    openCatalogTab()
+    // "Guardada" en la copia que ya existe (la primera fila está a la vista sin desplazar).
+    rule.onAllNodesWithTag("catalog_saved_tag", useUnmergedTree = true).assertCountEquals(1)
+    assertTrue(rowKeys().containsAll(listOf("nemo_v60", "test_aeropress", "test_clever")))
+
+    // Búsqueda por autor, sin acentos.
+    rule.onNodeWithTag("catalog_search").performTextInput("nemo")
+    assertEquals(listOf("nemo_v60"), rowKeys())
+
+    // Sin resultados: el mensaje y "Quitar filtros".
+    rule.onNodeWithTag("catalog_search").performTextReplacement("zzz")
+    rule.onNodeWithTag("target_picker_catalog_empty").assertIsDisplayed()
+    rule.onNodeWithTag("target_picker_catalog_clear_filters").performClick()
+    assertTrue("test_aeropress" in rowKeys())
+
+    // Filtro por método.
+    rule.onNodeWithTag("catalog_method_filter").performClick()
+    rule.onNode(hasText("Aeropress") and hasAnyAncestor(isPopup())).performClick()
+    assertEquals(listOf("test_aeropress"), rowKeys())
+  }
+
+  @Test
+  fun theActiveCatalogRecipeIsHighlighted() {
+    show(active = ReferenceKey.Catalog("test_clever"))
+    openCatalogTab()
+    rule.onAllNodesWithTag("catalog_active_tag", useUnmergedTree = true).assertCountEquals(1)
+    rule.onNode(hasTestTag("catalog_active_tag") and hasAnyAncestor(hasTestTag("catalog_row_test_clever")), useUnmergedTree = true).assertExists()
   }
 
   @Test
@@ -165,5 +283,73 @@ class TargetPickerTest {
     rule.onNodeWithText(context.getString(R.string.target_picker_empty_recipes)).assertIsDisplayed()
     tab(R.string.target_picker_history).performClick()
     rule.onNodeWithText(context.getString(R.string.target_picker_empty_history)).assertIsDisplayed()
+  }
+
+  /** Las filas de la lista, a la vista o no: el cajón limita su alto y la lista no compone lo que queda fuera. */
+  private fun rowKeys(): List<String> {
+    if (rule.onAllNodesWithTag("target_picker_catalog_list").fetchSemanticsNodes().isEmpty()) return emptyList()
+    val list = rule.onNodeWithTag("target_picker_catalog_list")
+    return catalogItems.map { item -> item.key }.filter { id ->
+      try {
+        list.performScrollToNode(hasTestTag("catalog_row_$id"))
+        true
+      } catch (_: AssertionError) {
+        false
+      }
+    }
+  }
+
+  @Test
+  fun theRecommendedTabFiltersByRoast() {
+    show()
+    openCatalogTab()
+    rule.onNodeWithTag("catalog_roast_all", useUnmergedTree = true).assertIsSelected()
+    rule.onNodeWithTag("catalog_roast_light").performClick()
+    rule.waitUntil(5_000) { rowKeys() == listOf("test_aeropress", "test_clever") }
+    rule.onNodeWithTag("catalog_roast_dark").performClick()
+    rule.waitUntil(5_000) { rowKeys() == listOf("nemo_v60", "test_clever") }
+    rule.onNodeWithTag("catalog_roast_medium").performClick()
+    rule.waitUntil(5_000) { rowKeys() == listOf("nemo_v60", "test_clever") }
+    rule.onNodeWithTag("catalog_roast_medium", useUnmergedTree = true).assertIsSelected()
+  }
+
+  @Test
+  fun clearFiltersInThePickerResetsTheRoast() {
+    show()
+    openCatalogTab()
+    rule.onNodeWithTag("catalog_roast_light").performClick()
+    rule.onNodeWithTag("catalog_search").performTextInput("némo")
+    rule.onNodeWithTag("target_picker_catalog_empty").assertIsDisplayed()
+    rule.onNodeWithTag("target_picker_catalog_clear_filters").performClick()
+    rule.waitUntil(5_000) { rowKeys() == catalogItems.map { it.key } }
+    rule.onNodeWithTag("catalog_roast_all", useUnmergedTree = true).assertIsSelected()
+  }
+
+  @Test
+  fun recommendedRowsShowTheRoastTags() {
+    show()
+    openCatalogTab()
+    val inV60 = hasAnyAncestor(hasTestTag("catalog_row_nemo_v60"))
+    rule.onNode(hasTestTag("catalog_roast_tag_medium") and inV60, useUnmergedTree = true).assertExists()
+    rule.onNode(hasTestTag("catalog_roast_tag_dark") and inV60, useUnmergedTree = true).assertExists()
+    rule.onNode(hasTestTag("catalog_roast_tag_light") and hasAnyAncestor(hasTestTag("catalog_row_test_aeropress")), useUnmergedTree = true).assertExists()
+    rule.onAllNodes(hasTestTag("catalog_roast_tag_light") and inV60, useUnmergedTree = true).assertCountEquals(0)
+    listOf("light", "medium", "dark").forEach {
+      rule.onAllNodes(hasTestTag("catalog_roast_tag_$it") and hasAnyAncestor(hasTestTag("catalog_row_test_clever")), useUnmergedTree = true).assertCountEquals(0)
+    }
+  }
+
+  @Test
+  fun theRoastFilterIsShownInBasicAndExpert() {
+    show(showBrews = false)
+    openCatalogTab()
+    rule.onNodeWithTag("catalog_roast_filter").assertIsDisplayed()
+  }
+
+  @Test
+  fun theRoastFilterIsShownInExpertToo() {
+    show(showBrews = true)
+    openCatalogTab()
+    rule.onNodeWithTag("catalog_roast_filter").assertIsDisplayed()
   }
 }

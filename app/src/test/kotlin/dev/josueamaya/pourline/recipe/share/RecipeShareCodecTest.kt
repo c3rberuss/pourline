@@ -2,12 +2,11 @@ package dev.josueamaya.pourline.recipe.share
 
 import dev.josueamaya.pourline.grinder.GrindSetting
 import dev.josueamaya.pourline.history.BrewMethod
-import dev.josueamaya.pourline.recipe.BuiltInRecipes
-import dev.josueamaya.pourline.recipe.FakeRecipeTexts
 import dev.josueamaya.pourline.recipe.Recipe
 import dev.josueamaya.pourline.recipe.RecipeStage
 import dev.josueamaya.pourline.recipe.StageType
 import dev.josueamaya.pourline.recipe.aeroPressWithActions
+import dev.josueamaya.pourline.recipe.fourSixClassic
 import dev.josueamaya.pourline.recipe.v60Classic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -58,8 +57,8 @@ class RecipeShareCodecTest {
   // --- Ida y vuelta ---
 
   @Test
-  fun `the built-in recipes round trip`() {
-    for (recipe in BuiltInRecipes.all(FakeRecipeTexts())) {
+  fun `the former built-in recipes round trip`() {
+    for (recipe in listOf(v60Classic(), fourSixClassic())) {
       assertEquals(expected(recipe), roundTrip(recipe).recipe)
     }
   }

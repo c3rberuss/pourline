@@ -93,13 +93,15 @@ class RecipesHistoryTourTest {
   // --- Recetas ---
 
   @Test
-  fun theRecipesTourShowsBuiltInAndAdd() {
+  fun theRecipesTourShowsTheCatalogAndAddWithoutAnActiveRecipe() {
     env.skipOnboarding(showTours = listOf(Tours.recipes))
     show()
     openTab("tab_recipes", "recipe_row")
 
     rule.waitForTour("1/2", env.tourSettings.seen.value)
-    titleIs(R.string.tour_recipes_builtin_title)
+    // El primer paso señala la opción "Recomendadas" del selector.
+    titleIs(R.string.tour_recipes_catalog_title)
+    assertOnScreen("recipes_segment_catalog")
     goTo("2/2")
     titleIs(R.string.tour_recipes_add_title)
   }
@@ -112,6 +114,7 @@ class RecipesHistoryTourTest {
     openTab("tab_recipes", "recipe_row")
 
     rule.waitForTour("1/3", env.tourSettings.seen.value)
+    titleIs(R.string.tour_recipes_catalog_title)
     goTo("2/3")
     titleIs(R.string.tour_recipes_active_title)
     assertOnScreen("recipe_active_tag")

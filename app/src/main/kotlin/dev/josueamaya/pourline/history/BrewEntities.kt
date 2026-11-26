@@ -75,6 +75,8 @@ data class BrewEntity(
   /** Sin clave foránea: el origen puede borrarse. */
   val referenceId: Long? = null,
   val referenceName: String? = null,
+  /** La clave de una receta del catálogo usada como referencia (`referenceType = CATALOG`, SPEC-012). */
+  val referenceKey: String? = null,
   /** `BrewFit.targetWaterG`. */
   val targetWaterG: Double? = null,
   /** `BrewFit.targetEndMs`. */

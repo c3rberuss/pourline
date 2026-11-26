@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -77,6 +78,9 @@ import dev.josueamaya.pourline.ui.recipes.RecipeEditViewModel
 import dev.josueamaya.pourline.ui.recipes.RecipeImportEntryViewModel
 import dev.josueamaya.pourline.ui.recipes.RecipeImportScreen
 import dev.josueamaya.pourline.ui.recipes.RecipeImportViewModel
+import dev.josueamaya.pourline.ui.recipes.catalog.CatalogRecipeDetailScreen
+import dev.josueamaya.pourline.ui.recipes.catalog.CatalogRecipeDetailViewModel
+import dev.josueamaya.pourline.ui.recipes.openSourceUrl
 import dev.josueamaya.pourline.ui.recipes.RecipesScreen
 import dev.josueamaya.pourline.ui.recipes.RecipesViewModel
 import dev.josueamaya.pourline.ui.recipes.importNoticeStatus
@@ -238,7 +242,7 @@ private fun tabEntryProvider(
     PrepareScreen(
       viewModel = viewModel,
       scanner = deps.scanner,
-      pickerViewModel = viewModel { TargetPickerViewModel(deps.recipeRepository, deps.brewRepository) },
+      pickerViewModel = viewModel { TargetPickerViewModel(deps.recipeRepository, deps.brewRepository, deps.recipeCatalog, deps.catalogLanguage) },
       coffeePickerViewModel = viewModel { CoffeePickerViewModel(deps.coffeeRepository) },
       onOpenSettings = { stack.add(Settings) },
       onStart = { stack.add(Session) },
@@ -310,7 +314,6 @@ private fun tabEntryProvider(
       scaleMode = deps.scaleMode,
       // Sin báscula no se ve la tarjeta: la conexión se cierra para que no quede abierta sin que se sepa.
       onScaleOff = { if (!deps.scaleSession.isArmed) deps.scaleSession.disconnect() },
-      onRestoreRecipes = { deps.recipeRepository.restoreBuiltIns() },
       onOpenGrinders = { stack.add(Grinders) },
       // Ajustes solo se abre desde Preparar: su pila es la de Preparar y su raíz, donde sale el recorrido general.
       onReplayTour = {
@@ -376,16 +379,35 @@ private fun tabEntryProvider(
     val session = deps.scaleSession
     val activeRecipeId by remember { session.ui.map(::activeRecipeIdOf).distinctUntilChanged() }
       .collectAsStateWithLifecycle(remember { activeRecipeIdOf(session.ui.value) })
+    val activeCatalogKey by remember { session.ui.map(::activeCatalogKeyOf).distinctUntilChanged() }
+      .collectAsStateWithLifecycle(remember { activeCatalogKeyOf(session.ui.value) })
     val importer = viewModel {
       RecipeImportEntryViewModel(deps.recipeImports, deps.qrImageReader) { deps.scaleSession.ui.value.hasSession }
     }
     RecipesScreen(
-      viewModel { RecipesViewModel(deps.recipeRepository) },
+      viewModel { RecipesViewModel(deps.recipeRepository, deps.recipeCatalog, deps.catalogLanguage) },
       onBack = null,
       onOpenRecipe = { id -> stack.add(RecipeEdit(id = id)) },
       onCreateRecipe = { stack.add(RecipeEdit()) },
       activeRecipeId = activeRecipeId,
+      activeCatalogKey = activeCatalogKey,
+      onOpenCatalogRecipe = { key -> stack.add(CatalogRecipeDetail(key)) },
       importer = importer,
+    )
+  }
+  tabEntry<CatalogRecipeDetail>(tab, stack, activeTab) { key ->
+    val context = LocalContext.current
+    CatalogRecipeDetailScreen(
+      viewModel {
+        CatalogRecipeDetailViewModel(key.key, deps.recipeCatalog, deps.recipeRepository, deps.grinderRepository, deps.grindTexts, deps.catalogLanguage)
+      },
+      onBack = ::back,
+      // D37: "Preparar" elige la receta sin guardarla y cambia de pestaña; con una sesión activa solo cambia de pestaña.
+      onPrepare = { catalogKey ->
+        deps.scaleSession.selectTarget(ReferenceKey.Catalog(catalogKey))
+        selectTab(Tab.PREPARE)
+      },
+      openUrl = { url -> openSourceUrl(context, url) },
     )
   }
   tabEntry<RecipeEdit>(tab, stack, activeTab) { key ->
@@ -492,3 +514,8 @@ private fun NavBackStack<NavKey>.saveFourSixAsRecipe(params: FourSixParams) {
 }
 
 private fun activeRecipeIdOf(ui: ScaleUiState): Long? = (ui.target?.key as? ReferenceKey.Recipe)?.id
+
+private fun activeCatalogKeyOf(ui: ScaleUiState): String? {
+  val reference = ui.target?.key
+  return if (reference is ReferenceKey.Catalog) reference.key else null
+}

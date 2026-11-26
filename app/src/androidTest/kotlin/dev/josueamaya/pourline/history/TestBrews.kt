@@ -11,8 +11,8 @@ import dev.josueamaya.pourline.brew.TimedSession
 import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.brew.summarize
 import dev.josueamaya.pourline.protocol.ScaleModel
-import dev.josueamaya.pourline.recipe.BuiltInRecipes
 import dev.josueamaya.pourline.recipe.FakeRecipeTexts
+import dev.josueamaya.pourline.recipe.v60Classic
 import dev.josueamaya.pourline.protocol.WeightUnit
 import java.util.Random
 
@@ -121,7 +121,7 @@ object TestBrews {
     score: Int? = 86,
     factor: Double = 1.0,
   ): UsedTarget {
-    val curve = TargetCurve.fromRecipe(BuiltInRecipes.recipe(BuiltInRecipes.V60_CLASSIC, FakeRecipeTexts())).scaled(factor)
+    val curve = TargetCurve.fromRecipe(v60Classic(FakeRecipeTexts())).scaled(factor)
     return UsedTarget(type, id, name, curve, BrewFit(score, curve.finalWaterG, curve.endMs))
   }
 }

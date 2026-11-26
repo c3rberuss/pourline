@@ -104,7 +104,7 @@ object Tours {
   val recipes = Tour(
     "recipes",
     listOf(
-      TourStep("recipes.builtin", "recipe_builtin_tag", R.string.tour_recipes_builtin_title, R.string.tour_recipes_builtin_body),
+      TourStep("recipes.catalog", "recipes_catalog_segment", R.string.tour_recipes_catalog_title, R.string.tour_recipes_catalog_body),
       TourStep("recipes.active", "recipe_active_tag", R.string.tour_recipes_active_title, R.string.tour_recipes_active_body),
       TourStep("recipes.add", "recipes_add", R.string.tour_recipes_add_title, R.string.tour_recipes_add_body),
     ),

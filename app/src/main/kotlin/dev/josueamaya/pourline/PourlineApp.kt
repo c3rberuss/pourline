@@ -23,6 +23,12 @@ import dev.josueamaya.pourline.history.BrewRepository
 import dev.josueamaya.pourline.history.HistoryDatabase
 import dev.josueamaya.pourline.recipe.RecipeRepository
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
+import dev.josueamaya.pourline.recipe.catalog.CatalogCache
+import dev.josueamaya.pourline.recipe.catalog.CatalogTargetSource
+import dev.josueamaya.pourline.recipe.catalog.HttpCatalogFetcher
+import dev.josueamaya.pourline.recipe.catalog.RecipeCatalogRepository
+import dev.josueamaya.pourline.recipe.catalog.ResourcesCatalogLanguage
+import dev.josueamaya.pourline.recipe.catalog.grinderCatalogByKey
 import dev.josueamaya.pourline.recipe.share.PendingRecipeImport
 import dev.josueamaya.pourline.share.MlKitQrImageReader
 import dev.josueamaya.pourline.session.AndroidScaleConnections
@@ -125,6 +131,23 @@ class PourlineApp : Application() {
 
   val recipeRepository by lazy { RecipeRepository(historyDatabase, ResourcesRecipeTexts(this)) }
 
+  /** El idioma de los textos del catálogo de recetas; lee el recurso en cada llamada. */
+  val catalogLanguage by lazy { ResourcesCatalogLanguage(this) }
+
+  /**
+   * El catálogo de recetas recomendadas (SPEC-012): la copia del APK, la caché en `filesDir/catalog` y la descarga de
+   * `BuildConfig.RECIPE_CATALOG_URL`. Nada la descarga hasta que una pantalla lo pide.
+   */
+  val recipeCatalog by lazy {
+    RecipeCatalogRepository(
+      bundled = AssetCatalogSource(this, "catalog/recipes.json"),
+      cache = CatalogCache(File(filesDir, "catalog")),
+      fetcher = HttpCatalogFetcher(BuildConfig.RECIPE_CATALOG_URL),
+      grinders = { grinderCatalogByKey(AssetCatalogSource(this)) },
+      scope = applicationScope,
+    )
+  }
+
   /** Las recetas importadas que esperan su vista previa: todas las entradas de SPEC-009 la usan. */
   val recipeImports = PendingRecipeImport()
 
@@ -153,7 +176,11 @@ class PourlineApp : Application() {
       saver = brewRepository,
       applicationScope = applicationScope,
       references = targetSettings,
-      targets = RepositoryTargetReferences(recipeRepository, brewRepository),
+      targets = RepositoryTargetReferences(
+        recipeRepository,
+        brewRepository,
+        CatalogTargetSource(recipeCatalog, grinderRepository, catalogLanguage, grindTexts),
+      ),
       notifier = AndroidStageNotifier(this, targetSettings),
       coffeeStore = brewSettings,
       coffees = RepositoryScaleCoffees(coffeeRepository),
@@ -226,6 +253,8 @@ class PourlineApp : Application() {
       coffeeRepository = coffeeRepository,
       recipeRepository = recipeRepository,
       recipeTexts = ResourcesRecipeTexts(this),
+      recipeCatalog = recipeCatalog,
+      catalogLanguage = catalogLanguage,
       recipeImports = recipeImports,
       qrImageReader = qrImageReader,
       grinderSettings = grinderSettings,

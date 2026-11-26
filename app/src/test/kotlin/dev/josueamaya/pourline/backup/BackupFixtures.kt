@@ -92,7 +92,10 @@ internal fun fullRows(): BackupRows {
       id = 1, name = "V60 clásica", method = BrewMethod.V60, methodOther = "con filtro", waterTempC = 94.5, notes = "Notas de la receta", doseG = 15.0,
       builtInKey = "V60_CLASSIC", localizedNames = true, updatedAtEpochMs = 1_700_000_000_000, grinderId = 1, grindValue = 20.5, grindLabel = "Mi molino 20,5",
     ),
-    RecipeEntity(id = 2, name = "Sin nada", doseG = 18.0, updatedAtEpochMs = 1_700_000_200_000),
+    RecipeEntity(
+      id = 2, name = "Sin nada", doseG = 18.0, updatedAtEpochMs = 1_700_000_200_000, author = "Ana", sourceUrl = "https://example.com/r",
+      catalogKey = "v60_basica",
+    ),
   )
   val stages = listOf(
     RecipeStageEntity(1, 0, "Bloom", 0, 45.0, 30_000, StageType.POUR, null),
@@ -114,6 +117,7 @@ internal fun fullRows(): BackupRows {
       id = 2, startedAtEpochMs = 1_700_100_000_000, totalTimeMs = 120_000, totalWaterG = 200.0, avgFlowGps = 3.0, maxFlowGps = 5.0, stabilityScore = null,
       stabilityLevel = null, shareStable = 0.0, shareIrregular = 0.0, shareTurbulent = 0.0, doseG = null, finalRatio = null, finishReason = FinishReason.MANUAL,
       interrupted = false, unit = WeightUnit.GRAMS, scaleModel = null, simulated = false, metricVersion = 1, preview = ByteArray(48),
+      referenceType = ReferenceType.CATALOG, referenceKey = "v60_basica", referenceName = "V60 recomendada",
     ),
     BrewEntity(
       id = 3, startedAtEpochMs = 1_700_200_000_000, totalTimeMs = 90_000, totalWaterG = 150.0, avgFlowGps = 0.0, maxFlowGps = 0.0, stabilityScore = null,
@@ -167,6 +171,7 @@ internal fun fullSettings() = SettingsSnapshot(
   defaultRatio = 16.5f,
   targetRefType = "RECIPE",
   targetRefId = 1,
+  targetRefKey = "v60_basica",
   stageVibration = false,
   stageSound = true,
   defaultGrinderId = 1,

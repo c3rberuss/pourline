@@ -11,8 +11,11 @@ import java.util.Locale
 /** El formato del archivo de copia (SPEC-011 §3.1). */
 internal const val APP_ID = "pourline"
 
-/** Versión de este formato, independiente de la versión del esquema de Room. */
-internal const val FORMAT_VERSION = 1
+/**
+ * Versión de este formato, independiente de la versión del esquema de Room. La 2 añade los campos del catálogo de recetas
+ * (SPEC-012); el lector sigue aceptando la 1.
+ */
+internal const val FORMAT_VERSION = 2
 
 internal const val MANIFEST_ENTRY = "manifest.json"
 internal const val DATA_ENTRY = "data.json"

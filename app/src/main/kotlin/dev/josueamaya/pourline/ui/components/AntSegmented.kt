@@ -66,6 +66,8 @@ fun <T> AntSegmented(
   size: AntSize = AntSize.Middle,
   enabled: Boolean = true,
   iconOnly: Boolean = false,
+  /** Un modificador extra para cada opción (una etiqueta de prueba, un ancla del recorrido). */
+  itemModifier: (T) -> Modifier = { Modifier },
 ) {
   if (iconOnly) options.forEach { requireNotNull(it.icon) { "iconOnly exige un icono en cada opción" } }
   val colors = AntTheme.colors
@@ -121,6 +123,7 @@ fun <T> AntSegmented(
           Modifier
             .weight(1f)
             .fillMaxHeight()
+            .then(itemModifier(option.value))
             .clip(thumbShape)
             .selectable(
               selected = isSelected,

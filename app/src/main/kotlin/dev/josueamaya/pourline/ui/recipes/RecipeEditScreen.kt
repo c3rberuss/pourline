@@ -22,6 +22,7 @@ import dev.josueamaya.pourline.ui.components.AntDivider
 import dev.josueamaya.pourline.ui.session.stepTypeColors
 import dev.josueamaya.pourline.ui.theme.AntColorRole
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,10 +41,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -53,10 +56,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.josueamaya.pourline.R
-import dev.josueamaya.pourline.brew.TargetCurve
 import dev.josueamaya.pourline.grinder.ConverterArgs
 import dev.josueamaya.pourline.history.BrewMethod
-import dev.josueamaya.pourline.protocol.WeightUnit
 import dev.josueamaya.pourline.recipe.Adjustment
 import dev.josueamaya.pourline.recipe.RecipeValidator
 import dev.josueamaya.pourline.recipe.StageType
@@ -87,9 +88,9 @@ import dev.josueamaya.pourline.ui.components.AntStatus
 import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
 import dev.josueamaya.pourline.ui.components.AntTopBar
+import dev.josueamaya.pourline.ui.components.showAntMessage
 import dev.josueamaya.pourline.ui.grinders.GrindSettingField
 import dev.josueamaya.pourline.ui.history.label
-import dev.josueamaya.pourline.ui.scale.BrewChart
 import dev.josueamaya.pourline.ui.session.formatClock
 import dev.josueamaya.pourline.ui.session.stepTypeIcon
 import dev.josueamaya.pourline.ui.session.stepTypeLabel
@@ -119,6 +120,9 @@ fun RecipeEditScreen(
   var confirmDiscard by rememberSaveable { mutableStateOf(false) }
   val snackbar = remember { SnackbarHostState() }
   val launcher = rememberShareLauncher(shareSender, snackbar)
+  val context = LocalContext.current
+  val scope = rememberCoroutineScope()
+  val noBrowserText = stringResource(R.string.catalog_no_browser)
 
   // `Saved` y `Gone` vuelven atrás; `Duplicated` abre la copia.
   LaunchedEffect(status) {
@@ -243,6 +247,31 @@ fun RecipeEditScreen(
         singleLine = false,
         tag = "recipe_edit_notes",
       )
+      LabeledInput(
+        label = stringResource(R.string.recipe_edit_author),
+        value = form.author,
+        onValueChange = { v -> viewModel.update { it.copy(author = v) } },
+        error = errors.author,
+        tag = "recipe_edit_author",
+      )
+      LabeledInput(
+        label = stringResource(R.string.recipe_edit_source),
+        value = form.sourceUrl,
+        onValueChange = { v -> viewModel.update { it.copy(sourceUrl = v) } },
+        error = errors.sourceUrl,
+        placeholder = stringResource(R.string.recipe_edit_source_placeholder),
+        keyboardType = KeyboardType.Uri,
+        tag = "recipe_edit_source",
+      )
+      val source = form.sourceUrl.trim()
+      if (source.isNotEmpty() && errors.sourceUrl == null) {
+        AntButton(
+          text = stringResource(R.string.catalog_detail_source),
+          onClick = { if (!openSourceUrl(context, source)) scope.launch { snackbar.showAntMessage(noBrowserText, AntStatus.Warning) } },
+          modifier = Modifier.testTag("recipe_edit_source_open"),
+          type = AntButtonType.Link,
+        )
+      }
       LabeledInput(
         label = stringResource(R.string.recipe_edit_dose),
         value = form.dose,
@@ -614,17 +643,7 @@ private fun Totals(form: RecipeEditForm) {
 @Composable
 private fun Preview(form: RecipeEditForm) {
   val recipe = remember(form) { form.toRecipe() } ?: return
-  val curve = remember(recipe) { TargetCurve.fromRecipe(recipe) }
-  val unit = WeightUnit.GRAMS
-  BrewChart(
-    samples = emptyList(),
-    unit = unit,
-    waterUnitLabel = unit.symbol,
-    flowUnitLabel = stringResource(R.string.scale_flow_value, unit.symbol),
-    description = stringResource(R.string.recipe_edit_preview),
-    modifier = Modifier.tourAnchor("recipe_edit_preview").testTag("recipe_edit_preview"),
-    target = curve,
-  )
+  RecipeCurvePreview(recipe, testTag = "recipe_edit_preview", modifier = Modifier.tourAnchor("recipe_edit_preview"))
 }
 
 @Composable
@@ -667,6 +686,8 @@ private fun fieldErrorText(error: FieldError): String = stringResource(
     FieldError.NAME_REQUIRED -> R.string.recipe_error_name
     FieldError.DOSE_INVALID -> R.string.recipe_error_dose
     FieldError.TEMP_INVALID -> R.string.recipe_error_temp
+    FieldError.AUTHOR_TOO_LONG -> R.string.recipe_error_author
+    FieldError.SOURCE_URL_INVALID -> R.string.recipe_error_source
     FieldError.START_INVALID -> R.string.recipe_error_start
     FieldError.START_OVERLAPS -> R.string.recipe_error_start_overlaps
     FieldError.START_TOO_LATE -> R.string.recipe_error_start_late

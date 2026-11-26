@@ -58,6 +58,8 @@ data class ActiveTarget(
   val prefill: BrewDetails,
   /** El molino y el ajuste de la receta o de la preparación de referencia (SPEC-006); no se copian a la preparación. */
   val sourceGrind: GrindSetting? = null,
+  /** El molino que Preparar preselecciona al moler (SPEC-012); solo las recetas del catálogo lo traen. */
+  val preferredGrinderId: Long? = null,
 )
 
 /** La última sesión guardada: el momento de inicio y el café con el que se hizo (lo necesita la imagen del resumen). */

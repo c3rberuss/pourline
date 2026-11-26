@@ -1,0 +1,37 @@
+# Valida catalog/recipes.json (el catálogo de recetas recomendadas, SPEC-012) en cada cambio.
+# No necesita secretos: solo ejecuta el test del catálogo.
+name: Catalog
+
+on:
+  push:
+    paths:
+      - "catalog/**"
+      - ".github/workflows/catalog.yml"
+  pull_request:
+    paths:
+      - "catalog/**"
+      - ".github/workflows/catalog.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: catalog-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Validar el catálogo
+        run: ./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.recipe.catalog.RecipeCatalogFileTest"

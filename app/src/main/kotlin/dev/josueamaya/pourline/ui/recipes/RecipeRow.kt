@@ -27,8 +27,7 @@ import dev.josueamaya.pourline.ui.theme.AntTheme
 import dev.josueamaya.pourline.ui.tour.tourAnchor
 
 /**
- * Fila de una receta: nombre, método, "15 g · 250 g · 1:16,7 · 5 pasos · 1:55" y las etiquetas "Predefinida" y,
- * si [active], "Activa". También la usa el selector de objetivo de Scale.
+ * Fila de una receta: nombre, método, "15 g · 250 g · 1:16,7 · 5 pasos · 1:55" y, si [active], la etiqueta "Activa". También la usa el selector de objetivo de Scale.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -37,8 +36,6 @@ fun RecipeRow(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   active: Boolean = false,
-  /** La etiqueta "Predefinida" es el ancla del recorrido de Recetas: solo la de la primera predefinida de la lista. */
-  builtInAnchor: Boolean = false,
   /** La etiqueta "Activa" es el ancla del recorrido de Recetas. */
   activeAnchor: Boolean = false,
 ) {
@@ -52,13 +49,12 @@ fun RecipeRow(
       val summary = recipeSummary(item.doseG, item.totalWaterG, item.stageCount, time)
       val summaryDescription = recipeSummary(item.doseG, item.totalWaterG, item.stageCount, timeDescription)
       AntText(summary, Modifier.semantics { contentDescription = summaryDescription }, type = AntTextType.Secondary)
-      if (item.builtIn || active) {
+      if (active) {
         FlowRow(
           horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
           verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
           modifier = Modifier.fillMaxWidth(),
         ) {
-          if (item.builtIn) AntTag(stringResource(R.string.recipe_builtin_tag), Modifier.tourAnchor("recipe_builtin_tag", enabled = builtInAnchor).testTag("recipe_builtin_tag"))
           if (active) AntTag(stringResource(R.string.recipe_active_tag), Modifier.tourAnchor("recipe_active_tag", enabled = activeAnchor).testTag("recipe_active_tag"), color = AntTagColor.Primary)
         }
       }

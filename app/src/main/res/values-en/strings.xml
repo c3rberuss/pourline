@@ -208,8 +208,37 @@
     <string name="recipe_empty">No recipes yet</string>
     <string name="recipe_deleted">Recipe deleted</string>
     <string name="recipe_undo">Undo</string>
-    <string name="recipe_builtin_tag">Built-in</string>
     <string name="recipe_active_tag">Active</string>
+    <string name="recipes_segment_mine">My recipes</string>
+    <string name="recipes_segment_catalog">Recommended</string>
+    <string name="recipes_empty_see_catalog">See recommended</string>
+    <string name="catalog_search_placeholder">Search by name or author</string>
+    <string name="catalog_filter_all">All</string>
+    <string name="catalog_roast_filter">Roast</string>
+    <string name="catalog_detail_roasts">Roast: %1$s</string>
+    <string name="catalog_detail_roasts_any">Roast: any</string>
+    <string name="catalog_saved_tag">Saved</string>
+    <string name="catalog_no_results">No recipes match these filters</string>
+    <string name="catalog_clear_filters">Clear filters</string>
+    <string name="catalog_update_failed">Could not update · Last updated: %1$s</string>
+    <string name="catalog_using_bundled">Using the recipes included in the app</string>
+    <string name="catalog_newer_schema">Update the app to see the new recipes</string>
+    <string name="catalog_last_update">Last updated: %1$s</string>
+    <string name="tour_recipes_catalog_title">Recommended</string>
+    <string name="tour_recipes_catalog_body">Recipes from baristas and championships. Brew them as they are or save a copy to adjust it.</string>
+    <string name="catalog_detail_prepare">Brew</string>
+    <string name="catalog_detail_save">Save to my recipes</string>
+    <string name="catalog_detail_saved">Recipe saved to My recipes</string>
+    <string name="catalog_detail_already_saved">You already have a copy</string>
+    <string name="catalog_detail_source">View source</string>
+    <string name="catalog_detail_author">Author: %1$s</string>
+    <string name="catalog_detail_missing">This recipe is no longer among the recommended ones</string>
+    <string name="catalog_no_browser">No app can open the link</string>
+    <string name="recipe_edit_author">Author</string>
+    <string name="recipe_edit_source">Source</string>
+    <string name="recipe_edit_source_placeholder">https://…</string>
+    <string name="recipe_error_author">100 characters at most</string>
+    <string name="recipe_error_source">Enter a link that starts with http:// or https://</string>
     <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s · %5$s</string>
     <plurals name="recipe_stage_count">
         <item quantity="one">%1$d step</item>
@@ -293,13 +322,6 @@
     <string name="settings_scale_with_hint">Connect your scale in Prepare and the session follows the weight live.</string>
     <string name="settings_stage_vibration">Vibrate when each step starts</string>
     <string name="settings_stage_sound">Beep when each step starts</string>
-    <string name="settings_recipes_title">Recipes</string>
-    <string name="settings_recipes_restore">Restore built-in recipes</string>
-    <string name="settings_recipes_restore_title">Restore the built-in recipes?</string>
-    <string name="settings_recipes_restore_text">The built-in recipes go back to their factory values and any you deleted are created again. Your own recipes don\'t change.</string>
-    <string name="settings_recipes_restore_confirm">Restore</string>
-    <string name="settings_recipes_restore_cancel">Cancel</string>
-    <string name="settings_recipes_restored">Built-in recipes restored</string>
 
     <!-- backup -->
     <string name="backup_title">Backup</string>
@@ -1102,8 +1124,6 @@
     <string name="tour_coffee_detail_share_body">Share a card of the coffee.</string>
 
     <!-- recipes -->
-    <string name="tour_recipes_builtin_title">Built-in</string>
-    <string name="tour_recipes_builtin_body">Use them as they are or duplicate them to adjust them.</string>
     <string name="tour_recipes_active_title">Active</string>
     <string name="tour_recipes_active_body">The recipe chosen in Brew.</string>
     <string name="tour_recipes_add_title">Create recipe</string>
@@ -1198,4 +1218,7 @@
     <string name="tour_settings_countdown_body">Seconds before the timer starts.</string>
     <string name="tour_settings_replay_title">Replay tour</string>
     <string name="tour_settings_replay_body">See all the tours again.</string>
+
+    <!-- Recommended recipe catalog (SPEC-012): language of its texts (es in values, en in values-en) -->
+    <string name="catalog_language">en</string>
 </resources>
