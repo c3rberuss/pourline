@@ -33,9 +33,10 @@ object TestRecipeCatalog {
           "grind": {"text": {"es": "Media-fina", "en": "Medium-fine"}},
           "notes": {"es": "Notas de la V60", "en": "V60 notes"},
           "sourceUrl": "https://example.com/nemo",
+          "roasts": ["MEDIUM", "DARK"],
           "stages": [
             {"type": "POUR", "startS": 0, "durationS": 10, "waterG": 60.0,
-             "name": {"es": "Bloom", "en": "Bloom"}, "instruction": {"es": "Vierte en espiral", "en": "Pour in a spiral"}},
+             "name": {"es": "Preinfusión", "en": "Bloom"}, "instruction": {"es": "Vierte en espiral", "en": "Pour in a spiral"}},
             {"type": "WAIT", "startS": 10, "durationS": 35, "instruction": {"es": "Espera", "en": "Wait"}},
             {"type": "POUR", "startS": 45, "durationS": 20, "waterG": 150.0}
           ]
@@ -49,6 +50,7 @@ object TestRecipeCatalog {
           "doseG": 18.0,
           "waterTempC": 85.0,
           "sourceUrl": "https://example.com/aeropress",
+          "roasts": ["LIGHT"],
           "stages": [
             {"type": "POUR", "startS": 0, "durationS": 10, "waterG": 100.0},
             {"type": "ACTION", "startS": 10, "durationS": 5, "instruction": {"es": "Remueve tres veces", "en": "Stir three times"}},
@@ -72,6 +74,7 @@ object TestRecipeCatalog {
           "name": {"es": "Con molino de prueba", "en": "With a test grinder"},
           "method": "V60",
           "doseG": 15.0,
+          "roasts": ["MEDIUM"],
           "grind": {
             "text": {"es": "Media", "en": "Medium"},
             "grinder": {"catalogKey": "${TestGrinderCatalog.KEY_UNO}", "value": 20}

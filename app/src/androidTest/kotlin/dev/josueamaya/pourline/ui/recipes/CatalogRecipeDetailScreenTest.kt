@@ -237,4 +237,20 @@ class CatalogRecipeDetailScreenTest {
     assertFalse(exists("catalog_detail_save"))
     assertTrue(ownRecipes().isEmpty())
   }
+
+  @Test
+  fun theDetailShowsTheRoasts() {
+    show()
+    waitFor("catalog_detail_roasts")
+    val medium = context.getString(R.string.coffee_roast_medium)
+    val dark = context.getString(R.string.coffee_roast_dark).lowercase()
+    rule.onNodeWithTag("catalog_detail_roasts").assertTextContains(context.getString(R.string.catalog_detail_roasts, "$medium, $dark"))
+  }
+
+  @Test
+  fun aRecipeForAnyRoastSaysAny() {
+    show(TestRecipeCatalog.KEY_CLEVER)
+    waitFor("catalog_detail_roasts")
+    rule.onNodeWithTag("catalog_detail_roasts").assertTextContains(context.getString(R.string.catalog_detail_roasts_any))
+  }
 }

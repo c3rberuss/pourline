@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,6 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.josueamaya.pourline.R
+import dev.josueamaya.pourline.coffee.RoastLevel
 import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.recipe.catalog.CatalogListItem
 import dev.josueamaya.pourline.ui.components.AntAlert
@@ -37,16 +39,20 @@ import dev.josueamaya.pourline.ui.components.AntEmpty
 import dev.josueamaya.pourline.ui.components.AntIcons
 import dev.josueamaya.pourline.ui.components.AntInput
 import dev.josueamaya.pourline.ui.components.AntSelect
+import dev.josueamaya.pourline.ui.components.AntSegmented
+import dev.josueamaya.pourline.ui.components.AntSegmentedOption
 import dev.josueamaya.pourline.ui.components.AntSelectOption
 import dev.josueamaya.pourline.ui.components.AntStatus
 import dev.josueamaya.pourline.ui.components.AntTag
 import dev.josueamaya.pourline.ui.components.AntTagColor
 import dev.josueamaya.pourline.ui.components.AntText
 import dev.josueamaya.pourline.ui.components.AntTextType
+import dev.josueamaya.pourline.ui.coffees.label
 import dev.josueamaya.pourline.ui.history.formatBrewDateTime
 import dev.josueamaya.pourline.ui.history.label
 import dev.josueamaya.pourline.ui.recipes.recipeSummary
 import dev.josueamaya.pourline.ui.session.formatClock
+import dev.josueamaya.pourline.ui.theme.AntSize
 import dev.josueamaya.pourline.ui.theme.AntTheme
 
 /** El campo de búsqueda por nombre o autor (D33). */
@@ -76,6 +82,36 @@ fun CatalogMethodFilter(methods: List<BrewMethod>, selected: BrewMethod?, onSele
   )
 }
 
+/**
+ * El filtro por tueste: "Tueste" y "Todos / Claro / Medio / Oscuro". Con un tueste elegido, la lista incluye también las
+ * recetas sin tueste indicado, que sirven para cualquiera (SPEC-012 §3.8, Enmienda 1).
+ */
+@Composable
+fun CatalogRoastFilter(selected: RoastLevel?, onSelect: (RoastLevel?) -> Unit, modifier: Modifier = Modifier) {
+  val options = listOf(AntSegmentedOption<RoastLevel?>(null, stringResource(R.string.catalog_filter_all))) +
+    RoastLevel.entries.map { AntSegmentedOption<RoastLevel?>(it, it.label()) }
+  Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm)) {
+    AntText(stringResource(R.string.catalog_roast_filter), type = AntTextType.Secondary)
+    AntSegmented(
+      options = options,
+      selected = selected,
+      onSelect = onSelect,
+      modifier = Modifier.weight(1f).testTag("catalog_roast_filter"),
+      size = AntSize.Small,
+      itemModifier = { Modifier.testTag("catalog_roast_${it?.name?.lowercase() ?: "all"}") },
+    )
+  }
+}
+
+/** Los tuestes en el detalle: "Tueste: Medio, oscuro" o "Tueste: cualquiera" si la receta no indica ninguno (D56). */
+@Composable
+internal fun roastsSummary(roasts: Set<RoastLevel>): String {
+  if (roasts.isEmpty()) return stringResource(R.string.catalog_detail_roasts_any)
+  val labels = RoastLevel.entries.filter { it in roasts }.map { it.label() }
+  val joined = labels.mapIndexed { index, label -> if (index == 0) label else label.lowercase() }.joinToString(", ")
+  return stringResource(R.string.catalog_detail_roasts, joined)
+}
+
 /** El aviso discreto de encima de la lista (D34); nada si [CatalogListUi.notice] es `null`. */
 @Composable
 fun CatalogNoticeBar(ui: CatalogListUi, modifier: Modifier = Modifier) {
@@ -92,7 +128,8 @@ fun CatalogNoticeBar(ui: CatalogListUi, modifier: Modifier = Modifier) {
 
 /**
  * Fila de una receta del catálogo: nombre, autor, método, "15 g · 250 g · 1:16,7 · 5 pasos · 1:55" y las etiquetas
- * "Guardada" (si el usuario ya tiene una copia) y "Activa" (si es la referencia de Preparar).
+ * "Guardada" (si el usuario ya tiene una copia) y "Activa" (si es la referencia de Preparar), precedidas por una etiqueta
+ * por cada tueste de la receta (ninguna si sirve para cualquier tueste).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -114,12 +151,15 @@ fun CatalogRecipeRow(
       val summary = recipeSummary(item.doseG, item.totalWaterG, item.stageCount, time)
       val summaryDescription = recipeSummary(item.doseG, item.totalWaterG, item.stageCount, timeDescription)
       AntText(summary, Modifier.testTag("catalog_row_summary").semantics { contentDescription = summaryDescription }, type = AntTextType.Secondary)
-      if (saved || active) {
+      if (saved || active || item.roasts.isNotEmpty()) {
         FlowRow(
           horizontalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
           verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xxs),
           modifier = Modifier.fillMaxWidth(),
         ) {
+          RoastLevel.entries.filter { it in item.roasts }.forEach { roast ->
+            AntTag(roast.label(), Modifier.testTag("catalog_roast_tag_${roast.name.lowercase()}"), color = AntTagColor.Default)
+          }
           if (saved) AntTag(stringResource(R.string.catalog_saved_tag), Modifier.testTag("catalog_saved_tag"), color = AntTagColor.Success)
           if (active) AntTag(stringResource(R.string.recipe_active_tag), Modifier.testTag("catalog_active_tag"), color = AntTagColor.Primary)
         }
@@ -129,7 +169,7 @@ fun CatalogRecipeRow(
 }
 
 /**
- * La pestaña "Recomendadas": búsqueda y filtro arriba, el aviso, y la lista con "deslizar para actualizar". Sin resultados
+ * La pestaña "Recomendadas": búsqueda y filtros por método y tueste arriba, el aviso, y la lista con "deslizar para actualizar". Sin resultados
  * dice por qué y, si hay filtros, ofrece quitarlos.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -148,6 +188,7 @@ fun CatalogRecipeList(
     ) {
       CatalogSearchBar(ui.query, browser::setQuery)
       CatalogMethodFilter(ui.methods, ui.method, browser::setMethod)
+      CatalogRoastFilter(ui.roast, browser::setRoast)
       CatalogNoticeBar(ui)
     }
     val state = rememberPullToRefreshState()

@@ -214,6 +214,9 @@
     <string name="recipes_empty_see_catalog">See recommended</string>
     <string name="catalog_search_placeholder">Search by name or author</string>
     <string name="catalog_filter_all">All</string>
+    <string name="catalog_roast_filter">Roast</string>
+    <string name="catalog_detail_roasts">Roast: %1$s</string>
+    <string name="catalog_detail_roasts_any">Roast: any</string>
     <string name="catalog_saved_tag">Saved</string>
     <string name="catalog_no_results">No recipes match these filters</string>
     <string name="catalog_clear_filters">Clear filters</string>

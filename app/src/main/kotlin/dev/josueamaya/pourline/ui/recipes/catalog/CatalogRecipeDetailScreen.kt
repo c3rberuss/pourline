@@ -98,6 +98,7 @@ fun CatalogRecipeDetailScreen(
         RecipeSummary(recipe, unit, TAG)
         current.recipe.author?.let { AntText(stringResource(R.string.catalog_detail_author, it), Modifier.testTag("${TAG}_author"), type = AntTextType.Secondary) }
         current.recipe.context?.let { AntText(it, Modifier.testTag("${TAG}_context"), type = AntTextType.Secondary) }
+        AntText(roastsSummary(current.recipe.roasts), Modifier.testTag("${TAG}_roasts"), type = AntTextType.Secondary)
         if (current.alreadySaved) {
           AntAlert(
             message = stringResource(R.string.catalog_detail_already_saved),

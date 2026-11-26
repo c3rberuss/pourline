@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.Tab
@@ -80,7 +81,9 @@ class CatalogPrepareFlowTest {
     driver.node(Tab.RECIPES.testTag).performClick()
     driver.waitFor("recipes_segment_catalog")
     driver.node("recipes_segment_catalog").performClick()
-    driver.waitFor("catalog_row_$key")
+    driver.waitFor("catalog_list")
+    // La lista no compone lo que no cabe en pantalla: se desplaza hasta la fila.
+    rule.onNodeWithTag("catalog_list").performScrollToNode(hasTestTag("catalog_row_$key"))
     driver.node("catalog_row_$key").performClick()
     driver.waitFor("catalog_detail_prepare")
     rule.onNodeWithTag("catalog_detail_prepare").performScrollTo().performClick()

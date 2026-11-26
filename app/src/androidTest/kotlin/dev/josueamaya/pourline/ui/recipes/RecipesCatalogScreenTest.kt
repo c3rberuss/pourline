@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
@@ -90,7 +91,22 @@ class RecipesCatalogScreenTest {
     rule.waitUntil(5_000) { rule.onAllNodes(inNotice, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
   }
 
-  private fun rowKeys() = keys.filter { exists("catalog_row_$it") }
+  /**
+   * Las filas que hay en la lista, estén o no a la vista: con el filtro de tueste la lista cabe menos en pantalla y una lista
+   * perezosa no compone lo que queda fuera, así que se desplaza hasta cada fila para saber si existe.
+   */
+  private fun rowKeys(): List<String> {
+    if (!exists("catalog_list")) return emptyList()
+    val list = rule.onNodeWithTag("catalog_list")
+    return keys.filter { key ->
+      try {
+        list.performScrollToNode(row(key))
+        true
+      } catch (_: AssertionError) {
+        false
+      }
+    }
+  }
 
   /** La receta de prueba tal como la lista la ve en el idioma de la prueba. */
   private fun listItem(key: String) = (
@@ -258,5 +274,82 @@ class RecipesCatalogScreenTest {
     openCatalog()
     rule.waitForIdle()
     assertEquals(1, fetcher.calls)
+  }
+
+  private fun selectRoast(name: String) {
+    rule.onNodeWithTag("catalog_roast_$name").performClick()
+  }
+
+  private fun inRow(key: String, tag: String) = hasTestTag(tag) and hasAnyAncestor(row(key))
+
+  @Test
+  fun theRoastFilterStartsAtAllAndMediumShowsMediumAndAnyRoastRecipes() {
+    show()
+    openCatalog()
+    rule.onNodeWithTag("catalog_roast_all", useUnmergedTree = true).assertIsSelected()
+    assertEquals(keys, rowKeys())
+
+    selectRoast("medium")
+    rule.waitUntil(5_000) {
+      rowKeys() == listOf(TestRecipeCatalog.KEY_V60, TestRecipeCatalog.KEY_CLEVER, TestRecipeCatalog.KEY_GRINDER)
+    }
+    rule.onNodeWithTag("catalog_roast_medium", useUnmergedTree = true).assertIsSelected()
+  }
+
+  @Test
+  fun theRoastFilterCombinesWithMethodAndSearch() {
+    show()
+    openCatalog()
+    selectRoast("light")
+    rule.waitUntil(5_000) { rowKeys() == listOf(TestRecipeCatalog.KEY_AEROPRESS, TestRecipeCatalog.KEY_CLEVER) }
+
+    rule.onNodeWithTag("catalog_method_filter").performClick()
+    rule.onNode(hasText("Aeropress") and hasAnyAncestor(isPopup())).performClick()
+    rule.waitUntil(5_000) { rowKeys() == listOf(TestRecipeCatalog.KEY_AEROPRESS) }
+
+    rule.onNodeWithTag("catalog_method_filter").performClick()
+    rule.onNode(hasText(context.getString(R.string.catalog_filter_all)) and hasAnyAncestor(isPopup())).performClick()
+    rule.onNodeWithTag("catalog_search").performTextInput("némo")
+    waitFor("catalog_empty")
+    assertTrue(rowKeys().isEmpty())
+  }
+
+  @Test
+  fun clearFiltersResetsTheRoastToAll() {
+    show()
+    openCatalog()
+    selectRoast("light")
+    rule.onNodeWithTag("catalog_search").performTextInput("némo")
+    waitFor("catalog_empty")
+    rule.onNodeWithTag("catalog_clear_filters").performClick()
+    rule.waitUntil(5_000) { rowKeys() == keys }
+    rule.onNodeWithTag("catalog_roast_all", useUnmergedTree = true).assertIsSelected()
+  }
+
+  @Test
+  fun rowsShowOneTagPerRoastAndNoneForAnyRoast() {
+    show()
+    openCatalog()
+    rule.onNode(inRow(TestRecipeCatalog.KEY_V60, "catalog_roast_tag_medium"), useUnmergedTree = true).assertExists()
+    rule.onNode(inRow(TestRecipeCatalog.KEY_V60, "catalog_roast_tag_dark"), useUnmergedTree = true).assertExists()
+    assertEquals(0, rule.onAllNodes(inRow(TestRecipeCatalog.KEY_V60, "catalog_roast_tag_light"), useUnmergedTree = true).fetchSemanticsNodes().size)
+    rule.onNode(inRow(TestRecipeCatalog.KEY_AEROPRESS, "catalog_roast_tag_light"), useUnmergedTree = true).assertExists()
+    listOf("light", "medium", "dark").forEach { roast ->
+      assertEquals(0, rule.onAllNodes(inRow(TestRecipeCatalog.KEY_CLEVER, "catalog_roast_tag_$roast"), useUnmergedTree = true).fetchSemanticsNodes().size)
+    }
+  }
+
+  @Test
+  fun theRoastFilterIsKeptWhenSwitchingSegments() {
+    show()
+    openCatalog()
+    selectRoast("medium")
+    rule.waitUntil(5_000) { !exists("catalog_row_${TestRecipeCatalog.KEY_AEROPRESS}") }
+    rule.onNodeWithTag("recipes_segment_mine").performClick()
+    waitFor("recipe_row")
+    rule.onNodeWithTag("recipes_segment_catalog").performClick()
+    waitFor("catalog_list")
+    rule.onNodeWithTag("catalog_roast_medium", useUnmergedTree = true).assertIsSelected()
+    assertFalse(exists("catalog_row_${TestRecipeCatalog.KEY_AEROPRESS}"))
   }
 }
