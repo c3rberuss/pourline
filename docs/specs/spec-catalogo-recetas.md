@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado el 2026-11-25, pendiente de plan |
+| Estado | Aprobado el 2026-11-25 (ajustado el mismo día con las respuestas del [plan](plan-catalogo-recetas.md)); plan aprobado, pendiente de implementación |
 | Fecha | 2026-11-25 |
 | Rama | `feat/recipe-catalog` |
 | Deriva de | Uso real: la app no trae recetas de referencia para los distintos métodos |
@@ -17,7 +17,7 @@
     baristas profesionales y campeonatos.
   - Añadir o corregir una receta de fábrica obliga hoy a publicar una versión nueva de la app.
 - **Solución:**
-  - Un **catálogo de recetas recomendadas** (35, §3.10) de baristas reconocidos y campeonatos
+  - Un **catálogo de recetas recomendadas** (hasta 35, §3.10) de baristas reconocidos y campeonatos
     (World Brewers Cup, World AeroPress Championship, etc.), con autor, contexto y enlace a la fuente.
   - Se administra desde el propio repo: un único archivo `catalog/recipes.json` que la app descarga
     de la rama `main` y que, además, va empaquetado en el APK como copia inicial.
@@ -227,7 +227,7 @@
   - Los textos traducidos que necesita la migración (hoy `R.string.recipe_builtin_*` y
     `R.array.recipe_builtin_*`) se conservan mientras exista la migración.
 - **Referencia activa (`TargetSettings`):** `ReferenceKey` gana `Catalog(key: String)`, que se
-  guarda como tipo `catalog` con la clave en texto.
+  guarda como tipo `CATALOG` (en mayúsculas, como `RECIPE` y `BREW`) con la clave en texto.
 - **Copia de seguridad (SPEC-011):** `RecipeDto` gana `author`, `sourceUrl`, `catalogKey`; el DTO de
   preparación gana `referenceKey`. Todos opcionales con valor por defecto `null`, de modo que las
   copias anteriores se importan igual. Si el lector actual rechaza claves desconocidas, el plan sube
@@ -248,6 +248,9 @@
   - El texto, cuando no se enlaza a un molino, es `grind.text`; si además hay `grind.grinder`, se le
     añade " · <marca> <modelo> <ajuste>".
   - Sin `grind`: sin molienda.
+  - Una molienda solo de texto (sin molino ni ajuste) se muestra sin la etiqueta "molino eliminado"
+    en el editor, en Preparar y en el historial. Vale también para las recetas importadas "como
+    texto" de SPEC-009.
 - **Nombre repetido:** si ya existe una receta con el mismo nombre (sin mayúsculas ni espacios
   extremos), se añade " (2)", " (3)"… como en SPEC-009.
 - **Copia existente:** si ya hay una receta con ese `catalogKey`, se avisa "Ya tienes una copia" y se
@@ -266,7 +269,9 @@
   cuando se borró la receta.
 - La molienda de la referencia (`sourceGrind`) se resuelve como en §3.6, pero de forma automática y sin
   selector: mismo molino si el usuario lo tiene; si no, el primer molino convertible en el orden de la
-  pantalla Molinos (con "≈" si se redondea); si no hay ninguno, el texto de §3.6.
+  pantalla Molinos (con "≈" si se redondea); si no hay ninguno, el texto de §3.6. Con una molienda
+  solo de texto, la tarjeta de molienda muestra ese texto y la sugerencia del método para el molino
+  elegido, como con una receta sin molienda.
 - `BrewFactsCard` y el detalle de la preparación muestran el nombre de la receta también con
   `CATALOG`.
 
@@ -297,10 +302,11 @@
   filtro y filas; elegir una fija `ReferenceKey.Catalog`. Aparece en Básico y en Experto (en Básico
   quedan "Recetas" y "Recomendadas").
 - **Ajustes:** se quita "Restaurar recetas predefinidas".
-- **Recorrido guiado (SPEC-008):** el paso `recipes.builtin` se ancla al segmento "Recomendadas" (nuevo
-  ancla, p. ej. `recipes_catalog_segment`) con textos nuevos: título "Recomendadas", cuerpo "Recetas
-  de baristas y campeonatos. Prepáralas tal cual o guarda una copia para ajustarla." (y su versión
-  en inglés).
+- **Recorrido guiado (SPEC-008):** el paso `recipes.builtin` se sustituye por `recipes.catalog` (id
+  nuevo, para que lo vea una vez quien ya hizo el recorrido de Recetas), anclado al segmento
+  "Recomendadas" (ancla `recipes_catalog_segment`), con textos nuevos: título "Recomendadas",
+  cuerpo "Recetas de baristas y campeonatos. Prepáralas tal cual o guarda una copia para ajustarla."
+  (y su versión en inglés).
 - Todos los textos nuevos, en `values` y `values-en`.
 
 ### 3.9 Plataforma, red y CI
@@ -328,8 +334,9 @@
   molienda, fuentes consultadas y qué es inferido) están en el anexo
   [anexo-catalogo-recetas.md](anexo-catalogo-recetas.md). Este spec fija qué recetas entran y cómo se
   modelan; el anexo, los números.
-- **Total:** 35 recetas: las 31 de confianza alta o media de la investigación, 3 reservas que
-  sustituyen a las de confianza baja y la antigua V60 clásica.
+- **Total:** hasta 35 recetas: las 31 de confianza alta o media de la investigación, 3 reservas que
+  sustituyen a las de confianza baja y la antigua V60 clásica. Las reservas que no se puedan completar
+  se quedan fuera (ver "Reservas"), así que el total final está entre 32 y 35.
 - **Reglas de modelado** (además de §3.1):
   - **Dilución después de prensar** (AeroPress de campeonato): paso `ACTION` con los gramos y la
     temperatura en la instrucción ("Añade 60 g de agua a 96 °C"). La curva termina en el agua de
@@ -383,7 +390,8 @@
   | 34 | `april_brewer` | Otro: April | Patrik Rolf / April Coffee Roasters | Receta de la tienda | https://www.aprilcoffeeroasters.com/coffee-inf-recipes/el-tesoro | media |
   | 35 | `hoffmann_iced_immersion` | Otro: Clever o Hario Switch | James Hoffmann | Café helado por inmersión | https://www.youtube.com/watch?v=8uGGeV8A-BM | media |
 
-  Reparto: V60 9, Kalita Wave 3, Origami 4, Chemex 1, prensa francesa 2, AeroPress 8, Otro 8.
+  Reparto con las 35: V60 9, Kalita Wave 3, Origami 4, Chemex 1, prensa francesa 2, AeroPress 8,
+  Otro 8.
 - **Molino del catálogo** (`grind.grinder`): solo `merikanto_wac_2021` (`comandante-c40`, 27 clics,
   equivalente con el que se desarrolló la receta) y `fukahori_switch` (`comandante-c40`, 25 clics).
   El resto lleva solo `grind.text`.
@@ -458,8 +466,11 @@
       cambios; "Preparar" sin guardar usa la molienda convertida al primer molino compatible.
 - [ ] Ajustes ya no muestra "Restaurar recetas predefinidas"; el recorrido guiado señala
       "Recomendadas".
-- [ ] La app solo contacta con `raw.githubusercontent.com`: verificado en el móvil (F0) que ML Kit no
-      envía telemetría tras añadir `INTERNET`.
+- [ ] La app solo contacta con `raw.githubusercontent.com` y ML Kit no envía telemetría tras añadir
+      `INTERNET` (F0 investiga el mecanismo). En el emulador (con root), los contadores de `iptables`
+      del UID de la app solo registran conexiones a GitHub tras usar el OCR y descargar el catálogo. En
+      el móvil (sin root, release firmada instalada con `adb install -r`), no hay componentes ni
+      trabajos de `datatransport` y el UID no transmite bytes al usar el OCR sin abrir "Recomendadas".
 - [ ] Verificación manual en el móvil: primer arranque en modo avión muestra la copia del APK;
       deslizar hacia abajo descarga; un cambio publicado en `main` aparece tras actualizar.
 - [ ] Textos en español e inglés; detekt/lint sin avisos nuevos; solo se ejecutan los tests del spec.
