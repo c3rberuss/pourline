@@ -190,28 +190,24 @@ class TargetPickerTest {
   fun theRecommendedTabSearchesAndFilters() {
     show(savedKeys = setOf("nemo_v60"))
     openCatalogTab()
-    rule.onAllNodesWithTag("catalog_row_nemo_v60").assertCountEquals(1)
-    rule.onAllNodesWithTag("catalog_row_test_aeropress").assertCountEquals(1)
-    rule.onAllNodesWithTag("catalog_row_test_clever").assertCountEquals(1)
-    // "Guardada" en la copia que ya existe.
+    // "Guardada" en la copia que ya existe (la primera fila está a la vista sin desplazar).
     rule.onAllNodesWithTag("catalog_saved_tag", useUnmergedTree = true).assertCountEquals(1)
+    assertTrue(rowKeys().containsAll(listOf("nemo_v60", "test_aeropress", "test_clever")))
 
     // Búsqueda por autor, sin acentos.
     rule.onNodeWithTag("catalog_search").performTextInput("nemo")
-    rule.onAllNodesWithTag("catalog_row_nemo_v60").assertCountEquals(1)
-    rule.onAllNodesWithTag("catalog_row_test_aeropress").assertCountEquals(0)
+    assertEquals(listOf("nemo_v60"), rowKeys())
 
     // Sin resultados: el mensaje y "Quitar filtros".
     rule.onNodeWithTag("catalog_search").performTextReplacement("zzz")
     rule.onNodeWithTag("target_picker_catalog_empty").assertIsDisplayed()
     rule.onNodeWithTag("target_picker_catalog_clear_filters").performClick()
-    rule.onAllNodesWithTag("catalog_row_test_aeropress").assertCountEquals(1)
+    assertTrue("test_aeropress" in rowKeys())
 
     // Filtro por método.
     rule.onNodeWithTag("catalog_method_filter").performClick()
     rule.onNode(hasText("Aeropress") and hasAnyAncestor(isPopup())).performClick()
-    rule.onAllNodesWithTag("catalog_row_nemo_v60").assertCountEquals(0)
-    rule.onAllNodesWithTag("catalog_row_test_aeropress").assertCountEquals(1)
+    assertEquals(listOf("test_aeropress"), rowKeys())
   }
 
   @Test

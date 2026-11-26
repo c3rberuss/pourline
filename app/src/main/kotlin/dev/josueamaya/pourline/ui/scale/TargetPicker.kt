@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.ui.scale
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -44,6 +45,13 @@ import dev.josueamaya.pourline.ui.theme.AntTheme
 private enum class PickerTab { RECIPES, CATALOG, HISTORY }
 
 private val ListMaxHeight = 360.dp
+
+/**
+ * Altura de las listas del selector: hasta [ListMaxHeight], pero nunca más de lo que sobra en el cajón una vez dibujado lo demás
+ * (cabecera, pestañas, filtros, aviso y botones). Así en pantallas bajas o con letra grande los botones no se salen y la lista
+ * se desplaza en el hueco que queda.
+ */
+private fun ColumnScope.listHeight(): Modifier = Modifier.weight(1f, fill = false).heightIn(max = ListMaxHeight)
 
 /**
  * Selector de objetivo, sobre un `AntDrawer` inferior: pestañas "Recetas | Recomendadas | Historial" (esta última solo con
@@ -93,7 +101,7 @@ fun TargetPicker(
       PickerTab.RECIPES -> if (recipes.isEmpty()) {
         EmptyText(stringResource(R.string.target_picker_empty_recipes))
       } else {
-        LazyColumn(Modifier.heightIn(max = ListMaxHeight), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+        LazyColumn(listHeight(), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
           items(recipes, key = { it.id }) { item ->
             RecipeRow(item, onClick = { onSelect(ReferenceKey.Recipe(item.id)) }, active = active == ReferenceKey.Recipe(item.id))
           }
@@ -111,7 +119,7 @@ fun TargetPicker(
       PickerTab.HISTORY -> if (brews.isEmpty()) {
         EmptyText(stringResource(R.string.target_picker_empty_history))
       } else {
-        LazyColumn(Modifier.heightIn(max = ListMaxHeight), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
+        LazyColumn(listHeight(), verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
           items(brews, key = { it.id }) { item ->
             HistoryRow(item, onClick = { onSelect(ReferenceKey.Brew(item.id)) }, enabled = item.totalWaterG > 0)
           }
@@ -140,7 +148,7 @@ fun TargetPicker(
 
 /** La pestaña "Recomendadas": búsqueda, filtros por método y tueste, aviso y la lista (D38). Sin "deslizar para actualizar". */
 @Composable
-private fun CatalogPickerContent(
+private fun ColumnScope.CatalogPickerContent(
   catalog: CatalogListUi,
   activeKey: String?,
   onQuery: (String) -> Unit,
@@ -165,7 +173,7 @@ private fun CatalogPickerContent(
     }
   } else {
     LazyColumn(
-      Modifier.heightIn(max = ListMaxHeight).testTag("target_picker_catalog_list"),
+      listHeight().testTag("target_picker_catalog_list"),
       verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs),
     ) {
       items(catalog.items, key = { it.key }) { item ->
