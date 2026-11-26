@@ -2,12 +2,13 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado el 2026-11-25 (ajustado el mismo día con las respuestas del [plan](plan-catalogo-recetas.md)); implementado en `feat/recipe-catalog` (F0 a F11 del plan), pendiente de la prueba manual en el teléfono y de la fusión |
-| Fecha | 2026-11-25 |
+| Estado | Aprobado el 2026-11-25 (ajustado el mismo día con las respuestas del [plan](plan-catalogo-recetas.md)); implementado en `feat/recipe-catalog` (F0 a F11), pendiente de la prueba manual y de la fusión. **Enmienda 1** (tueste medio e instrucciones): aprobada el 2026-11-26, pendiente de plan |
+| Fecha | 2026-11-25. Enmienda 1: 2026-11-26 |
 | Rama | `feat/recipe-catalog` |
 | Deriva de | Uso real: la app no trae recetas de referencia para los distintos métodos |
 | Módulos afectados | `:app`: nuevo paquete `recipe/catalog`, `recipe` (`RecipeEntity`, `Recipe`, `RecipeRepository`, `BuiltInRecipes`, `BuiltInRecipeSeeder`), `history` (`HistoryDatabase`, `Migrations`, `BrewEntities`, `HistoryModels`), `settings` (`TargetSettings`), `session` (`ScaleSessionManager`), `backup`, `ui/recipes`, `ui/scale` (`TargetPicker`), `ui/settings`, `ui/history` (`BrewFactsCard`), `ui/tour`, `Navigation.kt`, `NavigationKeys.kt`, `AndroidManifest.xml`, `build.gradle.kts`, `res/values*`. Raíz del repo: `catalog/recipes.json`, `.github/workflows/`, `README.md` |
 | Specs relacionados | [SPEC-003](spec-curva-objetivo.md), [SPEC-005](spec-navegacion-modos.md), [SPEC-006](spec-molinos.md), [SPEC-008](spec-recorrido-guiado.md), [SPEC-009](spec-compartir-receta.md), [SPEC-010](spec-paso-accion.md), [SPEC-011](spec-exportar-datos.md) |
+| Enmienda 1 | 2026-11-26, en la misma rama. Reequilibra el catálogo hacia el tueste medio (campo opcional `roasts`, filtro "Tueste", al menos 2/3 aptas para medio, máximo 6 solo para claro) y reescribe las instrucciones sin jerga ni tiempos repetidos, con un vocabulario y un test que lo hace cumplir. Cambia §3.1, §3.8, §3.9, §3.10, §5 y §7. Motivo: el tueste claro es difícil de conseguir y varias instrucciones no se entendían |
 
 ## 1. Resumen y Contexto
 
@@ -137,6 +138,7 @@
   | `stages[].startS`, `durationS` | entero | sí | segundos desde t0 y duración |
   | `stages[].waterG` | número | solo en `POUR` | agua **acumulada** al terminar el paso; en el resto se deriva con `withDerivedWater()` |
   | `stages[].name`, `instruction` | texto localizado | no | nombre del paso e instrucción (≤ 200 caracteres por idioma) |
+  | `roasts` (enmienda 1) | lista de string | no | tuestes para los que está pensada la receta: valores de `RoastLevel` (`LIGHT`, `MEDIUM`, `DARK`), sin repetir. Ausente o vacía = cualquier tueste |
 
   - **Texto localizado:** objeto con las claves `es` y `en`, las dos obligatorias y no vacías.
   - Los campos desconocidos se ignoran (permite añadir campos opcionales sin subir `schemaVersion`).
@@ -146,6 +148,10 @@
   - `grind.grinder.catalogKey`, si está, existe en el catálogo de molinos y `value` está en su escala.
   - `sourceUrl`, si está, empieza por `https://`.
   - `key` es única en el archivo.
+  - **Enmienda 1:** un valor desconocido en `roasts` se ignora al leer (si no queda ninguno, la
+    receta cuenta como "cualquier tueste"); el test del repo lo rechaza, así que en el archivo
+    publicado no ocurre. `roasts` es opcional, así que no sube `schemaVersion`: las versiones
+    anteriores de la app lo ignoran.
 - **Versionado:**
   - Un cambio que una versión anterior de la app no puede representar sube `schemaVersion`. Por
     ejemplo: un `BrewMethod` o `StageType` nuevo como valor obligatorio, o un cambio de significado
@@ -284,9 +290,13 @@
 - **"Recomendadas":**
   - Campo de búsqueda: coincide con nombre o autor, sin distinguir mayúsculas ni acentos.
   - Filtro por método: "Todos" más los métodos presentes en el catálogo.
-  - Filtro y búsqueda se combinan.
+  - **Enmienda 1:** filtro por tueste: "Todos / Claro / Medio / Oscuro", que arranca en "Todos"
+    (con la misma persistencia que el filtro por método). "Medio" muestra las recetas con `MEDIUM`
+    en `roasts` y las de cualquier tueste; igual con "Claro" y "Oscuro".
+  - Filtros (método y tueste) y búsqueda se combinan; "Quitar filtros" los quita todos.
   - Fila: nombre, autor, método, "dosis · agua · ratio", tiempo total y la etiqueta "Guardada" si
-    existe una receta propia con su `catalogKey`.
+    existe una receta propia con su `catalogKey`. **Enmienda 1:** además, una etiqueta por tueste de
+    `roasts` ("Claro", "Medio", "Oscuro"); sin etiqueta de tueste si es para cualquiera.
   - Orden: el del archivo.
   - Deslizar hacia abajo actualiza (§3.3).
   - Aviso discreto con el error del último intento (§4) y "Última actualización: <fecha>".
@@ -294,12 +304,13 @@
 - **Detalle** (`CatalogRecipeDetail(key: String) : NavKey`), de solo lectura:
   - Nombre, autor, contexto, método, dosis, agua total, ratio, temperatura, molienda, tiempo total,
     notas y lista de pasos con su tipo, inicio, agua e instrucción.
+  - **Enmienda 1:** "Tueste: Medio, oscuro" o "Tueste: cualquiera".
   - "Ver fuente" abre `sourceUrl` en el navegador (`ACTION_VIEW`).
   - En Experto, vista previa de la curva objetivo como en el editor; en Básico se oculta (SPEC-005).
   - Botones "Preparar" (principal) y "Guardar en mis recetas".
 - **Receta propia con autor o fuente:** el detalle o editor muestra el autor y "Ver fuente".
 - **Selector de Preparar (`TargetPicker`):** pestaña nueva "Recomendadas" con la misma búsqueda,
-  filtro y filas; elegir una fija `ReferenceKey.Catalog`. Aparece en Básico y en Experto (en Básico
+  filtros (método y, desde la enmienda 1, tueste) y filas; elegir una fija `ReferenceKey.Catalog`. Aparece en Básico y en Experto (en Básico
   quedan "Recetas" y "Recomendadas").
 - **Ajustes:** se quita "Restaurar recetas predefinidas".
 - **Recorrido guiado (SPEC-008):** el paso `recipes.builtin` se sustituye por `recipes.catalog` (id
@@ -323,12 +334,120 @@
 - **Test del catálogo del repo:** test JVM que lee `catalog/recipes.json` de la raíz y comprueba:
   esquema, `revision` y `schemaVersion` presentes, claves únicas, ambos idiomas en todos los textos
   localizados, cada receta válida en ambos idiomas (§3.1) y `catalogKey` de molino existente.
+  **Enmienda 1**, además:
+  - `roasts` solo con valores de `RoastLevel` y sin repetir.
+  - Proporción de §3.10: al menos 2/3 de las recetas aptas para tueste medio y como máximo 6 solo
+    para claro.
+  - Ninguna instrucción, nombre de paso ni nota contiene términos de la lista prohibida (§3.10, sin
+    distinguir mayúsculas ni acentos, en los dos idiomas donde aplique) ni tiempos con formato
+    `m:ss` (por ejemplo "0:45", "3:30").
 - **Workflow** nuevo en `.github/workflows/` que ejecuta solo ese test en cada `push` y
   `pull_request` que toque `catalog/**`.
 - **Mantenimiento:** el README (o un comentario junto al archivo, en el `README` de `catalog/`)
   explica cómo añadir una receta y que hay que incrementar `revision`.
 
 ### 3.10 Contenido inicial
+
+**Enmienda 1 (2026-11-26): tueste medio e instrucciones claras.** Prevalece sobre lo que sigue en
+esta sección.
+
+- **Motivo:** muchas recetas (sobre todo las de campeonato) están pensadas para tueste claro, que es
+  difícil de conseguir; y varias instrucciones usan jerga ("Drawdown", "Rao spin", "Remolinea") o
+  repiten tiempos que la app ya muestra.
+- **Proporción:** unas 35 recetas; al menos 2/3 aptas para tueste medio (`MEDIUM` en `roasts` o sin
+  `roasts`) y como máximo 6 solo para claro, reservadas a las de campeonato más icónicas.
+- **Variantes publicadas:** si la fuente de una receta publica su variante para tueste medio (por
+  ejemplo, la 4:6 de Kasuya a 88 °C), se usa esa variante y su `roasts` lo refleja. Nunca se
+  cambian por cuenta propia los parámetros de un autor: sin variante publicada, la receta se queda
+  como es (con su tueste) o se sustituye.
+- **Sustituciones:** las recetas solo para claro que no se quedan se reemplazan por recetas con
+  fuente verificada pensadas para tueste medio o cualquier tueste (guías de fabricantes, tostadores
+  y baristas reconocidos), con las mismas exigencias de rigor que la investigación original (sin
+  confianza baja).
+- **`roasts` de cada receta:** el tueste que indica su fuente; si la fuente no lo dice, se infiere y
+  el anexo lo marca; una guía genérica de fabricante sin indicación es "cualquiera" (sin `roasts`).
+- **Reglas de redacción** de instrucciones, nombres de paso y notas, en los dos idiomas, para todas
+  las recetas (también las que se quedan):
+  1. Cada instrucción dice qué hacer en ese paso, en lenguaje llano y sin jerga.
+  2. Sin tiempos ni horas que la app ya muestra ("Espera hasta 0:30", "termina hacia 1:08").
+  3. En los vertidos, lo que se añade y el total: "Añade 60 g (total 120 g)".
+  4. "Girar el gotero" siempre es `SWIRL`; "remover con cuchara" siempre es `ACTION`.
+  5. Si el paso no necesita más que su tipo, la instrucción queda vacía.
+  6. Sin comentarios que no sean una acción ("Pausa.", "El 40 % define dulzor y acidez"); esa
+     información, si vale, va a las notas.
+- **Vocabulario:**
+
+  | Prohibido | Español | Inglés |
+  |---|---|---|
+  | drawdown | "Deja que termine de filtrar" | "Let it finish draining" |
+  | rao spin | "Gira el gotero con energía" | "Swirl the dripper firmly" |
+  | remolinea / remolinear | "Gira el gotero suavemente" | "Gently swirl the dripper" |
+  | bloom (solo en español) | "Preinfusión" | "Bloom" (se mantiene) |
+
+  La lista prohibida del test (§3.9) es la columna "Prohibido" aplicada al idioma que corresponda
+  ("bloom" solo se prohíbe en español).
+- **Lista final** (investigación del 2026-11-26, decisiones del usuario del mismo día). Sustituye a
+  la tabla "Recetas" de más abajo, que queda como historia. Datos, citas de tueste y fuentes de las
+  recetas nuevas: sección "Enmienda 1" del [anexo](anexo-catalogo-recetas.md).
+
+  | # | Clave | Método | Autor | `roasts` | Confianza | Estado |
+  |---|---|---|---|---|---|---|
+  | 1 | `four_six` | V60 | Tetsu Kasuya | MEDIUM | alta | variante media: 88 °C ("Around 88°C for medium roast coffee"); notas con 93 °C para claro y 83 °C para oscuro |
+  | 2 | `v60_classic` | V60 | — | cualquiera | — | se queda |
+  | 3 | `hoffmann_ultimate_v60` | V60 | James Hoffmann | LIGHT, MEDIUM | alta | se queda |
+  | 4 | `hedrick_v60_easy` | V60 | Lance Hedrick | cualquiera | alta | se queda |
+  | 5 | `hedrick_one_and_done` | V60 | Lance Hedrick | cualquiera | media | se queda |
+  | 6 | `counter_culture_v60` | V60 | Counter Culture Coffee | cualquiera | media | nueva |
+  | 7 | `peets_pour_over` | V60 | Peet's Coffee | cualquiera | media | nueva; la guía dice "pour over cone" sin modelo: las notas aclaran que vale para cualquier gotero cónico |
+  | 8 | `wang_wbrc_2017` | V60 | Chad Wang | LIGHT | alta | se queda (campeonato) |
+  | 9 | `stumptown_kalita` | Kalita Wave | Stumptown Coffee Roasters | cualquiera | alta | se queda |
+  | 10 | `counter_culture_kalita` | Kalita Wave | Counter Culture Coffee | cualquiera | media | nueva |
+  | 11 | `ozone_kalita` | Kalita Wave | Ozone Coffee | cualquiera | alta | nueva |
+  | 12 | `stumptown_origami` | Origami | Stumptown Coffee Roasters | cualquiera | alta | se queda |
+  | 13 | `origami_kopikalyan` | Origami | Origami / KOPIKALYAN TOKYO | LIGHT, MEDIUM | media | se queda |
+  | 14 | `origami_the_coffeeshop` | Origami | Origami / THE COFFEESHOP | LIGHT, MEDIUM | alta | nueva |
+  | 15 | `stumptown_chemex` | Chemex | Stumptown Coffee Roasters | cualquiera | alta | se queda |
+  | 16 | `counter_culture_chemex` | Chemex | Counter Culture Coffee | cualquiera | media | nueva |
+  | 17 | `peets_chemex` | Chemex | Peet's Coffee | LIGHT, MEDIUM | media | nueva; 50 g (la fuente dice 55 g, pero su bloom y su ratio dan 50 g) |
+  | 18 | `hoffmann_french_press` | Prensa francesa | James Hoffmann | cualquiera | media | se queda |
+  | 19 | `stumptown_french_press` | Prensa francesa | Stumptown Coffee Roasters | cualquiera | alta | se queda |
+  | 20 | `counter_culture_french_press` | Prensa francesa | Counter Culture Coffee | cualquiera | alta | nueva |
+  | 21 | `peets_french_press` | Prensa francesa | Peet's Coffee | MEDIUM, DARK | alta | nueva |
+  | 22 | `counter_culture_aeropress` | AeroPress | Counter Culture Coffee | cualquiera | alta | nueva |
+  | 23 | `stumptown_aeropress` | AeroPress | Stumptown Coffee Roasters | cualquiera | alta | nueva |
+  | 24 | `merikanto_wac_2021` | AeroPress | Tuomas Merikanto | LIGHT | alta | se queda (campeonato) |
+  | 25 | `van_bunnik_wac_2019` | AeroPress | Wendelien van Bunnik | LIGHT | alta | se queda (campeonato) |
+  | 26 | `nemo_pop_wac_2025` | AeroPress | Némo Pop | LIGHT | media | se queda (campeonato) |
+  | 27 | `coava_moka` | Moka | Coava Coffee Roasters | cualquiera | media | nueva; solo el llenado de la base se pesa, el resto son pasos `ACTION` |
+  | 28 | `hario_switch` | Otro: Hario Switch | Hario | cualquiera | media | nueva; sin temperatura en la fuente |
+  | 29 | `hoffmann_clever` | Otro: Clever | James Hoffmann | cualquiera | media | se queda |
+  | 30 | `five_senses_clever` | Otro: Clever | Five Senses Coffee | LIGHT, MEDIUM | media | se queda |
+  | 31 | `ozone_clever` | Otro: Clever | Ozone Coffee | cualquiera | alta | nueva |
+  | 32 | `hoffmann_iced_immersion` | Otro: Clever o Hario Switch | James Hoffmann | cualquiera | media | se queda; nota nueva: 4 min de infusión para tuestes oscuros |
+  | 33 | `peng_wbrc_2025` | Otro: Solo Dripper | George Jinyang Peng | LIGHT | alta | se queda (campeonato) |
+  | 34 | `fukahori_wbrc_2018` | Otro: GINA | Emi Fukahori | LIGHT | alta | se queda (campeonato) |
+
+  - **34 recetas** (no 35: llegar a 35 exigía bajar la confianza o pasar de 6 solo para claro). **28
+    aptas para medio** (82 %: 21 para cualquier tueste y 7 con `MEDIUM`). **6 solo para claro**, todas
+    de campeonato (campeones, métodos distintos).
+  - Reparto: V60 8, AeroPress 5 (2 aptas para medio), prensa francesa 4, Kalita Wave 3, Origami 3,
+    Chemex 3, moka 1, Otro 7.
+  - **Salen (15):** `hoffmann_one_cup_v60`, `rao_v60`, `gagne_v60`, `wallgren_wbrc_2016`,
+    `goldsworthy_wbrc_2016`, `du_jianing_wbrc_2019`, `medina_wbrc_2023`, `hoffmann_aeropress`,
+    `stanica_wac_2024`, `wipvasutt_wac_2023`, `ibarra_wac_2018`, `wendelboe_aeropress`,
+    `fukahori_switch`, `boen_wbrc_2021`, `april_brewer`. Sus claves no se reutilizan. Las copias
+    guardadas con esos `catalogKey` siguen intactas en "Mis recetas"; una referencia activa a una de
+    ellas se resuelve como `Removed` (§3.7, §4).
+  - **Molino del catálogo:** al salir `fukahori_switch`, solo `merikanto_wac_2021` lleva
+    `grind.grinder`. Ninguna receta nueva da un ajuste de un molino del catálogo.
+  - **Temperaturas en °F** de las fuentes nuevas: 200 °F = 93,3 °C y 205 °F = 96,1 °C; las de
+    Stumptown, que dicen "about 205°F", se quedan en 96 °C.
+  - **Fuentes contradictorias:** se siguen los pasos cuando la cabecera de la guía da otro tiempo
+    total (Counter Culture, Stumptown); un vertido de más de 120 s se parte en dos (Peet's Chemex,
+    "okay to pause").
+- **Claves:** las recetas que salen del catálogo pierden su clave para siempre (no se reutiliza);
+  `four_six` y `v60_classic` se mantienen, aunque cambien a su variante media.
+- `revision` sube al publicar el cambio.
 
 - **Origen:** investigación del 2026-11-25. Los datos completos de cada receta (pasos, tiempos, agua,
   molienda, fuentes consultadas y qué es inferido) están en el anexo
@@ -350,7 +469,7 @@
   - **Clave estable:** la 4:6 de Kasuya usa `four_six` (no `kasuya_4_6`) para que las copias
     migradas (§3.5) la reconozcan; la V60 clásica conserva `v60_classic`, sin autor, con los datos de
     `BuiltInRecipes` actuales.
-- **Recetas:**
+- **Recetas (lista original del 2026-11-25, sustituida por la enmienda 1):**
 
   | # | Clave | Método | Autor | Contexto | Fuente principal | Confianza |
   |---|---|---|---|---|---|---|
@@ -474,6 +593,16 @@
 - [ ] Verificación manual en el móvil: primer arranque en modo avión muestra la copia del APK;
       deslizar hacia abajo descarga; un cambio publicado en `main` aparece tras actualizar.
 - [ ] Textos en español e inglés; detekt/lint sin avisos nuevos; solo se ejecutan los tests del spec.
+- [ ] **Enmienda 1:** el catálogo publicado cumple la proporción de §3.10 (al menos 2/3 aptas para
+      tueste medio, como máximo 6 solo para claro) y cada receta nueva o variante tiene fuente en el
+      anexo.
+- [ ] **Enmienda 1:** el test del repo falla con un valor desconocido en `roasts`, con un término
+      prohibido o con un tiempo `m:ss` en una instrucción (comprobado con casos del parser o del test,
+      no rompiendo `main`), y pasa con el catálogo publicado.
+- [ ] **Enmienda 1:** tests JVM del filtro por tueste: "Medio" incluye las recetas sin `roasts`; se
+      combina con método y búsqueda; "Quitar filtros" lo restablece a "Todos".
+- [ ] **Enmienda 1:** tests instrumentados: filtro "Tueste" en Recomendadas y en el `TargetPicker`,
+      etiquetas de tueste en la fila y "Tueste: …" en el detalle.
 
 ## 6. Preguntas abiertas
 
@@ -483,6 +612,12 @@
 
 ## 7. Alternativas descartadas
 
+- **Enmienda 1, adaptar las recetas de autor a tueste medio por cuenta propia** (bajar temperatura,
+  moler más grueso): falsearía la receta que se atribuye al autor.
+- **Enmienda 1, campo de tueste en `Recipe`:** obligaría a migrar Room 8 → 9; el tueste solo sirve
+  para filtrar el catálogo.
+- **Enmienda 1, filtro de tueste que arranca en "Medio":** ocultaría por defecto las de campeonato.
+- **Enmienda 1, solo filtro sin reequilibrar el contenido:** la mayoría seguirían siendo de claro.
 - **Catálogo solo en el APK, sin red:** mantiene la app sin `INTERNET`, pero no permite administrar el
   catálogo sin publicar versión.
 - **Híbrido con descarga opcional en Ajustes:** más complejo para el usuario; se descartó en favor de

@@ -5,7 +5,8 @@ receta: pasos, tiempos, agua, molienda, fuentes consultadas y qué es inferido.
 
 ## Decisiones del spec que prevalecen sobre este anexo
 
-Donde este anexo y el spec difieran, manda el spec. En concreto:
+Donde este anexo y el spec difieran, manda el spec. La enmienda 1 (tueste medio) reemplaza la lista
+de recetas: ver la sección "Enmienda 1" al final. Del spec original, en concreto:
 
 - **Recetas descartadas por confianza baja:** la 7 (Matt Winton "Five Pour"), la 17 (Chemex de
   Hoffmann) y la 31 (Switch "del diablo" de Kasuya). Se conservan abajo solo como referencia y están
@@ -1377,3 +1378,501 @@ Donde este anexo y el spec difieran, manda el spec. En concreto:
 ### Sitios que no se pudieron leer
 
 European Coffee Trip (403; el vídeo de Fukahori sí se leyó por su descripción de YouTube), Bean Scene (403), Barista Hustle (402, muro de pago), Blue Bottle (403) y la página de competición de April (404). Tampoco se pudieron leer las transcripciones de YouTube; solo las descripciones de los vídeos.
+
+## Enmienda 1 (2026-11-26): tueste medio
+
+Investigación que reclasifica las recetas por tueste y propone variantes y sustituciones para
+[SPEC-012 §3.10, enmienda 1](spec-catalogo-recetas.md). Donde esta sección y la anterior difieran,
+manda esta; y sobre las dos, el spec.
+
+**Decisiones del usuario sobre esta investigación (2026-11-26):**
+
+- Total de 34 recetas, sin rebajar la confianza ni pasar de 6 solo para claro.
+- `hoffmann_ultimate_v60`: `roasts` = `LIGHT`, `MEDIUM`; se queda.
+- `coava_moka`: entra.
+- `peets_pour_over`: método `V60` (no "Otro: gotero cónico"); las notas aclaran que vale para
+  cualquier gotero cónico.
+- Las instrucciones de todas las recetas, también las que se quedan, se reescriben con las reglas y
+  el vocabulario del spec (§3.10, enmienda 1): las instrucciones citadas en la sección anterior de
+  este anexo son orientativas.
+
+### 1. Las 35 recetas actuales
+
+| # | Clave | Tueste según la fuente | `roasts` propuesto | Decisión | Motivo |
+|---|---|---|---|---|---|
+| 1 | `four_six` | Philocoffea: "Around 93°C for light roast coffee", "Around 88°C for medium roast coffee", "Around 83°C for dark roast coffee" | `[MEDIUM]` | **Se queda con variante media** | La fuente publica la variante: `waterTempC` 93 → 88 y se anota en notes que con claro son 93 °C y con oscuro 83 °C (y que con oscuro empieza con dos vertidos). Pasos y agua sin cambios. |
+| 2 | `v60_classic` | Sin fuente (receta antigua de la app) | ausente | Se queda | Receta genérica sin indicación de tueste: cualquiera (inferido). |
+| 3 | `hoffmann_ultimate_v60` | Hario USA: "Temperature: the hotter, the better (especially with lighter roasts)" | `[LIGHT, MEDIUM]` | Se queda | La frase la presenta como receta general (el agua muy caliente importa "sobre todo" con claros). No afirma nada de oscuros, así que no pongo `DARK`. |
+| 4 | `hoffmann_one_cup_v60` | Descripción del vídeo: "250g soft, filtered water, freshly boiled (for lighter roasts)" | `[LIGHT]` | **Se sustituye** | Solo para claro y no es de campeonato; no hay variante con número para otros tuestes. |
+| 5 | `rao_v60` | La fuente solo dice que la extracción varía "depending on your grinder, varietal and roast level". Inferido: claro (97 °C, objetivo de extracción del 22-24,5 %, Rao defiende el tueste claro) | `[LIGHT]` | **Se sustituye** | Solo claro (inferido), no es de campeonato. |
+| 6 | `hedrick_v60_easy` | Descripción: "a V60 recipe [...] that will produce a great cup on any coffee"; "If you want less extraction (i.e. darker roasted coffees), first variable to change is heat. Lower it." | ausente | Se queda | El autor dice que sirve con cualquier café. El ajuste para oscuros no tiene número: la receta se queda con agua hirviendo y el consejo va en notes. |
+| 7 | `hedrick_one_and_done` | Descripción: "a recipe that transcends grinders and coffees [...] with different coffees". Inferido: cualquiera | ausente | Se queda | El autor la presenta como universal. |
+| 8 | `gagne_v60` | Sin mención. Inferido: claro (Gardelli Chiriku natural de Etiopía, agua hirviendo) | `[LIGHT]` | **Se sustituye** | Solo claro (inferido). |
+| 9 | `wang_wbrc_2017` | Sin mención. Inferido: claro (final del World Brewers Cup) | `[LIGHT]` | **Se queda (solo claro)** | Campeón mundial, confianza alta, la receta más sencilla de las de campeonato y en V60. |
+| 10 | `stumptown_kalita` | "Measure out 21g [...] of your favorite Stumptown coffee" | ausente | Se queda | Guía genérica de tostador: cualquiera. |
+| 11 | `wallgren_wbrc_2016` | Sin mención. Inferido: claro (World Brewers Cup, EK43 con tamizado) | `[LIGHT]` | **Se sustituye** | Finalista, no campeona; necesita tamizar. |
+| 12 | `goldsworthy_wbrc_2016` | Sin mención. Inferido: claro (World Brewers Cup) | `[LIGHT]` | **Se sustituye** | 5.º puesto, confianza media y fuentes contradictorias. |
+| 13 | `du_jianing_wbrc_2019` | Sin mención. Inferido: claro (World Brewers Cup) | `[LIGHT]` | **Se sustituye** | Confianza media; la fuente es un blog de terceros con una incoherencia de tiempos. |
+| 14 | `medina_wbrc_2023` | Sin mención. Inferido: claro (World Brewers Cup) | `[LIGHT]` | **Se sustituye** | Confianza media; los inicios son una interpretación ("silent time"). |
+| 15 | `stumptown_origami` | Guía genérica de Stumptown (como la 10) | ausente | Se queda | Cualquiera. |
+| 16 | `origami_kopikalyan` | Origami: "18 g, shallow to medium roast" (浅煎り～中煎り) | `[LIGHT, MEDIUM]` | Se queda | Apta para medio según la fuente. |
+| 17 | `stumptown_chemex` | "Measure out 42g [...] of your favorite Stumptown coffee" | ausente | Se queda | Cualquiera. |
+| 18 | `hoffmann_french_press` | Sin mención. Inferido: cualquiera (inmersión; la fuente fiable, Imbibe, no limita el tueste) | ausente | Se queda | Cualquiera (inferido). |
+| 19 | `stumptown_french_press` | Guía genérica de Stumptown | ausente | Se queda | Cualquiera. |
+| 20 | `hoffmann_aeropress` | Descripción: "11g coffee (ground at the finer end of medium, assuming this is light roasted coffee. The darker you go the more you may prefer to increase the dose and coarsen the grind.)" | `[LIGHT]` | **Se sustituye** | Pensada para claro; para oscuros solo da una dirección ("más dosis") sin cifra, así que no hay variante. No es de campeonato. Ver dudas. |
+| 21 | `merikanto_wac_2021` | Sin mención. Inferido: claro (World AeroPress Championship) | `[LIGHT]` | **Se queda (solo claro)** | Campeón, confianza alta, sin dilución (la que mejor encaja en la app) y con ajuste de Comandante. |
+| 22 | `van_bunnik_wac_2019` | Sin mención. Inferido: claro (WAC) | `[LIGHT]` | **Se queda (solo claro)** | Campeona, confianza alta y receta sencilla. |
+| 23 | `stanica_wac_2024` | La fuente nombra el café (Guji lavado, tostado por Olisipo) sin tueste. Inferido: claro | `[LIGHT]` | **Se sustituye** | Confianza media y tres temperaturas; se prefieren 2021, 2019 y 2025. |
+| 24 | `wipvasutt_wac_2023` | Sin mención. Inferido: claro (WAC) | `[LIGHT]` | **Se sustituye** | Confianza media, dosis en dos tandas y dilución. |
+| 25 | `nemo_pop_wac_2025` | Sin mención. Inferido: claro (WAC, tamizado a 200 µm) | `[LIGHT]` | **Se queda (solo claro)** | Campeón más reciente (2025). |
+| 26 | `ibarra_wac_2018` | Sin mención. Inferido: claro (WAC) | `[LIGHT]` | **Se sustituye** | Dosis extrema (34,9 g, ratio final 1:5,7) y tiempos aproximados. |
+| 27 | `wendelboe_aeropress` | "Use 14 grams of freshly fine filter ground coffee (light roast)" | `[LIGHT]` | **Se sustituye** | Solo claro por la fuente. Su variante "moka" (20 g de tueste de espresso, 100-150 g) no tiene tiempos. |
+| 28 | `peng_wbrc_2025` | Sprudge: Gesha natural de Mount Totumas, "roasted [...] using three different roast profiles". Inferido: claro | `[LIGHT]` | **Se queda (solo claro)** | Campeón mundial más reciente (2025) y confianza alta. |
+| 29 | `fukahori_wbrc_2018` | Goat Story: "an experimental coffee called Laurina", sin tueste. Inferido: claro | `[LIGHT]` | **Se queda (solo claro)** | Campeona mundial, receta icónica (GINA con válvula), confianza alta. |
+| 30 | `fukahori_switch` | Sin mención (receta de las cafeterías MAME). Inferido: claro (MAME tuesta claro, estilo nórdico) | `[LIGHT]` | **Se sustituye** | No es de competición; la sustituye la receta oficial de Hario para el Switch. Ver dudas. |
+| 31 | `boen_wbrc_2021` | Hario Europe: "a natural processed Geisha coffee from Hacienda La Esmeralda", sin tueste. Inferido: claro | `[LIGHT]` | **Se sustituye** | Competidor no campeón. |
+| 32 | `hoffmann_clever` | Sin fuente escrita del autor; la descripción del vídeo no trae la receta. Inferido: cualquiera (inmersión, sin temperatura fijada) | ausente | Se queda | Cualquiera (inferido, con confianza media). |
+| 33 | `five_senses_clever` | "24g of your favourite filter roast coffee (lighter than espresso)" | `[LIGHT, MEDIUM]` | Se queda | Tueste de filtro: claro o medio (inferido de la cita). |
+| 34 | `april_brewer` | Sin mención. Inferido: claro (April Coffee, tueste nórdico muy claro, café concreto El Tesoro) | `[LIGHT]` | **Se sustituye** | Solo claro y no es de campeonato. |
+| 35 | `hoffmann_iced_immersion` | Descripción: "Steep for at least 5 minutes (or 4 minutes for darker roasts)" | ausente | Se queda | La fuente cubre todos los tuestes. Propongo añadir a notes: "con tuestes más oscuros, 4 min de infusión" (no cambia los pasos). |
+
+**Solo claro que se quedan (6):** `wang_wbrc_2017`, `peng_wbrc_2025`, `fukahori_wbrc_2018` (World Brewers Cup) y `merikanto_wac_2021`, `van_bunnik_wac_2019`, `nemo_pop_wac_2025` (World AeroPress Championship). Elegí las que tienen campeón (no finalista), confianza alta o la edición más reciente, y métodos distintos (V60, Solo Dripper, GINA y tres AeroPress). La 4:6 no cuenta como solo claro porque pasa a su variante media.
+
+**Salen (15):** `hoffmann_one_cup_v60`, `rao_v60`, `gagne_v60`, `wallgren_wbrc_2016`, `goldsworthy_wbrc_2016`, `du_jianing_wbrc_2019`, `medina_wbrc_2023`, `hoffmann_aeropress`, `stanica_wac_2024`, `wipvasutt_wac_2023`, `ibarra_wac_2018`, `wendelboe_aeropress`, `fukahori_switch`, `boen_wbrc_2021`, `april_brewer`.
+
+### 2. Variante y recetas nuevas
+
+#### 2.0 Cambios en recetas que se quedan
+
+- **`four_six` (variante media):** `waterTempC` 88.0 (antes 93.0), `roasts: ["MEDIUM"]`. Notes (es): "Los dos primeros vertidos (40 % del agua) definen dulzor y acidez; los tres siguientes (60 %) la fuerza. Variante para tueste medio: 88 °C. Con tueste claro la fuente usa 93 °C y con oscuro 83 °C, empezando con dos vertidos." Fuente: https://en.philocoffea.com/en-th/blogs/blog/coffee-brewing-method (leída de nuevo; citas literales en la tabla 1). Pasos sin cambios.
+- **`hoffmann_iced_immersion`:** sin cambios en los pasos; añadir a notes la indicación de 4 min para tuestes más oscuros (cita en la tabla 1).
+- **`hedrick_v60_easy`:** opcional, añadir a notes "Con tuestes más oscuros, el autor recomienda bajar primero la temperatura" (sin cifra).
+- El resto solo recibe el campo `roasts` de la tabla 1.
+
+Para todas las nuevas: los inicios publicados son [fuente]; las duraciones de cada vertido, remover y acción son [inferidas] salvo que se diga otra cosa. 200 °F = 93,3 °C y 205 °F = 96,1 °C (conversión exacta; la app admite un decimal).
+
+#### 2.1 `counter_culture_v60`
+
+- **Nombre:** V60 de Counter Culture / Counter Culture V60
+- **Autor:** Counter Culture Coffee · **Contexto:** Guía de preparación oficial (Sandra Walimaki) / Official brew guide
+- **Método:** `V60` · **roasts:** ausente (cualquiera)
+- **Dosis** 30 g · **Agua** 500 g · **Ratio** 1:16,7 · **Temperatura** 93,3 °C (200 °F)
+- **Molienda:** Media-fina, como sal de mesa / Medium-fine, like table salt. Sin catalogKey.
+- **Fuente:** https://counterculturecoffee.com/pages/quick-easy-v60 (leída con curl, texto literal)
+- **Confianza:** media (alta en dosis, agua, temperatura y 0:00/0:30/1:00; los dos últimos vertidos son inferidos)
+- **Tueste:** la guía no lo indica ("fresh-roasted"); cualquiera por ser guía genérica de un tostador que vende claro, medio y oscuro.
+
+*Validación: OK · agua 500 ratio 1:16.7 duración total 3:45 pasos 10*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 10 | 60 | Preinfusión | Añade 60 g (total 60 g) mojando todo el café. |
+| 2 | WAIT | 10 | 20 | (60) |  |  |
+| 3 | POUR | 30 | 20 | 200 |  | Añade 140 g (total 200 g) en círculos. |
+| 4 | WAIT | 50 | 10 | (200) |  |  |
+| 5 | POUR | 60 | 15 | 300 |  | Añade 100 g (total 300 g) en círculos. |
+| 6 | WAIT | 75 | 15 | (300) |  |  |
+| 7 | POUR | 90 | 15 | 400 |  | Añade 100 g (total 400 g) en círculos. |
+| 8 | WAIT | 105 | 15 | (400) |  |  |
+| 9 | POUR | 120 | 15 | 500 |  | Añade 100 g (total 500 g) en círculos. |
+| 10 | WAIT | 135 | 90 | (500) |  | Deja que termine de filtrar. |
+
+Fuente: "Start a timer and pour 60g", "Wait 30 seconds and then pour [...] to 200g", "By 1:00 [...] pour in a circular motion to 300g. Repeat this process every 30 seconds, until reaching a total weight of 500g", "finish draining by 3:30-4:00". **Inferido:** los vertidos de 1:30 (400 g) y 2:00 (500 g), repitiendo el paso de 100 g cada 30 s; las duraciones; el final a 3:45 (punto medio).
+
+#### 2.2 `counter_culture_kalita`
+
+- **Nombre:** Kalita Wave de Counter Culture / Counter Culture Kalita Wave
+- **Autor:** Counter Culture Coffee · **Contexto:** Guía de preparación oficial (Joe Capatosto)
+- **Método:** `KALITA_WAVE` · **roasts:** ausente (la guía recomienda su mezcla Apollo, "medium roast")
+- **Dosis** 30 g · **Agua** 500 g · **Ratio** 1:16,7 · **Temperatura** 93,3 °C (200 °F)
+- **Molienda:** Media, algo más fina que la sal kosher / Medium, slightly finer than kosher salt. Sin catalogKey.
+- **Fuente:** https://counterculturecoffee.com/pages/quick-easy-pour-over
+- **Confianza:** media (mismo motivo que la V60)
+
+*Validación: OK · agua 500 ratio 1:16.7 duración total 3:45 pasos 10*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 10 | 60 | Preinfusión | Añade 60 g (total 60 g) mojando todo el café. |
+| 2 | WAIT | 10 | 20 | (60) |  |  |
+| 3 | POUR | 30 | 20 | 200 |  | Añade 140 g (total 200 g) en círculos. |
+| 4 | WAIT | 50 | 10 | (200) |  |  |
+| 5 | POUR | 60 | 15 | 300 |  | Añade 100 g (total 300 g) en círculos. |
+| 6 | WAIT | 75 | 15 | (300) |  |  |
+| 7 | POUR | 90 | 15 | 400 |  | Añade 100 g (total 400 g) en círculos. |
+| 8 | WAIT | 105 | 15 | (400) |  |  |
+| 9 | POUR | 120 | 15 | 500 |  | Añade 100 g (total 500 g) en círculos. |
+| 10 | WAIT | 135 | 90 | (500) |  | Deja que termine de filtrar. |
+
+Fuente: 60 g, a 0:30 hasta 200 g, a 1:00 hasta 300 g, "Repeat this process every 30 seconds, or as the water drains a centimeter [...] until reaching a total weight of 500g", fin 3:30-4:00. **Inferido:** 400 g a 1:30 y 500 g a 2:00; duraciones; fin a 3:45. Mismo programa que la V60 de la casa: si sobra una, quitaría esta.
+
+#### 2.3 `ozone_kalita`
+
+- **Nombre:** Kalita Wave de Ozone / Ozone Kalita Wave
+- **Autor:** Ozone Coffee · **Contexto:** Guía de preparación oficial (Kalita Wave 155)
+- **Método:** `KALITA_WAVE` · **roasts:** ausente. Cita: "The Wave works particularly well with light to medium roasts and copes with darker coffees too."
+- **Dosis** 15 g · **Agua** 250 g · **Ratio** 1:16,7 · **Temperatura** 93 °C
+- **Molienda:** Media de filtro / Medium filter grind. Sin catalogKey.
+- **Fuente:** https://ozonecoffee.co.uk/pages/kalita-wave-brew-guide (leída con curl)
+- **Confianza:** alta
+
+*Validación: OK · agua 250 ratio 1:16.7 duración total 2:45 pasos 8*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 10 | 50 | Preinfusión | Añade 50 g (total 50 g) en círculos suaves, mojando todo el café. |
+| 2 | WAIT | 10 | 20 | (50) |  |  |
+| 3 | POUR | 30 | 10 | 100 |  | Añade 50 g (total 100 g) en círculos suaves. |
+| 4 | POUR | 40 | 10 | 150 |  | Añade 50 g (total 150 g) en el centro. |
+| 5 | WAIT | 50 | 20 | (150) |  |  |
+| 6 | POUR | 70 | 10 | 200 |  | Añade 50 g (total 200 g) en círculos suaves. |
+| 7 | POUR | 80 | 10 | 250 |  | Añade 50 g (total 250 g) en el centro. |
+| 8 | WAIT | 90 | 75 | (250) |  | Deja que termine de filtrar. |
+
+Fuente: 50 g en círculos y bloom hasta 0:30; "At 0:30, pour another 100g of water: about 50g in gentle circles [...] then a 50g pour into the centre"; "At 1:10, pour the remaining 100g in the same way"; total 2:30-3:00. **Inferido:** duraciones de 10 s; fin a 2:45. La misma página da la versión 185 (30 g / 500 g a 0:00, 0:30 y 1:30); elijo la 155 por ser de una taza.
+
+#### 2.4 `counter_culture_chemex`
+
+- **Nombre:** Chemex de Counter Culture / Counter Culture Chemex
+- **Autor:** Counter Culture Coffee · **Contexto:** Guía de preparación oficial (Alex Stoffregen)
+- **Método:** `CHEMEX` · **roasts:** ausente (cualquiera, guía genérica)
+- **Dosis** 45 g · **Agua** 750 g · **Ratio** 1:16,7 · **Temperatura** 93,3 °C (200 °F)
+- **Molienda:** Media-gruesa, como sal kosher / Medium-coarse, like kosher salt. Sin catalogKey.
+- **Fuente:** https://counterculturecoffee.com/pages/quick-easy-chemex
+- **Confianza:** media (cinco vertidos intermedios inferidos)
+
+*Validación: OK · agua 750 ratio 1:16.7 duración total 4:30 pasos 16*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 15 | 100 | Preinfusión | Añade 100 g (total 100 g) mojando todo el café. |
+| 2 | WAIT | 15 | 15 | (100) |  |  |
+| 3 | POUR | 30 | 15 | 200 |  | Añade 100 g (total 200 g) en círculos. |
+| 4 | WAIT | 45 | 15 | (200) |  |  |
+| 5 | POUR | 60 | 15 | 300 |  | Añade 100 g (total 300 g) en círculos. |
+| 6 | WAIT | 75 | 15 | (300) |  |  |
+| 7 | POUR | 90 | 15 | 400 |  | Añade 100 g (total 400 g) en círculos. |
+| 8 | WAIT | 105 | 15 | (400) |  |  |
+| 9 | POUR | 120 | 15 | 500 |  | Añade 100 g (total 500 g) en círculos. |
+| 10 | WAIT | 135 | 15 | (500) |  |  |
+| 11 | POUR | 150 | 15 | 600 |  | Añade 100 g (total 600 g) en círculos. |
+| 12 | WAIT | 165 | 15 | (600) |  |  |
+| 13 | POUR | 180 | 15 | 700 |  | Añade 100 g (total 700 g) en círculos. |
+| 14 | WAIT | 195 | 15 | (700) |  |  |
+| 15 | POUR | 210 | 10 | 750 |  | Añade 50 g (total 750 g) en círculos. |
+| 16 | WAIT | 220 | 50 | (750) |  | Deja que termine de filtrar. |
+
+Fuente: 100 g, a 0:30 hasta 200 g, a 1:00 hasta 300 g, repetir cada 30 s hasta 750 g, fin 4:00-5:00. **Inferido:** vertidos de 100 g cada 30 s (el último de 50 g) y fin a 4:30. La cabecera dice "Brew time: 3 min", que contradice el 4:00-5:00 de los pasos; uso los pasos.
+
+#### 2.5 `peets_chemex`
+
+- **Nombre:** Chemex de Peet's / Peet's Chemex
+- **Autor:** Peet's Coffee · **Contexto:** Guía de preparación oficial
+- **Método:** `CHEMEX` · **roasts:** `[LIGHT, MEDIUM]`. Cita: "particularly rewarding for medium and light roasts."
+- **Dosis** 50 g · **Agua** 800 g · **Ratio** 1:16 · **Temperatura** 93,3 °C (200 °F)
+- **Molienda:** la guía no la indica; propongo omitir `grind`.
+- **Fuente:** https://www.peets.com/pages/brew-guide-chemex (leída con curl)
+- **Confianza:** media
+
+*Validación: OK · agua 800 ratio 1:16.0 duración total 4:10 pasos 6*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 15 | 100 | Preinfusión | Añade 100 g (total 100 g) en espiral, mojando todo el café. |
+| 2 | WAIT | 15 | 15 | (100) |  |  |
+| 3 | POUR | 30 | 75 | 450 |  | Añade 350 g (total 450 g): primero en espiral y luego en el centro. Puedes hacer pausas. |
+| 4 | POUR | 105 | 75 | 800 |  | Añade 350 g (total 800 g) sin dejar que el café quede seco. |
+| 5 | WAIT | 180 | 60 | (800) |  | Deja que termine de filtrar. |
+| 6 | ACTION | 240 | 10 | (800) |  | Retira el filtro y gira la Chemex para mezclar el café. |
+
+Fuente: 100 g en espiral y bloom; "At 30 seconds, resume pouring water over the grounds, until your scale reaches 800 grams at 3 minutes [...] It's okay to pause during your pour"; retirar el filtro y "a final swirl". **Contradicción:** el paso 2 dice "Weigh out 55 grams" (mismo texto que su guía de prensa), pero el bloom es "100 grams of hot water (twice the weight of the grounds)" y el consejo final da 1:16; los dos dan 50 g. Elijo 50 g (alternativa: 55 g, ratio 1:14,5). **Inferido:** el vertido de 150 s se parte en dos de 75 s (el máximo es 120 s) con 450 g a mitad, lo que la fuente permite ("okay to pause"); el final del filtrado a 4:00 (la guía da ~5 min en total contando la preparación).
+
+#### 2.6 `counter_culture_french_press`
+
+- **Nombre:** Prensa francesa de Counter Culture / Counter Culture French Press
+- **Autor:** Counter Culture Coffee · **Contexto:** Guía de preparación oficial (Katie Carguilo)
+- **Método:** `FRENCH_PRESS` · **roasts:** ausente (recomienda sus mezclas Fast Forward y Hologram, "medium roast")
+- **Dosis** 45 g · **Agua** 800 g · **Ratio** 1:17,8 (la guía redondea a 1:18) · **Temperatura** 96,1 °C (205 °F)
+- **Molienda:** Media-gruesa, como sal kosher / Medium-coarse, like kosher salt. Sin catalogKey.
+- **Fuente:** https://counterculturecoffee.com/pages/quick-easy-french-press
+- **Confianza:** alta
+
+*Validación: OK · agua 800 ratio 1:17.8 duración total 6:15 pasos 5*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 20 | 800 |  | Añade 800 g (total 800 g). |
+| 2 | WAIT | 20 | 10 | (800) |  |  |
+| 3 | ACTION | 30 | 10 | (800) |  | Remueve con una cuchara y pon la tapa sin bajar el émbolo. |
+| 4 | WAIT | 40 | 320 | (800) |  |  |
+| 5 | ACTION | 360 | 15 | (800) |  | Baja el émbolo despacio hasta el fondo y sirve. |
+
+Fuente: "Start a timer and add 800g of hot water", "After 30 seconds has passed, stir the coffee with a spoon and place the lid on top", "At 6:00, slowly press plunger to the bottom". **Contradicción:** la cabecera dice "Brew time: 4 min"; uso el 6:00 del paso. **Inferido:** duraciones del vertido, del remover y del prensado.
+
+#### 2.7 `peets_french_press`
+
+- **Nombre:** Prensa francesa de Peet's / Peet's French Press
+- **Autor:** Peet's Coffee · **Contexto:** Guía de preparación oficial
+- **Método:** `FRENCH_PRESS` · **roasts:** `[MEDIUM, DARK]`. Cita: "It's an ideal companion for dark roasts, bringing out rich, complex flavors." (Peet's tuesta medio y oscuro; la frase no excluye el medio.)
+- **Dosis** 55 g · **Agua** 880 g · **Ratio** 1:16 · **Temperatura** 93,3 °C (200 °F)
+- **Molienda:** Gruesa, como sal marina gruesa / Coarse, like coarse sea salt. Sin catalogKey.
+- **Fuente:** https://www.peets.com/pages/brew-guide-french-press
+- **Confianza:** alta
+
+*Validación: OK · agua 880 ratio 1:16.0 duración total 4:15 pasos 7*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 10 | 110 | Preinfusión | Añade 110 g (total 110 g) mojando todo el café. |
+| 2 | SWIRL | 10 | 5 | (110) |  | Gira la prensa suavemente. |
+| 3 | WAIT | 15 | 15 | (110) |  |  |
+| 4 | POUR | 30 | 30 | 880 |  | Añade 770 g (total 880 g), hasta la mitad de la banda metálica. |
+| 5 | ACTION | 60 | 10 | (880) |  | Pon el émbolo, bájalo hasta la mitad y vuelve a subirlo justo por debajo de la superficie. |
+| 6 | WAIT | 70 | 170 | (880) |  |  |
+| 7 | ACTION | 240 | 15 | (880) |  | Baja el émbolo hasta el fondo y sirve. |
+
+Fuente: temporizador de 4 min; 110 g ("twice the weight of the coffee"), "a quick swirl", 30 s; hasta 880 g; émbolo hasta la mitad y arriba; "Once four minutes have passed, press the plunger to the bottom". **Inferido:** duraciones; que los 30 s cuentan tras el giro. Cerca de los límites (55 ≤ 60 g, 880 ≤ 1000 g).
+
+#### 2.8 `counter_culture_aeropress`
+
+- **Nombre:** AeroPress de Counter Culture / Counter Culture AeroPress
+- **Autor:** Counter Culture Coffee · **Contexto:** Guía de preparación oficial (Rachel Keen)
+- **Método:** `AEROPRESS` · **roasts:** ausente
+- **Dosis** 18 g · **Agua** 200 g · **Ratio** 1:11,1 · **Temperatura** 93,3 °C (200 °F)
+- **Molienda:** Media-fina, algo más fina que para goteo / Medium-fine, slightly finer than pour-over. Sin catalogKey.
+- **Fuente:** https://counterculturecoffee.com/pages/quick-easy-aeropress
+- **Confianza:** alta
+- **Notes:** AeroPress invertida con el émbolo ~1 cm dentro; enjuaga el filtro en la tapa.
+
+*Validación: OK · agua 200 ratio 1:11.1 duración total 1:50 pasos 5*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 10 | 200 |  | AeroPress invertida: añade 200 g (total 200 g). |
+| 2 | ACTION | 10 | 15 | (200) |  | Remueve con la paleta hasta mojar todo el café y enrosca la tapa con el filtro. |
+| 3 | WAIT | 25 | 65 | (200) |  |  |
+| 4 | ACTION | 90 | 5 | (200) |  | Da la vuelta a la AeroPress con cuidado sobre la taza. |
+| 5 | ACTION | 95 | 15 | (200) |  | Presiona suavemente y para cuando oigas el silbido del aire. |
+
+Fuente: "Start timer and add 200g water", remover con la paleta y enroscar la tapa, "Steep until 1:30", "flip [...] and gently press plunger for ~15 seconds". **Inferido:** duración del vertido, del remover y del giro. Descarto la otra receta del mismo sitio (entrada de blog: 18 g / 210 g, 3 filtros) porque la que enlaza su sección "Brew Guides" es esta.
+
+#### 2.9 `stumptown_aeropress`
+
+- **Nombre:** AeroPress de Stumptown / Stumptown AeroPress
+- **Autor:** Stumptown Coffee Roasters · **Contexto:** Guía de preparación oficial
+- **Método:** `AEROPRESS` · **roasts:** ausente. Cita: "Measure 17g of Stumptown coffee".
+- **Dosis** 17 g · **Agua** 220 g · **Ratio** 1:12,9 · **Temperatura** 96 °C ("about 205°F", como las otras de Stumptown)
+- **Molienda:** Fina, como sal de mesa / Fine, like table salt. Sin catalogKey.
+- **Fuente:** https://www.stumptowncoffee.com/pages/brew-guide-aeropress (leída con curl)
+- **Confianza:** alta
+- **Notes:** AeroPress en posición normal; enjuaga el filtro.
+
+*Validación: OK · agua 220 ratio 1:12.9 duración total 1:55 pasos 6*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 10 | 220 |  | Añade 220 g (total 220 g), hasta la marca 4 más o menos. |
+| 2 | ACTION | 10 | 10 | (220) |  | Remueve hasta mojar todo el café. |
+| 3 | ACTION | 20 | 5 | (220) |  | Pon el émbolo y súbelo un poco para que no gotee. |
+| 4 | WAIT | 25 | 50 | (220) |  |  |
+| 5 | ACTION | 75 | 10 | (220) |  | Quita el émbolo, remueve otra vez y vuelve a ponerlo. |
+| 6 | ACTION | 85 | 30 | (220) |  | Presiona con fuerza constante y para cuando oigas el silbido del aire. |
+
+Fuente: "Pour 220g of water (to about the No. 4 mark on the brew chamber) within about 10 seconds. Stir", émbolo "pull up slightly to create a pressure seal", "At 1:15, remove the plunger and give the coffee slurry another quick stir. Replace the plunger and gently press", "just under two minutes". **Contradicción:** cabecera "Brew Time About 4 Minutes" frente a "just under two minutes" en los pasos; uso los pasos. **Inferido:** duraciones del remover, del émbolo y del prensado.
+
+#### 2.10 `hario_switch`
+
+- **Nombre:** Hario Switch (receta oficial de Hario) / Hario Switch (official Hario recipe)
+- **Autor:** Hario · **Contexto:** Instrucciones oficiales del lanzamiento (2019)
+- **Método:** `OTHER` + methodOther "Hario Switch" · **roasts:** ausente (fabricante, genérica)
+- **Dosis** 20 g · **Agua** 240 g · **Ratio** 1:12 · **Temperatura** sin valor ("hot water")
+- **Molienda:** Media / Medium. Sin catalogKey.
+- **Fuente:** https://pressat.co.uk/media/uploads/90731252cc3afc15947e597be53eb0b7.pdf (nota de prensa de HARIO CO., LTD.; texto extraído del PDF). Confirmación secundaria: https://kurasu.kyoto/blogs/kurasu-journal/switch ("pour 240ml of hot water all at once over the 20g [...] wait for 2 minutes and release the flow").
+- **Confianza:** media (fuente oficial, pero sin temperatura ni tiempo de filtrado)
+- **Notes:** con la válvula cerrada desde el principio; la fuente invita a ajustar molienda y tiempo.
+
+*Validación: OK · agua 240 ratio 1:12.0 duración total 3:30 pasos 4*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 15 | 240 |  | Con la válvula cerrada, añade 240 g (total 240 g) de agua caliente de una vez. |
+| 2 | WAIT | 15 | 105 | (240) |  | Deja reposar. Si lo quieres más fuerte, remueve con una cuchara. |
+| 3 | ACTION | 120 | 2 | (240) |  | Abre la válvula. |
+| 4 | WAIT | 122 | 88 | (240) |  | Deja que termine de filtrar. |
+
+Fuente: "Put 20g of ground coffee (medium grind) into the dripper and pour in plenty of hot water (approx.240ml). Let it steep for approximately 2 min. Stir as desired for a stronger brew. Press the switch to drip coffee." **Inferido:** 240 ml = 240 g; que los 2 min cuentan desde el inicio del vertido; el filtrado (fin a 3:30). Sin `waterTempC`.
+
+#### 2.11 `ozone_clever`
+
+- **Nombre:** Clever Dripper de Ozone / Ozone Clever Dripper
+- **Autor:** Ozone Coffee · **Contexto:** Guía de preparación oficial
+- **Método:** `OTHER` + methodOther "Clever" · **roasts:** ausente. Cita: "Most roast levels work."
+- **Dosis** 15 g · **Agua** 250 g · **Ratio** 1:16,7 · **Temperatura** 95 °C
+- **Molienda:** Media de filtro / Medium filter grind. Sin catalogKey.
+- **Fuente:** https://ozonecoffee.co.uk/pages/brew-guide-clever-dripper (leída con curl)
+- **Confianza:** alta
+
+*Validación: OK · agua 250 ratio 1:16.7 duración total 3:20 pasos 6*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 10 | 250 |  | Añade 250 g (total 250 g). |
+| 2 | ACTION | 10 | 15 | (250) |  | Remueve suavemente con una cuchara hasta que no quede café seco. |
+| 3 | WAIT | 25 | 110 | (250) |  | Pon la tapa y deja reposar. |
+| 4 | ACTION | 135 | 5 | (250) |  | Pon el Clever sobre la taza o la jarra para que empiece a filtrar. |
+| 5 | WAIT | 140 | 55 | (250) |  | Deja que termine de filtrar. |
+| 6 | ACTION | 195 | 5 | (250) |  | Retira el Clever de la taza. |
+
+Fuente: "Start your timer. Pour 250g of water at 95°C over the grounds and stir gently for about 15 seconds", "Place the lid on the dripper and leave it until 2:15 on your timer", "At 2:15, place the Clever Dripper on your mug", "Most brews finish at around 3:00 to 3:30", y retirarlo. **Inferido:** duración del vertido (10 s) y que el remover va justo después (con eso el reposo empieza a 0:25); fin a 3:15. El café va antes que el agua, así que la báscula coincide con el objetivo.
+
+#### 2.12 `coava_moka`
+
+- **Nombre:** Moka de Coava / Coava Moka Pot
+- **Autor:** Coava Coffee Roasters · **Contexto:** Guía de preparación oficial
+- **Método:** `MOKA` · **roasts:** ausente (inferido: la guía no lo indica, "high quality, freshly roasted coffee")
+- **Dosis** 28 g · **Agua** 250 g · **Ratio** 1:8,9 · **Temperatura** 97,5 °C (punto medio de "205-210 F", agua calentada antes de echarla en la base)
+- **Molienda:** Fina, sin llegar a la de espresso / Fine, but not as fine as espresso. Sin catalogKey.
+- **Fuente:** https://coavacoffee.com/brew-methods/moka-pot (leída con curl)
+- **Confianza:** media (dosis y agua pesadas en la fuente; su reloj empieza al poner la cafetera al fuego)
+- **Notes:** el agua de la base se pesa en la báscula; el resto de los pasos se hace fuera de ella. Con una moka de otro tamaño cambia la dosis.
+
+*Validación: OK · agua 250 ratio 1:8.9 duración total 4:55 pasos 5*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 15 | 250 |  | Llena la base con 250 g (total 250 g) de agua caliente, sin pasar de la válvula. |
+| 2 | ACTION | 15 | 30 | (250) |  | Pon el embudo, llénalo con el café bien nivelado y enrosca la parte de arriba sujetando la base con un trapo. |
+| 3 | ACTION | 45 | 5 | (250) |  | Pon la cafetera a fuego medio o medio-bajo. |
+| 4 | WAIT | 50 | 240 | (250) |  | Deja que suba el café; tarda unos 4 minutos. |
+| 5 | ACTION | 290 | 5 | (250) |  | Retira del fuego en cuanto salga vapor y sirve. |
+
+Fuente: 28 g, 250 g en la base "below the pressure release valve", embudo nivelado, enroscar con un trapo, fuego medio o medio-bajo y "start your timer", "Remove from heat when the brewer begins emitting steam [...] about 4 minutes". **Inferido:** duraciones del llenado y del montaje; aquí t0 es el vertido en la base (la fuente pone t0 al encender el fuego), así que el total en la app es ~4:55 en lugar de ~4:00. Ver dudas sobre si la moka cabe en el modelo.
+
+#### 2.13 `origami_the_coffeeshop`
+
+- **Nombre:** Origami de THE COFFEESHOP / THE COFFEESHOP Origami
+- **Autor:** Origami / THE COFFEESHOP (Daichi Hagiwara, encargado de la tienda) · **Contexto:** Receta oficial de Origami (serie "with THE COFFEESHOP", vol. 2)
+- **Método:** `ORIGAMI` · **roasts:** `[LIGHT, MEDIUM]`. Cita: "コーヒー豆 18g（浅煎り～中煎り程度を想定）" (pensada para tueste claro a medio).
+- **Dosis** 18 g · **Agua** 300 g · **Ratio** 1:16,7 · **Temperatura** 92 °C
+- **Molienda:** Media (TIMEMORE C3 a unos 16 clics) / Medium (about 16 clicks on a TIMEMORE C3). **Sin catalogKey:** el catálogo tiene `timemore-chestnut-c3s` (escala 0-25), no el C3; no los equiparo.
+- **Fuente:** https://origami-kai.com/en/blogs/special-feature/origami%E3%83%89%E3%83%AA%E3%83%83%E3%83%91%E3%83%BC%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%9F%E6%8A%BD%E5%87%BA%E3%83%AC%E3%82%B7%E3%83%94-with-the-coffeeshop-vol-2 (leída con curl, texto japonés literal)
+- **Confianza:** alta
+- **Notes:** Origami S con filtro cónico; salen unos 270 ml.
+
+*Validación: OK · agua 300 ratio 1:16.7 duración total 2:20 pasos 13*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 8 | 40 | Preinfusión | Añade 40 g (total 40 g) en círculos. |
+| 2 | ACTION | 8 | 5 | (40) |  | Remueve 5 veces con una cuchara. |
+| 3 | WAIT | 13 | 27 | (40) |  |  |
+| 4 | POUR | 40 | 10 | 90 |  | Añade 50 g (total 90 g) en círculos sobre todo el café. |
+| 5 | WAIT | 50 | 10 | (90) |  |  |
+| 6 | POUR | 60 | 10 | 150 |  | Añade 60 g (total 150 g). |
+| 7 | WAIT | 70 | 10 | (150) |  |  |
+| 8 | POUR | 80 | 10 | 210 |  | Añade 60 g (total 210 g). |
+| 9 | WAIT | 90 | 10 | (210) |  |  |
+| 10 | POUR | 100 | 10 | 260 |  | Añade 50 g (total 260 g). |
+| 11 | WAIT | 110 | 10 | (260) |  |  |
+| 12 | POUR | 120 | 10 | 300 |  | Añade 40 g (total 300 g). |
+| 13 | WAIT | 130 | 10 | (300) |  | Deja que termine de filtrar. |
+
+Fuente: "0'00～0'40秒 40gのお湯を回しながら注ぎ、すぐにスプーンで5回攪拌、そのまま40秒間蒸らす"; vertidos de 10 s a 0:40 (50 g), 1:00 (60 g, total 150), 1:20 (60 g, 210), 1:40 (50 g, 260) y 2:00 (40 g, 300); fin "2分15秒から2分半". Las duraciones de 10 s son de la fuente. **Inferido:** duración del primer vertido (8 s) y del remover (5 s); fin a 2:20.
+
+#### 2.14 `peets_pour_over`
+
+- **Nombre:** Goteo de Peet's / Peet's Pour Over
+- **Autor:** Peet's Coffee · **Contexto:** Guía de preparación oficial
+- **Método:** `OTHER` + methodOther "Gotero cónico" / "Cone dripper" (la guía dice "pour over cone" sin modelo; alternativa: `V60`, ver dudas) · **roasts:** ausente (inferido: guía genérica; la página recomienda Major Dickason's, "Dark Roast", y Big Bang, "Medium Roast")
+- **Dosis** 25 g · **Agua** 400 g · **Ratio** 1:16 · **Temperatura** 93,3 °C (200 °F)
+- **Molienda:** Como arena / Like sand. Sin catalogKey.
+- **Fuente:** https://www.peets.com/pages/brew-guide-pour-over (leída con curl)
+- **Confianza:** media (falta el final del filtrado)
+
+*Validación: OK · agua 400 ratio 1:16.0 duración total 3:20 pasos 5*
+
+| # | Tipo | Inicio s | Duración s | Agua acum. g | Nombre | Instrucción (es) |
+|---|---|---:|---:|---:|---|---|
+| 1 | POUR | 0 | 10 | 50 | Preinfusión | Añade 50 g (total 50 g) en espiral, mojando todo el café. |
+| 2 | WAIT | 10 | 20 | (50) |  |  |
+| 3 | POUR | 30 | 90 | 400 |  | Añade 350 g (total 400 g) despacio: primero en espiral y luego en el centro. |
+| 4 | WAIT | 120 | 75 | (400) |  | Deja que termine de filtrar. |
+| 5 | ACTION | 195 | 5 | (400) |  | Gira la jarra para mezclar el café. |
+
+Fuente: 50 g "(50 grams, or twice the weight of the coffee grounds) in a spiral motion", 30 s, "At the 30 second mark, resume pouring [...] until your scale reaches 400 grams and your timer reaches 2 minutes", "a final swirl". Aquí la duración del vertido (90 s) sale de la fuente. **Inferido:** el filtrado (fin a 3:15) y el giro final. La frase de la guía "particularly those with bright, sparkling flavors" sugiere cafés brillantes, pero no limita el tueste.
+
+### 3. Catálogo propuesto
+
+| # | Clave | Método | Autor | roasts | Confianza | Estado |
+|---|---|---|---|---|---|---|
+| 1 | `four_six` | V60 | Tetsu Kasuya | MEDIUM | alta | variante media |
+| 2 | `v60_classic` | V60 | — | cualquiera | — | se queda |
+| 3 | `hoffmann_ultimate_v60` | V60 | James Hoffmann | LIGHT, MEDIUM | alta | se queda |
+| 4 | `hedrick_v60_easy` | V60 | Lance Hedrick | cualquiera | alta | se queda |
+| 5 | `hedrick_one_and_done` | V60 | Lance Hedrick | cualquiera | media | se queda |
+| 6 | `counter_culture_v60` | V60 | Counter Culture Coffee | cualquiera | media | nueva |
+| 7 | `wang_wbrc_2017` | V60 | Chad Wang | LIGHT | alta | se queda |
+| 8 | `stumptown_kalita` | Kalita Wave | Stumptown Coffee Roasters | cualquiera | alta | se queda |
+| 9 | `counter_culture_kalita` | Kalita Wave | Counter Culture Coffee | cualquiera | media | nueva |
+| 10 | `ozone_kalita` | Kalita Wave | Ozone Coffee | cualquiera | alta | nueva |
+| 11 | `stumptown_origami` | Origami | Stumptown Coffee Roasters | cualquiera | alta | se queda |
+| 12 | `origami_kopikalyan` | Origami | Origami / KOPIKALYAN TOKYO | LIGHT, MEDIUM | media | se queda |
+| 13 | `origami_the_coffeeshop` | Origami | Origami / THE COFFEESHOP | LIGHT, MEDIUM | alta | nueva |
+| 14 | `stumptown_chemex` | Chemex | Stumptown Coffee Roasters | cualquiera | alta | se queda |
+| 15 | `counter_culture_chemex` | Chemex | Counter Culture Coffee | cualquiera | media | nueva |
+| 16 | `peets_chemex` | Chemex | Peet's Coffee | LIGHT, MEDIUM | media | nueva |
+| 17 | `hoffmann_french_press` | Prensa francesa | James Hoffmann | cualquiera | media | se queda |
+| 18 | `stumptown_french_press` | Prensa francesa | Stumptown Coffee Roasters | cualquiera | alta | se queda |
+| 19 | `counter_culture_french_press` | Prensa francesa | Counter Culture Coffee | cualquiera | alta | nueva |
+| 20 | `peets_french_press` | Prensa francesa | Peet's Coffee | MEDIUM, DARK | alta | nueva |
+| 21 | `counter_culture_aeropress` | AeroPress | Counter Culture Coffee | cualquiera | alta | nueva |
+| 22 | `stumptown_aeropress` | AeroPress | Stumptown Coffee Roasters | cualquiera | alta | nueva |
+| 23 | `merikanto_wac_2021` | AeroPress | Tuomas Merikanto | LIGHT | alta | se queda |
+| 24 | `van_bunnik_wac_2019` | AeroPress | Wendelien van Bunnik | LIGHT | alta | se queda |
+| 25 | `nemo_pop_wac_2025` | AeroPress | Némo Pop | LIGHT | media | se queda |
+| 26 | `coava_moka` | Moka | Coava Coffee Roasters | cualquiera | media | nueva |
+| 27 | `hario_switch` | Otro: Hario Switch | Hario | cualquiera | media | nueva |
+| 28 | `hoffmann_clever` | Otro: Clever | James Hoffmann | cualquiera | media | se queda |
+| 29 | `five_senses_clever` | Otro: Clever | Five Senses Coffee | LIGHT, MEDIUM | media (reserva ya completada en el JSON) | se queda |
+| 30 | `ozone_clever` | Otro: Clever | Ozone Coffee | cualquiera | alta | nueva |
+| 31 | `hoffmann_iced_immersion` | Otro: Clever o Hario Switch | James Hoffmann | cualquiera | media | se queda |
+| 32 | `peets_pour_over` | Otro: Gotero cónico | Peet's Coffee | cualquiera | media | nueva |
+| 33 | `peng_wbrc_2025` | Otro: Solo Dripper | George Jinyang Peng | LIGHT | alta | se queda |
+| 34 | `fukahori_wbrc_2018` | Otro: GINA | Emi Fukahori | LIGHT | alta | se queda |
+
+**Recuento:** 34 recetas. **Aptas para medio: 28** (21 cualquiera + 7 con `MEDIUM` en la lista) = 82 %. **Solo claro: 6** (`wang_wbrc_2017`, `merikanto_wac_2021`, `van_bunnik_wac_2019`, `nemo_pop_wac_2025`, `peng_wbrc_2025`, `fukahori_wbrc_2018`).
+
+**Reparto por método:** V60 7 · AeroPress 5 (2 aptas para medio) · prensa francesa 4 · Kalita Wave 3 · Origami 3 · Chemex 3 · moka 1 · Otro 8 (Clever 3, Hario Switch 1, Clever o Switch 1, gotero cónico 1, Solo Dripper 1, GINA 1). Prensa francesa, Chemex, Kalita, Clever y AeroPress tienen al menos dos recetas aptas para medio.
+
+**Confianza de las 14 nuevas:** alta 7 (`ozone_kalita`, `counter_culture_french_press`, `peets_french_press`, `counter_culture_aeropress`, `stumptown_aeropress`, `ozone_clever`, `origami_the_coffeeshop`), media 7. Ninguna baja.
+
+### 4. Descartadas y sitios no leídos
+
+| Candidata | Motivo |
+|---|---|
+| Hario V60 oficial (Hario UK, guías "intermediate" y "expert") | 15 g / 250 ml a 92-96 °C, pero el bloom es "enough water to wet the grounds" sin gramos y el resto "pour slowly" sin tiempos: habría que inventar el bloom. https://www.hario.co.uk/brew-guides/v60/intermediate |
+| AeroPress oficial ("Signature Brew") | Agua hasta la marca 4, no en gramos (ya descartada en el anexo). https://aeropress.com/pages/how-to-use |
+| La Colombe (Chemex, V60) | Chemex: solo da el ratio 1:17, sin dosis ni tiempos. V60: 20 g / 330 g, pero el bloom es de 20-30 s en un sitio y de 30-40 s en otro, y el resto del agua no tiene tiempos. La AeroPress es contenido de pago. |
+| Sightglass AeroPress | 17 g en los pasos y 18 g en la lista de ingredientes; agua hasta la marca 3. |
+| Ozone AeroPress | Agua en ml y dilución final; sin gramos. |
+| Kurasu, Hario Switch con tueste medio-oscuro | 15 g / 200 g y 2 min, pero sin temperatura, y la propia tienda concluye que prefiere el método híbrido. Repite la receta oficial de Hario. |
+| Equator y Starbucks, moka | Agua "hasta la válvula"; Starbucks se contradice (160 ml frente a 180 ml por taza) y ninguno da tiempos. |
+| Tim Wendelboe, AeroPress "moka" (20 g de tueste de espresso) | Agua de 100-150 g y sin tiempos. |
+| Kasuya 4:6 para tueste oscuro (83 °C) | Cambia la estructura ("start with two pours") sin publicar el reparto; la variante media no lo necesita. |
+| Origami-kai con KOPIKALYAN y THE COFFEESHOP | Ya están las dos (la primera en el catálogo, la segunda nueva). |
+| Intelligentsia, Chemex oficial, Kalita oficial | No encontré una guía propia con gramos (Intelligentsia y Chemex devolvieron 404; solo hay tablas de terceros). |
+
+**Sitios que no se pudieron leer:** Blue Bottle (403 otra vez), Intelligentsia (404 en `/pages/brew-guides`), chemexcoffeemaker.com (404), Sightglass Clever (404) y la AeroPress de La Colombe (contenido de pago). WebFetch no devuelve las descripciones de YouTube; las leí con curl desde el HTML de la página (`shortDescription`).
+
+### 5. Dudas para decidir
+
+1. **34 o 35 recetas.** Me quedé en 34 para no meter una receta de confianza baja. Si quieres 35, la mejor candidata es La Colombe V60 (tostador de tueste medio) con el vertido final inferido, o mantener `hoffmann_aeropress` como séptima solo claro.
+2. **`hoffmann_aeropress`.** Es muy conocida y el autor admite tuestes más oscuros con "más dosis y molienda más gruesa", pero sin cifras. Con la regla de no tocar parámetros queda `[LIGHT]` y sale. Alternativa: dejarla con `[LIGHT]` como séptima solo claro.
+3. **`hoffmann_ultimate_v60` con `[LIGHT, MEDIUM]`.** Es una lectura de "especially with lighter roasts". Si prefieres ser estricto, sería `[LIGHT]` y habría que sustituirla también.
+4. **`peets_pour_over`:** "Gotero cónico" como `OTHER` o `V60`. La guía no dice el modelo.
+5. **`peets_chemex`:** 50 g frente a los 55 g que dice el texto (ver 2.5).
+6. **`coava_moka`:** `MOKA` existe en `BrewMethod`, pero la báscula solo sirve para el primer paso; la sesión en vivo verá desaparecer el peso al llevar la cafetera al fuego. Si eso choca con la sesión, mejor dejarla fuera.
+7. **`hario_switch` sin temperatura:** la fuente solo dice "hot water". Se puede dejar vacía o poner un valor en notes como sugerencia (no del autor).
+8. **Temperaturas en °F:** propongo 93,3 y 96,1 °C (conversión exacta). Las de Stumptown siguen en 96 °C porque dicen "about 205°F". Si prefieres enteros: 93 y 96.
+9. **Counter Culture con tres recetas casi iguales** (V60 y Kalita con el mismo programa, Chemex con el mismo patrón). Si quieres más variedad de autores, `counter_culture_kalita` es la primera que quitaría.
+10. **Spec y anexo:** hay que actualizar §3.10 (total, tabla y reparto) y el anexo con las nuevas, y subir `revision` del JSON. Las claves que salen no se reutilizan (§3.1). Conviene comprobar qué pasa con las copias guardadas cuyo `catalogKey` desaparece del catálogo.
