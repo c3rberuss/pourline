@@ -322,6 +322,7 @@ fun PrepareScreen(
       catalog = catalog,
       onCatalogQuery = pickerViewModel.catalog::setQuery,
       onCatalogMethod = pickerViewModel.catalog::setMethod,
+      onCatalogRoast = pickerViewModel.catalog::setRoast,
       onCatalogClearFilters = pickerViewModel.catalog::clearFilters,
       onCatalogShown = pickerViewModel.catalog::onShown,
       showBrews = LocalExperienceMode.current.shows(ExpertFeature.TARGET_FROM_BREW),

@@ -245,6 +245,19 @@ class PrepareScreenTest {
   }
 
   @Test
+  fun thePickerRoastFilterFiltersTheRecommendedRecipes() {
+    show()
+    rule.onNodeWithTag("target_chip").performClick()
+    waitFor("target_picker")
+    rule.onNodeWithTag("target_picker_tab_catalog").performClick()
+    waitFor("catalog_row_${TestRecipeCatalog.KEY_V60}")
+    waitFor("catalog_row_${TestRecipeCatalog.KEY_AEROPRESS}")
+    rule.onNodeWithTag("catalog_roast_light").performClick()
+    rule.waitUntil(5_000) { !exists("catalog_row_${TestRecipeCatalog.KEY_V60}") }
+    assertTrue(exists("catalog_row_${TestRecipeCatalog.KEY_AEROPRESS}"))
+  }
+
+  @Test
   fun theScalelessStartIsVisibleAndEnabledWithARecipeAndNoScale() {
     show()
     pickV60()

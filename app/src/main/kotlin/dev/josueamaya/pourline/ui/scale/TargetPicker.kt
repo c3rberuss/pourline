@@ -18,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.josueamaya.pourline.R
+import dev.josueamaya.pourline.coffee.RoastLevel
 import dev.josueamaya.pourline.history.BrewListItem
 import dev.josueamaya.pourline.history.BrewMethod
 import dev.josueamaya.pourline.recipe.RecipeListItem
@@ -33,6 +34,7 @@ import dev.josueamaya.pourline.ui.history.HistoryRow
 import dev.josueamaya.pourline.ui.recipes.RecipeRow
 import dev.josueamaya.pourline.ui.recipes.catalog.CatalogListUi
 import dev.josueamaya.pourline.ui.recipes.catalog.CatalogMethodFilter
+import dev.josueamaya.pourline.ui.recipes.catalog.CatalogRoastFilter
 import dev.josueamaya.pourline.ui.recipes.catalog.CatalogNoticeBar
 import dev.josueamaya.pourline.ui.recipes.catalog.CatalogRecipeRow
 import dev.josueamaya.pourline.ui.recipes.catalog.CatalogSearchBar
@@ -47,7 +49,7 @@ private val ListMaxHeight = 360.dp
  * Selector de objetivo, sobre un `AntDrawer` inferior: pestañas "Recetas | Recomendadas | Historial" (esta última solo con
  * [showBrews]), "Quitar objetivo" (si hay uno) y "Gestionar recetas". No tiene estado propio más allá de la pestaña: recibe
  * las listas y la referencia activa. Tocar una fila llama a [onSelect] y cierra el selector. La pestaña "Recomendadas"
- * (SPEC-012 D38) lleva su búsqueda y su filtro; [onCatalogShown] avisa al mostrarla para refrescar el catálogo.
+ * (SPEC-012 D38) lleva su búsqueda y sus filtros por método y por tueste; [onCatalogShown] avisa al mostrarla para refrescar el catálogo.
  *
  * Las preparaciones sin agua no pueden ser objetivo y se muestran deshabilitadas.
  */
@@ -63,6 +65,7 @@ fun TargetPicker(
   catalog: CatalogListUi,
   onCatalogQuery: (String) -> Unit,
   onCatalogMethod: (BrewMethod?) -> Unit,
+  onCatalogRoast: (RoastLevel?) -> Unit,
   onCatalogClearFilters: () -> Unit,
   onCatalogShown: () -> Unit,
   showBrews: Boolean = true,
@@ -101,6 +104,7 @@ fun TargetPicker(
         activeKey = (active as? ReferenceKey.Catalog)?.key,
         onQuery = onCatalogQuery,
         onMethod = onCatalogMethod,
+        onRoast = onCatalogRoast,
         onClearFilters = onCatalogClearFilters,
         onPick = { onSelect(ReferenceKey.Catalog(it)) },
       )
@@ -134,18 +138,20 @@ fun TargetPicker(
   }
 }
 
-/** La pestaña "Recomendadas": búsqueda, filtro por método, aviso y la lista (D38). Sin "deslizar para actualizar". */
+/** La pestaña "Recomendadas": búsqueda, filtros por método y tueste, aviso y la lista (D38). Sin "deslizar para actualizar". */
 @Composable
 private fun CatalogPickerContent(
   catalog: CatalogListUi,
   activeKey: String?,
   onQuery: (String) -> Unit,
   onMethod: (BrewMethod?) -> Unit,
+  onRoast: (RoastLevel?) -> Unit,
   onClearFilters: () -> Unit,
   onPick: (String) -> Unit,
 ) {
   CatalogSearchBar(catalog.query, onQuery)
   CatalogMethodFilter(catalog.methods, catalog.method, onMethod)
+  CatalogRoastFilter(catalog.roast, onRoast)
   CatalogNoticeBar(catalog)
   if (catalog.loaded && catalog.items.isEmpty()) {
     EmptyText(stringResource(R.string.catalog_no_results), tag = "target_picker_catalog_empty")
