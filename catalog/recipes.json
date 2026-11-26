@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": 1,
+  "revision": 2,
   "recipes": [
     {
       "key": "four_six",
@@ -15,7 +15,7 @@
       },
       "method": "V60",
       "doseG": 20.0,
-      "waterTempC": 93.0,
+      "waterTempC": 88.0,
       "grind": {
         "text": {
           "es": "Media-gruesa a gruesa",
@@ -23,10 +23,13 @@
         }
       },
       "notes": {
-        "es": "Los dos primeros vertidos (40 % del agua) definen dulzor y acidez; los tres siguientes (60 %) la fuerza. La fuente baja la temperatura a 88 °C con tueste medio y a 83 °C con tueste oscuro.",
-        "en": "The first two pours (40 % of the water) set sweetness and acidity; the next three (60 %) set strength. The source lowers the temperature to 88 °C for a medium roast and 83 °C for a dark roast."
+        "es": "Los dos primeros vertidos (40 % del agua) definen dulzor y acidez; los tres siguientes (60 %) la fuerza. Variante para tueste medio: 88 °C. Con tueste claro la fuente usa 93 °C y con oscuro 83 °C, empezando con dos vertidos.",
+        "en": "The first two pours (40 % of the water) set sweetness and acidity; the next three (60 %) set strength. Medium roast variant: 88 °C. For a light roast the source uses 93 °C, and for a dark roast 83 °C, starting with two pours."
       },
       "sourceUrl": "https://en.philocoffea.com/en-th/blogs/blog/coffee-brewing-method",
+      "roasts": [
+        "MEDIUM"
+      ],
       "stages": [
         {
           "type": "POUR",
@@ -34,18 +37,14 @@
           "durationS": 10,
           "waterG": 60.0,
           "instruction": {
-            "es": "Primer vertido (parte del 40 %): 60 g en círculos.",
-            "en": "First pour (part of the 40 %): 60 g in circles."
+            "es": "Añade 60 g en círculos.",
+            "en": "Add 60 g in circles."
           }
         },
         {
           "type": "WAIT",
           "startS": 10,
-          "durationS": 35,
-          "instruction": {
-            "es": "Deja que drene.",
-            "en": "Let it drain."
-          }
+          "durationS": 35
         },
         {
           "type": "POUR",
@@ -53,18 +52,14 @@
           "durationS": 10,
           "waterG": 120.0,
           "instruction": {
-            "es": "Segundo vertido: hasta 120 g. El 40 % define dulzor y acidez.",
-            "en": "Second pour: up to 120 g. The 40 % sets sweetness and acidity."
+            "es": "Añade 60 g (total 120 g).",
+            "en": "Add 60 g (total 120 g)."
           }
         },
         {
           "type": "WAIT",
           "startS": 55,
-          "durationS": 35,
-          "instruction": {
-            "es": "Deja que drene.",
-            "en": "Let it drain."
-          }
+          "durationS": 35
         },
         {
           "type": "POUR",
@@ -72,18 +67,14 @@
           "durationS": 10,
           "waterG": 180.0,
           "instruction": {
-            "es": "Tercer vertido (empieza el 60 %): hasta 180 g.",
-            "en": "Third pour (the 60 % starts): up to 180 g."
+            "es": "Añade 60 g (total 180 g).",
+            "en": "Add 60 g (total 180 g)."
           }
         },
         {
           "type": "WAIT",
           "startS": 100,
-          "durationS": 35,
-          "instruction": {
-            "es": "Deja que drene.",
-            "en": "Let it drain."
-          }
+          "durationS": 35
         },
         {
           "type": "POUR",
@@ -91,18 +82,14 @@
           "durationS": 10,
           "waterG": 240.0,
           "instruction": {
-            "es": "Cuarto vertido: hasta 240 g.",
-            "en": "Fourth pour: up to 240 g."
+            "es": "Añade 60 g (total 240 g).",
+            "en": "Add 60 g (total 240 g)."
           }
         },
         {
           "type": "WAIT",
           "startS": 145,
-          "durationS": 20,
-          "instruction": {
-            "es": "Deja que drene.",
-            "en": "Let it drain."
-          }
+          "durationS": 20
         },
         {
           "type": "POUR",
@@ -110,26 +97,22 @@
           "durationS": 10,
           "waterG": 300.0,
           "instruction": {
-            "es": "Quinto vertido: hasta 300 g.",
-            "en": "Fifth pour: up to 300 g."
+            "es": "Añade 60 g (total 300 g).",
+            "en": "Add 60 g (total 300 g)."
           }
         },
         {
           "type": "WAIT",
           "startS": 175,
-          "durationS": 35,
-          "instruction": {
-            "es": "Deja que drene.",
-            "en": "Let it drain."
-          }
+          "durationS": 35
         },
         {
           "type": "ACTION",
           "startS": 210,
           "durationS": 5,
           "instruction": {
-            "es": "Retira el gotero a las 3:30 aunque quede agua.",
-            "en": "Remove the dripper at 3:30 even if water remains."
+            "es": "Retira el gotero aunque quede agua.",
+            "en": "Remove the dripper even if water remains."
           }
         }
       ]
@@ -153,22 +136,18 @@
           "durationS": 10,
           "waterG": 40.0,
           "name": {
-            "es": "Bloom",
+            "es": "Preinfusión",
             "en": "Bloom"
           },
           "instruction": {
-            "es": "Vierte en espiral para humedecer todo el café.",
-            "en": "Pour in a spiral to wet all the grounds."
+            "es": "Añade 40 g en espiral para humedecer todo el café.",
+            "en": "Add 40 g in a spiral to wet all the grounds."
           }
         },
         {
           "type": "WAIT",
           "startS": 10,
-          "durationS": 35,
-          "instruction": {
-            "es": "Deja que el café florezca.",
-            "en": "Let the coffee bloom."
-          }
+          "durationS": 35
         },
         {
           "type": "POUR",
@@ -180,18 +159,14 @@
             "en": "2nd pour"
           },
           "instruction": {
-            "es": "Vierte con círculos lentos desde el centro.",
-            "en": "Pour in slow circles from the center."
+            "es": "Añade 110 g (total 150 g) con círculos lentos desde el centro.",
+            "en": "Add 110 g (total 150 g) in slow circles from the center."
           }
         },
         {
           "type": "WAIT",
           "startS": 65,
-          "durationS": 25,
-          "instruction": {
-            "es": "Espera a que baje el agua.",
-            "en": "Wait for the water to draw down."
-          }
+          "durationS": 25
         },
         {
           "type": "POUR",
@@ -203,8 +178,8 @@
             "en": "3rd pour"
           },
           "instruction": {
-            "es": "Vierte con círculos lentos y termina el vertido.",
-            "en": "Pour in slow circles and finish pouring."
+            "es": "Añade 100 g (total 250 g) con círculos lentos.",
+            "en": "Add 100 g (total 250 g) in slow circles."
           }
         }
       ]
@@ -230,19 +205,27 @@
         }
       },
       "notes": {
-        "es": "Agua a 97 °C. Las duraciones del bloom, el remolino y el remover son aproximadas: la fuente no las cronometra.",
+        "es": "Agua a 97 °C. Las duraciones de la preinfusión, el giro y el remover son aproximadas: la fuente no las cronometra.",
         "en": "Water at 97 °C. The bloom, swirl and stir durations are approximate: the source does not time them."
       },
       "sourceUrl": "https://www.hario-usa.com/blogs/recipes-and-more-from-friends/james-hoffmann-uitimate-v60-technique",
+      "roasts": [
+        "LIGHT",
+        "MEDIUM"
+      ],
       "stages": [
         {
           "type": "POUR",
           "startS": 0,
           "durationS": 10,
           "waterG": 60.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
           "instruction": {
-            "es": "Bloom: 60 g (el doble de la dosis).",
-            "en": "Bloom: 60 g (twice the dose)."
+            "es": "Añade 60 g.",
+            "en": "Add 60 g."
           }
         },
         {
@@ -250,18 +233,14 @@
           "startS": 10,
           "durationS": 5,
           "instruction": {
-            "es": "Remolinea hasta que no quede café seco.",
-            "en": "Swirl until no dry coffee is left."
+            "es": "Gira el gotero suavemente hasta que no quede café seco.",
+            "en": "Gently swirl the dripper until no dry coffee is left."
           }
         },
         {
           "type": "WAIT",
           "startS": 15,
-          "durationS": 30,
-          "instruction": {
-            "es": "Bloom hasta 0:45.",
-            "en": "Bloom until 0:45."
-          }
+          "durationS": 30
         },
         {
           "type": "POUR",
@@ -269,8 +248,8 @@
           "durationS": 30,
           "waterG": 300.0,
           "instruction": {
-            "es": "Vierte hasta 300 g en 30 s.",
-            "en": "Pour up to 300 g in 30 s."
+            "es": "Añade 240 g (total 300 g).",
+            "en": "Add 240 g (total 300 g)."
           }
         },
         {
@@ -279,8 +258,8 @@
           "durationS": 30,
           "waterG": 500.0,
           "instruction": {
-            "es": "Vierte hasta 500 g en 30 s, algo más despacio.",
-            "en": "Pour up to 500 g in 30 s, a little slower."
+            "es": "Añade 200 g (total 500 g), algo más despacio.",
+            "en": "Add 200 g (total 500 g), a little slower."
           }
         },
         {
@@ -295,19 +274,15 @@
         {
           "type": "WAIT",
           "startS": 110,
-          "durationS": 10,
-          "instruction": {
-            "es": "Deja que drene un poco.",
-            "en": "Let it drain a little."
-          }
+          "durationS": 10
         },
         {
           "type": "SWIRL",
           "startS": 120,
           "durationS": 5,
           "instruction": {
-            "es": "Remolinea suavemente el V60 para aplanar la cama.",
-            "en": "Gently swirl the V60 to flatten the bed."
+            "es": "Gira el gotero suavemente para aplanar la cama de café.",
+            "en": "Gently swirl the dripper to flatten the coffee bed."
           }
         },
         {
@@ -315,261 +290,8 @@
           "startS": 125,
           "durationS": 85,
           "instruction": {
-            "es": "Drawdown; debería terminar hacia las 3:30.",
-            "en": "Drawdown; it should finish around 3:30."
-          }
-        }
-      ]
-    },
-    {
-      "key": "hoffmann_one_cup_v60",
-      "name": {
-        "es": "V60 de una taza de James Hoffmann",
-        "en": "James Hoffmann's Better 1-Cup V60"
-      },
-      "author": "James Hoffmann",
-      "context": {
-        "es": "Vídeo «A Better 1 Cup V60 Technique» (2022)",
-        "en": "Video \"A Better 1 Cup V60 Technique\" (2022)"
-      },
-      "method": "V60",
-      "doseG": 15.0,
-      "waterTempC": 100.0,
-      "grind": {
-        "text": {
-          "es": "Media-fina",
-          "en": "Medium-fine"
-        }
-      },
-      "notes": {
-        "es": "Pensada para un V60 01 de plástico y tueste claro, con agua recién hervida.",
-        "en": "Designed for a plastic V60 01 and a light roast, with freshly boiled water."
-      },
-      "sourceUrl": "https://www.hario-usa.com/blogs/recipes-and-more-from-friends/james-hoffmann-1-cup-v60-technique",
-      "stages": [
-        {
-          "type": "POUR",
-          "startS": 0,
-          "durationS": 10,
-          "waterG": 50.0,
-          "instruction": {
-            "es": "Bloom: 50 g.",
-            "en": "Bloom: 50 g."
-          }
-        },
-        {
-          "type": "SWIRL",
-          "startS": 10,
-          "durationS": 5,
-          "instruction": {
-            "es": "Remolinea suavemente.",
-            "en": "Swirl gently."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 15,
-          "durationS": 30,
-          "instruction": {
-            "es": "Bloom hasta 0:45.",
-            "en": "Bloom until 0:45."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 45,
-          "durationS": 15,
-          "waterG": 100.0,
-          "instruction": {
-            "es": "Vierte hasta 100 g (40 %).",
-            "en": "Pour up to 100 g (40 %)."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 60,
-          "durationS": 10,
-          "instruction": {
-            "es": "Pausa.",
-            "en": "Pause."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 70,
-          "durationS": 10,
-          "waterG": 150.0,
-          "instruction": {
-            "es": "Vierte hasta 150 g (60 %).",
-            "en": "Pour up to 150 g (60 %)."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 80,
-          "durationS": 10,
-          "instruction": {
-            "es": "Pausa.",
-            "en": "Pause."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 90,
-          "durationS": 10,
-          "waterG": 200.0,
-          "instruction": {
-            "es": "Vierte hasta 200 g (80 %).",
-            "en": "Pour up to 200 g (80 %)."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 100,
-          "durationS": 10,
-          "instruction": {
-            "es": "Pausa.",
-            "en": "Pause."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 110,
-          "durationS": 10,
-          "waterG": 250.0,
-          "instruction": {
-            "es": "Vierte hasta 250 g (100 %).",
-            "en": "Pour up to 250 g (100 %)."
-          }
-        },
-        {
-          "type": "SWIRL",
-          "startS": 120,
-          "durationS": 5,
-          "instruction": {
-            "es": "Remolinea suavemente.",
-            "en": "Swirl gently."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 125,
-          "durationS": 55,
-          "instruction": {
-            "es": "Drawdown; debería terminar hacia las 3:00.",
-            "en": "Drawdown; it should finish around 3:00."
-          }
-        }
-      ]
-    },
-    {
-      "key": "rao_v60",
-      "name": {
-        "es": "V60 de Scott Rao",
-        "en": "Scott Rao's V60"
-      },
-      "author": "Scott Rao",
-      "context": {
-        "es": "Entrevista de embajador de Hario (2022)",
-        "en": "Hario ambassador interview (2022)"
-      },
-      "method": "V60",
-      "doseG": 20.0,
-      "waterTempC": 97.0,
-      "grind": {
-        "text": {
-          "es": "Ajusta para un tiempo total de 4:00-4:30",
-          "en": "Adjust for a total time of 4:00-4:30"
-        }
-      },
-      "notes": {
-        "es": "V60 de plástico. Va más por señales visuales que por reloj: las duraciones de los vertidos son aproximadas.",
-        "en": "Plastic V60. It goes by visual cues more than by the clock: pour durations are approximate."
-      },
-      "sourceUrl": "https://www.hario.co.uk/blogs/hario-ambassadors/hario-v60-recipe-interview-with-hario-ambassador-scott-rao",
-      "stages": [
-        {
-          "type": "POUR",
-          "startS": 0,
-          "durationS": 10,
-          "waterG": 60.0,
-          "instruction": {
-            "es": "Haz un hueco en la cama y vierte 60 g.",
-            "en": "Make a well in the bed and pour 60 g."
-          }
-        },
-        {
-          "type": "SWIRL",
-          "startS": 10,
-          "durationS": 3,
-          "instruction": {
-            "es": "Gira el gotero con energía (Rao spin).",
-            "en": "Spin the dripper firmly (Rao spin)."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 13,
-          "durationS": 40,
-          "instruction": {
-            "es": "Espera 40 s.",
-            "en": "Wait 40 s."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 53,
-          "durationS": 30,
-          "waterG": 200.0,
-          "instruction": {
-            "es": "Vierte hasta 200 g con chorro bajo y constante.",
-            "en": "Pour up to 200 g with a low, steady stream."
-          }
-        },
-        {
-          "type": "SWIRL",
-          "startS": 83,
-          "durationS": 1,
-          "instruction": {
-            "es": "Giro muy suave (menos de 1 s).",
-            "en": "Very gentle spin (under 1 s)."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 84,
-          "durationS": 40,
-          "instruction": {
-            "es": "Espera a que haya drenado un 70 %.",
-            "en": "Wait until it has drained about 70 %."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 124,
-          "durationS": 25,
-          "waterG": 330.0,
-          "instruction": {
-            "es": "Vierte hasta 330 g.",
-            "en": "Pour up to 330 g."
-          }
-        },
-        {
-          "type": "SWIRL",
-          "startS": 149,
-          "durationS": 1,
-          "instruction": {
-            "es": "Giro muy suave.",
-            "en": "Very gentle spin."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 150,
-          "durationS": 105,
-          "instruction": {
-            "es": "Drawdown; total 4:00-4:30.",
-            "en": "Drawdown; total 4:00-4:30."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
@@ -595,8 +317,8 @@
         }
       },
       "notes": {
-        "es": "Agua hirviendo y un vertido cada 30 s. La fuente da un tiempo total de 2:30 a 3:30; aquí se fija en 3:00.",
-        "en": "Boiling water and one pour every 30 s. The source gives a total time of 2:30 to 3:30; it is set to 3:00 here."
+        "es": "Agua hirviendo y un vertido cada 30 s. La fuente da un tiempo total de 2 min 30 s a 3 min 30 s; aquí se fija en 3 min. Con tuestes más oscuros, el autor recomienda bajar primero la temperatura.",
+        "en": "Boiling water and one pour every 30 s. The source gives a total time of 2 min 30 s to 3 min 30 s; it is set to 3 min here. For darker roasts, the author recommends lowering the temperature first."
       },
       "sourceUrl": "https://www.youtube.com/watch?v=Ji4lZTtRAoo",
       "stages": [
@@ -606,8 +328,8 @@
           "durationS": 8,
           "waterG": 50.0,
           "instruction": {
-            "es": "Vierte 50 g (algo más del doble de la dosis).",
-            "en": "Pour 50 g (a bit more than twice the dose)."
+            "es": "Añade 50 g.",
+            "en": "Add 50 g."
           }
         },
         {
@@ -616,17 +338,13 @@
           "durationS": 4,
           "instruction": {
             "es": "Gira el gotero.",
-            "en": "Spin the dripper."
+            "en": "Swirl the dripper."
           }
         },
         {
           "type": "WAIT",
           "startS": 12,
-          "durationS": 18,
-          "instruction": {
-            "es": "Espera hasta 0:30.",
-            "en": "Wait until 0:30."
-          }
+          "durationS": 18
         },
         {
           "type": "POUR",
@@ -634,8 +352,8 @@
           "durationS": 8,
           "waterG": 100.0,
           "instruction": {
-            "es": "Repite: vierte hasta 100 g.",
-            "en": "Repeat: pour up to 100 g."
+            "es": "Añade 50 g (total 100 g).",
+            "en": "Add 50 g (total 100 g)."
           }
         },
         {
@@ -644,17 +362,13 @@
           "durationS": 4,
           "instruction": {
             "es": "Gira el gotero.",
-            "en": "Spin the dripper."
+            "en": "Swirl the dripper."
           }
         },
         {
           "type": "WAIT",
           "startS": 42,
-          "durationS": 18,
-          "instruction": {
-            "es": "Espera hasta 1:00.",
-            "en": "Wait until 1:00."
-          }
+          "durationS": 18
         },
         {
           "type": "POUR",
@@ -662,8 +376,8 @@
           "durationS": 15,
           "waterG": 220.0,
           "instruction": {
-            "es": "Vierte con energía justo detrás del centro hasta 220 g.",
-            "en": "Pour energetically just behind the center up to 220 g."
+            "es": "Añade 120 g (total 220 g) con energía, justo detrás del centro.",
+            "en": "Add 120 g (total 220 g) energetically, just behind the center."
           }
         },
         {
@@ -672,17 +386,13 @@
           "durationS": 4,
           "instruction": {
             "es": "Gira el gotero.",
-            "en": "Spin the dripper."
+            "en": "Swirl the dripper."
           }
         },
         {
           "type": "WAIT",
           "startS": 79,
-          "durationS": 11,
-          "instruction": {
-            "es": "Espera hasta 1:30.",
-            "en": "Wait until 1:30."
-          }
+          "durationS": 11
         },
         {
           "type": "POUR",
@@ -690,8 +400,8 @@
           "durationS": 15,
           "waterG": 340.0,
           "instruction": {
-            "es": "Vierte con energía hasta 340 g.",
-            "en": "Pour energetically up to 340 g."
+            "es": "Añade 120 g (total 340 g) con energía.",
+            "en": "Add 120 g (total 340 g) energetically."
           }
         },
         {
@@ -700,7 +410,7 @@
           "durationS": 4,
           "instruction": {
             "es": "Gira el gotero.",
-            "en": "Spin the dripper."
+            "en": "Swirl the dripper."
           }
         },
         {
@@ -708,8 +418,8 @@
           "startS": 109,
           "durationS": 71,
           "instruction": {
-            "es": "Drawdown; total 2:30-3:30.",
-            "en": "Drawdown; total 2:30-3:30."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
@@ -730,13 +440,13 @@
       "waterTempC": 93.0,
       "grind": {
         "text": {
-          "es": "Ajusta para un drawdown total de 2:00-2:30",
-          "en": "Adjust for a total drawdown of 2:00-2:30"
+          "es": "Ajusta la molienda para que el tiempo total sea de 2 a 2 min 30 s",
+          "en": "Adjust the grind for a total time of 2 to 2 min 30 s"
         }
       },
       "notes": {
-        "es": "Estructura 45-90-225 g a 0:00, 0:30 y 1:00. Gotero V60 01 o 02.",
-        "en": "Structure of 45-90-225 g at 0:00, 0:30 and 1:00. V60 01 or 02 dripper."
+        "es": "Estructura de 45, 90 y 225 g (total) a los 0 s, 30 s y 1 min. Gotero V60 01 o 02.",
+        "en": "Structure of 45, 90 and 225 g (total) at 0 s, 30 s and 1 min. V60 01 or 02 dripper."
       },
       "sourceUrl": "https://www.youtube.com/watch?v=PNFVCmxBjQQ",
       "stages": [
@@ -746,18 +456,14 @@
           "durationS": 6,
           "waterG": 45.0,
           "instruction": {
-            "es": "Espiral hasta 45 g. No agites después.",
-            "en": "Spiral up to 45 g. Do not stir afterwards."
+            "es": "Añade 45 g en espiral. No remuevas después.",
+            "en": "Add 45 g in a spiral. Do not stir afterwards."
           }
         },
         {
           "type": "WAIT",
           "startS": 6,
-          "durationS": 24,
-          "instruction": {
-            "es": "Espera hasta 0:30.",
-            "en": "Wait until 0:30."
-          }
+          "durationS": 24
         },
         {
           "type": "POUR",
@@ -765,18 +471,14 @@
           "durationS": 6,
           "waterG": 90.0,
           "instruction": {
-            "es": "Espiral hasta 90 g.",
-            "en": "Spiral up to 90 g."
+            "es": "Añade 45 g (total 90 g) en espiral.",
+            "en": "Add 45 g (total 90 g) in a spiral."
           }
         },
         {
           "type": "WAIT",
           "startS": 36,
-          "durationS": 24,
-          "instruction": {
-            "es": "Espera hasta 1:00.",
-            "en": "Wait until 1:00."
-          }
+          "durationS": 24
         },
         {
           "type": "POUR",
@@ -784,8 +486,8 @@
           "durationS": 13,
           "waterG": 225.0,
           "instruction": {
-            "es": "Vierte con energía el resto, hasta 225 g.",
-            "en": "Pour the rest energetically, up to 225 g."
+            "es": "Añade 135 g (total 225 g) con energía.",
+            "en": "Add 135 g (total 225 g) energetically."
           }
         },
         {
@@ -793,120 +495,190 @@
           "startS": 73,
           "durationS": 62,
           "instruction": {
-            "es": "Drawdown; total 2:00-2:30.",
-            "en": "Drawdown; total 2:00-2:30."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
     },
     {
-      "key": "gagne_v60",
+      "key": "counter_culture_v60",
       "name": {
-        "es": "V60 de Jonathan Gagné",
-        "en": "Jonathan Gagné's V60"
+        "es": "V60 de Counter Culture",
+        "en": "Counter Culture V60"
       },
-      "author": "Jonathan Gagné",
+      "author": "Counter Culture Coffee",
       "context": {
-        "es": "Entrada «A V60 Pour Over Video» de Coffee ad Astra (2019)",
-        "en": "\"A V60 Pour Over Video\" post on Coffee ad Astra (2019)"
+        "es": "Guía de preparación oficial (Sandra Walimaki)",
+        "en": "Official brew guide (Sandra Walimaki)"
       },
       "method": "V60",
-      "doseG": 22.0,
-      "waterTempC": 100.0,
+      "doseG": 30.0,
+      "waterTempC": 93.3,
       "grind": {
         "text": {
-          "es": "Fina para filtro",
-          "en": "Fine for filter"
+          "es": "Media-fina, como sal de mesa",
+          "en": "Medium-fine, like table salt"
         }
       },
-      "notes": {
-        "es": "Agua hirviendo. En la fuente usa un Weber EG-1 con muelas SSP a 6,8. La duración del bloom y el último spin son aproximados.",
-        "en": "Boiling water. The source uses a Weber EG-1 with SSP burrs at 6.8. The bloom length and the last spin are approximate."
-      },
-      "sourceUrl": "https://coffeeadastra.com/2019/06/09/a-v60-pour-over-video/",
+      "sourceUrl": "https://counterculturecoffee.com/pages/quick-easy-v60",
       "stages": [
         {
           "type": "POUR",
           "startS": 0,
           "durationS": 10,
-          "waterG": 77.0,
+          "waterG": 60.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
           "instruction": {
-            "es": "Bloom: 77 g de agua hirviendo.",
-            "en": "Bloom: 77 g of boiling water."
-          }
-        },
-        {
-          "type": "SWIRL",
-          "startS": 10,
-          "durationS": 5,
-          "instruction": {
-            "es": "Rao spin a fondo.",
-            "en": "Full Rao spin."
+            "es": "Añade 60 g, mojando todo el café.",
+            "en": "Add 60 g, wetting all the coffee."
           }
         },
         {
           "type": "WAIT",
-          "startS": 15,
-          "durationS": 30,
-          "instruction": {
-            "es": "Bloom.",
-            "en": "Bloom."
-          }
+          "startS": 10,
+          "durationS": 20
         },
         {
           "type": "POUR",
-          "startS": 45,
-          "durationS": 23,
+          "startS": 30,
+          "durationS": 20,
           "waterG": 200.0,
           "instruction": {
-            "es": "Vierte hasta 200 g; termina hacia 1:08.",
-            "en": "Pour up to 200 g; finish around 1:08."
-          }
-        },
-        {
-          "type": "SWIRL",
-          "startS": 68,
-          "durationS": 5,
-          "instruction": {
-            "es": "Rao spin suave.",
-            "en": "Gentle Rao spin."
+            "es": "Añade 140 g (total 200 g) en círculos.",
+            "en": "Add 140 g (total 200 g) in circles."
           }
         },
         {
           "type": "WAIT",
-          "startS": 73,
-          "durationS": 32,
-          "instruction": {
-            "es": "Espera hasta 1:45.",
-            "en": "Wait until 1:45."
-          }
+          "startS": 50,
+          "durationS": 10
         },
         {
           "type": "POUR",
-          "startS": 105,
-          "durationS": 35,
-          "waterG": 374.0,
+          "startS": 60,
+          "durationS": 15,
+          "waterG": 300.0,
           "instruction": {
-            "es": "Vierte hasta 374 g; termina hacia 2:20.",
-            "en": "Pour up to 374 g; finish around 2:20."
-          }
-        },
-        {
-          "type": "SWIRL",
-          "startS": 140,
-          "durationS": 5,
-          "instruction": {
-            "es": "Rao spin suave.",
-            "en": "Gentle Rao spin."
+            "es": "Añade 100 g (total 300 g) en círculos.",
+            "en": "Add 100 g (total 300 g) in circles."
           }
         },
         {
           "type": "WAIT",
-          "startS": 145,
-          "durationS": 98,
+          "startS": 75,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 90,
+          "durationS": 15,
+          "waterG": 400.0,
           "instruction": {
-            "es": "Drawdown; total ~4:03.",
-            "en": "Drawdown; total about 4:03."
+            "es": "Añade 100 g (total 400 g) en círculos.",
+            "en": "Add 100 g (total 400 g) in circles."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 105,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 120,
+          "durationS": 15,
+          "waterG": 500.0,
+          "instruction": {
+            "es": "Añade 100 g (total 500 g) en círculos.",
+            "en": "Add 100 g (total 500 g) in circles."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 135,
+          "durationS": 90,
+          "instruction": {
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
+          }
+        }
+      ]
+    },
+    {
+      "key": "peets_pour_over",
+      "name": {
+        "es": "Goteo de Peet's",
+        "en": "Peet's Pour Over"
+      },
+      "author": "Peet's Coffee",
+      "context": {
+        "es": "Guía de preparación oficial",
+        "en": "Official brew guide"
+      },
+      "method": "V60",
+      "doseG": 25.0,
+      "waterTempC": 93.3,
+      "grind": {
+        "text": {
+          "es": "Como arena",
+          "en": "Like sand"
+        }
+      },
+      "notes": {
+        "es": "Vale para cualquier gotero cónico.",
+        "en": "Works with any cone dripper."
+      },
+      "sourceUrl": "https://www.peets.com/pages/brew-guide-pour-over",
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 10,
+          "waterG": 50.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
+          "instruction": {
+            "es": "Añade 50 g en espiral, mojando todo el café.",
+            "en": "Add 50 g in a spiral, wetting all the coffee."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 10,
+          "durationS": 20
+        },
+        {
+          "type": "POUR",
+          "startS": 30,
+          "durationS": 90,
+          "waterG": 400.0,
+          "instruction": {
+            "es": "Añade 350 g (total 400 g) despacio: primero en espiral y luego en el centro.",
+            "en": "Add 350 g (total 400 g) slowly: first in a spiral and then in the center."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 120,
+          "durationS": 75,
+          "instruction": {
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 195,
+          "durationS": 5,
+          "instruction": {
+            "es": "Gira la jarra para mezclar el café.",
+            "en": "Swirl the server to mix the coffee."
           }
         }
       ]
@@ -932,10 +704,13 @@
         }
       },
       "notes": {
-        "es": "V60 de cerámica. Con 15 g y 250 g salen unos 220 ml de bebida. Si puedes, tamiza el café a unos 400 µm.",
-        "en": "Ceramic V60. 15 g and 250 g make about 220 ml of coffee. If you can, sieve the coffee to about 400 µm."
+        "es": "V60 de cerámica. Con 15 g y 250 g salen unos 220 ml de bebida. Si puedes, tamiza el café a unos 400 µm. El vertido principal dura de 40 a 45 s.",
+        "en": "Ceramic V60. 15 g and 250 g make about 220 ml of coffee. If you can, sieve the coffee to about 400 µm. The main pour takes 40 to 45 s."
       },
       "sourceUrl": "https://sprudge.com/6-recipes-from-the-2017-world-brewers-cup-123165.html",
+      "roasts": [
+        "LIGHT"
+      ],
       "stages": [
         {
           "type": "POUR",
@@ -943,18 +718,14 @@
           "durationS": 10,
           "waterG": 30.0,
           "instruction": {
-            "es": "Vierte 30 g en espiral.",
-            "en": "Pour 30 g in a spiral."
+            "es": "Añade 30 g en espiral.",
+            "en": "Add 30 g in a spiral."
           }
         },
         {
           "type": "WAIT",
           "startS": 10,
-          "durationS": 20,
-          "instruction": {
-            "es": "Preinfusión hasta 0:30.",
-            "en": "Pre-infusion until 0:30."
-          }
+          "durationS": 20
         },
         {
           "type": "POUR",
@@ -962,8 +733,8 @@
           "durationS": 45,
           "waterG": 250.0,
           "instruction": {
-            "es": "Vierte en el centro, sin círculos, hasta 250 g en 40-45 s.",
-            "en": "Pour in the center, without circles, up to 250 g in 40-45 s."
+            "es": "Añade 220 g (total 250 g) en el centro, sin círculos.",
+            "en": "Add 220 g (total 250 g) in the center, without circles."
           }
         },
         {
@@ -971,8 +742,8 @@
           "startS": 75,
           "durationS": 45,
           "instruction": {
-            "es": "Drawdown; termina hacia 2:00.",
-            "en": "Drawdown; it finishes around 2:00."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
@@ -998,8 +769,8 @@
         }
       },
       "notes": {
-        "es": "Kalita Wave con agua a unos 96 °C (205 °F). La guía no fija cuántos pulsos van en el último vertido.",
-        "en": "Kalita Wave with water at about 96 °C (205 °F). The guide does not fix how many pulses go in the last pour."
+        "es": "Kalita Wave con agua a unos 96 °C (205 °F). La guía no fija cuántos pulsos van en el último vertido. Termina de filtrar entre 2 min 45 s y 3 min.",
+        "en": "Kalita Wave with water at about 96 °C (205 °F). The guide does not fix how many pulses go in the last pour. It finishes draining between 2 min 45 s and 3 min."
       },
       "sourceUrl": "https://www.stumptowncoffee.com/brew-guides/kalita-wave",
       "stages": [
@@ -1008,9 +779,13 @@
           "startS": 0,
           "durationS": 10,
           "waterG": 60.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
           "instruction": {
-            "es": "Bloom: 60 g en los primeros 10 s.",
-            "en": "Bloom: 60 g in the first 10 s."
+            "es": "Añade 60 g.",
+            "en": "Add 60 g."
           }
         },
         {
@@ -1025,11 +800,7 @@
         {
           "type": "WAIT",
           "startS": 15,
-          "durationS": 30,
-          "instruction": {
-            "es": "Espera hasta 0:45.",
-            "en": "Wait until 0:45."
-          }
+          "durationS": 30
         },
         {
           "type": "POUR",
@@ -1037,8 +808,8 @@
           "durationS": 15,
           "waterG": 200.0,
           "instruction": {
-            "es": "Espiral lenta hasta 200 g; termina a 1:00.",
-            "en": "Slow spiral up to 200 g; finish at 1:00."
+            "es": "Añade 140 g (total 200 g) en espiral lenta.",
+            "en": "Add 140 g (total 200 g) in a slow spiral."
           }
         },
         {
@@ -1047,8 +818,8 @@
           "durationS": 60,
           "waterG": 345.0,
           "instruction": {
-            "es": "Pulsos de 25-50 g hasta 345 g a las 2:00.",
-            "en": "Pulses of 25-50 g up to 345 g at 2:00."
+            "es": "Añade 145 g (total 345 g) en pulsos de 25 a 50 g.",
+            "en": "Add 145 g (total 345 g) in pulses of 25 to 50 g."
           }
         },
         {
@@ -1056,305 +827,159 @@
           "startS": 120,
           "durationS": 50,
           "instruction": {
-            "es": "Drawdown; termina entre 2:45 y 3:00.",
-            "en": "Drawdown; it finishes between 2:45 and 3:00."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
     },
     {
-      "key": "wallgren_wbrc_2016",
+      "key": "counter_culture_kalita",
       "name": {
-        "es": "Kalita Wave de Mikaela Wallgren (World Brewers Cup 2016)",
-        "en": "Mikaela Wallgren's 2016 World Brewers Cup Kalita Wave"
+        "es": "Kalita Wave de Counter Culture",
+        "en": "Counter Culture Kalita Wave"
       },
-      "author": "Mikaela Wallgren",
+      "author": "Counter Culture Coffee",
       "context": {
-        "es": "Finalista del World Brewers Cup 2016",
-        "en": "2016 World Brewers Cup finalist"
+        "es": "Guía de preparación oficial (Joe Capatosto)",
+        "en": "Official brew guide (Joe Capatosto)"
       },
       "method": "KALITA_WAVE",
-      "doseG": 15.0,
-      "waterTempC": 96.0,
+      "doseG": 30.0,
+      "waterTempC": 93.3,
       "grind": {
         "text": {
-          "es": "Fina (EK43 a 6,3, sin finos)",
-          "en": "Fine (EK43 at 6.3, fines sieved out)"
+          "es": "Media, algo más fina que la sal kosher",
+          "en": "Medium, slightly finer than kosher salt"
         }
       },
-      "notes": {
-        "es": "Kalita Wave 155. Se muelen 17-18 g y se tamizan los finos hasta quedarse con 15 g.",
-        "en": "Kalita Wave 155. Grind 17-18 g and sieve out the fines to keep 15 g."
-      },
-      "sourceUrl": "https://baristamagazine.com/brewing-experiments-mikaela-wallgrens-2016-world-brewers-cup-championship-recipe",
-      "stages": [
-        {
-          "type": "POUR",
-          "startS": 0,
-          "durationS": 10,
-          "waterG": 30.0,
-          "instruction": {
-            "es": "Vierte 30 g en espiral.",
-            "en": "Pour 30 g in a spiral."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 10,
-          "durationS": 20,
-          "instruction": {
-            "es": "Bloom hasta 0:30.",
-            "en": "Bloom until 0:30."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 30,
-          "durationS": 75,
-          "waterG": 250.0,
-          "instruction": {
-            "es": "Espiral lenta y continua hasta 250 g a la 1:45.",
-            "en": "Slow, continuous spiral up to 250 g at 1:45."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 105,
-          "durationS": 50,
-          "instruction": {
-            "es": "Drawdown; retira el gotero a las 2:35.",
-            "en": "Drawdown; remove the dripper at 2:35."
-          }
-        }
-      ]
-    },
-    {
-      "key": "goldsworthy_wbrc_2016",
-      "name": {
-        "es": "Kalita Wave de Todd Goldsworthy (World Brewers Cup 2016)",
-        "en": "Todd Goldsworthy's 2016 World Brewers Cup Kalita Wave"
-      },
-      "author": "Todd Goldsworthy",
-      "context": {
-        "es": "Finalista del World Brewers Cup 2016 (5.º puesto)",
-        "en": "2016 World Brewers Cup finalist (5th place)"
-      },
-      "method": "KALITA_WAVE",
-      "doseG": 27.0,
-      "waterTempC": 95.0,
-      "grind": {
-        "text": {
-          "es": "Media-gruesa",
-          "en": "Medium-coarse"
-        }
-      },
-      "notes": {
-        "es": "Kalita Wave 185 de cristal. Otra fuente da tiempos algo más rápidos; aquí se usa el programa completo de Barista Magazine.",
-        "en": "Glass Kalita Wave 185. Another source gives slightly faster times; this uses the full program from Barista Magazine."
-      },
-      "sourceUrl": "https://www.baristamagazine.com/brewing-experiments-todd-goldsworthys-2016-world-brewers-cup-championship-recipe/",
-      "stages": [
-        {
-          "type": "POUR",
-          "startS": 0,
-          "durationS": 5,
-          "waterG": 40.0,
-          "instruction": {
-            "es": "Bloom: 40 g en espiral.",
-            "en": "Bloom: 40 g in a spiral."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 5,
-          "durationS": 40,
-          "instruction": {
-            "es": "Bloom hasta 0:45.",
-            "en": "Bloom until 0:45."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 45,
-          "durationS": 12,
-          "waterG": 150.0,
-          "instruction": {
-            "es": "Espiral hasta 150 g.",
-            "en": "Spiral up to 150 g."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 57,
-          "durationS": 18,
-          "instruction": {
-            "es": "Espera hasta 1:15.",
-            "en": "Wait until 1:15."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 75,
-          "durationS": 12,
-          "waterG": 250.0,
-          "instruction": {
-            "es": "Espiral hasta 250 g.",
-            "en": "Spiral up to 250 g."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 87,
-          "durationS": 33,
-          "instruction": {
-            "es": "Espera hasta 2:00.",
-            "en": "Wait until 2:00."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 120,
-          "durationS": 12,
-          "waterG": 350.0,
-          "instruction": {
-            "es": "Espiral hasta 350 g.",
-            "en": "Spiral up to 350 g."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 132,
-          "durationS": 48,
-          "instruction": {
-            "es": "Drawdown; termina hacia 3:00.",
-            "en": "Drawdown; it finishes around 3:00."
-          }
-        }
-      ]
-    },
-    {
-      "key": "du_jianing_wbrc_2019",
-      "name": {
-        "es": "Origami de Du Jianing (World Brewers Cup 2019)",
-        "en": "Du Jianing's 2019 World Brewers Cup Origami"
-      },
-      "author": "Du Jianing",
-      "context": {
-        "es": "Campeona del World Brewers Cup 2019",
-        "en": "2019 World Brewers Cup Champion"
-      },
-      "method": "ORIGAMI",
-      "doseG": 16.0,
-      "waterTempC": 94.0,
-      "grind": {
-        "text": {
-          "es": "Media, molida dos veces",
-          "en": "Medium, ground twice"
-        }
-      },
-      "notes": {
-        "es": "Filtro de fondo plano. El café se muele dos veces: primero más grueso y luego al tamaño final. Caudales de 4 a 6 g/s.",
-        "en": "Flat-bottom filter. The coffee is ground twice: coarser first and then to the final size. Flow rates of 4 to 6 g/s."
-      },
-      "sourceUrl": "https://theroasterspack.com/blogs/news/origami-dripper-our-extensive-guide-with-recipes",
+      "sourceUrl": "https://counterculturecoffee.com/pages/quick-easy-pour-over",
       "stages": [
         {
           "type": "POUR",
           "startS": 0,
           "durationS": 10,
           "waterG": 60.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
           "instruction": {
-            "es": "Vierte 60 g a ~6 g/s.",
-            "en": "Pour 60 g at about 6 g/s."
+            "es": "Añade 60 g, mojando todo el café.",
+            "en": "Add 60 g, wetting all the coffee."
           }
         },
         {
           "type": "WAIT",
           "startS": 10,
-          "durationS": 8,
-          "instruction": {
-            "es": "Espera 8 s.",
-            "en": "Wait 8 s."
-          }
+          "durationS": 20
         },
         {
           "type": "POUR",
-          "startS": 18,
+          "startS": 30,
           "durationS": 20,
-          "waterG": 140.0,
+          "waterG": 200.0,
           "instruction": {
-            "es": "Vierte 80 g a ~4 g/s, hasta 140 g.",
-            "en": "Pour 80 g at about 4 g/s, up to 140 g."
+            "es": "Añade 140 g (total 200 g) en círculos.",
+            "en": "Add 140 g (total 200 g) in circles."
           }
         },
         {
           "type": "WAIT",
-          "startS": 38,
-          "durationS": 18,
-          "instruction": {
-            "es": "Espera hasta 0:56.",
-            "en": "Wait until 0:56."
-          }
+          "startS": 50,
+          "durationS": 10
         },
         {
           "type": "POUR",
-          "startS": 56,
-          "durationS": 14,
-          "waterG": 240.0,
+          "startS": 60,
+          "durationS": 15,
+          "waterG": 300.0,
           "instruction": {
-            "es": "Vierte el resto hasta 240 g a ~5 g/s; termina hacia 1:10.",
-            "en": "Pour the rest up to 240 g at about 5 g/s; finish around 1:10."
+            "es": "Añade 100 g (total 300 g) en círculos.",
+            "en": "Add 100 g (total 300 g) in circles."
           }
         },
         {
           "type": "WAIT",
-          "startS": 70,
-          "durationS": 35,
+          "startS": 75,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 90,
+          "durationS": 15,
+          "waterG": 400.0,
           "instruction": {
-            "es": "Drawdown hasta 1:40-1:50.",
-            "en": "Drawdown until 1:40-1:50."
+            "es": "Añade 100 g (total 400 g) en círculos.",
+            "en": "Add 100 g (total 400 g) in circles."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 105,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 120,
+          "durationS": 15,
+          "waterG": 500.0,
+          "instruction": {
+            "es": "Añade 100 g (total 500 g) en círculos.",
+            "en": "Add 100 g (total 500 g) in circles."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 135,
+          "durationS": 90,
+          "instruction": {
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
     },
     {
-      "key": "medina_wbrc_2023",
+      "key": "ozone_kalita",
       "name": {
-        "es": "Origami de Carlos Medina (World Brewers Cup 2023)",
-        "en": "Carlos Medina's 2023 World Brewers Cup Origami"
+        "es": "Kalita Wave de Ozone",
+        "en": "Ozone Kalita Wave"
       },
-      "author": "Carlos Medina",
+      "author": "Ozone Coffee",
       "context": {
-        "es": "Campeón del World Brewers Cup 2023",
-        "en": "2023 World Brewers Cup Champion"
+        "es": "Guía de preparación oficial (Kalita Wave 155)",
+        "en": "Official brew guide (Kalita Wave 155)"
       },
-      "method": "ORIGAMI",
-      "doseG": 15.5,
-      "waterTempC": 91.0,
-      "notes": {
-        "es": "Origami Air S con filtro cónico. Cinco vertidos de 50 g, uno cada 30 s. La fuente no indica la molienda.",
-        "en": "Origami Air S with a cone filter. Five 50 g pours, one every 30 s. The source does not give the grind."
+      "method": "KALITA_WAVE",
+      "doseG": 15.0,
+      "waterTempC": 93.0,
+      "grind": {
+        "text": {
+          "es": "Media de filtro",
+          "en": "Medium filter grind"
+        }
       },
-      "sourceUrl": "https://www.slowpoursupply.co/blogs/brew-recipes/recipe-recap-carlos-medina-s-representing-chile-world-brewers-cup-champion-recipe",
+      "sourceUrl": "https://ozonecoffee.co.uk/pages/kalita-wave-brew-guide",
       "stages": [
         {
           "type": "POUR",
           "startS": 0,
           "durationS": 10,
           "waterG": 50.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
           "instruction": {
-            "es": "Vierte 50 g en espiral hacia fuera y hacia dentro.",
-            "en": "Pour 50 g in a spiral, outwards and then inwards."
+            "es": "Añade 50 g en círculos suaves, mojando todo el café.",
+            "en": "Add 50 g in gentle circles, wetting all the coffee."
           }
         },
         {
           "type": "WAIT",
           "startS": 10,
-          "durationS": 20,
-          "instruction": {
-            "es": "Espera hasta 0:30.",
-            "en": "Wait until 0:30."
-          }
+          "durationS": 20
         },
         {
           "type": "POUR",
@@ -1362,74 +987,52 @@
           "durationS": 10,
           "waterG": 100.0,
           "instruction": {
-            "es": "Vierte hasta 100 g.",
-            "en": "Pour up to 100 g."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 40,
-          "durationS": 20,
-          "instruction": {
-            "es": "Espera hasta 1:00.",
-            "en": "Wait until 1:00."
+            "es": "Añade 50 g (total 100 g) en círculos suaves.",
+            "en": "Add 50 g (total 100 g) in gentle circles."
           }
         },
         {
           "type": "POUR",
-          "startS": 60,
+          "startS": 40,
           "durationS": 10,
           "waterG": 150.0,
           "instruction": {
-            "es": "Vierte hasta 150 g.",
-            "en": "Pour up to 150 g."
+            "es": "Añade 50 g (total 150 g) en el centro.",
+            "en": "Add 50 g (total 150 g) in the center."
           }
         },
         {
           "type": "WAIT",
-          "startS": 70,
-          "durationS": 20,
-          "instruction": {
-            "es": "Espera hasta 1:30.",
-            "en": "Wait until 1:30."
-          }
+          "startS": 50,
+          "durationS": 20
         },
         {
           "type": "POUR",
-          "startS": 90,
+          "startS": 70,
           "durationS": 10,
           "waterG": 200.0,
           "instruction": {
-            "es": "Vierte hasta 200 g.",
-            "en": "Pour up to 200 g."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 100,
-          "durationS": 20,
-          "instruction": {
-            "es": "Espera hasta 2:00.",
-            "en": "Wait until 2:00."
+            "es": "Añade 50 g (total 200 g) en círculos suaves.",
+            "en": "Add 50 g (total 200 g) in gentle circles."
           }
         },
         {
           "type": "POUR",
-          "startS": 120,
+          "startS": 80,
           "durationS": 10,
           "waterG": 250.0,
           "instruction": {
-            "es": "Vierte hasta 250 g.",
-            "en": "Pour up to 250 g."
+            "es": "Añade 50 g (total 250 g) en el centro.",
+            "en": "Add 50 g (total 250 g) in the center."
           }
         },
         {
           "type": "WAIT",
-          "startS": 130,
-          "durationS": 30,
+          "startS": 90,
+          "durationS": 75,
           "instruction": {
-            "es": "Drawdown; total 2:40.",
-            "en": "Drawdown; total 2:40."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
@@ -1455,8 +1058,8 @@
         }
       },
       "notes": {
-        "es": "Origami con agua a unos 96 °C (205 °F).",
-        "en": "Origami with water at about 96 °C (205 °F)."
+        "es": "Origami con agua a unos 96 °C (205 °F). Termina de filtrar entre 3 min y 3 min 15 s.",
+        "en": "Origami with water at about 96 °C (205 °F). It finishes draining between 3 min and 3 min 15 s."
       },
       "sourceUrl": "https://www.stumptowncoffee.com/pages/brew-guide-origami",
       "stages": [
@@ -1465,9 +1068,13 @@
           "startS": 0,
           "durationS": 10,
           "waterG": 50.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
           "instruction": {
-            "es": "Bloom: 50 g.",
-            "en": "Bloom: 50 g."
+            "es": "Añade 50 g.",
+            "en": "Add 50 g."
           }
         },
         {
@@ -1482,11 +1089,7 @@
         {
           "type": "WAIT",
           "startS": 15,
-          "durationS": 30,
-          "instruction": {
-            "es": "Espera hasta 0:45.",
-            "en": "Wait until 0:45."
-          }
+          "durationS": 30
         },
         {
           "type": "POUR",
@@ -1494,18 +1097,14 @@
           "durationS": 15,
           "waterG": 200.0,
           "instruction": {
-            "es": "Espiral hasta 200 g; termina a 1:00.",
-            "en": "Spiral up to 200 g; finish at 1:00."
+            "es": "Añade 150 g (total 200 g) en espiral.",
+            "en": "Add 150 g (total 200 g) in a spiral."
           }
         },
         {
           "type": "WAIT",
           "startS": 60,
-          "durationS": 30,
-          "instruction": {
-            "es": "Espera hasta 1:30.",
-            "en": "Wait until 1:30."
-          }
+          "durationS": 30
         },
         {
           "type": "POUR",
@@ -1513,18 +1112,14 @@
           "durationS": 10,
           "waterG": 280.0,
           "instruction": {
-            "es": "Vierte hasta 280 g.",
-            "en": "Pour up to 280 g."
+            "es": "Añade 80 g (total 280 g).",
+            "en": "Add 80 g (total 280 g)."
           }
         },
         {
           "type": "WAIT",
           "startS": 100,
-          "durationS": 20,
-          "instruction": {
-            "es": "Espera hasta 2:00.",
-            "en": "Wait until 2:00."
-          }
+          "durationS": 20
         },
         {
           "type": "POUR",
@@ -1532,8 +1127,8 @@
           "durationS": 10,
           "waterG": 340.0,
           "instruction": {
-            "es": "Vierte hasta 340 g mojando el café pegado al filtro.",
-            "en": "Pour up to 340 g, rinsing the coffee stuck to the filter."
+            "es": "Añade 60 g (total 340 g), mojando el café pegado al filtro.",
+            "en": "Add 60 g (total 340 g), rinsing the coffee stuck to the filter."
           }
         },
         {
@@ -1541,8 +1136,8 @@
           "startS": 130,
           "durationS": 55,
           "instruction": {
-            "es": "Drawdown; termina entre 3:00 y 3:15.",
-            "en": "Drawdown; it finishes between 3:00 and 3:15."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
@@ -1568,10 +1163,14 @@
         }
       },
       "notes": {
-        "es": "Origami Air S con filtro cónico. Cinco vertidos de 40, 60, 60, 60 y 80 g, uno cada 30 s. La fuente no da el tiempo final: el drawdown hasta 3:00 es una estimación.",
-        "en": "Origami Air S with a cone filter. Five pours of 40, 60, 60, 60 and 80 g, one every 30 s. The source gives no final time: the drawdown until 3:00 is an estimate."
+        "es": "Origami Air S con filtro cónico. Cinco vertidos de 40, 60, 60, 60 y 80 g, uno cada 30 s. La fuente no da el tiempo final: el filtrado hasta los 3 min es una estimación.",
+        "en": "Origami Air S with a cone filter. Five pours of 40, 60, 60, 60 and 80 g, one every 30 s. The source gives no final time: draining until 3 min is an estimate."
       },
       "sourceUrl": "https://origami-kai.com/en/blogs/special-feature/origami-with-kopikalyan-tokyo-vol-3",
+      "roasts": [
+        "LIGHT",
+        "MEDIUM"
+      ],
       "stages": [
         {
           "type": "POUR",
@@ -1579,18 +1178,14 @@
           "durationS": 10,
           "waterG": 40.0,
           "instruction": {
-            "es": "Vierte 40 g.",
-            "en": "Pour 40 g."
+            "es": "Añade 40 g.",
+            "en": "Add 40 g."
           }
         },
         {
           "type": "WAIT",
           "startS": 10,
-          "durationS": 20,
-          "instruction": {
-            "es": "Espera hasta 0:30.",
-            "en": "Wait until 0:30."
-          }
+          "durationS": 20
         },
         {
           "type": "POUR",
@@ -1598,18 +1193,14 @@
           "durationS": 10,
           "waterG": 100.0,
           "instruction": {
-            "es": "Vierte 60 g (hasta 100 g).",
-            "en": "Pour 60 g (up to 100 g)."
+            "es": "Añade 60 g (total 100 g).",
+            "en": "Add 60 g (total 100 g)."
           }
         },
         {
           "type": "WAIT",
           "startS": 40,
-          "durationS": 20,
-          "instruction": {
-            "es": "Espera hasta 1:00.",
-            "en": "Wait until 1:00."
-          }
+          "durationS": 20
         },
         {
           "type": "POUR",
@@ -1617,18 +1208,14 @@
           "durationS": 10,
           "waterG": 160.0,
           "instruction": {
-            "es": "Vierte 60 g (hasta 160 g).",
-            "en": "Pour 60 g (up to 160 g)."
+            "es": "Añade 60 g (total 160 g).",
+            "en": "Add 60 g (total 160 g)."
           }
         },
         {
           "type": "WAIT",
           "startS": 70,
-          "durationS": 20,
-          "instruction": {
-            "es": "Espera hasta 1:30.",
-            "en": "Wait until 1:30."
-          }
+          "durationS": 20
         },
         {
           "type": "POUR",
@@ -1636,18 +1223,14 @@
           "durationS": 10,
           "waterG": 220.0,
           "instruction": {
-            "es": "Vierte 60 g (hasta 220 g).",
-            "en": "Pour 60 g (up to 220 g)."
+            "es": "Añade 60 g (total 220 g).",
+            "en": "Add 60 g (total 220 g)."
           }
         },
         {
           "type": "WAIT",
           "startS": 100,
-          "durationS": 20,
-          "instruction": {
-            "es": "Espera hasta 2:00.",
-            "en": "Wait until 2:00."
-          }
+          "durationS": 20
         },
         {
           "type": "POUR",
@@ -1655,8 +1238,8 @@
           "durationS": 10,
           "waterG": 300.0,
           "instruction": {
-            "es": "Vierte 80 g (hasta 300 g).",
-            "en": "Pour 80 g (up to 300 g)."
+            "es": "Añade 80 g (total 300 g).",
+            "en": "Add 80 g (total 300 g)."
           }
         },
         {
@@ -1664,8 +1247,147 @@
           "startS": 130,
           "durationS": 50,
           "instruction": {
-            "es": "Drawdown hasta ~3:00.",
-            "en": "Drawdown until about 3:00."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
+          }
+        }
+      ]
+    },
+    {
+      "key": "origami_the_coffeeshop",
+      "name": {
+        "es": "Origami de THE COFFEESHOP",
+        "en": "THE COFFEESHOP Origami"
+      },
+      "author": "Origami / THE COFFEESHOP",
+      "context": {
+        "es": "Receta oficial de Origami (serie «with THE COFFEESHOP», vol. 2)",
+        "en": "Official Origami recipe (series \"with THE COFFEESHOP\", vol. 2)"
+      },
+      "method": "ORIGAMI",
+      "doseG": 18.0,
+      "waterTempC": 92.0,
+      "grind": {
+        "text": {
+          "es": "Media (TIMEMORE C3 a unos 16 clics)",
+          "en": "Medium (about 16 clicks on a TIMEMORE C3)"
+        }
+      },
+      "notes": {
+        "es": "Origami S con filtro cónico; salen unos 270 ml.",
+        "en": "Origami S with a cone filter; it makes about 270 ml."
+      },
+      "sourceUrl": "https://origami-kai.com/en/blogs/special-feature/origami%E3%83%89%E3%83%AA%E3%83%83%E3%83%91%E3%83%BC%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%9F%E6%8A%BD%E5%87%BA%E3%83%AC%E3%82%B7%E3%83%94-with-the-coffeeshop-vol-2",
+      "roasts": [
+        "LIGHT",
+        "MEDIUM"
+      ],
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 8,
+          "waterG": 40.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
+          "instruction": {
+            "es": "Añade 40 g en círculos.",
+            "en": "Add 40 g in circles."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 8,
+          "durationS": 5,
+          "instruction": {
+            "es": "Remueve 5 veces con una cuchara.",
+            "en": "Stir 5 times with a spoon."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 13,
+          "durationS": 27
+        },
+        {
+          "type": "POUR",
+          "startS": 40,
+          "durationS": 10,
+          "waterG": 90.0,
+          "instruction": {
+            "es": "Añade 50 g (total 90 g) en círculos sobre todo el café.",
+            "en": "Add 50 g (total 90 g) in circles over all the coffee."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 50,
+          "durationS": 10
+        },
+        {
+          "type": "POUR",
+          "startS": 60,
+          "durationS": 10,
+          "waterG": 150.0,
+          "instruction": {
+            "es": "Añade 60 g (total 150 g).",
+            "en": "Add 60 g (total 150 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 70,
+          "durationS": 10
+        },
+        {
+          "type": "POUR",
+          "startS": 80,
+          "durationS": 10,
+          "waterG": 210.0,
+          "instruction": {
+            "es": "Añade 60 g (total 210 g).",
+            "en": "Add 60 g (total 210 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 90,
+          "durationS": 10
+        },
+        {
+          "type": "POUR",
+          "startS": 100,
+          "durationS": 10,
+          "waterG": 260.0,
+          "instruction": {
+            "es": "Añade 50 g (total 260 g).",
+            "en": "Add 50 g (total 260 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 110,
+          "durationS": 10
+        },
+        {
+          "type": "POUR",
+          "startS": 120,
+          "durationS": 10,
+          "waterG": 300.0,
+          "instruction": {
+            "es": "Añade 40 g (total 300 g).",
+            "en": "Add 40 g (total 300 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 130,
+          "durationS": 10,
+          "instruction": {
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
@@ -1701,9 +1423,13 @@
           "startS": 0,
           "durationS": 15,
           "waterG": 150.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
           "instruction": {
-            "es": "Bloom: 150 g.",
-            "en": "Bloom: 150 g."
+            "es": "Añade 150 g.",
+            "en": "Add 150 g."
           }
         },
         {
@@ -1718,11 +1444,7 @@
         {
           "type": "WAIT",
           "startS": 20,
-          "durationS": 25,
-          "instruction": {
-            "es": "Espera hasta 0:45.",
-            "en": "Wait until 0:45."
-          }
+          "durationS": 25
         },
         {
           "type": "POUR",
@@ -1730,18 +1452,14 @@
           "durationS": 30,
           "waterG": 450.0,
           "instruction": {
-            "es": "Vierte en zigzag y luego en espiral hasta 450 g.",
-            "en": "Pour in a zigzag and then in a spiral up to 450 g."
+            "es": "Añade 300 g (total 450 g) en zigzag y luego en espiral.",
+            "en": "Add 300 g (total 450 g) in a zigzag and then in a spiral."
           }
         },
         {
           "type": "WAIT",
           "startS": 75,
-          "durationS": 30,
-          "instruction": {
-            "es": "Espera hasta 1:45.",
-            "en": "Wait until 1:45."
-          }
+          "durationS": 30
         },
         {
           "type": "POUR",
@@ -1749,8 +1467,8 @@
           "durationS": 30,
           "waterG": 700.0,
           "instruction": {
-            "es": "Vierte hasta 700 g, casi hasta el borde.",
-            "en": "Pour up to 700 g, almost to the rim."
+            "es": "Añade 250 g (total 700 g), casi hasta el borde.",
+            "en": "Add 250 g (total 700 g), almost to the rim."
           }
         },
         {
@@ -1758,8 +1476,8 @@
           "startS": 135,
           "durationS": 105,
           "instruction": {
-            "es": "Drawdown hasta ~4:00.",
-            "en": "Drawdown until about 4:00."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         },
         {
@@ -1776,8 +1494,239 @@
           "startS": 250,
           "durationS": 5,
           "instruction": {
-            "es": "Remolinea la Chemex y sirve.",
-            "en": "Swirl the Chemex and serve."
+            "es": "Gira la Chemex suavemente y sirve.",
+            "en": "Gently swirl the Chemex and serve."
+          }
+        }
+      ]
+    },
+    {
+      "key": "counter_culture_chemex",
+      "name": {
+        "es": "Chemex de Counter Culture",
+        "en": "Counter Culture Chemex"
+      },
+      "author": "Counter Culture Coffee",
+      "context": {
+        "es": "Guía de preparación oficial (Alex Stoffregen)",
+        "en": "Official brew guide (Alex Stoffregen)"
+      },
+      "method": "CHEMEX",
+      "doseG": 45.0,
+      "waterTempC": 93.3,
+      "grind": {
+        "text": {
+          "es": "Media-gruesa, como sal kosher",
+          "en": "Medium-coarse, like kosher salt"
+        }
+      },
+      "sourceUrl": "https://counterculturecoffee.com/pages/quick-easy-chemex",
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 15,
+          "waterG": 100.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
+          "instruction": {
+            "es": "Añade 100 g, mojando todo el café.",
+            "en": "Add 100 g, wetting all the coffee."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 15,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 30,
+          "durationS": 15,
+          "waterG": 200.0,
+          "instruction": {
+            "es": "Añade 100 g (total 200 g) en círculos.",
+            "en": "Add 100 g (total 200 g) in circles."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 45,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 60,
+          "durationS": 15,
+          "waterG": 300.0,
+          "instruction": {
+            "es": "Añade 100 g (total 300 g) en círculos.",
+            "en": "Add 100 g (total 300 g) in circles."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 75,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 90,
+          "durationS": 15,
+          "waterG": 400.0,
+          "instruction": {
+            "es": "Añade 100 g (total 400 g) en círculos.",
+            "en": "Add 100 g (total 400 g) in circles."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 105,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 120,
+          "durationS": 15,
+          "waterG": 500.0,
+          "instruction": {
+            "es": "Añade 100 g (total 500 g) en círculos.",
+            "en": "Add 100 g (total 500 g) in circles."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 135,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 150,
+          "durationS": 15,
+          "waterG": 600.0,
+          "instruction": {
+            "es": "Añade 100 g (total 600 g) en círculos.",
+            "en": "Add 100 g (total 600 g) in circles."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 165,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 180,
+          "durationS": 15,
+          "waterG": 700.0,
+          "instruction": {
+            "es": "Añade 100 g (total 700 g) en círculos.",
+            "en": "Add 100 g (total 700 g) in circles."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 195,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 210,
+          "durationS": 10,
+          "waterG": 750.0,
+          "instruction": {
+            "es": "Añade 50 g (total 750 g) en círculos.",
+            "en": "Add 50 g (total 750 g) in circles."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 220,
+          "durationS": 50,
+          "instruction": {
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
+          }
+        }
+      ]
+    },
+    {
+      "key": "peets_chemex",
+      "name": {
+        "es": "Chemex de Peet's",
+        "en": "Peet's Chemex"
+      },
+      "author": "Peet's Coffee",
+      "context": {
+        "es": "Guía de preparación oficial",
+        "en": "Official brew guide"
+      },
+      "method": "CHEMEX",
+      "doseG": 50.0,
+      "waterTempC": 93.3,
+      "sourceUrl": "https://www.peets.com/pages/brew-guide-chemex",
+      "roasts": [
+        "LIGHT",
+        "MEDIUM"
+      ],
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 15,
+          "waterG": 100.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
+          "instruction": {
+            "es": "Añade 100 g en espiral, mojando todo el café.",
+            "en": "Add 100 g in a spiral, wetting all the coffee."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 15,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 30,
+          "durationS": 75,
+          "waterG": 450.0,
+          "instruction": {
+            "es": "Añade 350 g (total 450 g): primero en espiral y luego en el centro. Puedes hacer pausas.",
+            "en": "Add 350 g (total 450 g): first in a spiral and then in the center. You can pause."
+          }
+        },
+        {
+          "type": "POUR",
+          "startS": 105,
+          "durationS": 75,
+          "waterG": 800.0,
+          "instruction": {
+            "es": "Añade 350 g (total 800 g) sin dejar que el café quede seco.",
+            "en": "Add 350 g (total 800 g) without letting the coffee dry out."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 180,
+          "durationS": 60,
+          "instruction": {
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 240,
+          "durationS": 10,
+          "instruction": {
+            "es": "Retira el filtro y gira la Chemex para mezclar el café.",
+            "en": "Remove the filter and swirl the Chemex to mix the coffee."
           }
         }
       ]
@@ -1803,8 +1752,8 @@
         }
       },
       "notes": {
-        "es": "Deja reposar 4 min, retira la espuma y espera al menos 5 min más; no presiones el émbolo hasta el fondo.",
-        "en": "Let it steep for 4 min, skim the foam and wait at least 5 more minutes; do not plunge all the way."
+        "es": "Deja reposar 4 min, retira la espuma y espera al menos 5 min más (hasta 8 min para una taza más clara); no presiones el émbolo hasta el fondo.",
+        "en": "Let it steep for 4 min, skim the foam and wait at least 5 more minutes (up to 8 min for a clearer cup); do not plunge all the way."
       },
       "sourceUrl": "https://www.youtube.com/watch?v=st571DYYTR8",
       "stages": [
@@ -1814,18 +1763,14 @@
           "durationS": 10,
           "waterG": 500.0,
           "instruction": {
-            "es": "Vierte los 500 g de agua recién hervida.",
-            "en": "Pour the 500 g of freshly boiled water."
+            "es": "Añade 500 g de agua recién hervida.",
+            "en": "Add 500 g of freshly boiled water."
           }
         },
         {
           "type": "WAIT",
           "startS": 10,
-          "durationS": 230,
-          "instruction": {
-            "es": "Espera hasta las 4:00 sin tocar.",
-            "en": "Wait until 4:00 without touching it."
-          }
+          "durationS": 230
         },
         {
           "type": "ACTION",
@@ -1848,11 +1793,7 @@
         {
           "type": "WAIT",
           "startS": 270,
-          "durationS": 300,
-          "instruction": {
-            "es": "Espera al menos 5 min más (hasta 8 si quieres más claridad).",
-            "en": "Wait at least 5 more minutes (up to 8 for a clearer cup)."
-          }
+          "durationS": 300
         },
         {
           "type": "ACTION",
@@ -1897,8 +1838,8 @@
           "durationS": 20,
           "waterG": 450.0,
           "instruction": {
-            "es": "Llena hasta la mitad con 450 g.",
-            "en": "Fill halfway with 450 g."
+            "es": "Añade 450 g, hasta la mitad de la prensa.",
+            "en": "Add 450 g, up to halfway up the press."
           }
         },
         {
@@ -1913,11 +1854,7 @@
         {
           "type": "WAIT",
           "startS": 23,
-          "durationS": 37,
-          "instruction": {
-            "es": "Espera hasta 1:00.",
-            "en": "Wait until 1:00."
-          }
+          "durationS": 37
         },
         {
           "type": "ACTION",
@@ -1934,18 +1871,14 @@
           "durationS": 20,
           "waterG": 850.0,
           "instruction": {
-            "es": "Añade agua hasta 850 g y vuelve a poner la tapa.",
-            "en": "Add water up to 850 g and put the lid back on."
+            "es": "Añade 400 g (total 850 g) y vuelve a poner la tapa.",
+            "en": "Add 400 g (total 850 g) and put the lid back on."
           }
         },
         {
           "type": "WAIT",
           "startS": 90,
-          "durationS": 150,
-          "instruction": {
-            "es": "Espera hasta 4:00.",
-            "en": "Wait until 4:00."
-          }
+          "durationS": 150
         },
         {
           "type": "ACTION",
@@ -1968,30 +1901,181 @@
       ]
     },
     {
-      "key": "hoffmann_aeropress",
+      "key": "counter_culture_french_press",
       "name": {
-        "es": "AeroPress definitiva de James Hoffmann",
-        "en": "James Hoffmann's Ultimate AeroPress"
+        "es": "Prensa francesa de Counter Culture",
+        "en": "Counter Culture French Press"
       },
-      "author": "James Hoffmann",
+      "author": "Counter Culture Coffee",
       "context": {
-        "es": "Vídeo «The Ultimate AeroPress Technique» (2021)",
-        "en": "Video \"The Ultimate AeroPress Technique\" (2021)"
+        "es": "Guía de preparación oficial (Katie Carguilo)",
+        "en": "Official brew guide (Katie Carguilo)"
       },
-      "method": "AEROPRESS",
-      "doseG": 11.0,
-      "waterTempC": 100.0,
+      "method": "FRENCH_PRESS",
+      "doseG": 45.0,
+      "waterTempC": 96.1,
       "grind": {
         "text": {
-          "es": "Media tirando a fina",
-          "en": "On the finer end of medium"
+          "es": "Media-gruesa, como sal kosher",
+          "en": "Medium-coarse, like kosher salt"
+        }
+      },
+      "sourceUrl": "https://counterculturecoffee.com/pages/quick-easy-french-press",
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 20,
+          "waterG": 800.0,
+          "instruction": {
+            "es": "Añade 800 g.",
+            "en": "Add 800 g."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 20,
+          "durationS": 10
+        },
+        {
+          "type": "ACTION",
+          "startS": 30,
+          "durationS": 10,
+          "instruction": {
+            "es": "Remueve con una cuchara y pon la tapa sin bajar el émbolo.",
+            "en": "Stir with a spoon and put the lid on without lowering the plunger."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 40,
+          "durationS": 320
+        },
+        {
+          "type": "ACTION",
+          "startS": 360,
+          "durationS": 15,
+          "instruction": {
+            "es": "Baja el émbolo despacio hasta el fondo y sirve.",
+            "en": "Slowly lower the plunger to the bottom and serve."
+          }
+        }
+      ]
+    },
+    {
+      "key": "peets_french_press",
+      "name": {
+        "es": "Prensa francesa de Peet's",
+        "en": "Peet's French Press"
+      },
+      "author": "Peet's Coffee",
+      "context": {
+        "es": "Guía de preparación oficial",
+        "en": "Official brew guide"
+      },
+      "method": "FRENCH_PRESS",
+      "doseG": 55.0,
+      "waterTempC": 93.3,
+      "grind": {
+        "text": {
+          "es": "Gruesa, como sal marina gruesa",
+          "en": "Coarse, like coarse sea salt"
+        }
+      },
+      "sourceUrl": "https://www.peets.com/pages/brew-guide-french-press",
+      "roasts": [
+        "MEDIUM",
+        "DARK"
+      ],
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 10,
+          "waterG": 110.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
+          "instruction": {
+            "es": "Añade 110 g, mojando todo el café.",
+            "en": "Add 110 g, wetting all the coffee."
+          }
+        },
+        {
+          "type": "SWIRL",
+          "startS": 10,
+          "durationS": 5,
+          "instruction": {
+            "es": "Gira la prensa suavemente.",
+            "en": "Gently swirl the French press."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 15,
+          "durationS": 15
+        },
+        {
+          "type": "POUR",
+          "startS": 30,
+          "durationS": 30,
+          "waterG": 880.0,
+          "instruction": {
+            "es": "Añade 770 g (total 880 g), hasta la mitad de la banda metálica.",
+            "en": "Add 770 g (total 880 g), up to the middle of the metal band."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 60,
+          "durationS": 10,
+          "instruction": {
+            "es": "Pon el émbolo, bájalo hasta la mitad y vuelve a subirlo justo por debajo de la superficie.",
+            "en": "Put the plunger in, lower it halfway and raise it again to just below the surface."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 70,
+          "durationS": 170
+        },
+        {
+          "type": "ACTION",
+          "startS": 240,
+          "durationS": 15,
+          "instruction": {
+            "es": "Baja el émbolo hasta el fondo y sirve.",
+            "en": "Lower the plunger to the bottom and serve."
+          }
+        }
+      ]
+    },
+    {
+      "key": "counter_culture_aeropress",
+      "name": {
+        "es": "AeroPress de Counter Culture",
+        "en": "Counter Culture AeroPress"
+      },
+      "author": "Counter Culture Coffee",
+      "context": {
+        "es": "Guía de preparación oficial (Rachel Keen)",
+        "en": "Official brew guide (Rachel Keen)"
+      },
+      "method": "AEROPRESS",
+      "doseG": 18.0,
+      "waterTempC": 93.3,
+      "grind": {
+        "text": {
+          "es": "Media-fina, algo más fina que para goteo",
+          "en": "Medium-fine, slightly finer than pour-over"
         }
       },
       "notes": {
-        "es": "AeroPress en posición normal, sin enjuagar ni precalentar el filtro. Más gruesa y con más dosis para tuestes oscuros. Aquí el tiempo cuenta desde el inicio del vertido.",
-        "en": "AeroPress in the normal position, without rinsing or preheating the filter. Coarser and with a larger dose for darker roasts. Here time counts from the start of the pour."
+        "es": "AeroPress invertida con el émbolo a 1 cm más o menos; enjuaga el filtro en la tapa.",
+        "en": "Inverted AeroPress with the plunger in about 1 cm; rinse the filter in the cap."
       },
-      "sourceUrl": "https://www.youtube.com/watch?v=j6VlT_jUVPc",
+      "sourceUrl": "https://counterculturecoffee.com/pages/quick-easy-aeropress",
       "stages": [
         {
           "type": "POUR",
@@ -1999,53 +2083,119 @@
           "durationS": 10,
           "waterG": 200.0,
           "instruction": {
-            "es": "Vierte 200 g mojando todo el café.",
-            "en": "Pour 200 g, wetting all the coffee."
+            "es": "AeroPress invertida: añade 200 g.",
+            "en": "Inverted AeroPress: add 200 g."
           }
         },
         {
           "type": "ACTION",
           "startS": 10,
-          "durationS": 5,
+          "durationS": 15,
           "instruction": {
-            "es": "Pon el émbolo ~1 cm dentro para hacer vacío.",
-            "en": "Insert the plunger about 1 cm to create a vacuum."
+            "es": "Remueve con la paleta hasta mojar todo el café y enrosca la tapa con el filtro.",
+            "en": "Stir with the paddle until all the coffee is wet and screw on the cap with the filter."
           }
         },
         {
           "type": "WAIT",
-          "startS": 15,
-          "durationS": 120,
-          "instruction": {
-            "es": "Espera 2 min.",
-            "en": "Wait 2 min."
-          }
+          "startS": 25,
+          "durationS": 65
         },
         {
-          "type": "SWIRL",
-          "startS": 135,
+          "type": "ACTION",
+          "startS": 90,
           "durationS": 5,
           "instruction": {
-            "es": "Remolinea suavemente sujetando cámara y émbolo.",
-            "en": "Gently swirl, holding the chamber and plunger."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 140,
-          "durationS": 30,
-          "instruction": {
-            "es": "Espera 30 s.",
-            "en": "Wait 30 s."
+            "es": "Da la vuelta a la AeroPress con cuidado sobre la taza.",
+            "en": "Carefully flip the AeroPress over the cup."
           }
         },
         {
           "type": "ACTION",
-          "startS": 170,
+          "startS": 95,
+          "durationS": 15,
+          "instruction": {
+            "es": "Presiona suavemente y para cuando oigas el silbido del aire.",
+            "en": "Press gently and stop when you hear the hiss of air."
+          }
+        }
+      ]
+    },
+    {
+      "key": "stumptown_aeropress",
+      "name": {
+        "es": "AeroPress de Stumptown",
+        "en": "Stumptown AeroPress"
+      },
+      "author": "Stumptown Coffee Roasters",
+      "context": {
+        "es": "Guía de preparación oficial",
+        "en": "Official brew guide"
+      },
+      "method": "AEROPRESS",
+      "doseG": 17.0,
+      "waterTempC": 96.0,
+      "grind": {
+        "text": {
+          "es": "Fina, como sal de mesa",
+          "en": "Fine, like table salt"
+        }
+      },
+      "notes": {
+        "es": "AeroPress en posición normal; enjuaga el filtro.",
+        "en": "AeroPress in the normal position; rinse the filter."
+      },
+      "sourceUrl": "https://www.stumptowncoffee.com/pages/brew-guide-aeropress",
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 10,
+          "waterG": 220.0,
+          "instruction": {
+            "es": "Añade 220 g, hasta la marca 4 más o menos.",
+            "en": "Add 220 g, up to about the No. 4 mark."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 10,
+          "durationS": 10,
+          "instruction": {
+            "es": "Remueve hasta mojar todo el café.",
+            "en": "Stir until all the coffee is wet."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 20,
+          "durationS": 5,
+          "instruction": {
+            "es": "Pon el émbolo y súbelo un poco para que no gotee.",
+            "en": "Put the plunger in and pull it up slightly so it does not drip."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 25,
+          "durationS": 50
+        },
+        {
+          "type": "ACTION",
+          "startS": 75,
+          "durationS": 10,
+          "instruction": {
+            "es": "Quita el émbolo, remueve otra vez y vuelve a ponerlo.",
+            "en": "Remove the plunger, stir again and put it back."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 85,
           "durationS": 30,
           "instruction": {
-            "es": "Presiona suavemente hasta el final.",
-            "en": "Press gently all the way down."
+            "es": "Presiona con fuerza constante y para cuando oigas el silbido del aire.",
+            "en": "Press with steady force and stop when you hear the hiss of air."
           }
         }
       ]
@@ -2075,6 +2225,9 @@
         "en": "Inverted AeroPress with 2 rinsed paper filters and Third Wave Water at 80 °C. In competition the grind was a Macap Labo 70D at 7.0; the Comandante at 27 clicks is the equivalent used to develop the recipe. No dilution."
       },
       "sourceUrl": "https://aeropress.com/pages/wac-recipes",
+      "roasts": [
+        "LIGHT"
+      ],
       "stages": [
         {
           "type": "POUR",
@@ -2082,8 +2235,8 @@
           "durationS": 10,
           "waterG": 50.0,
           "instruction": {
-            "es": "AeroPress invertida: vierte 50 g.",
-            "en": "Inverted AeroPress: pour 50 g."
+            "es": "AeroPress invertida: añade 50 g.",
+            "en": "Inverted AeroPress: add 50 g."
           }
         },
         {
@@ -2101,18 +2254,14 @@
           "durationS": 15,
           "waterG": 200.0,
           "instruction": {
-            "es": "Vierte hasta 200 g.",
-            "en": "Pour up to 200 g."
+            "es": "Añade 150 g (total 200 g).",
+            "en": "Add 150 g (total 200 g)."
           }
         },
         {
           "type": "WAIT",
           "startS": 30,
-          "durationS": 20,
-          "instruction": {
-            "es": "Infusiona.",
-            "en": "Steep."
-          }
+          "durationS": 20
         },
         {
           "type": "ACTION",
@@ -2135,11 +2284,7 @@
         {
           "type": "WAIT",
           "startS": 70,
-          "durationS": 25,
-          "instruction": {
-            "es": "Infusiona hasta 1:35.",
-            "en": "Steep until 1:35."
-          }
+          "durationS": 25
         },
         {
           "type": "ACTION",
@@ -2155,8 +2300,8 @@
           "startS": 100,
           "durationS": 20,
           "instruction": {
-            "es": "Da la vuelta y presiona enseguida hasta 2:00.",
-            "en": "Flip and press right away until 2:00."
+            "es": "Da la vuelta y presiona enseguida.",
+            "en": "Flip and press right away."
           }
         },
         {
@@ -2164,8 +2309,8 @@
           "startS": 120,
           "durationS": 30,
           "instruction": {
-            "es": "Remolinea para enfriar hasta 2:30.",
-            "en": "Swirl to cool until 2:30."
+            "es": "Gira la jarra suavemente para enfriar.",
+            "en": "Gently swirl the server to cool it."
           }
         }
       ]
@@ -2191,10 +2336,13 @@
         }
       },
       "notes": {
-        "es": "AeroPress invertida con filtro Aesir enjuagado y agua a 92 °C. Da un concentrado de unos 60 g que se diluye tras presionar: la curva termina en los 100 g de infusión y el ratio final es 1:7,3 (220 g de agua).",
-        "en": "Inverted AeroPress with a rinsed Aesir filter and water at 92 °C. It makes about 60 g of concentrate that is diluted after pressing: the curve ends at the 100 g of infusion and the final ratio is 1:7.3 (220 g of water)."
+        "es": "AeroPress invertida con filtro Aesir enjuagado y agua a 92 °C. Da un concentrado de unos 60 g que se diluye tras presionar: la curva termina en los 100 g de infusión y el ratio final es 1:7,3 (220 g de agua). Ella usó 120 g de agua de dilución en total.",
+        "en": "Inverted AeroPress with a rinsed Aesir filter and water at 92 °C. It makes about 60 g of concentrate that is diluted after pressing: the curve ends at the 100 g of infusion and the final ratio is 1:7.3 (220 g of water). She used 120 g of dilution water in total."
       },
       "sourceUrl": "https://aeropress.com/pages/wac-recipes",
+      "roasts": [
+        "LIGHT"
+      ],
       "stages": [
         {
           "type": "POUR",
@@ -2202,8 +2350,8 @@
           "durationS": 10,
           "waterG": 100.0,
           "instruction": {
-            "es": "AeroPress invertida: vierte 100 g en 10 s.",
-            "en": "Inverted AeroPress: pour 100 g in 10 s."
+            "es": "AeroPress invertida: añade 100 g.",
+            "en": "Inverted AeroPress: add 100 g."
           }
         },
         {
@@ -2227,19 +2375,15 @@
         {
           "type": "WAIT",
           "startS": 30,
-          "durationS": 10,
-          "instruction": {
-            "es": "Espera.",
-            "en": "Wait."
-          }
+          "durationS": 10
         },
         {
           "type": "ACTION",
           "startS": 40,
           "durationS": 20,
           "instruction": {
-            "es": "Da la vuelta y presiona (~60 g de concentrado).",
-            "en": "Flip and press (about 60 g of concentrate)."
+            "es": "Da la vuelta y presiona: salen unos 60 g de concentrado.",
+            "en": "Flip and press: about 60 g of concentrate comes out."
           }
         },
         {
@@ -2256,8 +2400,8 @@
           "startS": 70,
           "durationS": 10,
           "instruction": {
-            "es": "Prueba y añade agua al gusto; ella usó 120 g de dilución en total.",
-            "en": "Taste and add water to taste; she used 120 g of dilution in total."
+            "es": "Prueba y añade agua al gusto.",
+            "en": "Taste and add water to taste."
           }
         },
         {
@@ -2265,265 +2409,8 @@
           "startS": 80,
           "durationS": 20,
           "instruction": {
-            "es": "Enfría a ~60 °C removiendo y decantando.",
+            "es": "Enfría hasta unos 60 °C removiendo y trasvasando.",
             "en": "Cool to about 60 °C by stirring and decanting."
-          }
-        }
-      ]
-    },
-    {
-      "key": "stanica_wac_2024",
-      "name": {
-        "es": "AeroPress de George Stanica (Campeonato Mundial de AeroPress 2024)",
-        "en": "George Stanica's 2024 World AeroPress Championship"
-      },
-      "author": "George Stanica",
-      "context": {
-        "es": "Campeón del World AeroPress Championship 2024",
-        "en": "2024 World AeroPress Champion"
-      },
-      "method": "AEROPRESS",
-      "doseG": 18.0,
-      "waterTempC": 96.0,
-      "grind": {
-        "text": {
-          "es": "870 µm (C40 con Red Clix a 58 clics)",
-          "en": "870 µm (C40 with Red Clix at 58 clicks)"
-        }
-      },
-      "notes": {
-        "es": "AeroPress invertida con filtro Aesir enjuagado. Tres temperaturas: 96 °C para infusionar y después agua tibia y agua a temperatura ambiente para diluir. La curva termina en los 100 g de infusión; el ratio final es 1:10 (180 g de agua).",
-        "en": "Inverted AeroPress with a rinsed Aesir filter. Three temperatures: 96 °C to brew, then warm and room-temperature water to dilute. The curve ends at the 100 g of infusion; the final ratio is 1:10 (180 g of water)."
-      },
-      "sourceUrl": "https://worldaeropresschampionship.com/pages/1st-george-stanica-romania-2024",
-      "stages": [
-        {
-          "type": "POUR",
-          "startS": 0,
-          "durationS": 6,
-          "waterG": 50.0,
-          "instruction": {
-            "es": "AeroPress invertida: vierte ~50 g.",
-            "en": "Inverted AeroPress: pour about 50 g."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 6,
-          "durationS": 30,
-          "instruction": {
-            "es": "Bloom ~30 s.",
-            "en": "Bloom for about 30 s."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 36,
-          "durationS": 6,
-          "waterG": 100.0,
-          "instruction": {
-            "es": "Vierte otros 50 g (100 g).",
-            "en": "Pour another 50 g (100 g)."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 42,
-          "durationS": 10,
-          "instruction": {
-            "es": "Remueve N-S-E-O durante 10 s.",
-            "en": "Stir N-S-E-W for 10 s."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 52,
-          "durationS": 28,
-          "instruction": {
-            "es": "Espera hasta 1:20.",
-            "en": "Wait until 1:20."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 80,
-          "durationS": 10,
-          "instruction": {
-            "es": "Pon la tapa con el filtro y saca el aire.",
-            "en": "Put on the filter cap and squeeze out the air."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 90,
-          "durationS": 5,
-          "instruction": {
-            "es": "Da la vuelta sobre la jarra.",
-            "en": "Flip it over the server."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 95,
-          "durationS": 35,
-          "instruction": {
-            "es": "Presiona suave 30-40 s (~77 g de concentrado).",
-            "en": "Press gently for 30-40 s (about 77 g of concentrate)."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 130,
-          "durationS": 15,
-          "instruction": {
-            "es": "Añade 55 g de agua tibia (hasta 130-135 g de bebida).",
-            "en": "Add 55 g of warm water (up to 130-135 g of drink)."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 145,
-          "durationS": 10,
-          "instruction": {
-            "es": "Añade 25 g de agua a temperatura ambiente (20-30 g).",
-            "en": "Add 25 g of room-temperature water (20-30 g)."
-          }
-        }
-      ]
-    },
-    {
-      "key": "wipvasutt_wac_2023",
-      "name": {
-        "es": "AeroPress de Tay Wipvasutt (Campeonato Mundial de AeroPress 2023)",
-        "en": "Tay Wipvasutt's 2023 World AeroPress Championship"
-      },
-      "author": "Ekameth \"Tay\" Wipvasutt",
-      "context": {
-        "es": "Campeón del World AeroPress Championship 2023",
-        "en": "2023 World AeroPress Champion"
-      },
-      "method": "AEROPRESS",
-      "doseG": 18.0,
-      "waterTempC": 89.0,
-      "grind": {
-        "text": {
-          "es": "1Zpresso ZP6 a 65 clics",
-          "en": "1Zpresso ZP6 at 65 clicks"
-        }
-      },
-      "notes": {
-        "es": "AeroPress invertida con 1 filtro enjuagado. Empieza con 16 g de café y añade los otros 2 g a los 0:45. La curva termina en los 100 g de infusión; con la dilución el ratio final es 1:10 (180 g de agua).",
-        "en": "Inverted AeroPress with 1 rinsed filter. Start with 16 g of coffee and add the other 2 g at 0:45. The curve ends at the 100 g of infusion; with the dilution the final ratio is 1:10 (180 g of water)."
-      },
-      "sourceUrl": "https://worldaeropresschampionship.com/pages/1st-tay-wipvasutt-thailand-2023",
-      "stages": [
-        {
-          "type": "POUR",
-          "startS": 0,
-          "durationS": 10,
-          "waterG": 100.0,
-          "instruction": {
-            "es": "AeroPress invertida con 16 g de café: vierte 100 g.",
-            "en": "Inverted AeroPress with 16 g of coffee: pour 100 g."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 10,
-          "durationS": 20,
-          "instruction": {
-            "es": "Espera hasta 0:30.",
-            "en": "Wait until 0:30."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 30,
-          "durationS": 5,
-          "instruction": {
-            "es": "Remueve 5 s con un palillo.",
-            "en": "Stir for 5 s with a chopstick."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 35,
-          "durationS": 10,
-          "instruction": {
-            "es": "Espera hasta 0:45.",
-            "en": "Wait until 0:45."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 45,
-          "durationS": 5,
-          "instruction": {
-            "es": "Añade los 2 g de café restantes.",
-            "en": "Add the remaining 2 g of coffee."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 50,
-          "durationS": 5,
-          "instruction": {
-            "es": "Espera hasta 0:55.",
-            "en": "Wait until 0:55."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 55,
-          "durationS": 5,
-          "instruction": {
-            "es": "Remueve 5 s.",
-            "en": "Stir for 5 s."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 60,
-          "durationS": 10,
-          "instruction": {
-            "es": "Saca el aire y cierra la tapa.",
-            "en": "Squeeze out the air and close the cap."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 70,
-          "durationS": 25,
-          "instruction": {
-            "es": "Espera hasta 1:35.",
-            "en": "Wait until 1:35."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 95,
-          "durationS": 30,
-          "instruction": {
-            "es": "Da la vuelta y presiona ~30 s (~75 g).",
-            "en": "Flip and press for about 30 s (about 75 g)."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 125,
-          "durationS": 10,
-          "instruction": {
-            "es": "Añade 40 g de agua a temperatura ambiente (hasta 115 g de bebida).",
-            "en": "Add 40 g of room-temperature water (up to 115 g of drink)."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 135,
-          "durationS": 10,
-          "instruction": {
-            "es": "Añade 40 g de agua caliente (hasta 155 g de bebida).",
-            "en": "Add 40 g of hot water (up to 155 g of drink)."
           }
         }
       ]
@@ -2553,6 +2440,9 @@
         "en": "AeroPress in the normal position with a Flow Control Cap and 2 filters. In the original the 70 g of bypass (at 50 °C) goes into the server before brewing; here it is added at the end. The curve ends at the 100 g of infusion; the final ratio is 1:9.4 (170 g of water)."
       },
       "sourceUrl": "https://aeropress.com/blogs/w-a-c-aeropress-recipes/1st-nemo-pop-australia-2025",
+      "roasts": [
+        "LIGHT"
+      ],
       "stages": [
         {
           "type": "POUR",
@@ -2560,44 +2450,36 @@
           "durationS": 10,
           "waterG": 100.0,
           "instruction": {
-            "es": "Vierte 100 g mojando todo el café.",
-            "en": "Pour 100 g, wetting all the coffee."
+            "es": "Añade 100 g, mojando todo el café.",
+            "en": "Add 100 g, wetting all the coffee."
           }
         },
         {
           "type": "WAIT",
           "startS": 10,
-          "durationS": 15,
-          "instruction": {
-            "es": "Espera hasta 0:25.",
-            "en": "Wait until 0:25."
-          }
+          "durationS": 15
         },
         {
           "type": "ACTION",
           "startS": 25,
           "durationS": 5,
           "instruction": {
-            "es": "Remueve N-S-N-S y O-E-O-E.",
-            "en": "Stir N-S-N-S and W-E-W-E."
+            "es": "Remueve en cruz: norte-sur-norte-sur y oeste-este-oeste-este.",
+            "en": "Stir in a cross: north-south-north-south and west-east-west-east."
           }
         },
         {
           "type": "WAIT",
           "startS": 30,
-          "durationS": 20,
-          "instruction": {
-            "es": "Espera hasta 0:50.",
-            "en": "Wait until 0:50."
-          }
+          "durationS": 20
         },
         {
           "type": "ACTION",
           "startS": 50,
           "durationS": 20,
           "instruction": {
-            "es": "Presiona suavemente ~20 s.",
-            "en": "Press gently for about 20 s."
+            "es": "Presiona suavemente.",
+            "en": "Press gently."
           }
         },
         {
@@ -2605,562 +2487,129 @@
           "startS": 70,
           "durationS": 10,
           "instruction": {
-            "es": "Añade 70 g de agua a 50 °C (bypass).",
-            "en": "Add 70 g of water at 50 °C (bypass)."
+            "es": "Añade 70 g de agua a 50 °C para diluir el café.",
+            "en": "Add 70 g of water at 50 °C to dilute the coffee."
           }
         }
       ]
     },
     {
-      "key": "ibarra_wac_2018",
+      "key": "coava_moka",
       "name": {
-        "es": "AeroPress de Carolina Ibarra (Campeonato Mundial de AeroPress 2018)",
-        "en": "Carolina Ibarra's 2018 World AeroPress Championship"
+        "es": "Moka de Coava",
+        "en": "Coava Moka Pot"
       },
-      "author": "Carolina Ibarra Garay",
+      "author": "Coava Coffee Roasters",
       "context": {
-        "es": "Campeona del World AeroPress Championship 2018",
-        "en": "2018 World AeroPress Champion"
+        "es": "Guía de preparación oficial",
+        "en": "Official brew guide"
       },
-      "method": "AEROPRESS",
-      "doseG": 34.9,
-      "waterTempC": 85.0,
+      "method": "MOKA",
+      "doseG": 28.0,
+      "waterTempC": 97.5,
       "grind": {
         "text": {
-          "es": "8 en una escala de 1 (muy fina) a 10 (muy gruesa)",
-          "en": "8 on a scale from 1 (very fine) to 10 (very coarse)"
+          "es": "Fina, sin llegar a la de espresso",
+          "en": "Fine, but not as fine as espresso"
         }
       },
       "notes": {
-        "es": "AeroPress invertida con filtro de papel enjuagado y palillos de madera para remover; no precalientes la jarra. Dosis muy alta: la curva termina en los 100 g de infusión y, con los 100 g de dilución (60 g a 85 °C y 40 g a temperatura ambiente), el ratio final es 1:5,7 (200 g de agua). Los tiempos de cada paso son aproximados.",
-        "en": "Inverted AeroPress with a rinsed paper filter and wooden chopsticks to stir; do not preheat the server. Very high dose: the curve ends at the 100 g of infusion and, with the 100 g of dilution (60 g at 85 °C and 40 g at room temperature), the final ratio is 1:5.7 (200 g of water). The timing of each step is approximate."
+        "es": "El agua de la base se pesa en la báscula; el resto de los pasos se hace fuera de ella. Con una moka de otro tamaño cambia la dosis.",
+        "en": "The water for the base is weighed on the scale; the other steps are done away from it. With a different size of moka pot, change the dose."
       },
-      "sourceUrl": "https://aeropress.com/pages/wac-recipes",
+      "sourceUrl": "https://coavacoffee.com/brew-methods/moka-pot",
       "stages": [
         {
           "type": "POUR",
           "startS": 0,
-          "durationS": 30,
-          "waterG": 100.0,
+          "durationS": 15,
+          "waterG": 250.0,
           "instruction": {
-            "es": "AeroPress invertida: vierte 100 g de agua a 85 °C.",
-            "en": "Inverted AeroPress: pour 100 g of water at 85 °C."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 30,
-          "durationS": 30,
-          "instruction": {
-            "es": "Remueve con energía pero con cuidado con palillos de madera.",
-            "en": "Stir vigorously but carefully with wooden chopsticks."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 60,
-          "durationS": 30,
-          "instruction": {
-            "es": "Pon la tapa con el filtro, da la vuelta y presiona sobre la jarra.",
-            "en": "Put on the filter cap, flip and press into the server."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 90,
-          "durationS": 10,
-          "instruction": {
-            "es": "Añade 60 g de agua a 85 °C y 40 g de agua a temperatura ambiente.",
-            "en": "Add 60 g of water at 85 °C and 40 g of room-temperature water."
-          }
-        }
-      ]
-    },
-    {
-      "key": "wendelboe_aeropress",
-      "name": {
-        "es": "AeroPress de Tim Wendelboe",
-        "en": "Tim Wendelboe's AeroPress"
-      },
-      "author": "Tim Wendelboe",
-      "context": {
-        "es": "Guía de preparación de Tim Wendelboe",
-        "en": "Tim Wendelboe brew guide"
-      },
-      "method": "AEROPRESS",
-      "doseG": 14.0,
-      "waterTempC": 100.0,
-      "grind": {
-        "text": {
-          "es": "Fina de filtro",
-          "en": "Fine filter grind"
-        }
-      },
-      "notes": {
-        "es": "AeroPress en posición normal con filtro de papel enjuagado, tueste claro y agua hirviendo.",
-        "en": "AeroPress in the normal position with a rinsed paper filter, a light roast and boiling water."
-      },
-      "sourceUrl": "https://timwendelboe.no/pages/how-to-brew-with-an-aeropress",
-      "stages": [
-        {
-          "type": "POUR",
-          "startS": 0,
-          "durationS": 10,
-          "waterG": 200.0,
-          "instruction": {
-            "es": "Vierte 200 g de agua hirviendo.",
-            "en": "Pour 200 g of boiling water."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 10,
-          "durationS": 5,
-          "instruction": {
-            "es": "Remueve 3 veces.",
-            "en": "Stir 3 times."
+            "es": "Añade 250 g de agua caliente a la base, sin pasar de la válvula.",
+            "en": "Add 250 g of hot water to the base, without going past the valve."
           }
         },
         {
           "type": "ACTION",
           "startS": 15,
-          "durationS": 3,
-          "instruction": {
-            "es": "Pon el émbolo para que no gotee.",
-            "en": "Insert the plunger so it does not drip."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 18,
-          "durationS": 60,
-          "instruction": {
-            "es": "Infusiona 60 s.",
-            "en": "Steep for 60 s."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 78,
-          "durationS": 5,
-          "instruction": {
-            "es": "Quita el émbolo y remueve 3 veces de atrás adelante.",
-            "en": "Remove the plunger and stir 3 times back and forth."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 83,
-          "durationS": 25,
-          "instruction": {
-            "es": "Pon el émbolo y presiona sin apretar de más.",
-            "en": "Put the plunger back and press without squeezing too hard."
-          }
-        }
-      ]
-    },
-    {
-      "key": "peng_wbrc_2025",
-      "name": {
-        "es": "Solo Dripper de George Jinyang Peng (World Brewers Cup 2025)",
-        "en": "George Jinyang Peng's 2025 World Brewers Cup Solo Dripper"
-      },
-      "author": "George Jinyang Peng",
-      "context": {
-        "es": "Campeón del World Brewers Cup 2025",
-        "en": "2025 World Brewers Cup Champion"
-      },
-      "method": "OTHER",
-      "methodOther": {
-        "es": "Solo Dripper",
-        "en": "Solo Dripper"
-      },
-      "doseG": 15.0,
-      "grind": {
-        "text": {
-          "es": "Media (molino FM a 11 clics)",
-          "en": "Medium (FM grinder at 11 clicks)"
-        }
-      },
-      "notes": {
-        "es": "Agua de 40 ppm. Precalienta el gotero y el filtro con 80 ml de agua, que no cuenta en la receta. Dos temperaturas: la de cada vertido va en su instrucción.",
-        "en": "Water at 40 ppm. Preheat the dripper and filter with 80 ml of water, which does not count in the recipe. Two temperatures: the one for each pour is in its instruction."
-      },
-      "sourceUrl": "https://sprudge.com/how-to-brew-coffee-like-the-2025-world-brewers-cup-champion-338576.html",
-      "stages": [
-        {
-          "type": "POUR",
-          "startS": 0,
-          "durationS": 6,
-          "waterG": 30.0,
-          "instruction": {
-            "es": "A 96 °C: 30 g en tres círculos antihorarios.",
-            "en": "At 96 °C: 30 g in three counterclockwise circles."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 6,
-          "durationS": 24,
-          "instruction": {
-            "es": "Espera hasta 0:30.",
-            "en": "Wait until 0:30."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 30,
-          "durationS": 10,
-          "waterG": 120.0,
-          "instruction": {
-            "es": "A 96 °C: vierte 90 g en 10 s (120 g).",
-            "en": "At 96 °C: pour 90 g in 10 s (120 g)."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 40,
           "durationS": 30,
           "instruction": {
-            "es": "Espera hasta 1:10.",
-            "en": "Wait until 1:10."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 70,
-          "durationS": 15,
-          "waterG": 210.0,
-          "instruction": {
-            "es": "A 80 °C: vierte 90 g a través de un Melodrip (210 g).",
-            "en": "At 80 °C: pour 90 g through a Melodrip (210 g)."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 85,
-          "durationS": 20,
-          "instruction": {
-            "es": "Drawdown; termina a la 1:45.",
-            "en": "Drawdown; it finishes at 1:45."
-          }
-        }
-      ]
-    },
-    {
-      "key": "fukahori_wbrc_2018",
-      "name": {
-        "es": "GINA de Emi Fukahori (World Brewers Cup 2018)",
-        "en": "Emi Fukahori's 2018 World Brewers Cup GINA"
-      },
-      "author": "Emi Fukahori",
-      "context": {
-        "es": "Campeona del World Brewers Cup 2018",
-        "en": "2018 World Brewers Cup Champion"
-      },
-      "method": "OTHER",
-      "methodOther": {
-        "es": "GINA (Goat Story)",
-        "en": "GINA (Goat Story)"
-      },
-      "doseG": 17.0,
-      "notes": {
-        "es": "Agua de 100 ppm. Tres temperaturas, indicadas en cada vertido. También se puede preparar en un Hario Switch, que tiene válvula, pero es una adaptación.",
-        "en": "Water at 100 ppm. Three temperatures, given at each pour. It can also be brewed in a Hario Switch, which has a valve, but that is an adaptation."
-      },
-      "sourceUrl": "https://goat-story.com/blogs/news/emi-fukahoris-winning-recipe",
-      "stages": [
-        {
-          "type": "ACTION",
-          "startS": 0,
-          "durationS": 3,
-          "instruction": {
-            "es": "Cierra la válvula.",
-            "en": "Close the valve."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 3,
-          "durationS": 10,
-          "waterG": 50.0,
-          "instruction": {
-            "es": "A 80 °C: vierte 50 g.",
-            "en": "At 80 °C: pour 50 g."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 13,
-          "durationS": 32,
-          "instruction": {
-            "es": "Válvula cerrada hasta 0:45.",
-            "en": "Valve closed until 0:45."
+            "es": "Pon el embudo, llénalo con el café bien nivelado y enrosca la parte de arriba sujetando la base con un trapo.",
+            "en": "Put in the funnel, fill it with level coffee and screw on the top part, holding the base with a cloth."
           }
         },
         {
           "type": "ACTION",
           "startS": 45,
-          "durationS": 2,
+          "durationS": 5,
           "instruction": {
-            "es": "Abre la válvula.",
-            "en": "Open the valve."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 47,
-          "durationS": 58,
-          "waterG": 150.0,
-          "instruction": {
-            "es": "A 95 °C: vierte 100 g en el centro hasta 1:45.",
-            "en": "At 95 °C: pour 100 g in the center until 1:45."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 105,
-          "durationS": 2,
-          "instruction": {
-            "es": "Cierra la válvula.",
-            "en": "Close the valve."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 107,
-          "durationS": 43,
-          "waterG": 220.0,
-          "instruction": {
-            "es": "A 80 °C: vierte 70 g hasta 2:30.",
-            "en": "At 80 °C: pour 70 g until 2:30."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 150,
-          "durationS": 2,
-          "instruction": {
-            "es": "Abre la válvula.",
-            "en": "Open the valve."
+            "es": "Pon la cafetera a fuego medio o medio-bajo.",
+            "en": "Put the moka pot on medium or medium-low heat."
           }
         },
         {
           "type": "WAIT",
-          "startS": 152,
-          "durationS": 23,
+          "startS": 50,
+          "durationS": 240
+        },
+        {
+          "type": "ACTION",
+          "startS": 290,
+          "durationS": 5,
           "instruction": {
-            "es": "Deja caer a la jarra hasta 2:55.",
-            "en": "Let it drop into the server until 2:55."
+            "es": "Retira del fuego en cuanto salga vapor y sirve.",
+            "en": "Take it off the heat as soon as steam comes out and serve."
           }
         }
       ]
     },
     {
-      "key": "fukahori_switch",
+      "key": "hario_switch",
       "name": {
-        "es": "Hario Switch de Emi Fukahori",
-        "en": "Emi Fukahori's Hario Switch"
+        "es": "Hario Switch (receta oficial de Hario)",
+        "en": "Hario Switch (official Hario recipe)"
       },
-      "author": "Emi Fukahori",
+      "author": "Hario",
       "context": {
-        "es": "Receta de las cafeterías MAME",
-        "en": "Recipe from the MAME cafés"
+        "es": "Instrucciones oficiales del lanzamiento (2019)",
+        "en": "Official launch instructions (2019)"
       },
       "method": "OTHER",
       "methodOther": {
         "es": "Hario Switch",
         "en": "Hario Switch"
       },
-      "doseG": 14.0,
-      "waterTempC": 93.0,
-      "grind": {
-        "grinder": {
-          "catalogKey": "comandante-c40",
-          "value": 25
-        }
-      },
-      "notes": {
-        "es": "Hario Switch con agua a 93 °C. La válvula va cerrada durante el bloom.",
-        "en": "Hario Switch with water at 93 °C. The valve stays closed during the bloom."
-      },
-      "sourceUrl": "https://www.youtube.com/watch?v=3euEkTBxtEk",
-      "stages": [
-        {
-          "type": "ACTION",
-          "startS": 0,
-          "durationS": 2,
-          "instruction": {
-            "es": "Cierra la válvula.",
-            "en": "Close the valve."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 2,
-          "durationS": 10,
-          "waterG": 50.0,
-          "instruction": {
-            "es": "Bloom: 50 g con la válvula cerrada.",
-            "en": "Bloom: 50 g with the valve closed."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 12,
-          "durationS": 18,
-          "instruction": {
-            "es": "Espera hasta 0:30.",
-            "en": "Wait until 0:30."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 30,
-          "durationS": 2,
-          "instruction": {
-            "es": "Abre la válvula.",
-            "en": "Open the valve."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 32,
-          "durationS": 38,
-          "waterG": 200.0,
-          "instruction": {
-            "es": "Vierte 150 g en un chorro continuo al centro; termina a 1:10.",
-            "en": "Pour 150 g in one continuous stream into the center; finish at 1:10."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 70,
-          "durationS": 70,
-          "instruction": {
-            "es": "Drawdown; total 2:20.",
-            "en": "Drawdown; total 2:20."
-          }
-        }
-      ]
-    },
-    {
-      "key": "boen_wbrc_2021",
-      "name": {
-        "es": "Hario Switch de Ole Kristian Bøen (World Brewers Cup 2021)",
-        "en": "Ole Kristian Bøen's 2021 World Brewers Cup Hario Switch"
-      },
-      "author": "Ole Kristian Bøen",
-      "context": {
-        "es": "Receta del World Brewers Cup 2021",
-        "en": "Recipe from the 2021 World Brewers Cup"
-      },
-      "method": "OTHER",
-      "methodOther": {
-        "es": "Hario Switch",
-        "en": "Hario Switch"
-      },
-      "doseG": 16.5,
-      "waterTempC": 96.0,
+      "doseG": 20.0,
       "grind": {
         "text": {
-          "es": "Media-fina",
-          "en": "Medium-fine"
+          "es": "Media",
+          "en": "Medium"
         }
       },
       "notes": {
-        "es": "Hario Switch 02. Es la receta que usó en el World Brewers Cup 2021.",
-        "en": "Hario Switch 02. It is the recipe he used at the 2021 World Brewers Cup."
+        "es": "Con la válvula cerrada desde el principio; ajusta la molienda y el tiempo a tu gusto. Si lo quieres más fuerte, remueve con una cuchara durante la infusión.",
+        "en": "With the valve closed from the start; adjust the grind and the time to taste. If you want it stronger, stir with a spoon during the steep."
       },
-      "sourceUrl": "https://www.hario-europe.com/blogs/hario-community/ole-kristian-boens-switch-recipe",
+      "sourceUrl": "https://pressat.co.uk/media/uploads/90731252cc3afc15947e597be53eb0b7.pdf",
       "stages": [
         {
-          "type": "ACTION",
+          "type": "POUR",
           "startS": 0,
-          "durationS": 2,
-          "instruction": {
-            "es": "Cierra la válvula.",
-            "en": "Close the valve."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 2,
-          "durationS": 10,
-          "waterG": 50.0,
-          "instruction": {
-            "es": "Bloom: 50 g con la válvula cerrada.",
-            "en": "Bloom: 50 g with the valve closed."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 12,
-          "durationS": 28,
-          "instruction": {
-            "es": "Bloom hasta 0:40.",
-            "en": "Bloom until 0:40."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 40,
-          "durationS": 2,
-          "instruction": {
-            "es": "Abre la válvula.",
-            "en": "Open the valve."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 42,
-          "durationS": 20,
-          "waterG": 150.0,
-          "instruction": {
-            "es": "Vierte enseguida 100 g en el centro.",
-            "en": "Right away pour 100 g into the center."
-          }
-        },
-        {
-          "type": "WAIT",
-          "startS": 62,
-          "durationS": 28,
-          "instruction": {
-            "es": "Espera hasta 1:30.",
-            "en": "Wait until 1:30."
-          }
-        },
-        {
-          "type": "ACTION",
-          "startS": 90,
-          "durationS": 2,
-          "instruction": {
-            "es": "Cierra la válvula.",
-            "en": "Close the valve."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 92,
           "durationS": 15,
           "waterG": 240.0,
           "instruction": {
-            "es": "Vierte 90 g en círculos.",
-            "en": "Pour 90 g in circles."
+            "es": "Con la válvula cerrada, añade 240 g de agua caliente de una vez.",
+            "en": "With the valve closed, add 240 g of hot water all at once."
           }
         },
         {
           "type": "WAIT",
-          "startS": 107,
-          "durationS": 23,
-          "instruction": {
-            "es": "Inmersión hasta 2:10.",
-            "en": "Steep until 2:10."
-          }
+          "startS": 15,
+          "durationS": 105
         },
         {
           "type": "ACTION",
-          "startS": 130,
+          "startS": 120,
           "durationS": 2,
           "instruction": {
             "es": "Abre la válvula.",
@@ -3169,11 +2618,11 @@
         },
         {
           "type": "WAIT",
-          "startS": 132,
-          "durationS": 53,
+          "startS": 122,
+          "durationS": 88,
           "instruction": {
-            "es": "Deja drenar; total 3:00-3:15.",
-            "en": "Let it drain; total 3:00-3:15."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
@@ -3213,8 +2662,8 @@
           "durationS": 15,
           "waterG": 300.0,
           "instruction": {
-            "es": "Vierte primero los 300 g de agua en el Clever vacío.",
-            "en": "First pour the 300 g of water into the empty Clever."
+            "es": "Añade 300 g en el Clever vacío.",
+            "en": "Add 300 g into the empty Clever."
           }
         },
         {
@@ -3229,11 +2678,7 @@
         {
           "type": "WAIT",
           "startS": 25,
-          "durationS": 95,
-          "instruction": {
-            "es": "Infusiona hasta 2:00.",
-            "en": "Steep until 2:00."
-          }
+          "durationS": 95
         },
         {
           "type": "ACTION",
@@ -3247,19 +2692,15 @@
         {
           "type": "WAIT",
           "startS": 125,
-          "durationS": 25,
-          "instruction": {
-            "es": "Espera hasta 2:30.",
-            "en": "Wait until 2:30."
-          }
+          "durationS": 25
         },
         {
           "type": "ACTION",
           "startS": 150,
           "durationS": 5,
           "instruction": {
-            "es": "Colócalo sobre la taza o jarra para drenar.",
-            "en": "Place it on the cup or server to drain."
+            "es": "Colócalo sobre la taza o jarra para que filtre.",
+            "en": "Place it on the cup or server so it drains."
           }
         },
         {
@@ -3267,8 +2708,8 @@
           "startS": 155,
           "durationS": 60,
           "instruction": {
-            "es": "Drawdown de ~1 min.",
-            "en": "Drawdown of about 1 min."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
@@ -3302,6 +2743,10 @@
         "en": "Water at about 94 °C. First rinse and preheat the filter; the coffee goes in before the water. The guide gives neither the pour time nor the drain time: both are approximate."
       },
       "sourceUrl": "https://fivesenses.com.au/blog/clever-coffee-dripper-brew-guide",
+      "roasts": [
+        "LIGHT",
+        "MEDIUM"
+      ],
       "stages": [
         {
           "type": "POUR",
@@ -3309,18 +2754,14 @@
           "durationS": 30,
           "waterG": 400.0,
           "instruction": {
-            "es": "Vierte 400 g de agua sobre el café y pon la tapa.",
-            "en": "Pour 400 g of water over the coffee and put the lid on."
+            "es": "Añade 400 g sobre el café y pon la tapa.",
+            "en": "Add 400 g over the coffee and put the lid on."
           }
         },
         {
           "type": "WAIT",
           "startS": 30,
-          "durationS": 30,
-          "instruction": {
-            "es": "Espera hasta 1:00.",
-            "en": "Wait until 1:00."
-          }
+          "durationS": 30
         },
         {
           "type": "ACTION",
@@ -3336,8 +2777,8 @@
           "startS": 65,
           "durationS": 175,
           "instruction": {
-            "es": "Pon la tapa y espera hasta 4:00.",
-            "en": "Put the lid on and wait until 4:00."
+            "es": "Pon la tapa.",
+            "en": "Put the lid on."
           }
         },
         {
@@ -3345,8 +2786,8 @@
           "startS": 240,
           "durationS": 5,
           "instruction": {
-            "es": "Colócalo sobre la jarra para drenar.",
-            "en": "Place it on the carafe to drain."
+            "es": "Colócalo sobre la jarra para que filtre.",
+            "en": "Place it on the carafe so it drains."
           }
         },
         {
@@ -3354,98 +2795,91 @@
           "startS": 245,
           "durationS": 60,
           "instruction": {
-            "es": "Drenado; termina hacia 5:05.",
-            "en": "Draining; it finishes around 5:05."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
     },
     {
-      "key": "april_brewer",
+      "key": "ozone_clever",
       "name": {
-        "es": "April Brewer de April Coffee",
-        "en": "April Coffee's April Brewer"
+        "es": "Clever Dripper de Ozone",
+        "en": "Ozone Clever Dripper"
       },
-      "author": "Patrik Rolf / April Coffee Roasters",
+      "author": "Ozone Coffee",
       "context": {
-        "es": "Receta de tienda de April Coffee Roasters",
-        "en": "April Coffee Roasters shop recipe"
+        "es": "Guía de preparación oficial",
+        "en": "Official brew guide"
       },
       "method": "OTHER",
       "methodOther": {
-        "es": "April",
-        "en": "April"
+        "es": "Clever",
+        "en": "Clever"
       },
-      "doseG": 12.0,
-      "waterTempC": 92.0,
+      "doseG": 15.0,
+      "waterTempC": 95.0,
       "grind": {
         "text": {
-          "es": "11,5 en un EK43; ajusta para 2:30-3:00",
-          "en": "11.5 on an EK43; adjust for 2:30-3:00"
+          "es": "Media de filtro",
+          "en": "Medium filter grind"
         }
       },
-      "notes": {
-        "es": "Receta de tienda para un café concreto (El Tesoro); otras fichas cambian la dosis y la molienda. El segundo vertido empieza a 0:30, como en la lista de la fuente.",
-        "en": "Shop recipe for one particular coffee (El Tesoro); other cards change the dose and the grind. The second pour starts at 0:30, as in the source list."
-      },
-      "sourceUrl": "https://www.aprilcoffeeroasters.com/coffee-inf-recipes/el-tesoro",
+      "sourceUrl": "https://ozonecoffee.co.uk/pages/brew-guide-clever-dripper",
       "stages": [
         {
           "type": "POUR",
           "startS": 0,
-          "durationS": 5,
-          "waterG": 30.0,
-          "instruction": {
-            "es": "Vierte 30 g en círculos para mojar todo el café.",
-            "en": "Pour 30 g in circles to wet all the coffee."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 5,
           "durationS": 10,
-          "waterG": 100.0,
+          "waterG": 250.0,
           "instruction": {
-            "es": "Vierte 70 g en el centro (100 g).",
-            "en": "Pour 70 g in the center (100 g)."
+            "es": "Añade 250 g.",
+            "en": "Add 250 g."
           }
         },
         {
-          "type": "WAIT",
-          "startS": 15,
+          "type": "ACTION",
+          "startS": 10,
           "durationS": 15,
           "instruction": {
-            "es": "Espera hasta 0:30.",
-            "en": "Wait until 0:30."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 30,
-          "durationS": 5,
-          "waterG": 130.0,
-          "instruction": {
-            "es": "Vierte 30 g en círculos.",
-            "en": "Pour 30 g in circles."
-          }
-        },
-        {
-          "type": "POUR",
-          "startS": 35,
-          "durationS": 10,
-          "waterG": 200.0,
-          "instruction": {
-            "es": "Vierte 70 g en el centro (200 g).",
-            "en": "Pour 70 g in the center (200 g)."
+            "es": "Remueve suavemente con una cuchara hasta que no quede café seco.",
+            "en": "Stir gently with a spoon until no dry coffee is left."
           }
         },
         {
           "type": "WAIT",
-          "startS": 45,
-          "durationS": 120,
+          "startS": 25,
+          "durationS": 110,
           "instruction": {
-            "es": "Drawdown; total 2:30-3:00.",
-            "en": "Drawdown; total 2:30-3:00."
+            "es": "Pon la tapa.",
+            "en": "Put the lid on."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 135,
+          "durationS": 5,
+          "instruction": {
+            "es": "Pon el Clever sobre la taza o la jarra para que empiece a filtrar.",
+            "en": "Place the Clever on the cup or server so it starts draining."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 140,
+          "durationS": 55,
+          "instruction": {
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 195,
+          "durationS": 5,
+          "instruction": {
+            "es": "Retira el Clever de la taza.",
+            "en": "Take the Clever off the cup."
           }
         }
       ]
@@ -3475,8 +2909,8 @@
         }
       },
       "notes": {
-        "es": "Café helado por inmersión: se filtra sobre 170 g de hielo y el ratio final con hielo es 1:13 (la app muestra 1:8,8, el del agua caliente). Con un Clever o un Hario Switch.",
-        "en": "Immersion iced coffee: it drains over 170 g of ice and the final ratio with ice is 1:13 (the app shows 1:8.8, the hot-water one). With a Clever or a Hario Switch."
+        "es": "Café helado por inmersión: se filtra sobre 170 g de hielo y el ratio final con hielo es 1:13 (la app muestra 1:8,8, el del agua caliente). Con un Clever o un Hario Switch. Con tuestes oscuros, 4 min de infusión (la app usa 5 min).",
+        "en": "Immersion iced coffee: it drains over 170 g of ice and the final ratio with ice is 1:13 (the app shows 1:8.8, the hot-water one). With a Clever or a Hario Switch. With darker roasts, steep for 4 min (the app uses 5 min)."
       },
       "sourceUrl": "https://www.youtube.com/watch?v=8uGGeV8A-BM",
       "stages": [
@@ -3486,8 +2920,8 @@
           "durationS": 15,
           "waterG": 330.0,
           "instruction": {
-            "es": "Vierte 330 g de agua recién hervida sobre el café.",
-            "en": "Pour 330 g of freshly boiled water over the coffee."
+            "es": "Añade 330 g de agua recién hervida sobre el café.",
+            "en": "Add 330 g of freshly boiled water over the coffee."
           }
         },
         {
@@ -3502,19 +2936,15 @@
         {
           "type": "WAIT",
           "startS": 25,
-          "durationS": 275,
-          "instruction": {
-            "es": "Infusiona hasta las 5:00 (4:00 si es tostado oscuro).",
-            "en": "Steep until 5:00 (4:00 for a dark roast)."
-          }
+          "durationS": 275
         },
         {
           "type": "ACTION",
           "startS": 300,
           "durationS": 5,
           "instruction": {
-            "es": "Filtra sobre 170 g de hielo (abre la Switch o pon el Clever sobre la jarra).",
-            "en": "Drain over 170 g of ice (open the Switch or set the Clever on the server)."
+            "es": "Filtra sobre 170 g de hielo: abre la Switch o pon el Clever sobre la jarra.",
+            "en": "Drain over 170 g of ice: open the Switch or set the Clever on the server."
           }
         },
         {
@@ -3522,8 +2952,8 @@
           "startS": 305,
           "durationS": 60,
           "instruction": {
-            "es": "Deja drenar.",
-            "en": "Let it drain."
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         },
         {
@@ -3533,6 +2963,197 @@
           "instruction": {
             "es": "Remueve hasta fundir el hielo que quede.",
             "en": "Stir until the remaining ice melts."
+          }
+        }
+      ]
+    },
+    {
+      "key": "peng_wbrc_2025",
+      "name": {
+        "es": "Solo Dripper de George Jinyang Peng (World Brewers Cup 2025)",
+        "en": "George Jinyang Peng's 2025 World Brewers Cup Solo Dripper"
+      },
+      "author": "George Jinyang Peng",
+      "context": {
+        "es": "Campeón del World Brewers Cup 2025",
+        "en": "2025 World Brewers Cup Champion"
+      },
+      "method": "OTHER",
+      "methodOther": {
+        "es": "Solo Dripper",
+        "en": "Solo Dripper"
+      },
+      "doseG": 15.0,
+      "grind": {
+        "text": {
+          "es": "Media (molino FM a 11 clics)",
+          "en": "Medium (FM grinder at 11 clicks)"
+        }
+      },
+      "notes": {
+        "es": "Agua de 40 ppm. Precalienta el gotero y el filtro con 80 ml de agua, que no cuenta en la receta. Dos temperaturas: la de cada vertido va en su instrucción.",
+        "en": "Water at 40 ppm. Preheat the dripper and filter with 80 ml of water, which does not count in the recipe. Two temperatures: the one for each pour is in its instruction."
+      },
+      "sourceUrl": "https://sprudge.com/how-to-brew-coffee-like-the-2025-world-brewers-cup-champion-338576.html",
+      "roasts": [
+        "LIGHT"
+      ],
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 6,
+          "waterG": 30.0,
+          "instruction": {
+            "es": "A 96 °C: añade 30 g en tres círculos antihorarios.",
+            "en": "At 96 °C: add 30 g in three counterclockwise circles."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 6,
+          "durationS": 24
+        },
+        {
+          "type": "POUR",
+          "startS": 30,
+          "durationS": 10,
+          "waterG": 120.0,
+          "instruction": {
+            "es": "A 96 °C: añade 90 g (total 120 g).",
+            "en": "At 96 °C: add 90 g (total 120 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 40,
+          "durationS": 30
+        },
+        {
+          "type": "POUR",
+          "startS": 70,
+          "durationS": 15,
+          "waterG": 210.0,
+          "instruction": {
+            "es": "A 80 °C: añade 90 g (total 210 g) a través de un Melodrip.",
+            "en": "At 80 °C: add 90 g (total 210 g) through a Melodrip."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 85,
+          "durationS": 20,
+          "instruction": {
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
+          }
+        }
+      ]
+    },
+    {
+      "key": "fukahori_wbrc_2018",
+      "name": {
+        "es": "GINA de Emi Fukahori (World Brewers Cup 2018)",
+        "en": "Emi Fukahori's 2018 World Brewers Cup GINA"
+      },
+      "author": "Emi Fukahori",
+      "context": {
+        "es": "Campeona del World Brewers Cup 2018",
+        "en": "2018 World Brewers Cup Champion"
+      },
+      "method": "OTHER",
+      "methodOther": {
+        "es": "GINA (Goat Story)",
+        "en": "GINA (Goat Story)"
+      },
+      "doseG": 17.0,
+      "notes": {
+        "es": "Agua de 100 ppm. Tres temperaturas, indicadas en cada vertido. También se puede preparar en un Hario Switch, que tiene válvula, pero es una adaptación.",
+        "en": "Water at 100 ppm. Three temperatures, given at each pour. It can also be brewed in a Hario Switch, which has a valve, but that is an adaptation."
+      },
+      "sourceUrl": "https://goat-story.com/blogs/news/emi-fukahoris-winning-recipe",
+      "roasts": [
+        "LIGHT"
+      ],
+      "stages": [
+        {
+          "type": "ACTION",
+          "startS": 0,
+          "durationS": 3,
+          "instruction": {
+            "es": "Cierra la válvula.",
+            "en": "Close the valve."
+          }
+        },
+        {
+          "type": "POUR",
+          "startS": 3,
+          "durationS": 10,
+          "waterG": 50.0,
+          "instruction": {
+            "es": "A 80 °C: añade 50 g.",
+            "en": "At 80 °C: add 50 g."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 13,
+          "durationS": 32
+        },
+        {
+          "type": "ACTION",
+          "startS": 45,
+          "durationS": 2,
+          "instruction": {
+            "es": "Abre la válvula.",
+            "en": "Open the valve."
+          }
+        },
+        {
+          "type": "POUR",
+          "startS": 47,
+          "durationS": 58,
+          "waterG": 150.0,
+          "instruction": {
+            "es": "A 95 °C: añade 100 g (total 150 g) en el centro.",
+            "en": "At 95 °C: add 100 g (total 150 g) in the center."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 105,
+          "durationS": 2,
+          "instruction": {
+            "es": "Cierra la válvula.",
+            "en": "Close the valve."
+          }
+        },
+        {
+          "type": "POUR",
+          "startS": 107,
+          "durationS": 43,
+          "waterG": 220.0,
+          "instruction": {
+            "es": "A 80 °C: añade 70 g (total 220 g).",
+            "en": "At 80 °C: add 70 g (total 220 g)."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 150,
+          "durationS": 2,
+          "instruction": {
+            "es": "Abre la válvula.",
+            "en": "Open the valve."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 152,
+          "durationS": 23,
+          "instruction": {
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]

@@ -378,7 +378,8 @@ esta sección.
   las recetas (también las que se quedan):
   1. Cada instrucción dice qué hacer en ese paso, en lenguaje llano y sin jerga.
   2. Sin tiempos ni horas que la app ya muestra ("Espera hasta 0:30", "termina hacia 1:08").
-  3. En los vertidos, lo que se añade y el total: "Añade 60 g (total 120 g)".
+  3. En los vertidos, lo que se añade y el total: "Añade 60 g (total 120 g)". (Cambio del 2026-11-26:
+     el primer vertido solo dice lo que se añade, "Añade 60 g", sin el total redundante.)
   4. "Girar el gotero" siempre es `SWIRL`; "remover con cuchara" siempre es `ACTION`.
   5. Si el paso no necesita más que su tipo, la instrucción queda vacía.
   6. Sin comentarios que no sean una acción ("Pausa.", "El 40 % define dulzor y acidez"); esa

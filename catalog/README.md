@@ -13,7 +13,7 @@ minutos: un cambio en `main` puede tardar ese tiempo en llegar a la app.
 ```json
 {
   "schemaVersion": 1,
-  "revision": 1,
+  "revision": 2,
   "recipes": [
     {
       "key": "four_six",
@@ -30,6 +30,7 @@ minutos: un cambio en `main` puede tardar ese tiempo en llegar a la app.
       },
       "notes": { "es": "...", "en": "..." },
       "sourceUrl": "https://...",
+      "roasts": ["LIGHT", "MEDIUM"],
       "stages": [
         {
           "type": "POUR",
@@ -53,7 +54,7 @@ minutos: un cambio en `main` puede tardar ese tiempo en llegar a la app.
 | `name` | sí | texto localizado |
 | `author` | no | autor o barista, sin traducir; si está, `sourceUrl` es obligatoria |
 | `context` | no | campeonato y año, o publicación (texto localizado) |
-| `method` | sí | `V60`, `KALITA_WAVE`, `CHEMEX`, `ORIGAMI`, `AEROPRESS`, `FRENCH_PRESS` u `OTHER` (también existen `ESPRESSO`, `COLD_BREW` y `MOKA`, pero no caben en el modelo de pasos) |
+| `method` | sí | `V60`, `KALITA_WAVE`, `CHEMEX`, `ORIGAMI`, `AEROPRESS`, `FRENCH_PRESS`, `MOKA` u `OTHER` (también existen `ESPRESSO` y `COLD_BREW`, pero no caben en el modelo de pasos). `MOKA` solo cabe si únicamente el llenado de la base es un vertido que se pesa, como en `coava_moka`; el resto son pasos `ACTION` |
 | `methodOther` | solo con `OTHER` | texto localizado ("Clever", "April"…); con otro método no puede aparecer |
 | `doseG` | sí | gramos, de 5 a 60 y con un decimal como mucho |
 | `waterTempC` | no | °C, de 0 a 100; omítela si la receta usa varias y pon cada una en la instrucción del paso |
@@ -61,10 +62,11 @@ minutos: un cambio en `main` puede tardar ese tiempo en llegar a la app.
 | `grind.grinder` | no | `catalogKey` de `app/src/main/assets/grinders/catalog.json` y `value` en las unidades base de ese molino, dentro de su escala |
 | `notes` | no | instrucciones generales, no notas de cata (texto localizado) |
 | `sourceUrl` | no (sí con `author`) | empieza por `https://` |
+| `roasts` | no | lista de tuestes para los que sirve la receta, entre `LIGHT`, `MEDIUM` y `DARK`, sin repetir. Ausente: sirve para cualquier tueste. La app ignora al leer cualquier valor desconocido o un campo que no sea una lista de textos (la receta se muestra como "cualquier tueste"); el test del repo los rechaza |
 | `stages[].type` | sí | `POUR`, `SWIRL`, `WAIT` o `ACTION` |
 | `stages[].startS`, `durationS` | sí | segundos desde t0 y duración, enteros |
 | `stages[].waterG` | solo en `POUR` | agua **acumulada** al terminar el paso (en el resto no puede aparecer) |
-| `stages[].name`, `instruction` | no | texto localizado; la instrucción, de 200 caracteres como mucho por idioma |
+| `stages[].name`, `instruction` | no | texto localizado; la instrucción, de 200 caracteres como mucho por idioma (reglas de redacción más abajo) |
 
 Un **texto localizado** es un objeto con `es` y `en`, las dos claves obligatorias y no vacías. Los campos desconocidos
 se ignoran.
@@ -82,6 +84,9 @@ cualquier receta descartada):
 - `sourceUrl` empieza por `https://`; una receta con `author` lleva `sourceUrl`.
 - `key` es única en el archivo (si se repite, se descartan todas las recetas con esa clave).
 - Deben existir `four_six` y `v60_classic`: las copias migradas de las antiguas recetas de fábrica apuntan a ellas.
+- `roasts` solo con nombres de tueste conocidos y sin repetir.
+- Proporción por tueste: al menos 2/3 de las recetas aptas para medio (con `MEDIUM` o sin `roasts`) y como mucho 6 solo para claro (`["LIGHT"]`).
+- Redacción: ningún nombre de paso, instrucción ni nota usa un término prohibido (tabla de abajo) ni un tiempo `m:ss`.
 
 ## Cómo añadir o corregir una receta
 
@@ -95,8 +100,9 @@ cualquier receta descartada):
    - **Hielo**: no se modela; las notas indican los gramos de hielo y el ratio final.
    - **Varias temperaturas**: `waterTempC` es la principal o se omite; las demás van en la instrucción.
    - **Duraciones inferidas**: las fuentes casi nunca dan la duración de cada vertido; se fijan para que encajen los
-     inicios publicados y las notas lo dicen.
-6. Comprueba el catálogo en local, desde la raíz del repo:
+     inicios publicados y el anexo del spec (`docs/specs/anexo-catalogo-recetas.md`) las marca.
+6. Elige `roasts` y redacta con las reglas de la sección "Tueste y redacción".
+7. Comprueba el catálogo en local, desde la raíz del repo:
 
    ```sh
    ./gradlew :app:testDebugUnitTest --tests "dev.josueamaya.pourline.recipe.catalog.RecipeCatalogFileTest"
@@ -104,6 +110,41 @@ cualquier receta descartada):
 
    El mismo test lo ejecuta el workflow `Catalog` de GitHub Actions en cada `push` y `pull_request` que toque
    `catalog/**`.
+
+## Tueste y redacción
+
+**Tueste.** El catálogo favorece el tueste medio, que es el más fácil de conseguir: al menos 2/3 de las recetas aptas para medio
+y, como mucho, 6 solo para claro, reservadas a las de campeonato más icónicas. `roasts` es lo que dice la fuente de la receta;
+si la fuente no lo dice se infiere (y el anexo lo marca), y una guía genérica de fabricante sin indicación es "cualquiera" (sin
+`roasts`). Si la fuente publica una variante para tueste medio (la 4:6 de Kasuya a 88 °C), se usa esa variante. Nunca se cambian
+por cuenta propia los parámetros de un autor: sin variante publicada, la receta se queda como es o se sustituye. El tueste no se
+guarda en la receta de "Mis recetas": solo filtra y se muestra en el catálogo.
+
+**Redacción** de nombres de paso, instrucciones y notas, en español y en inglés, para todas las recetas:
+
+1. Cada instrucción dice qué hacer en ese paso, en lenguaje llano y sin jerga.
+2. Sin tiempos ni horas que la app ya muestra ("Espera hasta 0:30", "termina hacia 1:08"). Un tiempo que la app no muestra (un rango
+   de la fuente, una variante) va en las notas, con unidades: "4 min", "2 min 30 s". Nunca con formato `m:ss`.
+3. En los vertidos, lo que se añade y el total: "Añade 60 g (total 120 g)" / "Add 60 g (total 120 g)", con la técnica detrás si la hay
+   ("en círculos") o un prefijo ("AeroPress invertida: añade…"). El primer vertido solo dice lo que se añade ("Añade 60 g en
+   círculos"): su total sería redundante.
+4. "Girar el gotero" siempre es `SWIRL` y la instrucción dice qué se gira ("Gira el gotero suavemente"); "remover con cuchara" siempre es
+   `ACTION`. La etiqueta española de `SWIRL` en la app es "Remover", así que un `SWIRL` nunca queda vacío.
+5. Si el paso no necesita más que su tipo, la instrucción queda vacía (un `WAIT` solo dice algo si hay algo que hacer o es el filtrado
+   final: "Deja que termine de filtrar.").
+6. Sin comentarios que no sean una acción ("Pausa.", "El 40 % define dulzor y acidez"): si valen, van a las notas.
+
+| Prohibido | Español | Inglés |
+|---|---|---|
+| drawdown | "Deja que termine de filtrar" | "Let it finish draining" |
+| rao spin | "Gira el gotero con energía" | "Swirl the dripper firmly" |
+| remolinea / remolinear | "Gira el gotero suavemente" | "Gently swirl the dripper" |
+| bloom (solo en español) | "Preinfusión" | "Bloom" (se mantiene) |
+
+El test busca los términos prohibidos sin distinguir mayúsculas ni acentos (también "draw-down" o "rao-spin") y los tiempos `m:ss` en
+`stages[].name`, `stages[].instruction` y `notes`; no mira el nombre, el contexto ni `grind.text` de la receta. **Ratios:** un ratio
+entero en las notas va siempre tras la palabra "ratio" ("ratio final con hielo 1:13", "the final ratio is 1:13") y no cuenta como
+tiempo; un ratio con decimales ("1:16,7") nunca tiene la forma `m:ss`. Un "1:13" sin "ratio" delante sí cuenta como tiempo.
 
 ## Cuándo subir `schemaVersion`
 

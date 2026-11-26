@@ -26,6 +26,7 @@ fun catalogProblems(text: String, grinderCatalog: String): List<String> {
       RequiredKeys.filter { required -> catalog.entries.none { it.key == required } }.forEach { add("the recipe $it is missing") }
       addAll(roastValueProblems(text))
       addAll(roastShareProblems(catalog.entries))
+      addAll(wordingProblems(catalog.entries))
     }
   }
 }

@@ -1,6 +1,7 @@
 package dev.josueamaya.pourline.recipe.catalog
 
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
@@ -90,5 +91,34 @@ class RecipeCatalogFileTest {
     )
     val fewProblems = catalogProblems(few, grinders())
     assertTrue(fewProblems.toString(), fewProblems.any { it.contains("recipes suit a medium roast") })
+  }
+
+  @Test
+  fun `a forbidden term or a clock time makes the catalog check fail`() {
+    fun withInstruction(key: String, es: String, en: String = "Fine", name: JsonElement? = null) = recipeJson(
+      key,
+      mapOf("stages" to JsonArray(listOf(stageJson(name = name, instruction = localized(es, en))))),
+    )
+    val drawdown = withInstruction("termino_drawdown", "Haz el Drawdown")
+    val bloom = withInstruction("nombre_bloom", "Fine", name = localized("Bloom", "Bloom"))
+    val raoSpin = withInstruction("termino_rao_spin", "Fine", "Do a Rao spin")
+    val clock = withInstruction("tiempo_reloj", "Espera hasta 0:45")
+    val problems = catalogProblems(withRecipes(drawdown, bloom, raoSpin, clock), grinders())
+    listOf("termino_drawdown", "nombre_bloom", "termino_rao_spin", "tiempo_reloj").forEach { id ->
+      assertTrue("$id: $problems", problems.any { it.contains(id) })
+    }
+  }
+
+  @Test
+  fun `english bloom and ratios in the notes pass the check`() {
+    val recipe = recipeJson(
+      "bloom_en_y_ratio",
+      mapOf(
+        "stages" to JsonArray(listOf(stageJson(name = localized("Preinfusión", "Bloom")))),
+        "notes" to localized("El ratio final con hielo es 1:13.", "The final ratio with ice is 1:13."),
+      ),
+    )
+    val problems = catalogProblems(withRecipes(recipe), grinders())
+    assertTrue(problems.toString(), problems.none { it.contains("bloom_en_y_ratio") })
   }
 }
