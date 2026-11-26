@@ -375,15 +375,20 @@ private fun tabEntryProvider(
     val session = deps.scaleSession
     val activeRecipeId by remember { session.ui.map(::activeRecipeIdOf).distinctUntilChanged() }
       .collectAsStateWithLifecycle(remember { activeRecipeIdOf(session.ui.value) })
+    val activeCatalogKey by remember { session.ui.map(::activeCatalogKeyOf).distinctUntilChanged() }
+      .collectAsStateWithLifecycle(remember { activeCatalogKeyOf(session.ui.value) })
     val importer = viewModel {
       RecipeImportEntryViewModel(deps.recipeImports, deps.qrImageReader) { deps.scaleSession.ui.value.hasSession }
     }
     RecipesScreen(
-      viewModel { RecipesViewModel(deps.recipeRepository) },
+      viewModel { RecipesViewModel(deps.recipeRepository, deps.recipeCatalog, deps.catalogLanguage) },
       onBack = null,
       onOpenRecipe = { id -> stack.add(RecipeEdit(id = id)) },
       onCreateRecipe = { stack.add(RecipeEdit()) },
       activeRecipeId = activeRecipeId,
+      activeCatalogKey = activeCatalogKey,
+      // El detalle de una recomendada llega en F8.
+      onOpenCatalogRecipe = {},
       importer = importer,
     )
   }
@@ -491,3 +496,8 @@ private fun NavBackStack<NavKey>.saveFourSixAsRecipe(params: FourSixParams) {
 }
 
 private fun activeRecipeIdOf(ui: ScaleUiState): Long? = (ui.target?.key as? ReferenceKey.Recipe)?.id
+
+private fun activeCatalogKeyOf(ui: ScaleUiState): String? {
+  val reference = ui.target?.key
+  return if (reference is ReferenceKey.Catalog) reference.key else null
+}

@@ -16,11 +16,22 @@ import androidx.test.platform.app.InstrumentationRegistry
 import dev.josueamaya.pourline.R
 import dev.josueamaya.pourline.history.HistoryDatabase
 import dev.josueamaya.pourline.history.LegacyBuiltIns
+import dev.josueamaya.pourline.grinder.TestGrinderCatalog
 import dev.josueamaya.pourline.recipe.RecipeRepository
+import dev.josueamaya.pourline.recipe.catalog.CatalogCache
+import dev.josueamaya.pourline.recipe.catalog.FakeCatalogFetcher
+import dev.josueamaya.pourline.recipe.catalog.RecipeCatalogRepository
+import dev.josueamaya.pourline.recipe.catalog.ResourcesCatalogLanguage
+import dev.josueamaya.pourline.recipe.catalog.TestRecipeCatalog
+import dev.josueamaya.pourline.recipe.catalog.grinderCatalogByKey
 import dev.josueamaya.pourline.recipe.ResourcesRecipeTexts
 import dev.josueamaya.pourline.recipe.fourSix
 import dev.josueamaya.pourline.recipe.v60Classic
 import dev.josueamaya.pourline.ui.theme.PourlineTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -29,6 +40,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
+import java.io.File
 
 class RecipesScreenTest {
   @get:Rule
@@ -41,6 +53,7 @@ class RecipesScreenTest {
   private var opened: Long? = null
   private var created = 0
   private var activeId by mutableStateOf<Long?>(null)
+  private val catalogScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
   /** [seed] siembra la V60 y la 4:6 como recetas propias; sin ello es una instalación nueva, con la lista vacía. */
   private fun show(seed: Boolean = true) {
@@ -52,7 +65,14 @@ class RecipesScreenTest {
         repository.save(fourSix(texts))
       }
     }
-    val viewModel = RecipesViewModel(repository)
+    val catalog = RecipeCatalogRepository(
+      bundled = { TestRecipeCatalog.json() },
+      cache = CatalogCache(File(context.cacheDir, "test_recipes_screen_catalog").also { it.deleteRecursively() }),
+      fetcher = FakeCatalogFetcher(),
+      grinders = { grinderCatalogByKey { TestGrinderCatalog.JSON } },
+      scope = catalogScope,
+    )
+    val viewModel = RecipesViewModel(repository, catalog, ResourcesCatalogLanguage(context))
     rule.setContent {
       PourlineTheme(darkTheme = false) {
         RecipesScreen(viewModel, onBack = {}, onOpenRecipe = { opened = it }, onCreateRecipe = { created++ }, activeRecipeId = activeId)
@@ -61,7 +81,10 @@ class RecipesScreenTest {
   }
 
   @After
-  fun tearDown() = db.close()
+  fun tearDown() {
+    catalogScope.cancel()
+    db.close()
+  }
 
   private fun rows() = rule.onAllNodesWithTag("recipe_row")
 

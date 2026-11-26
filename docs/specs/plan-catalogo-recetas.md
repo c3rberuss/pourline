@@ -228,7 +228,7 @@ F7 para probar la descarga desde la interfaz).
 | F4 | Room 7 → 8, campos de receta y retirada de las recetas de fábrica | L | Hecha |
 | F5 | Molienda del catálogo, copia y referencia de catálogo en Preparar | M | Hecha |
 | F6 | Copia de seguridad con formato 2 | S | Hecha |
-| F7 | Pestaña Recetas: selector, Recomendadas y recorrido | L | Pendiente |
+| F7 | Pestaña Recetas: selector, Recomendadas y recorrido | L | Hecha |
 | F8 | Detalle, "Preparar" y "Guardar en mis recetas" | L | Pendiente |
 | F9 | Selector de Preparar y editor (autor y fuente) | M | Pendiente |
 | F10 | Red: manifiesto, telemetría y README | M | Pendiente |
@@ -672,6 +672,19 @@ Instrumentados: `ui.recipes.RecipesCatalogScreenTest`, `ui.recipes.RecipesScreen
 screencap -p` de la lista en claro y en oscuro, en `emulator-5556`, para revisión visual.
 
 Commit sugerido: `feat(recipes): browse the recommended recipes from the recipes tab`.
+
+**Resultado de F7 (2026-11-25).** Hecha como en el plan, con estas precisiones. `CatalogListItem` lleva además `stageCount` (la
+fila muestra "5 pasos" como la de Mis recetas). `CatalogBrowser` guarda el idioma en un `StateFlow` que `onShown()` refresca:
+el `ViewModel` sobrevive a la recreación de la actividad, y `onShown()` vuelve a llamarse al recrearse la pantalla. La fila de
+una recomendada también lleva la etiqueta "Activa" (`catalog_active_tag`) cuando es la referencia de Preparar
+(`RecipesScreen` recibe `activeCatalogKey`). El `TourLazyAnchor` de `recipe_active_tag` solo cuenta con "Mis recetas" visible.
+`onOpenCatalogRecipe` queda sin destino hasta F8. Se añadió `catalog_search_placeholder` con `tools:ignore="Typos"` (y el
+espacio de nombres `tools` en `values/strings.xml`) porque lint toma "autor" por una errata inglesa. Los tests de
+`RecipesScreenTest` construyen un `RecipeCatalogRepository` de prueba. JVM (`CatalogFilterTest`, `ui.tour.*`,
+`ExperienceModeTest`): en verde; `ToursCatalogTest` vuelve a 3 pasos en `recipes` y 78 en total. Instrumentados en
+`emulator-5556` (`RecipesCatalogScreenTest` con 12 casos, `RecipesScreenTest`, `RecipesHistoryTourTest`,
+`TabsNavigationTest`): 0 fallos. `:app:lintDebug`: 0 errores y 20 avisos. Capturas en claro y en oscuro revisadas en
+`emulator-5556` con el catálogo real del APK (aviso "Usando las recetas incluidas" porque aún no hay `INTERNET`, F10).
 
 ### F8. Detalle, "Preparar" y "Guardar en mis recetas"
 

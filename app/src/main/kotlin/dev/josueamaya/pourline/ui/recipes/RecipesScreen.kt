@@ -6,7 +6,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Alignment
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
@@ -33,7 +37,11 @@ import dev.josueamaya.pourline.ui.components.AntButtonType
 import dev.josueamaya.pourline.ui.components.AntEmpty
 import dev.josueamaya.pourline.ui.components.AntIconButton
 import dev.josueamaya.pourline.ui.components.AntIcons
+import dev.josueamaya.pourline.recipe.RecipeListItem
 import dev.josueamaya.pourline.ui.components.AntMessageHost
+import dev.josueamaya.pourline.ui.components.AntSegmented
+import dev.josueamaya.pourline.ui.components.AntSegmentedOption
+import dev.josueamaya.pourline.ui.recipes.catalog.CatalogRecipeList
 import dev.josueamaya.pourline.ui.components.AntStatus
 import dev.josueamaya.pourline.ui.components.AntTopBar
 import dev.josueamaya.pourline.ui.components.showAntMessage
@@ -53,7 +61,15 @@ fun RecipesScreen(
   activeRecipeId: Long? = null,
   /** Las entradas de "Importar" (escáner y galería); sin él, la barra no muestra el icono. */
   importer: RecipeImportEntryViewModel? = null,
+  /** La receta recomendada elegida en Preparar, que su lista marca como "Activa". */
+  activeCatalogKey: String? = null,
+  /** Abre el detalle de una receta recomendada (por su clave). */
+  onOpenCatalogRecipe: (String) -> Unit = {},
 ) {
+  val segment by viewModel.segment.collectAsStateWithLifecycle()
+  val catalogUi by viewModel.catalog.ui.collectAsStateWithLifecycle()
+  // Al mostrar las recomendadas se descarga si toca; también tras recrear la pantalla (otro idioma).
+  LaunchedEffect(segment) { if (segment == RecipesSegment.CATALOG) viewModel.catalog.onShown() }
   val items by viewModel.items.collectAsStateWithLifecycle()
   val pendingUndo by viewModel.pendingUndo.collectAsStateWithLifecycle()
   val snackbar = remember { SnackbarHostState() }
@@ -70,7 +86,11 @@ fun RecipesScreen(
 
   val listState = rememberLazyListState()
   // La lista perezosa solo compone lo que se ve: estos pasos se declaran para que el recorrido los busque desplazando.
-  TourLazyAnchor("recipe_active_tag", listState, present = activeRecipeId != null && items?.any { it.id == activeRecipeId } == true)
+  TourLazyAnchor(
+    "recipe_active_tag",
+    listState,
+    present = segment == RecipesSegment.MINE && activeRecipeId != null && items?.any { it.id == activeRecipeId } == true,
+  )
   Scaffold(
     containerColor = AntTheme.colors.bgLayout,
     topBar = {
@@ -94,44 +114,95 @@ fun RecipesScreen(
     },
     snackbarHost = { AntMessageHost(snackbar) },
   ) { padding ->
-    LazyColumn(
-      Modifier.fillMaxSize().padding(padding),
-      state = listState,
-      contentPadding = PaddingValues(AntTheme.spacing.base),
-      verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
-    ) {
-      val rows = items
-      if (rows != null) {
-        if (rows.isEmpty()) {
-          item(key = "empty") {
-            AntEmpty(
-              stringResource(R.string.recipe_empty),
-              icon = AntIcons.Recipe,
-              action = {
+    Column(Modifier.fillMaxSize().padding(padding)) {
+      AntSegmented(
+        options = listOf(
+          AntSegmentedOption(RecipesSegment.MINE, stringResource(R.string.recipes_segment_mine)),
+          AntSegmentedOption(RecipesSegment.CATALOG, stringResource(R.string.recipes_segment_catalog)),
+        ),
+        selected = segment,
+        onSelect = viewModel::selectSegment,
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = AntTheme.spacing.base)
+          .padding(top = AntTheme.spacing.base, bottom = AntTheme.spacing.xs),
+        itemModifier = { option ->
+          when (option) {
+            RecipesSegment.MINE -> Modifier.testTag("recipes_segment_mine")
+            RecipesSegment.CATALOG -> Modifier.tourAnchor("recipes_catalog_segment").testTag("recipes_segment_catalog")
+          }
+        },
+      )
+      when (segment) {
+        RecipesSegment.MINE -> MyRecipes(
+          items = items,
+          listState = listState,
+          activeRecipeId = activeRecipeId,
+          onOpenRecipe = onOpenRecipe,
+          onCreateRecipe = onCreateRecipe,
+          onSeeCatalog = { viewModel.selectSegment(RecipesSegment.CATALOG) },
+        )
+        RecipesSegment.CATALOG -> CatalogRecipeList(catalogUi, viewModel.catalog, activeCatalogKey, onOpenCatalogRecipe)
+      }
+    }
+  }
+  TourHost(Tours.recipes, ready = items != null)
+}
+
+/** "Mis recetas": la lista del usuario y, sin recetas, el estado vacío con "Crear receta" y "Ver recomendadas". */
+@Composable
+private fun MyRecipes(
+  items: List<RecipeListItem>?,
+  listState: LazyListState,
+  activeRecipeId: Long?,
+  onOpenRecipe: (Long) -> Unit,
+  onCreateRecipe: () -> Unit,
+  onSeeCatalog: () -> Unit,
+) {
+  LazyColumn(
+    Modifier.fillMaxSize(),
+    state = listState,
+    contentPadding = PaddingValues(AntTheme.spacing.base),
+    verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.sm),
+  ) {
+    val rows = items
+    if (rows != null) {
+      if (rows.isEmpty()) {
+        item(key = "empty") {
+          AntEmpty(
+            stringResource(R.string.recipe_empty),
+            icon = AntIcons.Recipe,
+            action = {
+              Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(AntTheme.spacing.xs)) {
                 AntButton(
                   text = stringResource(R.string.recipe_add),
                   onClick = onCreateRecipe,
                   modifier = Modifier.testTag("recipes_empty_add"),
                   type = AntButtonType.Primary,
                 )
-              },
-            )
-          }
-        } else {
-          items(rows, key = { it.id }) { item ->
-            val active = item.id == activeRecipeId
-            RecipeRow(
-              item,
-              onClick = { onOpenRecipe(item.id) },
-              active = active,
-              activeAnchor = active,
-            )
-          }
+                AntButton(
+                  text = stringResource(R.string.recipes_empty_see_catalog),
+                  onClick = onSeeCatalog,
+                  modifier = Modifier.testTag("recipes_empty_see_catalog"),
+                  type = AntButtonType.Link,
+                )
+              }
+            },
+          )
+        }
+      } else {
+        items(rows, key = { it.id }) { item ->
+          val active = item.id == activeRecipeId
+          RecipeRow(
+            item,
+            onClick = { onOpenRecipe(item.id) },
+            active = active,
+            activeAnchor = active,
+          )
         }
       }
     }
   }
-  TourHost(Tours.recipes, ready = items != null)
 }
 
 /** El icono "Importar" y su menú: escanear un QR con la cámara o leerlo de una imagen de la galería (SPEC-009 §3.5). */

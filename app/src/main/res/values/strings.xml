@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Pourline</string>
 
     <!-- Escaneo -->
@@ -208,6 +208,20 @@
     <string name="recipe_deleted">Receta borrada</string>
     <string name="recipe_undo">Deshacer</string>
     <string name="recipe_active_tag">Activa</string>
+    <string name="recipes_segment_mine">Mis recetas</string>
+    <string name="recipes_segment_catalog">Recomendadas</string>
+    <string name="recipes_empty_see_catalog">Ver recomendadas</string>
+    <string name="catalog_search_placeholder" tools:ignore="Typos">Buscar por nombre o autor</string>
+    <string name="catalog_filter_all">Todos</string>
+    <string name="catalog_saved_tag">Guardada</string>
+    <string name="catalog_no_results">No hay recetas con estos filtros</string>
+    <string name="catalog_clear_filters">Quitar filtros</string>
+    <string name="catalog_update_failed">No se pudo actualizar · Última actualización: %1$s</string>
+    <string name="catalog_using_bundled">Usando las recetas incluidas en la app</string>
+    <string name="catalog_newer_schema">Actualiza la app para ver las recetas nuevas</string>
+    <string name="catalog_last_update">Última actualización: %1$s</string>
+    <string name="tour_recipes_catalog_title">Recomendadas</string>
+    <string name="tour_recipes_catalog_body">Recetas de baristas y campeonatos. Prepáralas tal cual o guarda una copia para ajustarla.</string>
     <string name="recipe_summary">%1$s g · %2$s g · %3$s · %4$s · %5$s</string>
     <plurals name="recipe_stage_count">
         <item quantity="one">%1$d paso</item>
