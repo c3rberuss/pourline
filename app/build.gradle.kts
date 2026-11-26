@@ -29,6 +29,31 @@ val releaseKeyPassword = signingValue("keyPassword", "POURLINE_KEY_PASSWORD")
 val hasReleaseSigning =
   listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { it != null }
 
+/**
+ * Copia `catalog/recipes.json` (la única fuente del catálogo de recetas, SPEC-012) a `assets/catalog/recipes.json`
+ * del APK. Nunca se mantiene una segunda copia a mano.
+ */
+abstract class CopyRecipeCatalogTask : DefaultTask() {
+  @get:InputFile
+  @get:PathSensitive(PathSensitivity.NONE)
+  abstract val catalogFile: RegularFileProperty
+
+  @get:OutputDirectory
+  abstract val outputDir: DirectoryProperty
+
+  @TaskAction
+  fun copy() {
+    val target = outputDir.get().asFile.resolve("catalog/recipes.json")
+    target.parentFile.mkdirs()
+    catalogFile.get().asFile.copyTo(target, overwrite = true)
+  }
+}
+
+val copyRecipeCatalog = tasks.register<CopyRecipeCatalogTask>("copyRecipeCatalog") {
+  catalogFile.set(rootProject.layout.projectDirectory.file("catalog/recipes.json"))
+  outputDir.set(layout.buildDirectory.dir("generated/recipeCatalog"))
+}
+
 android {
   namespace = "dev.josueamaya.pourline"
   compileSdk = 37
@@ -84,6 +109,12 @@ android {
     resources {
       excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
+  }
+}
+
+androidComponents {
+  onVariants { variant ->
+    variant.sources.assets?.addGeneratedSourceDirectory(copyRecipeCatalog, CopyRecipeCatalogTask::outputDir)
   }
 }
 

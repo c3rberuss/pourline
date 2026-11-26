@@ -222,8 +222,8 @@ F7 para probar la descarga desde la interfaz).
 | Fase | Contenido | Tamaño | Estado |
 |---|---|---|---|
 | F0 | Línea base, dispositivos y telemetría de ML Kit | M | Hecha (sin commit de código) |
-| F1 | Modelo, parser y conversión del catálogo (JVM) | M | Pendiente |
-| F2 | Contenido del catálogo, copia en el APK, test del repo y workflow | L | Pendiente |
+| F1 | Modelo, parser y conversión del catálogo (JVM) | M | Hecha |
+| F2 | Contenido del catálogo, copia en el APK, test del repo y workflow | L | Hecha |
 | F3 | Descarga, caché, repositorio y constante de la URL | M | Pendiente |
 | F4 | Room 7 → 8, campos de receta y retirada de las recetas de fábrica | L | Pendiente |
 | F5 | Molienda del catálogo, copia y referencia de catálogo en Preparar | M | Pendiente |
@@ -407,6 +407,38 @@ valida y el workflow que lo ejecuta.
   `gh run list --workflow catalog.yml --branch feat/recipe-catalog`: el workflow se ejecuta y pasa (§7.2).
 
 Commit sugerido: `feat(catalog): add the recommended recipe catalog with its repository test and workflow`.
+
+**Resultado de F2 (2026-11-25).**
+
+- **Contenido:** 35 recetas en el orden de la tabla del §3.10 (V60 9, AeroPress 8, Otro 8, Origami 4, Kalita Wave 3,
+  prensa francesa 2, Chemex 1; coincide con el reparto del spec): las tres reservas se completaron y entran. Los textos,
+  nombres y datos de las 31 recetas del anexo salen de sus tablas con un script desechable que no se commitea; las
+  instrucciones en inglés, los contextos, las moliendas y las notas de cada receta están escritos a mano en `es` y `en`.
+  `v60_classic` conserva los pasos y los textos de la antigua receta de fábrica. Solo `merikanto_wac_2021` y
+  `fukahori_switch` llevan `grind.grinder` (`comandante-c40`, 27 y 25 clics); `merikanto_wac_2021` omite `grind.text` y
+  su molienda de competición (Macap Labo 70D a 7,0) va en las notas.
+- **Dilución de AeroPress:** los vertidos de dilución pasaron a pasos `ACTION` con gramos (y la temperatura que da la
+  fuente) en `van_bunnik_wac_2019` (dos pasos: 100 g y "al gusto"), `stanica_wac_2024` (55 g tibia y 25 g ambiente),
+  `wipvasutt_wac_2023` (40 g ambiente y 40 g caliente) y `nemo_pop_wac_2025` (70 g a 50 °C, al final). Las notas dan el
+  ratio final (1:7,3, 1:10, 1:10 y 1:9,4).
+- **Reservas, completadas con `WebFetch` el 2026-11-25:**
+  - `origami_kopikalyan` (fuente: Origami, "con KOPIKALYAN TOKYO vol. 3"): 18 g, 300 g, 92 °C, Origami Air S con filtro
+    cónico, cinco vertidos cada 30 s con 40, 60, 60, 60 y 80 g [fuente]. **Inferido:** la duración de cada vertido (10 s)
+    y el drawdown hasta 3:00 (la fuente no da el tiempo final). La molienda ("24~5 clics" de Comandante) es ambigua: va
+    solo como texto "24-25 clics", sin `grind.grinder`. Va en las notas.
+  - `ibarra_wac_2018` (fuente: aeropress.com, WAC): 34,9 g, rueda 8/10, 85 °C, invertida, vertido de 100 g durante 30 s,
+    remover 30 s con palillos, tapa, voltear y presionar 30 s (total 1:30) y 60 g a 85 °C más 40 g a temperatura ambiente
+    [fuente]. **Inferido:** la posición exacta del paso de dilución (a 1:30, 10 s) y que la dilución se hace tras
+    presionar. Ratio final 1:5,7 (200 g) en las notas.
+  - `five_senses_clever` (fuente: Five Senses Coffee): 24 g, 400 g, ~94 °C, Baratza Encore a 18-22, romper la costra a
+    1:00 con 3 pasadas y drenar a 4:00 [fuente]. **Inferido:** la duración del vertido (30 s) y del drenado (60 s, el
+    último paso termina hacia 5:05). La molienda va como texto, sin `grind.grinder` (rango, no un valor).
+  Ninguna se quedó fuera. El anexo no se ha tocado.
+- **Build:** `CopyRecipeCatalogTask` + `androidComponents.onVariants { sources.assets.addGeneratedSourceDirectory }`
+  funciona con AGP 9.0.1 (R6 no se materializa; no hace falta la alternativa de `sourceSets`). `assembleDebug` deja
+  `assets/catalog/recipes.json` idéntico a `catalog/recipes.json` (`cmp`) y no hay segunda copia en `app/src/main/assets`.
+- **Workflow:** `actionlint` no está instalado: revisión manual de la sintaxis. Resultado de su ejecución en GitHub:
+  ver "Push de la rama" más abajo.
 
 ### F3. Descarga, caché, repositorio y constante de la URL
 
