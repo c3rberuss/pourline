@@ -13,7 +13,7 @@ import kotlinx.serialization.json.JsonPrimitive
  */
 
 /** Como mucho, las recetas solo para tueste claro: las de campeonato más icónicas (§3.10). */
-internal const val MAX_LIGHT_ONLY = 6
+internal const val MAX_LIGHT_ONLY = 10
 
 /**
  * `roasts` solo con nombres de [RoastLevel] y sin repetir. Se mira en el JSON crudo porque la app ignora al leer los

@@ -53,7 +53,7 @@ ANNEX = ROOT / "docs" / "specs" / "anexo-catalogo-recetas.md"
 METHODS = ["V60", "KALITA_WAVE", "CHEMEX", "ORIGAMI", "AEROPRESS", "FRENCH_PRESS", "MOKA", "OTHER"]
 STAGE_TYPES = ["POUR", "SWIRL", "WAIT", "ACTION"]
 ROASTS = ["LIGHT", "MEDIUM", "DARK"]
-MAX_LIGHT_ONLY = 6
+MAX_LIGHT_ONLY = 10
 METHOD_KEYWORDS = {
     "V60": ["v60"],
     "KALITA_WAVE": ["kalita"],

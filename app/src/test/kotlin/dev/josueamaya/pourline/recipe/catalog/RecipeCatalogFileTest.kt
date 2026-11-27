@@ -80,9 +80,9 @@ class RecipeCatalogFileTest {
 
   @Test
   fun `too few medium roast recipes or too many light only ones make the check fail`() {
-    val lightOnly = (1..7).map { recipeJson("solo_claro_$it", mapOf("roasts" to roastsJson("LIGHT"))) }
+    val lightOnly = (1..11).map { recipeJson("solo_claro_$it", mapOf("roasts" to roastsJson("LIGHT"))) }
     val problems = catalogProblems(withRecipes(*lightOnly.toTypedArray()), grinders())
-    assertTrue(problems.toString(), problems.any { it.contains("are only for a light roast, at most 6") })
+    assertTrue(problems.toString(), problems.any { it.contains("are only for a light roast, at most 10") })
 
     val few = catalogJson(
       recipeJson("four_six"),
