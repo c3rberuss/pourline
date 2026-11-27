@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": 3,
+  "revision": 4,
   "recipes": [
     {
       "key": "four_six",
@@ -4342,6 +4342,394 @@
           "instruction": {
             "es": "Vuelve a poner el émbolo y presiona despacio.",
             "en": "Put the plunger back and press slowly."
+          }
+        }
+      ]
+    },
+    {
+      "key": "kawano_v60_neo",
+      "name": {
+        "es": "V60 NEO de Yuma Kawano (LIGHT UP COFFEE)",
+        "en": "Yuma Kawano's V60 NEO (LIGHT UP COFFEE)"
+      },
+      "author": "Yuma Kawano",
+      "context": {
+        "es": "Receta del fundador de LIGHT UP COFFEE (Tokio), en X y YouTube (2025)",
+        "en": "Recipe by the founder of LIGHT UP COFFEE (Tokyo), on X and YouTube (2025)"
+      },
+      "method": "V60",
+      "doseG": 14.0,
+      "waterTempC": 90.0,
+      "grind": {
+        "text": {
+          "es": "Media o un poco más fina",
+          "en": "Medium or slightly finer"
+        },
+        "grinder": {
+          "catalogKey": "comandante-c40",
+          "value": 25
+        }
+      },
+      "notes": {
+        "es": "Pensada para la Hario V60 NEO. En el segundo vertido, deja que el agua remueva el café. La fuente da rangos: 35-40 g en el primer vertido, 180-185 g en el tercero, terminar de verter a 1 min 35-40 s y que acabe de caer a 2 min 30-35 s; aquí se usa un valor fijo. La duración de cada vertido es una estimación. La fuente no indica tueste.",
+        "en": "Designed for the Hario V60 NEO. On the second pour, let the water stir the coffee. The source gives ranges: 35-40 g on the first pour, 180-185 g on the third, finish pouring at 1 min 35-40 s and finish draining at 2 min 30-35 s; a single value is used here. The length of each pour is an estimate. The source does not state a roast."
+      },
+      "sourceUrl": "https://x.com/yuma_lightup/status/1976894502943309931",
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 10,
+          "waterG": 40.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
+          "instruction": {
+            "es": "Añade 40 g.",
+            "en": "Add 40 g."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 10,
+          "durationS": 20
+        },
+        {
+          "type": "POUR",
+          "startS": 30,
+          "durationS": 15,
+          "waterG": 120.0,
+          "instruction": {
+            "es": "Añade 80 g (total 120 g) de forma que el agua remueva el café.",
+            "en": "Add 80 g (total 120 g) so the water stirs the coffee."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 45,
+          "durationS": 10
+        },
+        {
+          "type": "POUR",
+          "startS": 55,
+          "durationS": 10,
+          "waterG": 180.0,
+          "instruction": {
+            "es": "Añade 60 g (total 180 g).",
+            "en": "Add 60 g (total 180 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 65,
+          "durationS": 20
+        },
+        {
+          "type": "POUR",
+          "startS": 85,
+          "durationS": 15,
+          "waterG": 235.0,
+          "instruction": {
+            "es": "Añade 55 g (total 235 g).",
+            "en": "Add 55 g (total 235 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 100,
+          "durationS": 50,
+          "instruction": {
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
+          }
+        }
+      ]
+    },
+    {
+      "key": "kasuya_neo_brew",
+      "name": {
+        "es": "V60 NEO: THE NEO Brew de Tetsu Kasuya",
+        "en": "Tetsu Kasuya's THE NEO Brew for the V60 NEO"
+      },
+      "author": "Tetsu Kasuya",
+      "context": {
+        "es": "Receta del 10.º aniversario de su victoria en el World Brewers Cup (2026)",
+        "en": "Recipe for the 10th anniversary of his World Brewers Cup win (2026)"
+      },
+      "method": "V60",
+      "doseG": 20.0,
+      "waterTempC": 95.5,
+      "grind": {
+        "text": {
+          "es": "Muy gruesa (Comandante C40 en 40-45 clics)",
+          "en": "Very coarse (Comandante C40 at 40-45 clicks)"
+        }
+      },
+      "notes": {
+        "es": "Pensada para la Hario V60 NEO (también sirve la V60). El autor recomienda tueste claro y agua a 95-96 °C. Diez vertidos de 30 g cada 15 s: vierte rápido, sin que el agua se acumule en el gotero. La espera de 30 s tras el primer vertido, la duración de cada vertido (unos 6 s) y el tiempo total (unos 3 min 30 s; otras fuentes dan 3 min) salen de fuentes que repiten la receta.",
+        "en": "Designed for the Hario V60 NEO (a V60 also works). The author recommends a light roast and water at 95-96 °C. Ten pours of 30 g every 15 s: pour quickly, without letting water pool in the dripper. The 30 s wait after the first pour, the length of each pour (about 6 s) and the total time (about 3 min 30 s; other sources give 3 min) come from sources that repeat the recipe."
+      },
+      "sourceUrl": "https://www.youtube.com/watch?v=k0nsShguOsU",
+      "roasts": [
+        "LIGHT"
+      ],
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 6,
+          "waterG": 30.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
+          "instruction": {
+            "es": "Añade 30 g.",
+            "en": "Add 30 g."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 6,
+          "durationS": 24
+        },
+        {
+          "type": "POUR",
+          "startS": 30,
+          "durationS": 6,
+          "waterG": 60.0,
+          "instruction": {
+            "es": "Añade 30 g (total 60 g).",
+            "en": "Add 30 g (total 60 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 36,
+          "durationS": 9
+        },
+        {
+          "type": "POUR",
+          "startS": 45,
+          "durationS": 6,
+          "waterG": 90.0,
+          "instruction": {
+            "es": "Añade 30 g (total 90 g).",
+            "en": "Add 30 g (total 90 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 51,
+          "durationS": 9
+        },
+        {
+          "type": "POUR",
+          "startS": 60,
+          "durationS": 6,
+          "waterG": 120.0,
+          "instruction": {
+            "es": "Añade 30 g (total 120 g).",
+            "en": "Add 30 g (total 120 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 66,
+          "durationS": 9
+        },
+        {
+          "type": "POUR",
+          "startS": 75,
+          "durationS": 6,
+          "waterG": 150.0,
+          "instruction": {
+            "es": "Añade 30 g (total 150 g).",
+            "en": "Add 30 g (total 150 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 81,
+          "durationS": 9
+        },
+        {
+          "type": "POUR",
+          "startS": 90,
+          "durationS": 6,
+          "waterG": 180.0,
+          "instruction": {
+            "es": "Añade 30 g (total 180 g).",
+            "en": "Add 30 g (total 180 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 96,
+          "durationS": 9
+        },
+        {
+          "type": "POUR",
+          "startS": 105,
+          "durationS": 6,
+          "waterG": 210.0,
+          "instruction": {
+            "es": "Añade 30 g (total 210 g).",
+            "en": "Add 30 g (total 210 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 111,
+          "durationS": 9
+        },
+        {
+          "type": "POUR",
+          "startS": 120,
+          "durationS": 6,
+          "waterG": 240.0,
+          "instruction": {
+            "es": "Añade 30 g (total 240 g).",
+            "en": "Add 30 g (total 240 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 126,
+          "durationS": 9
+        },
+        {
+          "type": "POUR",
+          "startS": 135,
+          "durationS": 6,
+          "waterG": 270.0,
+          "instruction": {
+            "es": "Añade 30 g (total 270 g).",
+            "en": "Add 30 g (total 270 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 141,
+          "durationS": 9
+        },
+        {
+          "type": "POUR",
+          "startS": 150,
+          "durationS": 6,
+          "waterG": 300.0,
+          "instruction": {
+            "es": "Añade 30 g (total 300 g).",
+            "en": "Add 30 g (total 300 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 156,
+          "durationS": 54,
+          "instruction": {
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
+          }
+        }
+      ]
+    },
+    {
+      "key": "kurasu_v60_neo",
+      "name": {
+        "es": "V60 NEO de Kurasu",
+        "en": "Kurasu V60 NEO"
+      },
+      "author": "Kurasu",
+      "context": {
+        "es": "Receta de la ficha de la Hario V60 NEO en su tienda (Kioto)",
+        "en": "Recipe from the Hario V60 NEO page of their shop (Kyoto)"
+      },
+      "method": "V60",
+      "doseG": 12.0,
+      "waterTempC": 91.0,
+      "grind": {
+        "text": {
+          "es": "Media-gruesa (Fellow Ode Gen 2 en 7.2)",
+          "en": "Medium-coarse (Fellow Ode Gen 2 at 7.2)"
+        }
+      },
+      "notes": {
+        "es": "Pensada para la Hario V60 NEO, sin la Switch. La fuente la propone para un café de origen único de tueste claro. La duración de cada vertido sale de la receta de Kurasu para la V60, y el tiempo total (unos 2 min 10 s) es una estimación.",
+        "en": "Designed for the Hario V60 NEO, without the Switch. The source suggests it for a light-roast single origin. The length of each pour comes from Kurasu's V60 recipe, and the total time (about 2 min 10 s) is an estimate."
+      },
+      "sourceUrl": "https://kurasu.kyoto/products/hario-v60-dripper-neo",
+      "roasts": [
+        "LIGHT"
+      ],
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 10,
+          "waterG": 40.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
+          "instruction": {
+            "es": "Añade 40 g.",
+            "en": "Add 40 g."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 10,
+          "durationS": 30
+        },
+        {
+          "type": "POUR",
+          "startS": 40,
+          "durationS": 12,
+          "waterG": 100.0,
+          "instruction": {
+            "es": "Añade 60 g (total 100 g).",
+            "en": "Add 60 g (total 100 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 52,
+          "durationS": 18
+        },
+        {
+          "type": "POUR",
+          "startS": 70,
+          "durationS": 10,
+          "waterG": 150.0,
+          "instruction": {
+            "es": "Añade 50 g (total 150 g).",
+            "en": "Add 50 g (total 150 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 80,
+          "durationS": 20
+        },
+        {
+          "type": "POUR",
+          "startS": 100,
+          "durationS": 10,
+          "waterG": 200.0,
+          "instruction": {
+            "es": "Añade 50 g (total 200 g).",
+            "en": "Add 50 g (total 200 g)."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 110,
+          "durationS": 20,
+          "instruction": {
+            "es": "Deja que termine de filtrar.",
+            "en": "Let it finish draining."
           }
         }
       ]
