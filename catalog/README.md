@@ -85,7 +85,7 @@ cualquier receta descartada):
 - `key` es única en el archivo (si se repite, se descartan todas las recetas con esa clave).
 - Deben existir `four_six` y `v60_classic`: las copias migradas de las antiguas recetas de fábrica apuntan a ellas.
 - `roasts` solo con nombres de tueste conocidos y sin repetir.
-- Proporción por tueste: al menos 2/3 de las recetas aptas para medio (con `MEDIUM` o sin `roasts`) y como mucho 6 solo para claro (`["LIGHT"]`).
+- Proporción por tueste: al menos 2/3 de las recetas aptas para medio (con `MEDIUM` o sin `roasts`) y como mucho 10 solo para claro (`["LIGHT"]`).
 - Redacción: ningún nombre de paso, instrucción ni nota usa un término prohibido (tabla de abajo) ni un tiempo `m:ss`.
 
 ## Cómo añadir o corregir una receta
@@ -119,7 +119,8 @@ script). En Claude Code, el skill `/receta-catalogo <método>` recorre el proces
 ## Tueste y redacción
 
 **Tueste.** El catálogo favorece el tueste medio, que es el más fácil de conseguir: al menos 2/3 de las recetas aptas para medio
-y, como mucho, 6 solo para claro, reservadas a las de campeonato más icónicas. `roasts` es lo que dice la fuente de la receta;
+y, como mucho, 10 solo para claro, reservadas a las de campeonato más icónicas y a recetas de goteros
+concretos (como la V60 NEO) sin variante para medio. `roasts` es lo que dice la fuente de la receta;
 si la fuente no lo dice se infiere (y el anexo lo marca), y una guía genérica de fabricante sin indicación es "cualquiera" (sin
 `roasts`). Si la fuente publica una variante para tueste medio (la 4:6 de Kasuya a 88 °C), se usa esa variante. Nunca se cambian
 por cuenta propia los parámetros de un autor: sin variante publicada, la receta se queda como es o se sustituye. El tueste no se

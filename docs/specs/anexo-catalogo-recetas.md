@@ -1930,3 +1930,49 @@ Descartadas en esta ampliación: Quality Life Coffee (V60 NEO; el tercer vertido
 temperatura), Kurasu V60 (inicios inferidos), Five Senses Origami (tueste ambiguo), Temple Coffee Origami (pulsos que no
 suman), Rogue Wave AeroPress (solo en un agregador), Lance Hedrick AeroPress (agua del bloom sin gramos), recetas NEO de
 Kurasu, Tetsu Kasuya y Ethan Junseong Park (solo para claro o con Switch).
+
+## Ampliación 2 (2026-11-27): V60 NEO
+
+Tres recetas nuevas para la Hario V60 NEO, a petición del usuario. Criterio de tueste: cualquier tueste siempre que el
+agua no pase de 96 °C (el usuario descartó las de 97-100 °C, demasiado calientes para tuestes más oscuros). Para que
+entren las que la fuente presenta solo para claro, el tope de recetas solo para claro sube de 6 a 10 (README,
+`CatalogContentRules.MAX_LIGHT_ONLY` y `scripts/catalog_recipe.py`); el mínimo de 2/3 aptas para medio no cambia. Tras
+esta ampliación: 8 de 10 solo para claro y 42 de 50 aptas para medio. Se modelan como en la ampliación 1 (`method`
+`V60`, "V60 NEO" en el nombre y las notas). Fuentes leídas el 2026-11-27. Los inicios publicados son [fuente]; salvo que
+se diga otra cosa, las duraciones de cada vertido son [inferidas] para que encajen esos inicios. Ninguna fuente da
+subtítulos descargables, así que lo que solo se dice en el audio de los vídeos no se pudo comprobar.
+
+| Clave | Método | Autor | Dosis g | Agua g | °C | Total | `roasts` | Confianza | Fuente |
+|---|---|---|--:|--:|--:|--:|---|---|---|
+| `kawano_v60_neo` | V60 (NEO) | Yuma Kawano (LIGHT UP COFFEE) | 14 | 235 | 90 | 2:30 | — | alta | https://x.com/yuma_lightup/status/1976894502943309931 |
+| `kasuya_neo_brew` | V60 (NEO) | Tetsu Kasuya | 20 | 300 | 95,5 | 3:30 | LIGHT | alta (cantidades), media (tiempos) | https://www.youtube.com/watch?v=k0nsShguOsU |
+| `kurasu_v60_neo` | V60 (NEO) | Kurasu | 12 | 200 | 91 | 2:10 | LIGHT | alta | https://kurasu.kyoto/products/hario-v60-dripper-neo |
+
+Tueste: `kawano_v60_neo` no lo indica (`—`, cualquiera; LIGHT UP es un tostador de tuestes claros, pero la fuente no
+lo dice y 90 °C sirve para medio). Citas: Kasuya "Coffee：20g（※浅煎り推奨）"; Kurasu "Light-roasted single origin".
+
+Qué es inferido, por receta:
+
+- `kawano_v60_neo`: la fuente da rangos y se fija un valor: 40 g en la preinfusión (35-40), 180 g en el tercer vertido
+  (180-185). "1分5秒で180-185gまで" y "1分35-40秒で235gまで" se leen como el momento en que se llega a ese peso (el Short
+  https://www.youtube.com/shorts/hM8BtgyIacI dice "1分40秒で注いで、2分30秒で落ちきり", que fija además 90 °C, Comandante
+  25 y el final a 2:30); los inicios 0:55 y 1:25 y las duraciones de los vertidos son inferidos. El segundo vertido
+  "混ぜるように" (que el agua remueva el café) se modela como POUR, sin cuchara.
+- `kasuya_neo_brew`: la fuente solo dice "トータル300gのお湯を、15秒間隔で30gずつ、10回に分けて注ぎます". La espera de 30 s tras
+  la preinfusión sale de fuentes secundarias coincidentes (app Coffee Timer, Barista Coffee Sofia, resumen del vídeo de
+  Lance Hedrick, Chemicoffea, Gota, roastaroma); los 6 s por vertido, de Gota; el total de 3:30, de Gota, roastaroma y
+  "合計約3分半" (note.com/koukiukinko), aunque otras fuentes dan 3:00-3:13 (en notas). `waterTempC` 95,5 es el centro de
+  95-96 °C. La molienda (40-45 clics de Comandante) va solo en texto porque pasa de la escala del molino en la app (0-40).
+- `kurasu_v60_neo`: las duraciones de los vertidos (10, 12, 10 y 10 s) salen del blog de Kurasu con la misma receta para
+  la V60 (https://kurasu.kyoto/blogs/kurasu-journal/basic-recipe-for-brewing-kurasu-light-roast-coffee-with-the-hario-v60);
+  el total de 2:10, de Gota para la NEO (el blog de la V60 da 2:00-2:30). El ajuste 7.2 de la Fellow Ode Gen 2 va solo
+  en texto porque no encaja con la escala del molino en la app.
+
+Descartadas en esta ampliación: Coffee 365 (métodos de la NEO; las cifras solo están en una página sin autor, zelpio.com,
+y los métodos 4 y 10 tienen tiempos contradictorios), Doha Coffee 1·3·9 y 1·5·5 (solo en un agregador, con agua añadida a
+la taza), Umi no Mukou Coffee (cada vertido por señal visual), ROOMIE / Gizmodo Japan (sin temperatura), segunda receta
+NEO de Yuma Kawano (14 g / 240 g; sin agua por vertido), Kerditor / 김승백 (sin temperatura ni molienda), receta básica
+del comercial de Hario según Coffee Samurai (solo en vídeo; no oficial), Coffee Samurai tueste oscuro (sin inicio del
+segundo vertido ni total), UCC Coffee Academy (solo en vídeo), miknayr, o.h.t coffee, Ethan Junseong Park y Coffee 365
+Switch / Full Immersion (usan la Switch), Kurasu con Switch, Hatakeyama Daiki (Switch y 100 °C; "Fast One Pour" no se
+pudo leer), Louis Suen (fuente bloqueada), roasterjpn.com (sin programa), Tomoya Tsujii "Flash Iced" (con hielo).

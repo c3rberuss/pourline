@@ -74,13 +74,13 @@ class CatalogContentRulesTest {
   }
 
   @Test
-  fun `at most six recipes can be only for a light roast`() {
-    val six = entriesWith(*Array(6) { light }, *Array(12) { medium })
-    assertEquals(emptyList<String>(), roastShareProblems(six))
-    val seven = entriesWith(*Array(7) { light }, *Array(14) { medium })
-    val problems = roastShareProblems(seven)
+  fun `at most ten recipes can be only for a light roast`() {
+    val ten = entriesWith(*Array(10) { light }, *Array(20) { medium })
+    assertEquals(emptyList<String>(), roastShareProblems(ten))
+    val eleven = entriesWith(*Array(11) { light }, *Array(22) { medium })
+    val problems = roastShareProblems(eleven)
     assertEquals(problems.toString(), 1, problems.size)
-    assertTrue(problems.toString(), problems.single().contains("7 recipes are only for a light roast, at most 6"))
+    assertTrue(problems.toString(), problems.single().contains("11 recipes are only for a light roast, at most 10"))
     val lightAndMedium = entriesWith(*Array(7) { listOf("LIGHT", "MEDIUM") }, *Array(3) { medium })
     assertEquals(emptyList<String>(), roastShareProblems(lightAndMedium))
   }
