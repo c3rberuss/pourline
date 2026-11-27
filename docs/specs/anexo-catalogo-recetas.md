@@ -1976,3 +1976,58 @@ del comercial de Hario según Coffee Samurai (solo en vídeo; no oficial), Coffe
 segundo vertido ni total), UCC Coffee Academy (solo en vídeo), miknayr, o.h.t coffee, Ethan Junseong Park y Coffee 365
 Switch / Full Immersion (usan la Switch), Kurasu con Switch, Hatakeyama Daiki (Switch y 100 °C; "Fast One Pour" no se
 pudo leer), Louis Suen (fuente bloqueada), roasterjpn.com (sin programa), Tomoya Tsujii "Flash Iced" (con hielo).
+
+## Ampliación 3 (2026-11-27): AeroPress para tueste medio
+
+Seis recetas nuevas de AeroPress, a petición del usuario y aptas para tueste medio. Criterio de tueste: valen las que la
+fuente presenta para medio o para cualquier tueste y las guías genéricas de tostador sin indicación; se rechazan las
+que son solo para claro y las de campeonato sin indicación. Ninguna lleva `roasts` (cualquiera). Tras esta ampliación:
+8 de 10 solo para claro y 48 de 56 aptas para medio. Fuentes leídas el 2026-11-27. Los inicios y tiempos publicados
+son [fuente]; salvo que se diga otra cosa, la duración de los vertidos y de las acciones sin tiempo (remover, tapar,
+dar la vuelta) es [inferida] para que encajen esos tiempos. La dilución de REC COFFEE se modela como en la
+ampliación 1: un `ACTION` tras presionar, y la curva termina en el agua de infusión.
+
+| Clave | Método | Autor | Dosis g | Agua g | °C | Total | `roasts` | Confianza | Fuente |
+|---|---|---|--:|--:|--:|--:|---|---|---|
+| `union_aeropress` | AeroPress | Union Hand-Roasted Coffee | 15 | 250 | 94 | 2:00 | — | alta | https://unionroasted.com/blogs/brewing-guides/aeropress |
+| `single_o_aeropress` | AeroPress (invertida) | Single O | 12,5 | 210 | 96 | 2:15 | — | alta | https://singleo.com.au/blogs/info/aeropress-brew-guide |
+| `heart_aeropress` | AeroPress | Heart Coffee Roasters | 18 | 270 | 95 | 2:10 | — | alta | https://www.heartroasters.com/pages/aeropress |
+| `kurasu_aeropress` | AeroPress (invertida) | Kurasu | 14 | 200 | 91 | 1:28 | — | alta | https://kurasu.kyoto/blogs/recipe/aeropress-basic-brew-guide |
+| `rec_coffee_aeropress` | AeroPress (invertida) | REC COFFEE | 15 | 90 + 40 | 92 | 2:20 | — | media-alta | https://rec-coffee.com/pages/aero-press-recipe |
+| `craft_coffee_aeropress` | AeroPress (invertida) | Craft Coffee | 15 | 240 | 93 | 2:00 | — | alta | https://craftcoffee.com/how-to-make-coffee/aeropress-brew-guide |
+
+Tueste: solo Single O lo indica, para cualquier tueste: "Brew lighter roasts through to espresso roasts. (Grind a bit
+finer and brew a little longer for the latter.)". Las demás son guías genéricas de tostador sin indicación. Union
+recomienda su mezcla Revelation, de tueste más oscuro.
+
+Qué es inferido, por receta:
+
+- `union_aeropress`: los 90 s de infusión ("Leave the coffee to steep for 90 seconds") se cuentan desde el inicio del
+  vertido, que es lo que cuadra con "Brew time: 2 minutes" y los ~30 s de prensado. Son inferidos la duración del
+  vertido (10 s), del remover y de poner el émbolo (5 s cada uno).
+- `single_o_aeropress`: la fuente escribe "wait until your time hits 1.45 seconds", una errata de 1:45 que cuadra con
+  "Aim for a finish time of 2 min 15 seconds". El vertido dura "15 seconds or so" [fuente]. Son inferidos el remover
+  (5 s) y el tapar (10 s). Se reparten los 30 s de "pushing the brew out over 30sec" entre dar la vuelta (5 s) y
+  presionar (25 s).
+- `heart_aeropress`: los momentos de remover a 0:50 y 1:45 y el prensado de 20 s son [fuente]. Son inferidos el vertido
+  (15 s), el primer remover y el sellado (5 s cada uno), y el total de 2:10, que la fuente no da. `waterTempC` 95 es el
+  centro de 200-205 °F (93-96 °C).
+- `kurasu_aeropress`: el remover a 1:00 es [fuente]. Son inferidos el vertido (10 s), el primer remover (5 s), el tapar
+  (5 s) y dar la vuelta (3 s). El prensado de 20 s es el mínimo de "20-25 seconds" y deja el total en 1:28, dentro de
+  "1:25 - 1:30".
+- `rec_coffee_aeropress`: el inicio del prensado a 1:50 ("ここまでで1分50秒") y sus 20 s ("20秒間") son [fuente]. Son
+  inferidos el vertido (10 s), remover 10 veces (10 s), tapar y dar la vuelta (10 s) y la dilución (10 s). La versión
+  inglesa de la misma página es https://rec-coffee.com/en/pages/aero-press-recipe.
+- `craft_coffee_aeropress`: todos los tramos son [fuente] (0:00-0:45, 0:45-1:00, 1:00-1:30, 1:30-1:40 y 1:40-2:00).
+  Son inferidos el primer vertido (10 s) y el tapar (5 s), dentro del tramo 1:00-1:30 ("Stir gently for 5 seconds,
+  then attach the cap").
+
+Descartadas en esta ampliación: Origin Coffee (ficha de 15 g / 250 g / 98 °C frente a pasos de 12 g / 200 g / 97 °C; y
+solo para claro y medio-claro), Tetsu Kasuya / Philocoffea AeroPress (sin dosis), Kurasu Lab AeroPress en posición
+normal (dosis contradictoria, 13 g y 12 g), Square Mile AeroPress (sin temperatura), PT's Coffee AeroPress (agua por
+marcas y sin tiempos por paso), Groundwork AeroPress (sin pasos), North Star Roast AeroPress (solo ratio), Coffee Labo /
+Ogawa Coffee AeroPress (sin temperatura ni tiempos), Extract Coffee Roasters AeroPress (agua o café en rangos; la
+invertida, para tuestes claros), Sample Coffee (403), Onyx AeroPress (404), Verve AeroPress (solo en un agregador). En
+reserva, válidas pero más flojas: Compass Coffee AeroPress (los pasos suman 3:00 y la página dice 3:30), Methodical
+Coffee AeroPress (sin temperatura ni total), Prima Coffee AeroPress (sin duración del prensado ni total) y Crema Coffee
+AeroPress (sin temperatura).

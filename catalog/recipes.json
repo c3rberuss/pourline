@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": 4,
+  "revision": 5,
   "recipes": [
     {
       "key": "four_six",
@@ -4730,6 +4730,504 @@
           "instruction": {
             "es": "Deja que termine de filtrar.",
             "en": "Let it finish draining."
+          }
+        }
+      ]
+    },
+    {
+      "key": "union_aeropress",
+      "name": {
+        "es": "AeroPress de Union Hand-Roasted",
+        "en": "Union Hand-Roasted AeroPress"
+      },
+      "author": "Union Hand-Roasted Coffee",
+      "context": {
+        "es": "Guía de preparación oficial (Londres)",
+        "en": "Official brew guide (London)"
+      },
+      "method": "AEROPRESS",
+      "doseG": 15.0,
+      "waterTempC": 94.0,
+      "grind": {
+        "text": {
+          "es": "Media-fina, como azúcar extrafino",
+          "en": "Medium to fine, like caster sugar"
+        }
+      },
+      "notes": {
+        "es": "AeroPress en posición normal, con el filtro enjuagado. La fuente da 90 s de infusión y unos 30 s de prensado, 2 min en total; contar la infusión desde el inicio del vertido es una estimación.",
+        "en": "AeroPress in the standard position, with a rinsed filter. The source gives 90 s of steeping and about 30 s of pressing, 2 min in total; counting the steep from the start of the pour is an estimate."
+      },
+      "sourceUrl": "https://unionroasted.com/blogs/brewing-guides/aeropress",
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 10,
+          "waterG": 250.0,
+          "instruction": {
+            "es": "Añade 250 g y empapa todo el café.",
+            "en": "Add 250 g, saturating all the coffee."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 10,
+          "durationS": 5,
+          "instruction": {
+            "es": "Remueve rápido un par de veces.",
+            "en": "Quickly stir a couple of times."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 15,
+          "durationS": 5,
+          "instruction": {
+            "es": "Pon el émbolo un poco inclinado y tira un poco hacia arriba para que no gotee.",
+            "en": "Insert the plunger at a slight angle and pull it back slightly so it does not drip."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 20,
+          "durationS": 70
+        },
+        {
+          "type": "ACTION",
+          "startS": 90,
+          "durationS": 30,
+          "instruction": {
+            "es": "Presiona despacio y de forma constante.",
+            "en": "Press slowly and steadily."
+          }
+        }
+      ]
+    },
+    {
+      "key": "single_o_aeropress",
+      "name": {
+        "es": "AeroPress invertida de Single O",
+        "en": "Single O Inverted AeroPress"
+      },
+      "author": "Single O",
+      "context": {
+        "es": "Guía de preparación oficial (Sídney)",
+        "en": "Official brew guide (Sydney)"
+      },
+      "method": "AEROPRESS",
+      "doseG": 12.5,
+      "waterTempC": 96.0,
+      "grind": {
+        "text": {
+          "es": "Media, entre espresso y prensa francesa; algo más fina que para goteo",
+          "en": "Medium, halfway between espresso and plunger; a little finer than pour-over"
+        }
+      },
+      "notes": {
+        "es": "AeroPress invertida, con el filtro enjuagado. Sirve desde tuestes claros hasta tuestes de espresso; con los oscuros, muele algo más fino e infusiona un poco más. Los momentos de remover y tapar son una estimación.",
+        "en": "Inverted AeroPress, with a rinsed filter. It works from light roasts through to espresso roasts; with dark ones, grind a bit finer and brew a little longer. When to stir and cap is an estimate."
+      },
+      "sourceUrl": "https://singleo.com.au/blogs/info/aeropress-brew-guide",
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 15,
+          "waterG": 210.0,
+          "instruction": {
+            "es": "AeroPress invertida: añade 210 g y empapa todo el café.",
+            "en": "Inverted AeroPress: add 210 g, saturating all the coffee."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 15,
+          "durationS": 5,
+          "instruction": {
+            "es": "Remueve con energía.",
+            "en": "Stir vigorously."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 20,
+          "durationS": 10,
+          "instruction": {
+            "es": "Enrosca la tapa con filtro.",
+            "en": "Screw on the filter cap."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 30,
+          "durationS": 75
+        },
+        {
+          "type": "ACTION",
+          "startS": 105,
+          "durationS": 5,
+          "instruction": {
+            "es": "Pon la taza sobre la tapa y da la vuelta.",
+            "en": "Place the cup over the cap and flip."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 110,
+          "durationS": 25,
+          "instruction": {
+            "es": "Presiona con suavidad; para cuando oigas un siseo.",
+            "en": "Press gently; stop when you hear a slight hiss."
+          }
+        }
+      ]
+    },
+    {
+      "key": "heart_aeropress",
+      "name": {
+        "es": "AeroPress de Heart",
+        "en": "Heart AeroPress"
+      },
+      "author": "Heart Coffee Roasters",
+      "context": {
+        "es": "Guía de preparación oficial (Portland)",
+        "en": "Official brew guide (Portland)"
+      },
+      "method": "AEROPRESS",
+      "doseG": 18.0,
+      "waterTempC": 95.0,
+      "grind": {
+        "text": {
+          "es": "Algo más fina que para cafetera de goteo",
+          "en": "A bit finer than filter drip"
+        }
+      },
+      "notes": {
+        "es": "AeroPress en posición normal. Agua a 93-96 °C. Si cuesta mucho presionar, muele más grueso; si baja sin resistencia, más fino. La fuente no da el tiempo total: unos 2 min 10 s es una estimación.",
+        "en": "AeroPress in the standard position. Water at 93-96 °C. If pressing is very hard, grind coarser; if it is very easy, grind finer. The source does not give a total time: about 2 min 10 s is an estimate."
+      },
+      "sourceUrl": "https://www.heartroasters.com/pages/aeropress",
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 15,
+          "waterG": 270.0,
+          "instruction": {
+            "es": "Añade 270 g rápido, hasta cerca del borde.",
+            "en": "Quickly add 270 g, up to near the top."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 15,
+          "durationS": 5,
+          "instruction": {
+            "es": "Remueve.",
+            "en": "Stir."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 20,
+          "durationS": 5,
+          "instruction": {
+            "es": "Pon el émbolo lo justo para sellar y que no gotee.",
+            "en": "Insert the plunger just enough to seal so it does not drip."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 25,
+          "durationS": 25
+        },
+        {
+          "type": "ACTION",
+          "startS": 50,
+          "durationS": 10,
+          "instruction": {
+            "es": "Quita el émbolo, remueve 5 segundos y vuelve a ponerlo.",
+            "en": "Remove the plunger, stir for 5 seconds and put it back."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 60,
+          "durationS": 45
+        },
+        {
+          "type": "ACTION",
+          "startS": 105,
+          "durationS": 5,
+          "instruction": {
+            "es": "Quita el émbolo y remueve 5 segundos.",
+            "en": "Remove the plunger and stir for 5 seconds."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 110,
+          "durationS": 20,
+          "instruction": {
+            "es": "Pon el émbolo y presiona despacio hasta oír un siseo.",
+            "en": "Put the plunger in and press slowly until you hear a hiss."
+          }
+        }
+      ]
+    },
+    {
+      "key": "kurasu_aeropress",
+      "name": {
+        "es": "AeroPress invertida de Kurasu",
+        "en": "Kurasu Inverted AeroPress"
+      },
+      "author": "Kurasu",
+      "context": {
+        "es": "Guía de preparación oficial (Kioto)",
+        "en": "Official brew guide (Kyoto)"
+      },
+      "method": "AEROPRESS",
+      "doseG": 14.0,
+      "waterTempC": 91.0,
+      "grind": {
+        "text": {
+          "es": "Media-fina",
+          "en": "Medium-fine"
+        }
+      },
+      "notes": {
+        "es": "AeroPress invertida, con el filtro enjuagado. El prensado dura 20-25 s y la receta, de 1 min 25 s a 1 min 30 s; los momentos de tapar y dar la vuelta son una estimación. No presiones hasta el fondo para evitar sabores turbios.",
+        "en": "Inverted AeroPress, with a rinsed filter. Pressing takes 20-25 s and the whole brew 1 min 25 s to 1 min 30 s; when to cap and flip is an estimate. Do not press all the way down, to avoid muddy flavors."
+      },
+      "sourceUrl": "https://kurasu.kyoto/blogs/recipe/aeropress-basic-brew-guide",
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 10,
+          "waterG": 200.0,
+          "instruction": {
+            "es": "AeroPress invertida: añade 200 g de una vez, lo más rápido que puedas.",
+            "en": "Inverted AeroPress: add 200 g in one go, as quickly as you can."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 10,
+          "durationS": 5,
+          "instruction": {
+            "es": "Remueve 3 veces.",
+            "en": "Stir 3 times."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 15,
+          "durationS": 45
+        },
+        {
+          "type": "ACTION",
+          "startS": 60,
+          "durationS": 5,
+          "instruction": {
+            "es": "Remueve 3 veces más y pon la tapa con filtro.",
+            "en": "Stir 3 more times and attach the filter cap."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 65,
+          "durationS": 3,
+          "instruction": {
+            "es": "Pon el servidor sobre la tapa y da la vuelta.",
+            "en": "Set the server on the cap and flip."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 68,
+          "durationS": 20,
+          "instruction": {
+            "es": "Presiona sin llegar al fondo.",
+            "en": "Press without going all the way down."
+          }
+        }
+      ]
+    },
+    {
+      "key": "rec_coffee_aeropress",
+      "name": {
+        "es": "AeroPress invertida de REC COFFEE",
+        "en": "REC COFFEE Inverted AeroPress"
+      },
+      "author": "REC COFFEE",
+      "context": {
+        "es": "Guía de preparación oficial (Fukuoka)",
+        "en": "Official brew guide (Fukuoka)"
+      },
+      "method": "AEROPRESS",
+      "doseG": 15.0,
+      "waterTempC": 92.0,
+      "grind": {
+        "text": {
+          "es": "Fina",
+          "en": "Fine"
+        }
+      },
+      "notes": {
+        "es": "AeroPress invertida, con el filtro enjuagado. Da un concentrado que se diluye tras presionar: la curva termina en los 90 g de infusión y el ratio final es 1:8,7 (130 g de agua). La fuente dice que las cifras son orientativas. El momento de dar la vuelta es una estimación.",
+        "en": "Inverted AeroPress, with a rinsed filter. It makes a concentrate that is diluted after pressing: the curve ends at the 90 g of infusion and the final ratio is 1:8.7 (130 g of water). The source says the numbers are only a guide. When to flip is an estimate."
+      },
+      "sourceUrl": "https://rec-coffee.com/pages/aero-press-recipe",
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 10,
+          "waterG": 90.0,
+          "instruction": {
+            "es": "AeroPress invertida: añade 90 g.",
+            "en": "Inverted AeroPress: add 90 g."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 10,
+          "durationS": 10,
+          "instruction": {
+            "es": "Remueve enseguida 10 veces con una cuchara.",
+            "en": "Immediately stir 10 times with a spoon."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 20,
+          "durationS": 10,
+          "instruction": {
+            "es": "Pon la tapa con filtro, da la vuelta y colócala sobre el servidor.",
+            "en": "Attach the filter cap, flip and set it on the server."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 30,
+          "durationS": 80
+        },
+        {
+          "type": "ACTION",
+          "startS": 110,
+          "durationS": 20,
+          "instruction": {
+            "es": "Presiona recto.",
+            "en": "Press straight down."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 130,
+          "durationS": 10,
+          "instruction": {
+            "es": "Añade 40 g de agua a 92 °C y mezcla bien con la cuchara.",
+            "en": "Add 40 g of water at 92 °C and mix well with the spoon."
+          }
+        }
+      ]
+    },
+    {
+      "key": "craft_coffee_aeropress",
+      "name": {
+        "es": "AeroPress invertida de Craft Coffee",
+        "en": "Craft Coffee Inverted AeroPress"
+      },
+      "author": "Craft Coffee",
+      "context": {
+        "es": "Guía de preparación oficial (EE. UU.)",
+        "en": "Official brew guide (USA)"
+      },
+      "method": "AEROPRESS",
+      "doseG": 15.0,
+      "waterTempC": 93.0,
+      "grind": {
+        "text": {
+          "es": "Algo más fina que media",
+          "en": "Slightly finer than medium"
+        }
+      },
+      "notes": {
+        "es": "AeroPress invertida, con el filtro enjuagado.",
+        "en": "Inverted AeroPress, with a rinsed filter."
+      },
+      "sourceUrl": "https://craftcoffee.com/how-to-make-coffee/aeropress-brew-guide",
+      "stages": [
+        {
+          "type": "POUR",
+          "startS": 0,
+          "durationS": 10,
+          "waterG": 120.0,
+          "name": {
+            "es": "Preinfusión",
+            "en": "Bloom"
+          },
+          "instruction": {
+            "es": "AeroPress invertida: añade 120 g repartidos sobre el café.",
+            "en": "Inverted AeroPress: add 120 g evenly over the coffee."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 10,
+          "durationS": 35
+        },
+        {
+          "type": "POUR",
+          "startS": 45,
+          "durationS": 15,
+          "waterG": 240.0,
+          "instruction": {
+            "es": "Añade 120 g (total 240 g) hasta arriba.",
+            "en": "Add 120 g (total 240 g) up to the top."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 60,
+          "durationS": 5,
+          "instruction": {
+            "es": "Remueve con suavidad.",
+            "en": "Stir gently."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 65,
+          "durationS": 5,
+          "instruction": {
+            "es": "Pon la tapa con filtro bien ajustada.",
+            "en": "Attach the filter cap securely."
+          }
+        },
+        {
+          "type": "WAIT",
+          "startS": 70,
+          "durationS": 20
+        },
+        {
+          "type": "ACTION",
+          "startS": 90,
+          "durationS": 10,
+          "instruction": {
+            "es": "Da la vuelta con cuidado y colócala sobre la taza.",
+            "en": "Carefully flip it and set it on the mug."
+          }
+        },
+        {
+          "type": "ACTION",
+          "startS": 100,
+          "durationS": 20,
+          "instruction": {
+            "es": "Presiona despacio y de forma constante hasta oír un siseo.",
+            "en": "Press slowly but steadily until you hear a hiss."
           }
         }
       ]
