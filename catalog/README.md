@@ -90,6 +90,11 @@ cualquier receta descartada):
 
 ## Cómo añadir o corregir una receta
 
+Para añadir recetas nuevas, `scripts/catalog_recipe.py` hace casi todo: `summary <METHOD>` lista las recetas del método,
+el cupo de tueste y lo que ya se descartó en el anexo, y `build <archivo> [--write]` convierte un formato compacto a
+JSON, lo valida con las reglas de abajo y, con `--write`, lo añade e incrementa `revision` (formato en el propio
+script). En Claude Code, el skill `/receta-catalogo <método>` recorre el proceso completo, investigación incluida.
+
 1. Edita `recipes.json`: añade la receta al final (la lista se muestra en el orden del archivo) o corrige la que toca.
 2. **Incrementa `revision`** en 1. Sin eso, las apps que ya descargaron el catálogo no recogen el cambio.
 3. Usa una `key` nueva y que nunca se haya usado, aunque borres una receta.
